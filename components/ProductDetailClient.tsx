@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useCart } from "@/context/CartContext";
-import ProductReviews from "@/components/ProductReviews";
 
 interface Variation {
   id: string;
@@ -84,7 +83,7 @@ export default function ProductDetailClient({ product }: { product: Product }) {
           <h1 className="text-2xl sm:text-3xl font-serif font-bold text-neutral-900">
             {product.title}
           </h1>
-          <p className="text-sm text-neutral-600 leading-relaxed">
+          <p className="text-sm text-neutral-600 leading-relaxed whitespace-pre-line">
             {product.description}
           </p>
 
@@ -139,6 +138,7 @@ export default function ProductDetailClient({ product }: { product: Product }) {
               <button
                 type="button"
                 onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                aria-label="Adedi azalt"
                 className="px-3.5 py-2.5 hover:bg-neutral-200 text-sm font-semibold transition-colors"
               >
                 -
@@ -149,6 +149,7 @@ export default function ProductDetailClient({ product }: { product: Product }) {
               <button
                 type="button"
                 onClick={() => setQuantity((q) => q + 1)}
+                aria-label="Adedi artır"
                 className="px-3.5 py-2.5 hover:bg-neutral-200 text-sm font-semibold transition-colors"
               >
                 +
@@ -171,10 +172,6 @@ export default function ProductDetailClient({ product }: { product: Product }) {
               <p className="text-neutral-600 mt-0.5">
                 Kırılma riski olmadan mağazamızdan görerek teslim alma seçeneği mevcuttur.
               </p>
-              {/* Kartın altına Yorumlar Modülü */}
-      <div className="lg:col-span-2">
-        <ProductReviews productId={product.id} />
-      </div>
             </div>
           </div>
         </div>

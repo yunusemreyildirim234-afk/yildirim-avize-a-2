@@ -17,7 +17,7 @@ export async function sendOrderNotificationEmails(data: EmailOrderData) {
   const isBeyoglu = data.shippingType === "BEYOGLU_MAGAZA_TESLIM";
   const shippingText = isBeyoglu
     ? "📍 Beyoğlu Şişhane Mağazamızdan Teslim Alınacak"
-    : "📦 Sigortalı Ahşap Sandık Kargo ile Kapınıza Teslim Edilecek";
+    : "📦 Sigortalı Üst Düzey Korumalı Koli ile Kapınıza Teslim Edilecek";
 
   const kargonomiBlock =
     !isBeyoglu && (data.kargonomiShipmentId || data.shippingTrackingCode || data.shippingBarcode)
@@ -118,14 +118,42 @@ export async function sendOrderNotificationEmails(data: EmailOrderData) {
         }),
       });
 
-      const resData = await response.json();
-      if (response.ok) {
-        console.log("✓ [CANLI E-POSTA BAŞARILI]: E-posta Resend üzerinden müşteriye ulaştırıldı! ID:", resData.id);
-      } else {
-        console.error("Resend API uyarısı:", resData);
+      if (!response.ok) {
+        console.error("Resend API uyarısı:", await response.json());
       }
     } catch (err) {
       console.error("Resend bağlantı hatası:", err);
     }
+  }
+}
+export async function sendContactEmail(data: {
+  name: string;
+  email: string;
+  phone?: string;
+  subject?: string;
+  message: string;
+}) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const to = process.env.KARGONOMI_SENDER_EMAIL;
+  if (!apiKey || !to) return false;
+
+  const esc = (v: string) => v.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c] as string);
+
+  try {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from: "Yıldırım Avize <onboarding@resend.dev>",
+        to: [to],
+        reply_to: data.email,
+        subject: `İletişim Formu: ${data.subject || "Genel"} - ${data.name}`,
+        html: `<p><strong>${esc(data.name)}</strong> (${esc(data.email)}${data.phone ? `, ${esc(data.phone)}` : ""})</p><p>${esc(data.message).replace(/\n/g, "<br />")}</p>`,
+      }),
+    });
+    return response.ok;
+  } catch (err) {
+    console.error("Resend bağlantı hatası:", err);
+    return false;
   }
 }

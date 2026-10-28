@@ -1,179 +1,113 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { sendOrderNotificationEmails } from "@/lib/email";
-import {
-  createKargonomiShipment,
-  KARGONOMI_STATUS_LABELS,
-} from "@/lib/kargonomi";
+import { finalizeOrder } from "@/lib/orders";
+import { getPaytrToken } from "@/lib/paytr";
+import { computeTotals } from "@/lib/pricing";
+
+interface CartLine {
+  variationId: string;
+  quantity: number;
+}
+
+function clientIp(req: Request) {
+  const forwarded = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  return forwarded || req.headers.get("x-real-ip") || "127.0.0.1";
+}
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const {
-      name,
-      email,
-      phone,
-      address,
-      buyerStateId,
-      buyerCityId,
-      buyerStateName,
-      buyerCityName,
-      packageDesi,
-      shippingType,
-      items,
-      totalAmount,
-    } = body;
+    const { name, email, phone, address, buyerStateId, buyerCityId, buyerStateName, buyerCityName, shippingType, couponCode } =
+      body;
+    const paymentMethod: "CREDIT_CARD" | "BANK_TRANSFER" = body.paymentMethod === "BANK_TRANSFER" ? "BANK_TRANSFER" : "CREDIT_CARD";
+    const items: CartLine[] = Array.isArray(body.items) ? body.items : [];
 
-    if (!items || items.length === 0) {
-      return NextResponse.json({ error: "Sepetiniz boş olamaz" }, { status: 400 });
+    if (items.length === 0) return NextResponse.json({ error: "Sepetiniz boş olamaz" }, { status: 400 });
+    if (!email || !name || !phone || !address) {
+      return NextResponse.json({ error: "Ad, e-posta, telefon ve adres zorunludur." }, { status: 400 });
+    }
+    if (shippingType !== "BEYOGLU_MAGAZA_TESLIM" && shippingType !== "STANDART_KARGO") {
+      return NextResponse.json({ error: "Geçersiz teslimat yöntemi." }, { status: 400 });
     }
 
-    // 1. Müşteriyi bul veya oluştur
-    let user = await prisma.user.findUnique({ where: { email } });
-    if (!user) {
-      user = await prisma.user.create({
-        data: {
-          name: name || "Müşteri",
-          email,
-          password: "guest_checkout",
-          role: "USER",
-        },
-      });
-    }
-
-    // 2. Sepetteki varyasyonların veritabanındaki geçerliliğini kontrol et
-    const validItems = [];
+    // 1. Fiyatlar istemciden değil veritabanından hesaplanır
+    const orderLines = [];
     for (const item of items) {
-      let variation = await prisma.productVariation.findUnique({
+      const quantity = Math.max(1, Math.floor(Number(item.quantity) || 1));
+      const variation = await prisma.productVariation.findUnique({
         where: { id: item.variationId },
+        include: { product: true },
       });
-
-      if (!variation) {
-        const fallback = await prisma.productVariation.findFirst();
-        if (!fallback) {
-          return NextResponse.json(
-            { error: "Veritabanında ürün bulunamadı. Lütfen sepeti tazeleyin." },
-            { status: 400 }
-          );
-        }
-        variation = fallback;
+      if (!variation || !variation.product.active) {
+        return NextResponse.json({ error: "Sepetinizdeki bir ürün artık satışta değil. Lütfen sepeti yenileyin." }, { status: 400 });
       }
-
-      validItems.push({
-        variationId: variation.id,
-        quantity: item.quantity,
-        unitPrice: item.price,
-      });
+      if (variation.stock < quantity) {
+        return NextResponse.json({ error: `"${variation.product.title}" için yeterli stok yok.` }, { status: 400 });
+      }
+      orderLines.push({ variation, quantity, unitPrice: variation.product.basePrice + variation.extraPrice });
     }
 
-    // Toplam ürün adedine göre tahmini ahşap sandık desi hesabı (her avize ~3 desi)
-    const totalQty = items.reduce((acc: number, i: any) => acc + (Number(i.quantity) || 1), 0);
-    const calculatedDesi = Number(packageDesi) || Math.max(3, totalQty * 3);
+    const itemsTotal = orderLines.reduce((sum, l) => sum + l.unitPrice * l.quantity, 0);
+    const totals = computeTotals({ itemsTotal, shippingType, couponCode, paymentMethod });
 
-    // 3. Siparişi veritabanına kaydet
-    let order = await prisma.order.create({
+    // 2. Müşteriyi bul veya oluştur
+    const user =
+      (await prisma.user.findUnique({ where: { email } })) ??
+      (await prisma.user.create({ data: { name, email, password: "guest_checkout", role: "USER" } }));
+
+    // 3. Siparişi kaydet (kartlı ödemede ödeme onayına kadar AWAITING_PAYMENT)
+    const totalQty = orderLines.reduce((sum, l) => sum + l.quantity, 0);
+    const order = await prisma.order.create({
       data: {
         userId: user.id,
-        totalAmount: parseFloat(totalAmount) || 0,
+        totalAmount: totals.total,
         shippingType,
-        status: "PENDING",
-        phone: phone || null,
-        address: address || null,
+        status: paymentMethod === "CREDIT_CARD" ? "AWAITING_PAYMENT" : "PENDING_NEW",
+        phone,
+        address,
         buyerStateId: buyerStateId ? Number(buyerStateId) : 34,
         buyerCityId: buyerCityId ? Number(buyerCityId) : 425,
         buyerStateName: buyerStateName || "İSTANBUL",
         buyerCityName: buyerCityName || "BEYOĞLU",
-        packageDesi: calculatedDesi,
+        packageDesi: Math.max(3, totalQty * 3),
         items: {
-          create: validItems,
+          create: orderLines.map((l) => ({ variationId: l.variation.id, quantity: l.quantity, unitPrice: l.unitPrice })),
         },
       },
     });
 
-    // 4. Eğer teslimat yöntemi STANDART_KARGO ise Kargonomi API'de otomatik taslak gönderi oluştur
-    let kargonomiInfo: any = null;
-    if (shippingType === "STANDART_KARGO") {
-      try {
-        const contentSummary = items
-          .map((i: any) => `${i.quantity}x ${i.title || "Avize"} (${i.variationName || ""})`)
-          .join(", ")
-          .slice(0, 200);
-
-        const createdShipment = await createKargonomiShipment({
-          buyer_name: name || user.name,
-          buyer_email: email,
-          buyer_phone: phone || "5555555555",
-          buyer_address: address || "Teslimat Adresi",
-          buyer_state_id: buyerStateId ? Number(buyerStateId) : 34,
-          buyer_city_id: buyerCityId ? Number(buyerCityId) : 425,
-          packages: [
-            {
-              content: contentSummary || "Yıldırım Avize Ahşap Sandık Kargo",
-              barcode: `YA-${order.id.slice(0, 8).toUpperCase()}`,
-              desi: calculatedDesi,
-            },
-          ],
-        });
-
-        const shipmentObj =
-          createdShipment?.shipment || createdShipment?.data || createdShipment;
-        if (shipmentObj?.id) {
-          const status = shipmentObj.status || "draft";
-          const statusLabel =
-            shipmentObj.status_label || KARGONOMI_STATUS_LABELS[status] || "Taslak";
-          const barcode =
-            shipmentObj.shipping_webservice_barcode ||
-            shipmentObj.shipment_packages?.[0]?.barcode ||
-            `YA-${order.id.slice(0, 8).toUpperCase()}`;
-
-          order = await prisma.order.update({
-            where: { id: order.id },
-            data: {
-              kargonomiShipmentId: Number(shipmentObj.id),
-              kargonomiStatus: status,
-              kargonomiStatusLabel: statusLabel,
-              shippingBarcode: barcode,
-            },
-          });
-
-          kargonomiInfo = {
-            shipmentId: shipmentObj.id,
-            status,
-            statusLabel,
-            barcode,
-          };
-        }
-      } catch (kargoErr) {
-        // Kargonomi bağlantı veya doğrulama uyarısı siparişi engellemez; admin panelinden tek tıkla oluşturulabilir
-        console.warn(
-          "Kargonomi otomatik taslak gönderi uyarısı (Admin panelinden oluşturulabilir):",
-          (kargoErr as Error).message
-        );
-      }
+    // 4a. Havale/EFT: sipariş hemen onaylanır
+    if (paymentMethod === "BANK_TRANSFER") {
+      await finalizeOrder(order.id);
+      return NextResponse.json({ success: true, orderId: order.id });
     }
 
-    // 5. E-posta bildirimini tetikle
-    sendOrderNotificationEmails({
-      orderId: order.id,
-      customerName: name,
-      customerEmail: email,
-      totalAmount: parseFloat(totalAmount) || 0,
-      shippingType,
-      kargonomiShipmentId: order.kargonomiShipmentId,
-      shippingBarcode: order.shippingBarcode,
-      items: items.map((i: any) => ({
-        title: i.title || "Avize",
-        variationName: i.variationName || "",
-        quantity: i.quantity,
-        price: i.price,
-      })),
-    });
+    // 4b. Kartlı ödeme: PayTR iFrame token'ı al
+    try {
+      const basket = orderLines.map((l) => ({
+        name: `${l.variation.product.title} - ${l.variation.variationValue}`,
+        price: l.unitPrice,
+        quantity: l.quantity,
+      }));
+      // Kargo/indirim farkını tek kalemle yansıt ki sepet toplamı PayTR tutarıyla eşleşsin
+      const diff = totals.total - itemsTotal;
+      if (diff > 0.001) basket.push({ name: "Kargo", price: diff, quantity: 1 });
 
-    return NextResponse.json({
-      success: true,
-      orderId: order.id,
-      kargonomi: kargonomiInfo,
-    });
+      const token = await getPaytrToken({
+        orderId: order.id,
+        email,
+        amountTl: totals.total,
+        userIp: clientIp(req),
+        userName: name,
+        userAddress: address,
+        userPhone: phone,
+        basket,
+      });
+      return NextResponse.json({ success: true, orderId: order.id, paytrToken: token });
+    } catch (err) {
+      await prisma.order.update({ where: { id: order.id }, data: { status: "PAYMENT_FAILED" } });
+      return NextResponse.json({ error: (err as Error).message }, { status: 502 });
+    }
   } catch (error) {
     return NextResponse.json({ error: (error as Error).message }, { status: 500 });
   }

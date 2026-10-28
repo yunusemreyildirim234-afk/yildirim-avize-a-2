@@ -43,6 +43,7 @@ export default function OrderStatusSelector({ orderId, initialStatus, shippingTy
   return (
     <div className="flex items-center gap-2">
       <select
+        aria-label="Sipariş durumu"
         disabled={loading}
         value={status}
         onChange={(e) => handleStatusChange(e.target.value)}

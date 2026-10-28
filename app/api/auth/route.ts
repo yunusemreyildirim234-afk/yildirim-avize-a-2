@@ -1,126 +1,51 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { getCustomerWithOrders } from "@/lib/customer";
+import { hashPassword, verifyPassword } from "@/lib/password";
+import { USER_COOKIE, cookieOptions, signSession } from "@/lib/session";
+
+const GUEST_PASSWORD = "guest_checkout";
+
+async function respond(userId: string) {
+  const res = NextResponse.json({ success: true, user: await getCustomerWithOrders(userId) });
+  res.cookies.set(USER_COOKIE, await signSession({ uid: userId }), cookieOptions);
+  return res;
+}
 
 export async function POST(req: Request) {
   try {
     const { action, name, email, password } = await req.json();
 
-    // 1. GERÇEK GOOGLE HESABI İLE GİRİŞ & KAYIT
-    if (action === "google") {
-      if (!email) {
-        return NextResponse.json({ error: "Google hesabından e-posta bilgisi alınamadı." }, { status: 400 });
-      }
-
-      // Google'dan gelen gerçek e-postayı arıyoruz
-      let user = await prisma.user.findUnique({
-        where: { email },
-        include: {
-          orders: {
-            include: { items: { include: { variation: true } } },
-            orderBy: { createdAt: "desc" },
-          },
-        },
-      });
-
-      // Eğer kullanıcı veritabanında yoksa, Google'dan gelen gerçek ismiyle otomatik oluşturulur
-      if (!user) {
-        user = await prisma.user.create({
-          data: {
-            name: name || "Google Kullanıcısı",
-            email: email,
-            password: "google_oauth_secure",
-            role: "USER",
-          },
-          include: {
-            orders: {
-              include: { items: { include: { variation: true } } },
-              orderBy: { createdAt: "desc" },
-            },
-          },
-        });
-      }
-
-      return NextResponse.json({ success: true, user });
-    }
-
     if (!email || !password) {
       return NextResponse.json({ error: "E-posta ve şifre zorunludur" }, { status: 400 });
     }
-
-    // 2. STANDART KAYIT OLMA (REGISTER)
-    if (action === "register") {
-      const existingUser = await prisma.user.findUnique({
-        where: { email },
-        include: {
-          orders: {
-            include: { items: { include: { variation: true } } },
-            orderBy: { createdAt: "desc" },
-          },
-        },
-      });
-
-      if (existingUser && existingUser.password === "guest_checkout") {
-        const activatedUser = await prisma.user.update({
-          where: { email },
-          data: { name: name || existingUser.name, password: password },
-          include: {
-            orders: {
-              include: { items: { include: { variation: true } } },
-              orderBy: { createdAt: "desc" },
-            },
-          },
-        });
-        return NextResponse.json({ success: true, user: activatedUser });
-      }
-
-      if (existingUser) {
-        return NextResponse.json({ error: "Bu e-posta adresiyle zaten bir hesap var. Lütfen giriş yapın." }, { status: 400 });
-      }
-
-      const newUser = await prisma.user.create({
-        data: { name: name || "Müşteri", email, password, role: "USER" },
-      });
-
-      return NextResponse.json({
-        success: true,
-        user: { id: newUser.id, name: newUser.name, email: newUser.email, role: newUser.role, orders: [] },
-      });
+    if (action === "register" && String(password).length < 6) {
+      return NextResponse.json({ error: "Şifre en az 6 karakter olmalıdır." }, { status: 400 });
     }
 
-    // 3. STANDART GİRİŞ YAPMA (LOGIN)
-    if (action === "login") {
-      const user = await prisma.user.findUnique({
-        where: { email },
-        include: {
-          orders: {
-            include: { items: { include: { variation: true } } },
-            orderBy: { createdAt: "desc" },
-          },
-        },
-      });
+    const existing = await prisma.user.findUnique({ where: { email } });
 
-      if (user && user.password === "guest_checkout") {
-        const activatedUser = await prisma.user.update({
-          where: { email },
-          data: { password: password },
-          include: {
-            orders: {
-              include: { items: { include: { variation: true } } },
-              orderBy: { createdAt: "desc" },
-            },
-          },
-        });
-        return NextResponse.json({ success: true, user: activatedUser });
+    if (action === "register") {
+      if (existing?.password === GUEST_PASSWORD) {
+        return NextResponse.json(
+          { error: "Bu e-posta ile misafir sipariş verilmiş. Siparişlerinize erişmek için Google ile giriş yapabilirsiniz." },
+          { status: 400 }
+        );
       }
+      if (existing) {
+        return NextResponse.json({ error: "Bu e-posta adresiyle zaten bir hesap var. Lütfen giriş yapın." }, { status: 400 });
+      }
+      const created = await prisma.user.create({
+        data: { name: name || "Müşteri", email, password: hashPassword(password), role: "USER" },
+      });
+      return respond(created.id);
+    }
 
-      if (!user || user.password !== password) {
+    if (action === "login") {
+      if (!existing || existing.password === GUEST_PASSWORD || !verifyPassword(password, existing.password)) {
         return NextResponse.json({ error: "Geçersiz e-posta veya şifre." }, { status: 401 });
       }
-
-      return NextResponse.json({
-        success: true,
-        user: { id: user.id, name: user.name, email: user.email, role: user.role, orders: user.orders },
-      });
+      return respond(existing.id);
     }
 
     return NextResponse.json({ error: "Geçersiz işlem" }, { status: 400 });

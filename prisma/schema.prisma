@@ -15,6 +15,7 @@ model User {
   password  String
   role      String   @default("USER") // "USER" veya "ADMIN"
   orders    Order[]
+  reviews   Review[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -27,7 +28,15 @@ model Product {
   category    String             // Örn: "Klasik", "Modern", "Kristal"
   basePrice   Float
   imageUrl    String?            // Yeni eklenen avize görseli alanı
+  images      String[]           @default([]) // Trendyol ürün görselleri
+  active      Boolean            @default(true) // Trendyol: satışta + arşivde değil
+  brand       String?
+  listPrice   Float?             // Trendyol liste (üstü çizili) fiyatı
+  trendyolMainId   String?       @unique // productMainId
+  trendyolCategory String?
+  trendyolUrl      String?
   variations  ProductVariation[]
+  reviews     Review[]
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
 }
@@ -41,6 +50,10 @@ model ProductVariation {
   variationValue String      // Örn: "Gold", "5'li"
   extraPrice     Float       @default(0) // Taban fiyata eklenecek fark
   stock          Int         @default(0)
+  barcode        String?     @unique // Trendyol barkodu
+  stockCode      String?
+  salePrice      Float?      // Trendyol satış fiyatı
+  listPrice      Float?
   orderItems     OrderItem[]
 }
 
@@ -58,7 +71,7 @@ model Order {
   buyerCityId          Int?        // Kargonomi İlçe ID (Örn: 425 = Beyoğlu)
   buyerStateName       String?     // İl Adı
   buyerCityName        String?     // İlçe Adı
-  packageDesi          Float?      @default(3) // Ahşap Sandık Kargo Desi Değeri
+  packageDesi          Float?      @default(3) // Üst Düzey Korumalı Koli Kargo Desi Değeri
   kargonomiShipmentId  Int?        // Kargonomi Gönderi ID (/shipments/{id})
   kargonomiStatus      String?     // draft, ready, webservice_shipment_started, webservice_shipment_delivered, vb.
   kargonomiStatusLabel String?     // Taslak, İşleme Hazır, Kargo Teslim Sürecinde, Kargo Teslim Edildi, vb.
@@ -81,4 +94,19 @@ model OrderItem {
   variation   ProductVariation @relation(fields: [variationId], references: [id])
   quantity    Int
   unitPrice   Float            // Sipariş anındaki birim fiyat
+}
+// Müşteri Yorumları (yalnızca giriş yapmış müşteriler yazabilir)
+model Review {
+  id         String   @id @default(uuid())
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating     Int      // 1-5
+  comment    String
+  verified   Boolean  @default(false) // Bu ürünü satın almış müşteri
+  createdAt  DateTime @default(now())
+
+  @@unique([productId, userId])
+  @@index([productId])
 }

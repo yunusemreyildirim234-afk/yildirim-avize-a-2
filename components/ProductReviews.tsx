@@ -1,216 +1,165 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Star } from "lucide-react";
 
-interface Review {
+export interface ReviewItem {
   id: string;
   author: string;
   rating: number;
-  date: string;
-  verified: boolean;
   comment: string;
-  city: string;
+  verified: boolean;
+  createdAt: string;
 }
 
-export default function ProductReviews({ productId }: { productId: string }) {
-  // Başlangıç için gerçekçi ve güven verici müşteri yorumları
-  const [reviews, setReviews] = useState<Review[]>([
-    {
-      id: "1",
-      author: "Mehmet Kaan Y.",
-      rating: 5,
-      date: "3 gün önce",
-      verified: true,
-      city: "İstanbul / Sarıyer",
-      comment: "Salonumuzun tavanı için aldık. Beyoğlu mağazasından görerek teslim aldık, ustalar ışık kontrolünü gözümüzün önünde yaptı. Kristal parıltısı inanılmaz kaliteli.",
-    },
-    {
-      id: "2",
-      author: "Zeynep S.",
-      rating: 5,
-      date: "Geçen hafta",
-      verified: true,
-      city: "Ankara / Çankaya",
-      comment: "Kargo konusunda çok endişeliydim fakat ahşap sandık içerisinde tek bir kristali dahi çizilmeden geldi. Montaj kılavuzu çok açıklayıcıydı, teşekkürler.",
-    },
-    {
-      id: "3",
-      author: "Mimar Emre B.",
-      rating: 5,
-      date: "2 hafta önce",
-      verified: true,
-      city: "İzmir / Urla",
-      comment: "Villa projemiz için 2 adet sipariş ettik. Pirinç döküm kalitesi piyasadaki ucuz sac avizelerle kıyaslanamaz. Tam bir asırlık Beyoğlu işçiliği.",
-    },
-  ]);
+function Stars({ value, className = "w-4 h-4" }: { value: number; className?: string }) {
+  return (
+    <span className="inline-flex" role="img" aria-label={`5 üzerinden ${value} yıldız`}>
+      {[1, 2, 3, 4, 5].map((n) => (
+        <Star
+          key={n}
+          aria-hidden="true"
+          className={`${className} ${n <= Math.round(value) ? "fill-amber-500 text-amber-500" : "text-neutral-300"}`}
+        />
+      ))}
+    </span>
+  );
+}
 
-  // Yeni Yorum Formu Durumları
-  const [author, setAuthor] = useState("");
-  const [city, setCity] = useState("");
+export default function ProductReviews({
+  productId,
+  reviews,
+  loggedIn,
+}: {
+  productId: string;
+  reviews: ReviewItem[];
+  loggedIn: boolean;
+}) {
+  const router = useRouter();
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
-  const [showForm, setShowForm] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const average = reviews.length ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length : 0;
+
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!author || !comment) return;
-
-    const newRev: Review = {
-      id: Date.now().toString(),
-      author,
-      city: city || "İstanbul",
-      rating,
-      date: "Az önce",
-      verified: true,
-      comment,
-    };
-
-    setReviews([newRev, ...reviews]);
-    setSubmitted(true);
-    setAuthor("");
-    setCity("");
-    setComment("");
-    setTimeout(() => {
-      setSubmitted(false);
-      setShowForm(false);
-    }, 2500);
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch("/api/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId, rating, comment }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Yorum gönderilemedi.");
+      setComment("");
+      router.refresh();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const avgRating = (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1);
-
   return (
-    <div className="mt-16 pt-12 border-t border-neutral-200 space-y-8">
-      {/* Üst İstatistik Alanı */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 sm:p-8 rounded-3xl border border-neutral-200 shadow-sm">
-        <div>
-          <span className="text-xs uppercase tracking-widest text-amber-600 font-bold block mb-1">
-            Müşteri Deneyimleri
-          </span>
-          <h3 className="text-2xl font-serif font-bold text-neutral-900">
-            Değerlendirmeler & Yorumlar
-          </h3>
-          <div className="flex items-center gap-3 mt-2">
-            <div className="flex text-amber-400 text-lg">★★★★★</div>
-            <span className="text-sm font-bold text-neutral-900">{avgRating} / 5</span>
-            <span className="text-xs text-neutral-400">({reviews.length} Doğrulanmış Müşteri)</span>
+    <section aria-labelledby="yorumlar" className="bg-white rounded-3xl border border-neutral-200 p-6 sm:p-8 shadow-sm space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-neutral-100 pb-4">
+        <h2 id="yorumlar" className="text-lg font-serif font-bold text-neutral-900">
+          Müşteri Yorumları
+        </h2>
+        {reviews.length > 0 && (
+          <div className="flex items-center gap-2 text-sm text-neutral-600">
+            <Stars value={average} />
+            <strong className="text-neutral-900">{average.toFixed(1)}</strong>
+            <span>({reviews.length} yorum)</span>
           </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => setShowForm(!showForm)}
-          className="bg-neutral-900 hover:bg-amber-600 text-white text-xs font-semibold px-5 py-3 rounded-xl transition-colors shrink-0 shadow-sm"
-        >
-          {showForm ? "Formu Kapat" : "✍️ Yorum ve Puan Ekle"}
-        </button>
+        )}
       </div>
 
-      {/* Yorum Ekleme Formu */}
-      {showForm && (
-        <form onSubmit={handleSubmit} className="bg-amber-50/40 border border-amber-200/60 rounded-3xl p-6 sm:p-8 space-y-4 text-xs animate-in fade-in duration-200">
-          <h4 className="font-serif font-bold text-neutral-900 text-base">
-            Deneyiminizi Paylaşın
-          </h4>
-
-          {submitted ? (
-            <div className="p-4 bg-emerald-100 text-emerald-800 rounded-xl font-medium text-center">
-              ✓ Değerlendirmeniz başarıyla eklendi! Teşekkür ederiz.
-            </div>
-          ) : (
-            <>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="font-semibold text-neutral-700 block mb-1">Adınız Soyadınız</label>
-                  <input
-                    required
-                    type="text"
-                    placeholder="Örn: Ayşe D."
-                    value={author}
-                    onChange={(e) => setAuthor(e.target.value)}
-                    className="w-full p-2.5 rounded-lg border border-neutral-300 bg-white focus:outline-none focus:border-amber-600"
-                  />
-                </div>
-
-                <div>
-                  <label className="font-semibold text-neutral-700 block mb-1">Şehir / İlçe</label>
-                  <input
-                    type="text"
-                    placeholder="Örn: Kadıköy / İstanbul"
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    className="w-full p-2.5 rounded-lg border border-neutral-300 bg-white focus:outline-none focus:border-amber-600"
-                  />
-                </div>
-
-                <div>
-                  <label className="font-semibold text-neutral-700 block mb-1">Puanınız</label>
-                  <select
-                    value={rating}
-                    onChange={(e) => setRating(Number(e.target.value))}
-                    className="w-full p-2.5 rounded-lg border border-neutral-300 bg-white focus:outline-none focus:border-amber-600"
-                  >
-                    <option value={5}>★★★★★ (5 - Kusursuz)</option>
-                    <option value={4}>★★★★☆ (4 - Çok İyi)</option>
-                    <option value={3}>★★★☆☆ (3 - Orta)</option>
-                  </select>
-                </div>
+      {reviews.length === 0 ? (
+        <p className="text-sm text-neutral-500">Bu ürün için henüz yorum yapılmamış. İlk yorumu siz yazın.</p>
+      ) : (
+        <ul className="space-y-5">
+          {reviews.map((r) => (
+            <li key={r.id} className="space-y-1.5">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <Stars value={r.rating} />
+                <strong className="text-sm text-neutral-900">{r.author}</strong>
+                {r.verified && (
+                  <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                    Doğrulanmış Alıcı
+                  </span>
+                )}
+                <time dateTime={r.createdAt} className="text-xs text-neutral-400">
+                  {new Date(r.createdAt).toLocaleDateString("tr-TR")}
+                </time>
               </div>
-
-              <div>
-                <label className="font-semibold text-neutral-700 block mb-1">Yorumunuz</label>
-                <textarea
-                  required
-                  rows={3}
-                  placeholder="Avizenin ışıltısı, paketleme, kristal kalitesi ve teslimat süreci hakkındaki düşünceleriniz..."
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  className="w-full p-2.5 rounded-lg border border-neutral-300 bg-white focus:outline-none focus:border-amber-600"
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="bg-amber-600 hover:bg-amber-700 text-white font-semibold px-6 py-2.5 rounded-xl transition-colors text-xs shadow-sm"
-              >
-                Yorumu Yayınla →
-              </button>
-            </>
-          )}
-        </form>
+              <p className="text-sm text-neutral-700 leading-relaxed whitespace-pre-line">{r.comment}</p>
+            </li>
+          ))}
+        </ul>
       )}
 
-      {/* Yorumlar Listesi */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {reviews.map((r) => (
-          <div key={r.id} className="bg-white p-6 rounded-2xl border border-neutral-200 shadow-2xs space-y-3 flex flex-col justify-between">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <div className="flex text-amber-400 text-sm">
-                  {"★".repeat(r.rating)}
-                  {"☆".repeat(5 - r.rating)}
-                </div>
-                <span className="text-neutral-400 text-[11px]">{r.date}</span>
-              </div>
-              <p className="text-xs text-neutral-600 leading-relaxed italic">
-                "{r.comment}"
+      <div className="border-t border-neutral-100 pt-5">
+        {loggedIn ? (
+          <form onSubmit={submit} className="space-y-3">
+            <h3 className="text-sm font-bold text-neutral-900">Yorum Yaz</h3>
+            <div role="radiogroup" aria-label="Puan" className="flex gap-1">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  role="radio"
+                  aria-checked={rating === n}
+                  aria-label={`${n} yıldız`}
+                  onClick={() => setRating(n)}
+                >
+                  <Star
+                    aria-hidden="true"
+                    className={`w-6 h-6 ${n <= rating ? "fill-amber-500 text-amber-500" : "text-neutral-300"}`}
+                  />
+                </button>
+              ))}
+            </div>
+            <textarea
+              required
+              minLength={10}
+              maxLength={1000}
+              rows={3}
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              aria-label="Yorumunuz"
+              placeholder="Ürünle ilgili deneyiminizi paylaşın..."
+              className="w-full p-3 rounded-xl border border-neutral-300 text-sm focus:outline-none focus:border-amber-600"
+            />
+            {error && (
+              <p role="alert" className="text-xs text-red-600">
+                {error}
               </p>
-            </div>
-
-            <div className="pt-3 border-t border-neutral-100 flex items-center justify-between text-xs">
-              <div>
-                <strong className="text-neutral-900 block font-semibold">{r.author}</strong>
-                <span className="text-[10px] text-neutral-400">{r.city}</span>
-              </div>
-              {r.verified && (
-                <span className="bg-emerald-50 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                  ✓ Doğrulanmış Alıcı
-                </span>
-              )}
-            </div>
-          </div>
-        ))}
+            )}
+            <button
+              type="submit"
+              disabled={loading}
+              className="bg-neutral-900 hover:bg-amber-600 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition-colors disabled:opacity-50"
+            >
+              {loading ? "Gönderiliyor..." : "Yorumu Gönder"}
+            </button>
+          </form>
+        ) : (
+          <p className="text-sm text-neutral-600">
+            Yorum yazmak için{" "}
+            <Link href="/giris" className="text-amber-700 font-semibold underline underline-offset-2">
+              giriş yapın
+            </Link>
+            .
+          </p>
+        )}
       </div>
-    </div>
+    </section>
   );
 }

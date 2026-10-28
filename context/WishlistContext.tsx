@@ -27,6 +27,7 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
     const saved = localStorage.getItem("yildirim_wishlist");
     if (saved) {
       try {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- istemci depolamasını ilk render sonrası okumak gerekir (hydration)
         setFavorites(JSON.parse(saved));
       } catch (e) {
         console.error(e);

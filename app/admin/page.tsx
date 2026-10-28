@@ -4,7 +4,10 @@ import AdminAddProduct from "@/components/AdminAddProduct";
 import AdminProductList from "@/components/AdminProductList";
 import OrderStatusSelector from "@/components/OrderStatusSelector";
 import AdminKargonomiHeader from "@/components/AdminKargonomiHeader";
+import AdminTrendyolSync from "@/components/AdminTrendyolSync";
 import AdminKargonomiOrderActions from "@/components/AdminKargonomiOrderActions";
+
+export const dynamic = "force-dynamic";
 
 async function getAdminData() {
   const [orders, products] = await Promise.all([
@@ -70,6 +73,9 @@ export default async function AdminPage() {
 
         {/* Kargonomi API v1 Canlı Kontrol & Bakiye Barı */}
         <AdminKargonomiHeader />
+
+        {/* Trendyol ürün senkronizasyonu */}
+        <AdminTrendyolSync />
 
         {/* 1. Özet İstatistik Kartları */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -187,7 +193,7 @@ export default async function AdminPage() {
                           </span>
                         ) : (
                           <span className="inline-block bg-blue-100 text-blue-900 text-[11px] font-semibold px-2.5 py-1 rounded-full">
-                            📦 Özel Sandık Kargo
+                            📦 Üst Düzey Korumalı Koli Kargo
                           </span>
                         )}
                         <div className="font-bold text-neutral-900 text-sm pt-1">

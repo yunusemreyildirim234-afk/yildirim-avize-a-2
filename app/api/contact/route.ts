@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { sendContactEmail } from "@/lib/email";
 
 export async function POST(req: Request) {
   try {
@@ -9,8 +10,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Lütfen gerekli alanları doldurunuz." }, { status: 400 });
     }
 
-    // Mesaj konsola veya veritabanına loglanır
-    console.log("Yeni İletişim / Mimari Talep:", { name, email, phone, subject, message });
+    await sendContactEmail({ name, email, phone, subject, message });
 
     return NextResponse.json({
       success: true,

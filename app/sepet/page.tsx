@@ -2,7 +2,10 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import Script from "next/script";
 import { useCart } from "@/context/CartContext";
+import { COUPONS, computeTotals } from "@/lib/pricing";
 
 interface LocationItem {
   id: number;
@@ -10,6 +13,7 @@ interface LocationItem {
 }
 
 export default function CartPage() {
+  const router = useRouter();
   const { cart, removeFromCart, updateQuantity, clearCart, totalPrice } = useCart();
 
   // 1. Teslimat Yöntemi
@@ -18,19 +22,14 @@ export default function CartPage() {
   // 2. Ödeme Yöntemi
   const [paymentMethod, setPaymentMethod] = useState<"CREDIT_CARD" | "BANK_TRANSFER">("CREDIT_CARD");
 
-  // 3. Taksit Seçimi
-  const [installment, setInstallment] = useState<number>(1);
-
   // 4. Kupon Kodu Yönetimi
   const [couponInput, setCouponInput] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; type: "percent" | "fixed"; value: number } | null>(null);
   const [couponError, setCouponError] = useState("");
 
-  // 5. Kredi Kartı Bilgileri
-  const [cardNumber, setCardNumber] = useState("");
-  const [cardHolder, setCardHolder] = useState("");
-  const [expiry, setExpiry] = useState("");
-  const [cvc, setCvc] = useState("");
+  // PayTR iFrame token'ı (kart bilgileri sitemizde toplanmaz)
+  const [paytrToken, setPaytrToken] = useState<string | null>(null);
+  const [paymentFailed, setPaymentFailed] = useState(false);
 
   // 6. Müşteri İletişim & Kargonomi Şehir/İlçe Bilgileri
   const [name, setName] = useState("");
@@ -43,12 +42,12 @@ export default function CartPage() {
   const [buyerCityId, setBuyerCityId] = useState<number>(425);
 
   const [loading, setLoading] = useState(false);
-  const [orderCompleteId, setOrderCompleteId] = useState<string | null>(null);
-  const [kargonomiSummary, setKargonomiSummary] = useState<{
-    shipmentId?: number;
-    statusLabel?: string;
-    barcode?: string;
-  } | null>(null);
+
+  // PayTR başarısız ödeme dönüşü
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- URL parametresi ilk render sonrası okunur
+    if (new URLSearchParams(window.location.search).get("odeme") === "basarisiz") setPaymentFailed(true);
+  }, []);
 
   // Kargonomi Şehir Listesini Yükle
   useEffect(() => {
@@ -76,39 +75,22 @@ export default function CartPage() {
       .catch(() => {});
   }, [buyerStateId]);
 
-  // Kargo Hesaplama
-  const shippingCost = shippingType === "BEYOGLU_MAGAZA_TESLIM" ? 0 : 250;
-  const subTotalWithShipping = totalPrice + shippingCost;
-
-  // Kupon İndirimi Hesaplama
-  let couponDiscount = 0;
-  if (appliedCoupon) {
-    if (appliedCoupon.type === "percent") {
-      couponDiscount = Math.round((totalPrice * appliedCoupon.value) / 100);
-    } else {
-      couponDiscount = Math.min(totalPrice, appliedCoupon.value);
-    }
-  }
-
-  // Havale İndirimi (%5 - Kupon düşüldükten sonra)
-  const afterCouponTotal = Math.max(0, subTotalWithShipping - couponDiscount);
-  const bankDiscount = paymentMethod === "BANK_TRANSFER" ? Math.round(afterCouponTotal * 0.05) : 0;
-  const finalTotal = Math.max(0, afterCouponTotal - bankDiscount);
-
-  // Taksit aylık tutarı
-  const monthlyAmount = Math.round(finalTotal / installment);
+  // Tutarlar (sunucu aynı hesabı yapar)
+  const { shipping: shippingCost, couponDiscount, bankDiscount, total: finalTotal } = computeTotals({
+    itemsTotal: totalPrice,
+    shippingType,
+    couponCode: appliedCoupon?.code,
+    paymentMethod,
+  });
 
   const handleApplyCoupon = (e: React.FormEvent) => {
     e.preventDefault();
     setCouponError("");
     const code = couponInput.trim().toUpperCase();
 
-    if (code === "BEYOGLU10") {
-      setAppliedCoupon({ code: "BEYOGLU10", type: "percent", value: 10 });
-    } else if (code === "YILDIRIM15") {
-      setAppliedCoupon({ code: "YILDIRIM15", type: "percent", value: 15 });
-    } else if (code === "USTA500") {
-      setAppliedCoupon({ code: "USTA500", type: "fixed", value: 500 });
+    const coupon = COUPONS[code];
+    if (coupon) {
+      setAppliedCoupon({ code, ...coupon });
     } else {
       setCouponError("Geçersiz veya süresi dolmuş kupon kodu.");
     }
@@ -118,20 +100,6 @@ export default function CartPage() {
     setAppliedCoupon(null);
     setCouponInput("");
     setCouponError("");
-  };
-
-  const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value.replace(/\D/g, "").slice(0, 16);
-    const formatted = raw.match(/.{1,4}/g)?.join(" ") || raw;
-    setCardNumber(formatted);
-  };
-
-  const handleExpiryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let raw = e.target.value.replace(/\D/g, "").slice(0, 4);
-    if (raw.length >= 3) {
-      raw = raw.slice(0, 2) + "/" + raw.slice(2);
-    }
-    setExpiry(raw);
   };
 
   const handleCheckout = async (e: React.FormEvent) => {
@@ -156,18 +124,20 @@ export default function CartPage() {
           buyerStateName: selectedStateObj?.name || "İSTANBUL",
           buyerCityName: selectedCityObj?.name || "MERKEZ",
           shippingType,
+          paymentMethod,
+          couponCode: appliedCoupon?.code,
           items: cart,
-          totalAmount: finalTotal,
         }),
       });
 
       const data = await res.json();
-      if (data.success) {
-        setOrderCompleteId(data.orderId);
-        if (data.kargonomi) {
-          setKargonomiSummary(data.kargonomi);
-        }
+      if (data.success && data.paytrToken) {
+        // Kartlı ödeme: PayTR güvenli iFrame formu açılır; sepet ödeme onayından sonra temizlenir
+        setPaytrToken(data.paytrToken);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } else if (data.success) {
         clearCart();
+        router.push(`/siparis-onay/${data.orderId}`);
       } else {
         alert("Sipariş oluşturulamadı: " + data.error);
       }
@@ -178,80 +148,33 @@ export default function CartPage() {
     }
   };
 
-  if (orderCompleteId) {
+  if (paytrToken) {
     return (
-      <main className="min-h-screen bg-neutral-50 py-16 px-4">
-        <div className="max-w-xl mx-auto bg-white rounded-3xl border border-neutral-200 p-8 sm:p-12 text-center space-y-6 shadow-sm">
-          <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-2xl font-bold">
-            ✓
+      <main className="min-h-screen bg-neutral-50 py-10 px-4">
+        <div className="max-w-3xl mx-auto bg-white rounded-3xl border border-neutral-200 p-4 sm:p-8 shadow-sm space-y-4">
+          <div className="flex items-center justify-between gap-3">
+            <h1 className="text-lg font-serif font-bold text-neutral-900">Güvenli Ödeme</h1>
+            <button
+              type="button"
+              onClick={() => setPaytrToken(null)}
+              className="text-xs font-semibold text-neutral-500 hover:text-amber-700"
+            >
+              ← Sepete Dön
+            </button>
           </div>
-          <h1 className="text-3xl font-serif font-bold text-neutral-900">
-            Ödemeniz Onaylandı!
-          </h1>
-          <p className="text-sm text-neutral-600">
-            Sayın <strong>{name}</strong>, siparişiniz başarıyla alındı ve atölyemize iletildi.
+          <iframe
+            id="paytriframe"
+            title="PayTR güvenli ödeme formu"
+            src={`https://www.paytr.com/odeme/guvenli/${paytrToken}`}
+            className="w-full border-0"
+            style={{ minHeight: 640 }}
+          />
+          <Script src="https://www.paytr.com/js/iframeResizer.min.js" strategy="afterInteractive" onLoad={() => {
+            (window as unknown as { iFrameResize?: (o: object, s: string) => void }).iFrameResize?.({}, "#paytriframe");
+          }} />
+          <p className="text-[11px] text-neutral-400 text-center">
+            Ödeme tamamlandığında siparişiniz onaylanır ve e-posta ile bilgilendirilirsiniz.
           </p>
-
-          <div className="bg-neutral-50 border border-neutral-200 rounded-2xl p-5 text-xs text-left space-y-2.5">
-            <div>
-              <span className="text-neutral-400">Sipariş Takip Kodu:</span>
-              <p className="font-mono font-bold text-neutral-800 break-all">{orderCompleteId}</p>
-            </div>
-            {kargonomiSummary && (
-              <div className="pt-2 border-t border-neutral-200 space-y-1">
-                <span className="text-amber-700 font-bold block">
-                  🚚 Kargonomi Lojistik Kaydı Oluşturuldu:
-                </span>
-                {kargonomiSummary.shipmentId && (
-                  <p className="text-neutral-700">
-                    Gönderi No: <strong className="font-mono">#{kargonomiSummary.shipmentId}</strong> ({kargonomiSummary.statusLabel || "Taslak"})
-                  </p>
-                )}
-                {kargonomiSummary.barcode && (
-                  <p className="text-neutral-700">
-                    Paket Barkodu: <strong className="font-mono text-emerald-700">{kargonomiSummary.barcode}</strong>
-                  </p>
-                )}
-              </div>
-            )}
-            {appliedCoupon && (
-              <div>
-                <span className="text-neutral-400">Uygulanan Kupon:</span>
-                <p className="font-bold text-emerald-700">{appliedCoupon.code} (-{couponDiscount.toLocaleString("tr-TR")} ₺)</p>
-              </div>
-            )}
-            <div className="pt-2 border-t border-neutral-200">
-              <span className="text-neutral-400">Ödeme Detayı:</span>
-              <p className="font-semibold text-neutral-800">
-                {paymentMethod === "CREDIT_CARD"
-                  ? `💳 Kredi Kartı (${installment > 1 ? `${installment} Taksit x${monthlyAmount.toLocaleString("tr-TR")} ₺` : "Tek Çekim"})`
-                  : "🏦 Havale / EFT (%5 İndirimli)"}
-              </p>
-            </div>
-            <div className="pt-2 border-t border-neutral-200">
-              <span className="text-neutral-400">Teslimat Yöntemi:</span>
-              <p className="font-semibold text-neutral-800">
-                {shippingType === "BEYOGLU_MAGAZA_TESLIM"
-                  ? "📍 Beyoğlu Şişhane Mağazamızdan Teslim Alınacak"
-                  : "📦 Kargonomi Sigortalı Ahşap Sandık Kargo ile Adresinize Gönderilecek"}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link
-              href={`/kargo-takip?code=${orderCompleteId}`}
-              className="w-full sm:w-auto inline-block bg-amber-500 hover:bg-amber-400 text-neutral-950 text-xs font-bold px-6 py-3 rounded-xl transition-colors"
-            >
-              🚚 Kargo & Sipariş Takibi
-            </Link>
-            <Link
-              href="/"
-              className="w-full sm:w-auto inline-block bg-neutral-900 hover:bg-amber-600 text-white text-xs font-semibold px-6 py-3 rounded-xl transition-colors"
-            >
-              Alışverişe Devam Et →
-            </Link>
-          </div>
         </div>
       </main>
     );
@@ -281,6 +204,11 @@ export default function CartPage() {
 
   return (
     <main className="min-h-screen bg-neutral-50 py-12 px-4 sm:px-6 lg:px-8">
+      {paymentFailed && (
+        <div role="alert" className="max-w-6xl mx-auto mb-6 rounded-2xl border border-red-200 bg-red-50 text-red-700 text-xs p-4">
+          Ödeme tamamlanamadı. Sepetiniz korunuyor; tekrar deneyebilir veya Havale/EFT seçebilirsiniz.
+        </div>
+      )}
       <div className="max-w-6xl mx-auto">
         <h1 className="text-3xl font-serif font-bold text-neutral-900 mb-8">
           Alışveriş Sepeti & Güvenli Ödeme
@@ -369,7 +297,7 @@ export default function CartPage() {
                 </div>
               ) : (
                 <form onSubmit={handleApplyCoupon} className="flex gap-2">
-                  <input
+                  <input aria-label="Kupon kodu"
                     type="text"
                     placeholder="Örn: BEYOGLU10 veya YILDIRIM15"
                     value={couponInput}
@@ -423,11 +351,11 @@ export default function CartPage() {
                   }`}
                 >
                   <div className="flex items-center justify-between text-xs font-semibold text-neutral-900">
-                    <span>📦 Kargonomi Ahşap Sandık Kargo</span>
+                    <span>📦 Kargonomi Üst Düzey Korumalı Koli Kargo</span>
                     <span className="text-neutral-700 font-bold">250 ₺</span>
                   </div>
                   <p className="text-[11px] text-neutral-500 mt-1">
-                    Kargonomi güvencesiyle kırılmalara karşı ahşap korumalı sandıkta teslimat.
+                    Kargonomi güvencesiyle kırılmalara karşı üst düzey korumalı kolide teslimat.
                   </p>
                 </div>
               </div>
@@ -477,92 +405,12 @@ export default function CartPage() {
               </div>
 
               {paymentMethod === "CREDIT_CARD" ? (
-                <div className="space-y-5 pt-2">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                    <div className="sm:col-span-2">
-                      <label className="font-semibold text-neutral-700 block mb-1">Kart Numarası</label>
-                      <input
-                        required
-                        type="text"
-                        placeholder="0000 0000 0000 0000"
-                        value={cardNumber}
-                        onChange={handleCardNumberChange}
-                        className="w-full p-3 rounded-xl border border-neutral-300 font-mono focus:outline-none focus:border-amber-600"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="font-semibold text-neutral-700 block mb-1">Kart Üzerindeki İsim</label>
-                      <input
-                        required
-                        type="text"
-                        placeholder="Örn: YUNUS EMRE YILDIRIM"
-                        value={cardHolder}
-                        onChange={(e) => setCardHolder(e.target.value.toUpperCase())}
-                        className="w-full p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="font-semibold text-neutral-700 block mb-1">Son Kullanma</label>
-                        <input
-                          required
-                          type="text"
-                          placeholder="AA/YY"
-                          value={expiry}
-                          onChange={handleExpiryChange}
-                          className="w-full p-3 rounded-xl border border-neutral-300 text-center font-mono focus:outline-none focus:border-amber-600"
-                        />
-                      </div>
-                      <div>
-                        <label className="font-semibold text-neutral-700 block mb-1">CVC / CVV</label>
-                        <input
-                          required
-                          type="password"
-                          maxLength={3}
-                          placeholder="•••"
-                          value={cvc}
-                          onChange={(e) => setCvc(e.target.value.replace(/\D/g, ""))}
-                          className="w-full p-3 rounded-xl border border-neutral-300 text-center font-mono focus:outline-none focus:border-amber-600"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Taksit Seçenekleri */}
-                  <div className="space-y-2 pt-4 border-t border-neutral-100">
-                    <label className="text-xs font-bold text-neutral-700 uppercase tracking-wider block">
-                      Taksit Seçenekleri (Bonus, World, Maximum, Axess):
-                    </label>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                      {[
-                        { count: 1, label: "Tek Çekim", note: "Peşin" },
-                        { count: 3, label: "3 Taksit", note: "Vade Farksız" },
-                        { count: 6, label: "6 Taksit", note: "Avantajlı" },
-                        { count: 9, label: "9 Taksit", note: "Taksitli" },
-                      ].map((t) => (
-                        <div
-                          key={t.count}
-                          onClick={() => setInstallment(t.count)}
-                          className={`p-3 rounded-xl border cursor-pointer text-center transition-all ${
-                            installment === t.count
-                              ? "border-amber-600 bg-amber-50/70 text-amber-950 font-bold ring-2 ring-amber-600/20"
-                              : "border-neutral-200 hover:border-neutral-300 bg-white"
-                          }`}
-                        >
-                          <div className="text-xs font-bold">{t.label}</div>
-                          <div className="text-[11px] text-amber-700 mt-0.5">
-                            {Math.round(finalTotal / t.count).toLocaleString("tr-TR")} ₺ / ay
-                          </div>
-                          <div className="text-[9px] text-neutral-400 mt-1 uppercase font-semibold">
-                            {t.note}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                <div className="p-4 bg-neutral-50 border border-neutral-200 rounded-2xl text-xs text-neutral-700 space-y-1.5">
+                  <div className="font-bold">🔒 PayTR Güvenli Ödeme</div>
+                  <p className="text-neutral-600">
+                    &ldquo;Ödemeye Geç&rdquo; dediğinizde kart bilgilerinizi PayTR&apos;nin güvenli ödeme formuna girersiniz.
+                    Kart bilgileriniz sitemizde saklanmaz veya görüntülenmez. Taksit seçenekleri kartınıza göre formda listelenir.
+                  </p>
                 </div>
               ) : (
                 <div className="p-4 bg-amber-50/60 border border-amber-200/60 rounded-2xl text-xs text-amber-950 space-y-2">
@@ -592,7 +440,7 @@ export default function CartPage() {
                 Teslimat & Kargonomi Alıcı Bilgileri:
               </label>
 
-              <input
+              <input aria-label="Adınız Soyadınız (En az 2 kelime)"
                 required
                 type="text"
                 placeholder="Adınız Soyadınız (En az 2 kelime)"
@@ -600,7 +448,7 @@ export default function CartPage() {
                 onChange={(e) => setName(e.target.value)}
                 className="w-full text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
               />
-              <input
+              <input aria-label="E-posta Adresiniz"
                 required
                 type="email"
                 placeholder="E-posta Adresiniz"
@@ -608,7 +456,7 @@ export default function CartPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
               />
-              <input
+              <input aria-label="Telefon Numaranız (Örn: 0555 123 45 67)"
                 required
                 type="tel"
                 placeholder="Telefon Numaranız (Örn: 0555 123 45 67)"
@@ -654,7 +502,7 @@ export default function CartPage() {
                 </div>
               </div>
 
-              <textarea
+              <textarea aria-label="Açık Teslimat Adresiniz (Mahalle, Sokak, Bina ve Daire No)"
                 required
                 rows={2}
                 placeholder="Açık Teslimat Adresiniz (Mahalle, Sokak, Bina ve Daire No)"
@@ -695,11 +543,6 @@ export default function CartPage() {
                   <span className="text-amber-600 text-base">{finalTotal.toLocaleString("tr-TR")} ₺</span>
                 </div>
 
-                {paymentMethod === "CREDIT_CARD" && installment > 1 && (
-                  <div className="text-[11px] text-amber-700 bg-amber-50 p-2 rounded-lg text-center font-medium">
-                    💳 {installment} Taksit x <strong>{monthlyAmount.toLocaleString("tr-TR")} ₺ / ay</strong>
-                  </div>
-                )}
               </div>
 
               <button
@@ -708,8 +551,10 @@ export default function CartPage() {
                 className="w-full bg-neutral-900 hover:bg-amber-600 text-white py-3.5 px-4 rounded-xl transition-colors text-xs font-semibold shadow-sm mt-4 disabled:opacity-50"
               >
                 {loading
-                  ? "Sipariş & Kargo Kaydı Oluşturuluyor..."
-                  : `🔒 ${finalTotal.toLocaleString("tr-TR")} ₺ Güvenli Öde`}
+                  ? "Hazırlanıyor..."
+                  : paymentMethod === "CREDIT_CARD"
+                  ? `🔒 Ödemeye Geç (${finalTotal.toLocaleString("tr-TR")} ₺)`
+                  : `Siparişi Tamamla (${finalTotal.toLocaleString("tr-TR")} ₺)`}
               </button>
 
               <div className="text-center pt-2 text-[10px] text-neutral-400">

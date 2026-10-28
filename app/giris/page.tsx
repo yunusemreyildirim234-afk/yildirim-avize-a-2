@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 interface OrderItem {
   id: string;
@@ -33,6 +34,8 @@ interface UserData {
 }
 
 export default function AuthPage() {
+  const router = useRouter();
+  const [tab, setTab] = useState<"musteri" | "yonetici">("musteri");
   const [isLogin, setIsLogin] = useState(true);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -41,40 +44,21 @@ export default function AuthPage() {
   const [user, setUser] = useState<UserData | null>(null);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
-    const googleAuth = params.get("google_auth");
-    const userEmail = params.get("email");
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- URL parametresi ilk render sonrası okunur
+    if (params.get("tab") === "yonetici") setTab("yonetici");
 
-    if (googleAuth === "success" && userEmail) {
-      setLoading(true);
-      fetch("/api/auth", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "google", email: userEmail }),
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.success) {
-            setUser(data.user);
-            window.history.replaceState({}, "", "/giris");
-          }
-        })
-        .catch(() => alert("Kullanıcı verisi yüklenirken hata oluştu."))
-        .finally(() => setLoading(false));
-    }
+    fetch("/api/auth/me")
+      .then((res) => res.json())
+      .then((data) => data.user && setUser(data.user))
+      .catch(() => {});
   }, []);
 
-  const handleGoogleOAuth = () => {
-    const clientId = "158736155429-lc7aret2ncv05eie4tnj0kmdacr6rie4.apps.googleusercontent.com";
-    const redirectUri = "http://127.0.0.1:4000/api/auth/callback/google";
-    const scope = encodeURIComponent("openid email profile");
-
-    const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(
-      redirectUri
-    )}&response_type=code&scope=${scope}&prompt=select_account`;
-
-    window.location.href = googleAuthUrl;
+  const handleLogout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
+    setUser(null);
+    window.dispatchEvent(new Event("ya-auth"));
+    router.refresh();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -96,6 +80,7 @@ export default function AuthPage() {
       const data = await res.json();
       if (data.success) {
         setUser(data.user);
+        window.dispatchEvent(new Event("ya-auth"));
       } else {
         alert(data.error);
       }
@@ -122,14 +107,14 @@ export default function AuthPage() {
             </div>
 
             <button
-              onClick={() => setUser(null)}
+              onClick={handleLogout}
               className="text-xs font-semibold bg-neutral-100 hover:bg-neutral-200 text-neutral-700 px-4 py-2 rounded-xl transition-colors w-fit"
             >
               Çıkış Yap
             </button>
           </div>
 
-          <div className="bg-white rounded-3xl border border-neutral-200 p-8 shadow-sm space-y-6">
+          <div id="siparisler" className="bg-white rounded-3xl border border-neutral-200 p-8 shadow-sm space-y-6 scroll-mt-24">
             <h2 className="text-lg font-serif font-bold text-neutral-900 border-b border-neutral-100 pb-3">
               Geçmiş Siparişleriniz & Kargonomi Durumu
             </h2>
@@ -195,7 +180,7 @@ export default function AuthPage() {
                         <strong>
                           {order.shippingType === "BEYOGLU_MAGAZA_TESLIM"
                             ? "📍 Beyoğlu Mağazasından Teslim Alınacak"
-                            : `📦 Kargonomi Ahşap Sandık Kargo ${
+                            : `📦 Kargonomi Üst Düzey Korumalı Koli Kargo ${
                                 order.shippingProviderName ? `(${order.shippingProviderName})` : ""
                               }`}
                         </strong>
@@ -230,12 +215,33 @@ export default function AuthPage() {
   return (
     <main className="min-h-screen bg-neutral-50 py-16 px-4 flex items-center justify-center">
       <div className="max-w-md w-full bg-white rounded-3xl border border-neutral-200 p-8 sm:p-10 shadow-sm space-y-6">
+        <div role="tablist" aria-label="Giriş türü" className="flex bg-neutral-100 p-1 rounded-2xl text-xs font-semibold">
+          {(["musteri", "yonetici"] as const).map((key) => (
+            <button
+              key={key}
+              type="button"
+              role="tab"
+              aria-selected={tab === key}
+              onClick={() => setTab(key)}
+              className={`flex-1 py-2.5 rounded-xl transition-all ${
+                tab === key ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-500 hover:text-neutral-900"
+              }`}
+            >
+              {key === "musteri" ? "Müşteri Girişi" : "Yönetici Girişi"}
+            </button>
+          ))}
+        </div>
+
+        {tab === "yonetici" ? (
+          <AdminLoginForm />
+        ) : (
+          <>
         <div className="text-center space-y-1">
           <span className="text-xs uppercase tracking-widest text-amber-600 font-bold">
             Yıldırım Avize
           </span>
           <h1 className="text-2xl font-serif font-bold text-neutral-900">
-            {isLogin ? "Müşteri Girişi" : "Yeni Hesap Oluştur"}
+            {isLogin ? "Hesabınıza Giriş Yapın" : "Yeni Hesap Oluştur"}
           </h1>
           <p className="text-xs text-neutral-500">
             {isLogin
@@ -244,10 +250,8 @@ export default function AuthPage() {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={handleGoogleOAuth}
-          disabled={loading}
+        <a
+          href="/api/auth/google"
           className="w-full flex items-center justify-center gap-3 bg-white hover:bg-neutral-50 border border-neutral-300 text-neutral-800 font-semibold py-3.5 px-4 rounded-2xl transition-all shadow-2xs hover:shadow-sm text-xs disabled:opacity-50"
         >
           <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
@@ -269,7 +273,7 @@ export default function AuthPage() {
             />
           </svg>
           <span>{isLogin ? "Google ile Hızlı Giriş Yap" : "Google ile Hızlı Kayıt Ol"}</span>
-        </button>
+        </a>
 
         <div className="relative flex items-center justify-center my-3">
           <div className="border-t border-neutral-200 w-full" />
@@ -303,7 +307,7 @@ export default function AuthPage() {
           {!isLogin && (
             <div>
               <label className="font-semibold text-neutral-700 block mb-1">Adınız Soyadınız</label>
-              <input
+              <input aria-label="Müşteri Adı"
                 required
                 type="text"
                 placeholder="Örn: Müşteri Adı"
@@ -316,7 +320,7 @@ export default function AuthPage() {
 
           <div>
             <label className="font-semibold text-neutral-700 block mb-1">E-posta Adresi</label>
-            <input
+            <input aria-label="E-posta adresi"
               required
               type="email"
               placeholder="ornek@mail.com"
@@ -328,7 +332,7 @@ export default function AuthPage() {
 
           <div>
             <label className="font-semibold text-neutral-700 block mb-1">Şifre</label>
-            <input
+            <input aria-label="Şifre"
               required
               type="password"
               placeholder="••••••••"
@@ -352,7 +356,84 @@ export default function AuthPage() {
             ← Alışverişe Devam Et
           </Link>
         </div>
+          </>
+        )}
       </div>
     </main>
+  );
+}
+function AdminLoginForm() {
+  const router = useRouter();
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch("/api/auth/admin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Giriş başarısız.");
+      router.push("/admin");
+      router.refresh();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <>
+      <div className="text-center space-y-1">
+        <span className="text-xs uppercase tracking-widest text-amber-600 font-bold">Yıldırım Avize</span>
+        <h1 className="text-2xl font-serif font-bold text-neutral-900">Yönetici Girişi</h1>
+        <p className="text-xs text-neutral-500">Yalnızca yetkili mağaza yöneticileri içindir.</p>
+      </div>
+      <form onSubmit={submit} className="space-y-4 text-xs">
+        <div>
+          <label htmlFor="admin-user" className="font-semibold text-neutral-700 block mb-1">Kullanıcı Adı</label>
+          <input
+            id="admin-user"
+            required
+            autoComplete="username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            className="w-full p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
+          />
+        </div>
+        <div>
+          <label htmlFor="admin-pass" className="font-semibold text-neutral-700 block mb-1">Şifre</label>
+          <input
+            id="admin-pass"
+            required
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
+          />
+        </div>
+        {error && (
+          <p role="alert" className="text-red-600 bg-red-50 border border-red-200 rounded-xl p-3">
+            {error}
+          </p>
+        )}
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-neutral-900 hover:bg-amber-600 text-white font-semibold py-3.5 rounded-xl transition-colors shadow-sm disabled:opacity-50"
+        >
+          {loading ? "Doğrulanıyor..." : "Yönetim Paneline Gir"}
+        </button>
+      </form>
+    </>
   );
 }

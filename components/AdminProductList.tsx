@@ -128,6 +128,7 @@ export default function AdminProductList({ products }: { products: Product[] }) 
                       type="button"
                       disabled={loadingId === v.id || v.stock <= 0}
                       onClick={() => handleStockChange(v.id, v.stock - 1)}
+                      aria-label={`${v.variationValue} stoğunu azalt`}
                       className="px-2 py-0.5 hover:bg-neutral-100 text-neutral-600 font-bold disabled:opacity-40"
                     >
                       -
@@ -136,6 +137,7 @@ export default function AdminProductList({ products }: { products: Product[] }) 
                       type="button"
                       disabled={loadingId === v.id}
                       onClick={() => handleStockChange(v.id, v.stock + 1)}
+                      aria-label={`${v.variationValue} stoğunu artır`}
                       className="px-2 py-0.5 hover:bg-neutral-100 text-neutral-600 font-bold disabled:opacity-40 border-l border-neutral-200"
                     >
                       +

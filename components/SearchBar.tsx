@@ -10,7 +10,8 @@ interface Product {
   basePrice: number;
 }
 
-export default function SearchBar() {
+export default function SearchBar({ variant = "nav" }: { variant?: "nav" | "hero" }) {
+  const hero = variant === "hero";
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
@@ -20,6 +21,7 @@ export default function SearchBar() {
   // Müşteri yazdıkça arama yap
   useEffect(() => {
     if (!query.trim()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- istemci depolamasını ilk render sonrası okumak gerekir (hydration)
       setResults([]);
       setIsOpen(false);
       return;
@@ -54,29 +56,36 @@ export default function SearchBar() {
   }, []);
 
   return (
-    <div ref={searchRef} className="relative w-full max-w-xs sm:max-w-sm">
+    <div ref={searchRef} className={`relative w-full ${hero ? "" : "max-w-xs sm:max-w-sm"}`}>
       <div className="relative">
         <input
           type="text"
-          placeholder="Avize modeli, kristal, tarz ara..."
+          aria-label="Avize ara"
+          placeholder={hero ? "Avize modeli, kristal veya koleksiyon ara..." : "Avize modeli, kristal, tarz ara..."}
           value={query}
           onFocus={() => query.trim() && setIsOpen(true)}
           onChange={(e) => setQuery(e.target.value)}
-          className="w-full bg-neutral-100 text-neutral-800 placeholder-neutral-400 text-xs rounded-full pl-9 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:bg-white border border-transparent focus:border-amber-400 transition-all"
+          className={`w-full text-neutral-800 placeholder-neutral-400 rounded-full focus:outline-none focus:ring-2 focus:ring-amber-500/30 border transition-all ${
+            hero
+              ? "bg-white text-base pl-12 pr-12 py-4 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.25)] border-zinc-200 focus:border-amber-400"
+              : "bg-neutral-100 text-xs pl-9 pr-8 py-2 focus:bg-white border-transparent focus:border-amber-400"
+          }`}
         />
         {/* Arama İkonu */}
-        <span className="absolute left-3 top-2.5 text-neutral-400 text-xs">
+        <span className={`absolute text-neutral-400 ${hero ? "left-5 top-4 text-base" : "left-3 top-2.5 text-xs"}`}>
           🔍
         </span>
 
         {/* Temizle Butonu */}
         {query && (
           <button
+            type="button"
+            aria-label="Aramayı temizle"
             onClick={() => {
               setQuery("");
               setIsOpen(false);
             }}
-            className="absolute right-3 top-2 text-neutral-400 hover:text-neutral-600 text-xs"
+            className={`absolute text-neutral-400 hover:text-neutral-600 ${hero ? "right-5 top-4 text-sm" : "right-3 top-2 text-xs"}`}
           >
             ✕
           </button>
@@ -85,7 +94,7 @@ export default function SearchBar() {
 
       {/* Açılır Canlı Sonuç Kutusu */}
       {isOpen && (
-        <div className="absolute top-11 left-0 right-0 bg-white rounded-2xl border border-neutral-200 shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-150">
+        <div className={`absolute ${hero ? "top-16 text-left" : "top-11"} left-0 right-0 bg-white rounded-2xl border border-neutral-200 shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-150`}>
           {loading ? (
             <div className="p-4 text-center text-xs text-neutral-400">
               Aranıyor...
@@ -93,7 +102,7 @@ export default function SearchBar() {
           ) : results.length > 0 ? (
             <div className="divide-y divide-neutral-100 max-h-72 overflow-y-auto">
               <div className="p-2.5 bg-neutral-50 text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
-                Eşleşen Avizeler ({results.length})
+                Eşleşen Ürünler ({results.length})
               </div>
               {results.map((product) => (
                 <Link
@@ -118,7 +127,7 @@ export default function SearchBar() {
             </div>
           ) : (
             <div className="p-4 text-center text-xs text-neutral-500">
-              "{query}" ile eşleşen bir avize bulunamadı.
+              &ldquo;{query}&rdquo; ile eşleşen bir ürün bulunamadı.
             </div>
           )}
         </div>

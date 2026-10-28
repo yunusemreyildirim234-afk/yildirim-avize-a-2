@@ -13,13 +13,15 @@ export async function GET(req: Request) {
     // Başlıkta, açıklamada veya kategoride arama yap (büyük/küçük harf duyarsız)
     const products = await prisma.product.findMany({
       where: {
+        active: true,
         OR: [
           { title: { contains: q, mode: "insensitive" } },
           { description: { contains: q, mode: "insensitive" } },
           { category: { contains: q, mode: "insensitive" } },
+          { variations: { some: { barcode: { contains: q.trim() } } } },
         ],
       },
-      take: 5,
+      take: 6,
     });
 
     return NextResponse.json({ products });

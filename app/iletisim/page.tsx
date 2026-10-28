@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 
 export default function IletisimPage() {
   const [name, setName] = useState("");
@@ -48,7 +47,7 @@ export default function IletisimPage() {
     },
     {
       q: "Kargoda kırılma riski var mı?",
-      a: "Tüm kristal ve metal avizelerimiz, darbelere karşı özel ahşap sandıklar ve strafor korumalarla sigortalı olarak sevk edilir. Olası bir hasarda koşulsuz ücretsiz parça/ürün değişimi garantimiz mevcuttur.",
+      a: "Tüm kristal ve metal avizelerimiz, darbelere karşı özel üst düzey korumalı koliyler ve strafor korumalarla sigortalı olarak sevk edilir. Olası bir hasarda koşulsuz ücretsiz parça/ürün değişimi garantimiz mevcuttur.",
     },
     {
       q: "Mekanımıza özel ölçülerde avize üretiyor musunuz?",
@@ -225,7 +224,7 @@ export default function IletisimPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="font-semibold text-neutral-700 block mb-1">Adınız Soyadınız *</label>
-                      <input
+                      <input aria-label="Yunus Emre Yıldırım"
                         required
                         type="text"
                         placeholder="Örn: Yunus Emre Yıldırım"
@@ -237,7 +236,7 @@ export default function IletisimPage() {
 
                     <div>
                       <label className="font-semibold text-neutral-700 block mb-1">E-posta Adresiniz *</label>
-                      <input
+                      <input aria-label="E-posta adresi"
                         required
                         type="email"
                         placeholder="ornek@mail.com"
@@ -251,7 +250,7 @@ export default function IletisimPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="font-semibold text-neutral-700 block mb-1">Telefon Numaranız</label>
-                      <input
+                      <input aria-label="Telefon numarası"
                         type="tel"
                         placeholder="05XX XXX XX XX"
                         value={phone}
@@ -278,7 +277,7 @@ export default function IletisimPage() {
 
                   <div>
                     <label className="font-semibold text-neutral-700 block mb-1">Mesajınız veya Proje Detayları *</label>
-                    <textarea
+                    <textarea aria-label="Mekanınızın tavan yüksekliği, istediğiniz avize stili veya sormak istediğiniz sorular..."
                       required
                       rows={4}
                       placeholder="Mekanınızın tavan yüksekliği, istediğiniz avize stili veya sormak istediğiniz sorular..."

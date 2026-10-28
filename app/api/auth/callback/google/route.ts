@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { SITE_URL } from "@/lib/site";
+import { USER_COOKIE, cookieOptions, signSession } from "@/lib/session";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -7,13 +9,13 @@ export async function GET(req: Request) {
   const error = searchParams.get("error");
 
   if (error || !code) {
-    return NextResponse.redirect(new URL("/giris?error=google_iptal", req.url));
+    return NextResponse.redirect(new URL("/giris?error=google_iptal", SITE_URL));
   }
 
   try {
-    const clientId = process.env.GOOGLE_CLIENT_ID || "158736155429-lc7aret2ncv05eie4tnj0kmdacr6rie4.apps.googleusercontent.com";
-    const clientSecret = process.env.GOOGLE_CLIENT_SECRET || "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";
-    const redirectUri = "http://127.0.0.1:4000/api/auth/callback/google";
+    const clientId = process.env.GOOGLE_CLIENT_ID || "";
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET || "";
+    const redirectUri = `${SITE_URL}/api/auth/callback/google`;
 
     // 1. Google'dan Erişim Belgesi (Access Token) Alıyoruz
     const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
@@ -32,7 +34,7 @@ export async function GET(req: Request) {
 
     if (!tokenData.access_token) {
       console.error("Google Token Hatası:", tokenData);
-      return NextResponse.redirect(new URL("/giris?error=token_alinamadi", req.url));
+      return NextResponse.redirect(new URL("/giris?error=token_alinamadi", SITE_URL));
     }
 
     // 2. Google Sunucularından Kullanıcının Gerçek Adını ve E-postasını Çekiyoruz
@@ -43,7 +45,7 @@ export async function GET(req: Request) {
     const googleUser = await userRes.json();
 
     if (!googleUser.email) {
-      return NextResponse.redirect(new URL("/giris?error=eposta_yok", req.url));
+      return NextResponse.redirect(new URL("/giris?error=eposta_yok", SITE_URL));
     }
 
     // 3. Veritabanımızda Bu Kullanıcıyı Bul veya Sıfırdan Güvenle Kaydet
@@ -56,20 +58,18 @@ export async function GET(req: Request) {
         data: {
           name: googleUser.name || googleUser.email.split("@")[0],
           email: googleUser.email,
-          password: "google_oauth_guvenli_hesap",
+          password: "google_oauth",
           role: "USER",
         },
       });
     }
 
-    // 4. Giriş Başarılı -> Müşteriyi Profiline Gönder
-    const targetUrl = new URL("/giris", req.url);
-    targetUrl.searchParams.set("google_auth", "success");
-    targetUrl.searchParams.set("email", user.email);
-
-    return NextResponse.redirect(targetUrl);
+    // 4. Giriş başarılı -> imzalı oturum çerezi ile hesap sayfasına yönlendir
+    const res = NextResponse.redirect(new URL("/giris", SITE_URL));
+    res.cookies.set(USER_COOKIE, await signSession({ uid: user.id, picture: googleUser.picture ?? null }), cookieOptions);
+    return res;
   } catch (err) {
     console.error("Google Auth Hatası:", err);
-    return NextResponse.redirect(new URL("/giris?error=sunucu_hatasi", req.url));
+    return NextResponse.redirect(new URL("/giris?error=sunucu_hatasi", SITE_URL));
   }
 }

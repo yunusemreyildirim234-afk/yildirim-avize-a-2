@@ -74,6 +74,7 @@ export default function FavorilerimPage() {
                   onClick={() => toggleFavorite(product)}
                   className="absolute top-3 right-3 bg-white/90 hover:bg-white text-red-500 w-8 h-8 rounded-full flex items-center justify-center shadow-md transition-transform active:scale-90"
                   title="Favorilerden Kaldır"
+                  aria-label="Favorilerden kaldır"
                 >
                   ❤️
                 </button>

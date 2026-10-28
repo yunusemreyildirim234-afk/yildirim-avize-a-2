@@ -76,7 +76,7 @@ export default function AdminAddProduct() {
         <form onSubmit={handleSubmit} className="mt-6 pt-6 border-t border-neutral-100 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
           <div>
             <label className="font-semibold text-neutral-700 block mb-1">Avize Adı</label>
-            <input
+            <input aria-label="Çırağan 12'li Sarkıt Avize"
               required
               type="text"
               placeholder="Örn: Çırağan 12'li Sarkıt Avize"
@@ -102,7 +102,7 @@ export default function AdminAddProduct() {
 
           <div>
             <label className="font-semibold text-neutral-700 block mb-1">Taban Satış Fiyatı (₺)</label>
-            <input
+            <input aria-label="Fiyat"
               required
               type="number"
               placeholder="Örn: 6500"
@@ -114,7 +114,7 @@ export default function AdminAddProduct() {
 
           <div>
             <label className="font-semibold text-neutral-700 block mb-1">Başlangıç Stoğu (Adet)</label>
-            <input
+            <input aria-label="15"
               required
               type="number"
               placeholder="Örn: 15"
@@ -126,7 +126,7 @@ export default function AdminAddProduct() {
 
           <div className="sm:col-span-2">
             <label className="font-semibold text-neutral-700 block mb-1">Varsayılan Varyasyon / Renk</label>
-            <input
+            <input aria-label="Eskitme Pirinç Kaplama"
               required
               type="text"
               placeholder="Örn: Eskitme Pirinç Kaplama"
@@ -138,7 +138,7 @@ export default function AdminAddProduct() {
 
           <div className="sm:col-span-2">
             <label className="font-semibold text-neutral-700 block mb-1">Ürün Açıklaması</label>
-            <textarea
+            <textarea aria-label="Avizenin materyali, kullanım alanı ve ampul uyumluluğu..."
               rows={2}
               placeholder="Avizenin materyali, kullanım alanı ve ampul uyumluluğu..."
               value={description}
