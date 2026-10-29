@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSessionUserId } from "@/lib/account";
+import type { Prisma } from "@prisma/client";
+
+type CartRow = Prisma.CartItemGetPayload<{ include: { variation: { include: { product: true } } } }>;
 
 // Giriş yapmış müşterinin kalıcı sepeti (fiyat ve stok her seferinde veritabanından okunur)
 export async function GET() {
@@ -14,8 +17,8 @@ export async function GET() {
   });
 
   const items = rows
-    .filter((r) => r.variation.product.active && r.variation.stock > 0)
-    .map((r) => ({
+    .filter((r: CartRow) => r.variation.product.active && r.variation.stock > 0)
+    .map((r: CartRow) => ({
       productId: r.variation.productId,
       variationId: r.variationId,
       title: r.variation.product.title,

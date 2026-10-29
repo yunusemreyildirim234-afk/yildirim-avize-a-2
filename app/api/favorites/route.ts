@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSessionUserId } from "@/lib/account";
+import type { Prisma } from "@prisma/client";
+
+type FavoriteRow = Prisma.FavoriteGetPayload<{ include: { product: true } }>;
 
 // Giriş yapmış müşterinin kalıcı favorileri
 export async function GET() {
@@ -12,7 +15,7 @@ export async function GET() {
     include: { product: true },
     orderBy: { createdAt: "asc" },
   });
-  const items = rows.map((r) => ({
+  const items = rows.map((r: FavoriteRow) => ({
     id: r.productId,
     title: r.product.title,
     category: r.product.category,
@@ -34,7 +37,7 @@ export async function PUT(req: Request) {
 
   await prisma.$transaction([
     prisma.favorite.deleteMany({ where: { userId } }),
-    prisma.favorite.createMany({ data: products.map((p) => ({ userId, productId: p.id })) }),
+    prisma.favorite.createMany({ data: products.map((p: { id: string }) => ({ userId, productId: p.id })) }),
   ]);
   return NextResponse.json({ success: true });
 }

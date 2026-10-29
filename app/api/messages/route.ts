@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSessionUserId } from "@/lib/account";
+import type { Prisma } from "@prisma/client";
+
+type MessageRow = Prisma.ContactMessageGetPayload<{ include: { product: { select: { id: true; title: true } } } }>;
 
 // Müşterinin kendi mesajları ve ürün soruları (yanıtlarıyla birlikte)
 export async function GET() {
@@ -15,7 +18,7 @@ export async function GET() {
   });
 
   return NextResponse.json({
-    messages: rows.map((m) => ({
+    messages: rows.map((m: MessageRow) => ({
       id: m.id,
       kind: m.kind,
       subject: m.subject,
