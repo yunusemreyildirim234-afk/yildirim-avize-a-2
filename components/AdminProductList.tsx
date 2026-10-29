@@ -1,8 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ChevronDown, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
+import AdminBulkBar from "@/components/AdminBulkBar";
+import AdminProductEditor from "@/components/AdminProductEditor";
+import { COLLECTION_OPTIONS } from "@/lib/site";
 
 interface Variation {
   id: string;
@@ -22,6 +25,7 @@ interface Product {
   imageUrl?: string | null;
   trendyolMainId?: string | null;
   modelCode?: string | null;
+  images?: string[];
   variations: Variation[];
 }
 
@@ -58,6 +62,8 @@ export default function AdminProductList({ products }: { products: Product[] }) 
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   // Ürün adı, stok kodu, barkod veya Trendyol ana kodu ile anlık filtre
   const q = norm(query);
@@ -70,6 +76,29 @@ export default function AdminProductList({ products }: { products: Product[] }) 
           p.variations.some((v) => norm(v.stockCode).includes(q) || norm(v.barcode).includes(q))
       )
     : products;
+
+  const defaultCollections: string[] = COLLECTION_OPTIONS.map((c) => c.value);
+  const extraCategories = useMemo(
+    () => [...new Set(products.map((p) => p.category))].filter((c) => c && !defaultCollections.includes(c)).sort(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [products]
+  );
+
+  const allFilteredSelected = filtered.length > 0 && filtered.every((p) => selected.has(p.id));
+  const toggleOne = (id: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  const toggleAll = () =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allFilteredSelected) filtered.forEach((p) => next.delete(p.id));
+      else filtered.forEach((p) => next.add(p.id));
+      return next;
+    });
 
   // Stok Artır / Azalt
   const handleStockChange = async (variationId: string, newStock: number) => {
@@ -185,14 +214,38 @@ export default function AdminProductList({ products }: { products: Product[] }) 
         )}
       </div>
 
+      {selected.size > 0 && (
+        <AdminBulkBar ids={[...selected]} extraCategories={extraCategories} onDone={() => setSelected(new Set())} />
+      )}
+
+      {filtered.length > 0 && (
+        <label className="flex items-center gap-2 px-5 sm:px-6 py-2.5 border-b border-neutral-100 text-xs font-semibold text-neutral-600 cursor-pointer">
+          <input type="checkbox" checked={allFilteredSelected} onChange={toggleAll} className="w-4 h-4 accent-amber-600" />
+          Tümünü Seç ({filtered.length})
+          {selected.size > 0 && (
+            <button type="button" onClick={() => setSelected(new Set())} className="ml-auto text-amber-700 hover:underline">
+              Seçimi temizle
+            </button>
+          )}
+        </label>
+      )}
+
       <div className="divide-y divide-neutral-100">
         {filtered.length === 0 && (
           <p className="p-10 text-center text-xs text-neutral-400">&ldquo;{query}&rdquo; ile eşleşen ürün bulunamadı.</p>
         )}
         {filtered.map((product) => (
-          <div key={product.id} className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-neutral-50/50 transition-colors">
-            {/* Sol: Görsel ve Başlık */}
+          <div key={product.id}>
+          <div className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-neutral-50/50 transition-colors">
+            {/* Sol: Seçim, Görsel ve Başlık */}
             <div className="flex items-center gap-4">
+              <input
+                type="checkbox"
+                aria-label={`${product.title} seç`}
+                checked={selected.has(product.id)}
+                onChange={() => toggleOne(product.id)}
+                className="w-4 h-4 accent-amber-600 shrink-0"
+              />
               <div className="w-16 h-16 rounded-xl bg-neutral-900 overflow-hidden shrink-0 border border-neutral-200">
                 {product.imageUrl ? (
                   <img src={product.imageUrl} alt={product.title} className="w-full h-full object-cover" />
@@ -252,16 +305,33 @@ export default function AdminProductList({ products }: { products: Product[] }) 
               ))}
             </div>
 
-            {/* Sağ: Ürünü Sil Butonu */}
+            {/* Sağ: Düzenle ve Sil */}
+            <div className="flex items-center gap-1 self-end md:self-center">
+            <button
+              type="button"
+              onClick={() => setEditingId((id) => (id === product.id ? null : product.id))}
+              aria-expanded={editingId === product.id}
+              className="text-neutral-600 hover:text-amber-700 text-xs font-medium p-2 rounded-lg hover:bg-amber-50 transition-colors"
+            >
+              ✏️ {editingId === product.id ? "Kapat" : "Düzenle"}
+            </button>
             <button
               type="button"
               disabled={loadingId === product.id}
               onClick={() => handleDeleteProduct(product.id, product.title)}
-              className="text-neutral-400 hover:text-red-600 text-xs font-medium p-2 rounded-lg hover:bg-red-50 transition-colors self-end md:self-center"
+              className="text-neutral-400 hover:text-red-600 text-xs font-medium p-2 rounded-lg hover:bg-red-50 transition-colors"
               title="Avizeyi Katalogdan Sil"
             >
               🗑️ Modeli Sil
             </button>
+            </div>
+          </div>
+          {editingId === product.id && (
+            <AdminProductEditor
+              key={`${product.id}:${product.variations.map((v) => `${v.id}${v.stock}${v.extraPrice}`).join("|")}`}
+              product={product}
+            />
+          )}
           </div>
         ))}
       </div>

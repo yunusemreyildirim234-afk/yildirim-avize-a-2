@@ -4,7 +4,7 @@ import { DEFAULT_COUPON_CODE, type CouponRule, type PriceLine } from "@/lib/pric
 export type CouponResult = { ok: true; rule: CouponRule; couponId: string } | { ok: false; error: string };
 
 /** Varsayılan genel kod yoksa oluşturur (%5, herkese açık, yüksek limit). */
-async function ensureDefaultCoupon() {
+export async function ensureDefaultCoupon() {
   await prisma.coupon.upsert({
     where: { code: DEFAULT_COUPON_CODE },
     update: {},

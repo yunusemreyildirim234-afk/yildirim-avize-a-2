@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import MyMessages from "@/components/MyMessages";
+import MyCoupons from "@/components/MyCoupons";
 import OrderRequestBox from "@/components/OrderRequestBox";
 
 interface OrderItem {
@@ -228,6 +229,8 @@ export default function AuthPage() {
               </div>
             )}
           </div>
+
+          <MyCoupons />
 
           <MyMessages />
         </div>

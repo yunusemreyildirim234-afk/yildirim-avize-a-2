@@ -48,7 +48,43 @@ export async function PATCH(req: Request) {
   try {
     const body = await req.json();
 
-    // Site model kodu güncelleme (boş bırakılırsa kod kaldırılır)
+    // Tekil ürün düzenleme: başlık, fiyat, görseller (varsa model kodu ile birlikte)
+    if (typeof body.productId === "string" && ("title" in body || "basePrice" in body || "images" in body || "modelCode" in body)) {
+      const data: { title?: string; basePrice?: number; images?: string[]; imageUrl?: string | null; modelCode?: string | null } = {};
+      if (typeof body.title === "string") {
+        const title = body.title.trim().slice(0, 300);
+        if (!title) return NextResponse.json({ error: "Ürün başlığı boş olamaz." }, { status: 400 });
+        data.title = title;
+      }
+      if ("basePrice" in body) {
+        const price = Number(body.basePrice);
+        if (!(price >= 0)) return NextResponse.json({ error: "Geçerli bir fiyat giriniz." }, { status: 400 });
+        data.basePrice = price;
+      }
+      if (Array.isArray(body.images)) {
+        const images: string[] = body.images
+          .filter((u: unknown): u is string => typeof u === "string")
+          .map((u: string) => u.trim())
+          .filter((u: string) => /^(https?:\/\/|\/)/.test(u))
+          .slice(0, 20);
+        data.images = images;
+        data.imageUrl = images[0] ?? null;
+      }
+      if ("modelCode" in body) {
+        const modelCode = typeof body.modelCode === "string" ? body.modelCode.trim().slice(0, 40) : "";
+        if (modelCode) {
+          const clash = await prisma.product.findUnique({ where: { modelCode }, select: { id: true } });
+          if (clash && clash.id !== body.productId) {
+            return NextResponse.json({ error: `"${modelCode}" model kodu başka bir üründe kullanılıyor.` }, { status: 409 });
+          }
+        }
+        data.modelCode = modelCode || null;
+      }
+      const product = await prisma.product.update({ where: { id: body.productId }, data });
+      return NextResponse.json({ success: true, product });
+    }
+
+    // Eski kısa yol: yalnızca model kodu
     if (typeof body.productId === "string" && "modelCode" in body) {
       const modelCode = typeof body.modelCode === "string" ? body.modelCode.trim().slice(0, 40) : "";
       if (modelCode) {
@@ -65,7 +101,10 @@ export async function PATCH(req: Request) {
 
     const updated = await prisma.productVariation.update({
       where: { id: variationId },
-      data: { stock: Math.max(0, parseInt(stock) || 0) },
+      data: {
+        stock: Math.max(0, parseInt(stock) || 0),
+        ...(body.extraPrice !== undefined && Number(body.extraPrice) >= 0 ? { extraPrice: Number(body.extraPrice) } : {}),
+      },
     });
 
     return NextResponse.json({ success: true, variation: updated });

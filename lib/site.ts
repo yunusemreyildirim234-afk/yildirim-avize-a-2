@@ -57,3 +57,12 @@ export const BANK_INFO = {
   holder: "Ömer Yıldırım Ömer Yıldırım",
   iban: "TR350020500009989111400001",
 } as const;
+
+// Yönetim panelindeki varsayılan koleksiyonlar (value: veritabanındaki kategori adı; site kategori sayfalarıyla uyumlu)
+export const COLLECTION_OPTIONS = [
+  { label: "Kristal Serisi", value: "Kristal" },
+  { label: "Modern Avizeler", value: "Modern" },
+  { label: "Klasik Avizeler", value: "Klasik" },
+  { label: "Sarkıt & Aplik Modelleri", value: "Sarkıt" },
+  { label: "Aksesuar & Yedek Parça", value: "Aksesuar" },
+] as const;

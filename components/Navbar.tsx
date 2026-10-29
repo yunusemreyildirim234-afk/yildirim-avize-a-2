@@ -18,6 +18,7 @@ import {
   Tag,
   Truck,
   User,
+  Ticket,
 } from "lucide-react";
 import HoverMenu from "@/components/HoverMenu";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -198,6 +199,9 @@ export default function Navbar() {
                 </Link>
                 <Link href="/favorilerim" role="menuitem" onClick={close} className={itemClass}>
                   <Heart aria-hidden="true" className="w-4 h-4 text-zinc-500" /> Favorilerim
+                </Link>
+                <Link href="/giris#kuponlar" role="menuitem" onClick={close} className={itemClass}>
+                  <Ticket aria-hidden="true" className="w-4 h-4 text-zinc-500" /> Kuponlarım
                 </Link>
                 <Link href="/giris#mesajlar" role="menuitem" onClick={close} className={itemClass}>
                   <MessageSquare aria-hidden="true" className="w-4 h-4 text-zinc-500" /> Sorularım / Mesajlarım

@@ -3,6 +3,26 @@ import { sendOrderNotificationEmails } from "@/lib/email";
 import { createShipmentForOrder } from "@/lib/kargonomi";
 import { consumeCoupon } from "@/lib/coupons";
 
+/** Sipariş kalemleri kadar varyasyon stoğunu düşer (0'ın altına inmez); bir sipariş için yalnızca bir kez. */
+export async function deductOrderStock(orderId: string) {
+  const claimed = await prisma.order.updateMany({ where: { id: orderId, stockDeducted: false }, data: { stockDeducted: true } });
+  if (claimed.count === 0) return;
+  const items = await prisma.orderItem.findMany({ where: { orderId }, select: { variationId: true, quantity: true } });
+  for (const i of items) {
+    await prisma.$executeRaw`UPDATE "ProductVariation" SET "stock" = GREATEST(0, "stock" - ${i.quantity}) WHERE "id" = ${i.variationId}`;
+  }
+}
+
+/** Düşülmüş sipariş stoğunu iade eder (iptal onayında). */
+export async function restoreOrderStock(orderId: string) {
+  const claimed = await prisma.order.updateMany({ where: { id: orderId, stockDeducted: true }, data: { stockDeducted: false } });
+  if (claimed.count === 0) return;
+  const items = await prisma.orderItem.findMany({ where: { orderId }, select: { variationId: true, quantity: true } });
+  for (const i of items) {
+    await prisma.productVariation.update({ where: { id: i.variationId }, data: { stock: { increment: i.quantity } } });
+  }
+}
+
 /**
  * Ödemesi alınan (veya havale ile onaylanan) siparişi hazırlanıyor durumuna geçirir,
  * kargo gönderisini oluşturur ve e-posta bildirimlerini yollar. Tekrar çağrılırsa tekrar işlem yapmaz.
@@ -20,6 +40,8 @@ export async function finalizeOrder(orderId: string) {
     const coupon = await prisma.coupon.findUnique({ where: { code: used.couponCode }, select: { id: true } });
     if (coupon) await consumeCoupon(coupon.id).catch((err) => console.error("Kupon sayacı artırılamadı:", err));
   }
+
+  await deductOrderStock(orderId);
 
   let order = await prisma.order.findUniqueOrThrow({
     where: { id: orderId },

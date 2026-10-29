@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import ProductCard from "@/components/ProductCard";
+import { prisma } from "@/lib/db";
 import { DISCOUNTED, FEATURED, getProducts } from "@/lib/products";
 import { CATEGORIES, COLLECTIONS } from "@/lib/site";
 
@@ -12,18 +13,35 @@ interface Props {
   params: Promise<{ slug: string }>;
 }
 
-function resolve(slug: string) {
+const slugify = (v: string) =>
+  v
+    .toLocaleLowerCase("tr")
+    .replace(/ı/g, "i")
+    .replace(/ğ/g, "g")
+    .replace(/ü/g, "u")
+    .replace(/ş/g, "s")
+    .replace(/ö/g, "o")
+    .replace(/ç/g, "c")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+
+async function resolve(slug: string) {
   const category = CATEGORIES.find((c) => c.slug === slug);
   if (category) return { title: category.title, desc: category.desc, where: { category: category.dbCategory } };
   if (slug === "tum") return { ...COLLECTIONS.tum, where: {} };
   if (slug === "one-cikanlar") return { ...COLLECTIONS["one-cikanlar"], where: FEATURED };
   if (slug === "indirimli") return { ...COLLECTIONS.indirimli, where: DISCOUNTED };
+
+  // Yönetim panelinden eklenen yeni koleksiyonlar
+  const rows = await prisma.product.groupBy({ by: ["category"], where: { active: true } });
+  const match = rows.find((r: { category: string }) => slugify(r.category) === slug);
+  if (match) return { title: match.category, desc: `${match.category} koleksiyonundaki avize ve aydınlatma modelleri.`, where: { category: match.category } };
   return null;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const current = resolve(slug);
+  const current = await resolve(slug);
   if (!current) return {};
   return {
     title: current.title,
@@ -35,7 +53,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function CategoryPage({ params }: Props) {
   const { slug } = await params;
-  const current = resolve(slug);
+  const current = await resolve(slug);
   if (!current) notFound();
 
   const products = await getProducts(current.where);

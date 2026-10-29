@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { X, ZoomIn } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 
 interface Variation {
@@ -29,6 +30,20 @@ export default function ProductDetailClient({ product }: { product: Product }) {
   );
   const [quantity, setQuantity] = useState(1);
   const [addedToCart, setAddedToCart] = useState(false);
+  const [zoomed, setZoomed] = useState(false);
+
+  // Lightbox: ESC ile kapanır, açıkken sayfa kaydırması kilitlenir
+  useEffect(() => {
+    if (!zoomed) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setZoomed(false);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [zoomed]);
 
   const currentPrice = product.basePrice + (selectedVariation?.extraPrice || 0);
 
@@ -53,11 +68,17 @@ export default function ProductDetailClient({ product }: { product: Product }) {
       {/* Sol: Büyük Boy Gerçek Avize Fotoğraf Alanı */}
       <div className="relative min-h-[440px] bg-neutral-900 overflow-hidden flex items-center justify-center">
         {product.imageUrl ? (
-          <img
-            src={product.imageUrl}
-            alt={product.title}
-            className="w-full h-full object-cover"
-          />
+          <button
+            type="button"
+            onClick={() => setZoomed(true)}
+            aria-label="Görseli büyüt"
+            className="absolute inset-0 w-full h-full cursor-zoom-in group"
+          >
+            <img src={product.imageUrl} alt={product.title} className="w-full h-full object-cover" />
+            <span className="absolute top-4 right-4 inline-flex items-center gap-1.5 bg-neutral-900/80 text-white text-[11px] font-semibold px-3 py-1.5 rounded-full">
+              <ZoomIn aria-hidden="true" className="w-3.5 h-3.5" /> Büyüt
+            </span>
+          </button>
         ) : (
           <div className="text-amber-400/80 p-8 text-center">
             <span className="text-4xl block mb-2">💡</span>
@@ -65,10 +86,10 @@ export default function ProductDetailClient({ product }: { product: Product }) {
           </div>
         )}
 
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
 
         {/* Beyoğlu Mağaza Rozeti */}
-        <div className="absolute bottom-6 left-6 bg-neutral-900/90 backdrop-blur-sm border border-neutral-700 text-neutral-200 text-xs px-4 py-2 rounded-full flex items-center gap-2 shadow-lg">
+        <div className="absolute bottom-6 left-6 pointer-events-none bg-neutral-900/90 backdrop-blur-sm border border-neutral-700 text-neutral-200 text-xs px-4 py-2 rounded-full flex items-center gap-2 shadow-lg">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
           <span>Beyoğlu Mağazamızda Sergileniyor</span>
         </div>
@@ -169,13 +190,35 @@ export default function ProductDetailClient({ product }: { product: Product }) {
             <span className="text-base">📍</span>
             <div>
               <strong className="font-semibold">Beyoğlu Mağazasından Teslim Alabilirsiniz:</strong>
-              <p className="text-neutral-600 mt-0.5">
-                Kırılma riski olmadan mağazamızdan görerek teslim alma seçeneği mevcuttur.
-              </p>
             </div>
           </div>
         </div>
       </div>
+
+      {zoomed && product.imageUrl && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={product.title}
+          onClick={() => setZoomed(false)}
+          className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-3 sm:p-8 cursor-zoom-out"
+        >
+          <button
+            type="button"
+            onClick={() => setZoomed(false)}
+            aria-label="Kapat"
+            className="absolute top-3 right-3 sm:top-5 sm:right-5 w-11 h-11 rounded-full bg-white/15 hover:bg-white/30 text-white flex items-center justify-center transition-colors"
+          >
+            <X aria-hidden="true" className="w-6 h-6" />
+          </button>
+          <img
+            src={product.imageUrl}
+            alt={product.title}
+            onClick={(e) => e.stopPropagation()}
+            className="max-w-full max-h-full object-contain rounded-lg cursor-default"
+          />
+        </div>
+      )}
     </div>
   );
 }

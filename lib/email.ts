@@ -14,21 +14,24 @@ interface EmailOrderData {
 
 import { ADMIN_EMAILS, BANK_INFO, PHONE_DISPLAY } from "@/lib/site";
 
+const DEFAULT_FROM = "Yıldırım Avize <siparis@yildirimavize.com.tr>";
 const ONBOARDING_FROM = "Yıldırım Avize <onboarding@resend.dev>";
+// Müşteri e-postayı yanıtladığında mesaj bu kutuya düşer
+const REPLY_TO = "omeryildirim_3@hotmail.com";
 
-// RESEND_FROM (doğrulanmış alan adı) varsa onu dener; reddedilirse onboarding@resend.dev ile yeniden dener
+// RESEND_FROM (yoksa kurumsal varsayılan adres) ile dener; alan adı doğrulanmamışsa onboarding@resend.dev ile yeniden dener
 async function sendViaResend(apiKey: string | undefined, payload: Record<string, unknown>): Promise<boolean> {
   if (!apiKey) {
     console.error("[email] RESEND_API_KEY tanımlı değil; e-posta gönderilmedi:", payload.subject);
     return false;
   }
-  const senders = [process.env.RESEND_FROM, ONBOARDING_FROM].filter((f, i, a): f is string => !!f && a.indexOf(f) === i);
+  const senders = [process.env.RESEND_FROM || DEFAULT_FROM, ONBOARDING_FROM].filter((f, i, a): f is string => !!f && a.indexOf(f) === i);
   for (const from of senders) {
     try {
       const res = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ ...payload, from }),
+        body: JSON.stringify({ ...payload, from, reply_to: REPLY_TO }),
       });
       if (res.ok) return true;
       console.error("[email] Resend reddetti:", { from, to: payload.to, subject: payload.subject, status: res.status, body: await res.json().catch(() => null) });
@@ -170,7 +173,6 @@ export async function sendNewMessageEmail(data: {
   const isQuestion = data.kind === "PRODUCT_QUESTION";
   return sendViaResend(apiKey, {
     to: ADMIN_EMAILS,
-    reply_to: data.email,
     subject: isQuestion
       ? `Ürün Sorusu: ${data.productTitle || "Ürün"} - ${data.name}`
       : `İletişim Formu: ${data.subject || "Genel"} - ${data.name}`,
@@ -243,7 +245,6 @@ export async function sendRequestAdminEmail(data: { type: string; orderId: strin
   const label = REQUEST_LABEL[data.type] ?? data.type;
   return sendViaResend(process.env.RESEND_API_KEY, {
     to: ADMIN_EMAILS,
-    reply_to: data.customerEmail,
     subject: `${label} Talebi: #${data.orderId.slice(0, 8)} - ${data.customerName}`,
     html: `<p><strong>${esc(data.customerName)}</strong> (${esc(data.customerEmail)}) <strong>${label.toLowerCase()} talebi</strong> oluşturdu.</p>
       <p>Sipariş: <code>${data.orderId}</code></p>
