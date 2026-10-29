@@ -29,10 +29,6 @@ export default function Footer() {
               📞{" "}
               <a href={`tel:${PHONE_TEL}`} className="hover:text-amber-400 font-mono">
                 {PHONE_DISPLAY}
-              </a>{" "}
-              •{" "}
-              <a href="tel:05372114223" className="hover:text-amber-400 font-mono">
-                0537 211 42 23
               </a>
             </p>
             <p className="text-[11px] text-neutral-500 pt-1">
@@ -40,7 +36,7 @@ export default function Footer() {
             </p>
           </address>
           <iframe
-            title="Yıldırım Avize Beyoğlu Şişhane atölye konumu - Google Harita"
+            title="Yıldırım Avize Beyoğlu Şişhane mağaza konumu - Google Harita"
             src={MAP_SRC}
             loading="lazy"
             referrerPolicy="no-referrer-when-downgrade"

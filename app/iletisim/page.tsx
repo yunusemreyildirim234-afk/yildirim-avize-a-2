@@ -43,7 +43,7 @@ export default function IletisimPage() {
   const faqs = [
     {
       q: "Beyoğlu mağazasından teslim alma (Click & Collect) nasıl işler?",
-      a: "Sipariş verirken 'Beyoğlu Mağaza Teslimi' seçeneğini işaretlediğinizde kargo ücreti ödemezsiniz. Avizeniz Tevfikiye Han atölyemizde özenle hazırlanıp kontrolden geçirildiğinde size haber verilir; hafta içi dilediğiniz gün gelip görerek teslim alabilirsiniz.",
+      a: "Sipariş verirken 'Mağazadan Teslim' seçeneğini işaretlediğinizde kargo ücreti ödemezsiniz ve sepet tutarına ekstra %3 indirim uygulanır. Avizeniz Şişhane merkezimizde özenle hazırlanıp kontrolden geçirildiğinde size haber verilir; hafta içi dilediğiniz gün gelip görerek teslim alabilirsiniz.",
     },
     {
       q: "Kargoda kırılma riski var mı?",
@@ -92,7 +92,7 @@ export default function IletisimPage() {
                   <div>
                     <strong className="text-neutral-900 block font-semibold">Açık Adres:</strong>
                     <p className="text-neutral-600 mt-1 leading-relaxed">
-                      Tevfikiye Han, İskender Cad, Nazlı Hanım Sk. No:6 D:11, 34420 Beyoğlu / İstanbul
+                      Emekyemez Mah. İskender Cad, Nazlı Hanım Sk. No:6 D:11, 34420 Beyoğlu / İstanbul
                     </p>
                   </div>
                 </div>
@@ -102,10 +102,7 @@ export default function IletisimPage() {
                   <span className="text-xl shrink-0">📞</span>
                   <div>
                     <strong className="text-neutral-900 block font-semibold">Telefon & WhatsApp:</strong>
-                    <a href="tel:05458126990" className="text-amber-700 hover:underline block mt-1 font-mono font-medium">
-                      0545 812 69 90
-                    </a>
-                    <a href="tel:05372114223" className="text-neutral-700 hover:underline block font-mono font-medium">
+                    <a href="tel:05372114223" className="text-amber-700 hover:underline block mt-1 font-mono font-medium">
                       0537 211 42 23
                     </a>
                   </div>
@@ -183,7 +180,7 @@ export default function IletisimPage() {
                 <span>Click & Collect (Mağazadan Teslim)</span>
               </div>
               <p className="text-neutral-600 leading-relaxed">
-                İnternet sitemizden sipariş verirken Tevfikiye Han atölyemizden teslim alma seçeneğini işaretleyerek ürünlerinizi usta kontrolleri yapılmış halde bizzat teslim alabilirsiniz.
+                İnternet sitemizden sipariş verirken Şişhane merkezimizden görerek teslim alma seçeneğini işaretleyerek ürünlerinizi usta kontrolleri yapılmış halde bizzat teslim alabilirsiniz.
               </p>
             </div>
           </div>
@@ -210,7 +207,7 @@ export default function IletisimPage() {
                     Mesajınız Başarıyla Alındı!
                   </h3>
                   <p className="text-xs text-emerald-700 max-w-md mx-auto">
-                    Talebiniz Tevfikiye Han atölyemize ulaştı. Ekibimiz mesai saatleri içinde tarafınızla iletişime geçecektir.
+                    Talebiniz Şişhane merkezimize ulaştı. Ekibimiz mesai saatleri içinde tarafınızla iletişime geçecektir.
                   </p>
                   <button
                     onClick={() => setSent(false)}

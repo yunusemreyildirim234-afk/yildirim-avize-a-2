@@ -3,7 +3,7 @@ import JsonLd from "@/components/JsonLd";
 const FAQS = [
   {
     q: "Avizeler kargoda kırılmadan nasıl ulaşıyor?",
-    a: "Her avize, içi özel dolgu malzemesiyle desteklenmiş üst düzey korumalı koliyle paketlenir ve Kargonomi altyapısıyla sigortalı olarak gönderilir. Paketleme ustalarımız tarafından Beyoğlu atölyemizde yapılır.",
+    a: "Her avize, içi özel dolgu malzemesiyle desteklenmiş üst düzey korumalı koliyle paketlenir ve Kargonomi altyapısıyla sigortalı olarak gönderilir. Paketleme ustalarımız tarafından Beyoğlu merkezimizde yapılır.",
   },
   {
     q: "Kırılma veya hasar durumunda garanti var mı?",
@@ -15,11 +15,11 @@ const FAQS = [
   },
   {
     q: "Tavan yüksekliğime uygun avizeyi nasıl seçerim?",
-    a: "Tavan yüksekliğinizi ve salon fotoğrafınızı WhatsApp hattımıza (0545 812 69 90) gönderin; boyut, duy sayısı ve zincir uzunluğu konusunda ücretsiz danışmanlık verelim.",
+    a: "Tavan yüksekliğinizi ve salon fotoğrafınızı WhatsApp hattımıza (0537 211 42 23) gönderin; boyut, duy sayısı ve zincir uzunluğu konusunda ücretsiz danışmanlık verelim.",
   },
   {
     q: "Siparişimi mağazadan teslim alabilir miyim?",
-    a: "Evet. Sepette \"Beyoğlu Mağaza Teslim\" seçeneğini seçerek siparişinizi Şişhane atölyemizden kargo ücreti ödemeden, ışık kontrolünü yaptırarak teslim alabilirsiniz.",
+    a: "Evet. Sepette \"Mağazadan Teslim\" seçeneğini seçerek siparişinizi Şişhane merkezimizden görerek kargo ücreti ödemeden, ışık kontrolünü yaptırarak teslim alabilirsiniz.",
   },
 ];
 

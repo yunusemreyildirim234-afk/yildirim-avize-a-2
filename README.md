@@ -12,10 +12,10 @@ Beyoğlu Şişhane mirasını taşıyan **Yıldırım Avize** e-ticaret platform
    KARGONOMI_API_TOKEN="epiaidXMOyWe2Ky5G3qdYn6dZn5cS7VGRTXQjIVm671d3ab3"
    KARGONOMI_SENDER_NAME="Yıldırım Avize Aydınlatma"
    KARGONOMI_SENDER_EMAIL="iletisim@yildirimavize.com"
-   KARGONOMI_SENDER_PHONE="5458126990"
+   KARGONOMI_SENDER_PHONE="5372114223"
    KARGONOMI_SENDER_TAX_NUMBER="11111111111"
    KARGONOMI_SENDER_TAX_PLACE="Beyoğlu"
-   KARGONOMI_SENDER_ADDRESS="Bereketzade Mah. Tevfikiye Han, İskender Cad, Nazlı Hanım Sk. No:6 D:11, Şişhane Beyoğlu / İstanbul"
+   KARGONOMI_SENDER_ADDRESS="Emekyemez Mah. İskender Cad, Nazlı Hanım Sk. No:6 D:11, Şişhane Beyoğlu / İstanbul"
    KARGONOMI_SENDER_STATE_ID="34"
    KARGONOMI_SENDER_CITY_ID="425"
    ```

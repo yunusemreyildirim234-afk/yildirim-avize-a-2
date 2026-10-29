@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { useAccountSync } from "@/context/useAccountSync";
 
 export interface WishlistItem {
   id: string;
@@ -16,6 +17,13 @@ interface WishlistContextType {
   isFavorite: (productId: string) => boolean;
   totalFavorites: number;
 }
+
+function mergeFavorites(local: WishlistItem[], remote: WishlistItem[]): WishlistItem[] {
+  const ids = new Set(remote.map((i) => i.id));
+  return [...remote, ...local.filter((i) => !ids.has(i.id))];
+}
+
+const serializeFavorites = (list: WishlistItem[]) => list.map((i) => ({ id: i.id }));
 
 const WishlistContext = createContext<WishlistContextType | undefined>(undefined);
 
@@ -41,6 +49,8 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem("yildirim_wishlist", JSON.stringify(favorites));
     }
   }, [favorites, isLoaded]);
+
+  useAccountSync({ endpoint: "/api/favorites", list: favorites, setList: setFavorites, merge: mergeFavorites, serialize: serializeFavorites, ready: isLoaded });
 
   const toggleFavorite = (product: WishlistItem) => {
     setFavorites((prev) => {

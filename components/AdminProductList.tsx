@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ChevronDown, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 interface Variation {
@@ -9,6 +10,8 @@ interface Variation {
   variationValue: string;
   extraPrice: number;
   stock: number;
+  stockCode?: string | null;
+  barcode?: string | null;
 }
 
 interface Product {
@@ -17,12 +20,28 @@ interface Product {
   category: string;
   basePrice: number;
   imageUrl?: string | null;
+  trendyolMainId?: string | null;
   variations: Variation[];
 }
+
+const norm = (v?: string | null) => (v ?? "").toLocaleLowerCase("tr").trim();
 
 export default function AdminProductList({ products }: { products: Product[] }) {
   const router = useRouter();
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+
+  // Ürün adı, stok kodu, barkod veya Trendyol ana kodu ile anlık filtre
+  const q = norm(query);
+  const filtered = q
+    ? products.filter(
+        (p) =>
+          norm(p.title).includes(q) ||
+          norm(p.trendyolMainId).includes(q) ||
+          p.variations.some((v) => norm(v.stockCode).includes(q) || norm(v.barcode).includes(q))
+      )
+    : products;
 
   // Stok Artır / Azalt
   const handleStockChange = async (variationId: string, newStock: number) => {
@@ -75,22 +94,55 @@ export default function AdminProductList({ products }: { products: Product[] }) 
 
   return (
     <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden shadow-sm">
-      <div className="p-6 border-b border-neutral-100 flex items-center justify-between">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-controls="admin-product-panel"
+        className="w-full p-6 flex items-center justify-between gap-4 text-left hover:bg-neutral-50/60 transition-colors"
+      >
         <div>
           <h2 className="text-lg font-serif font-bold text-neutral-900">
-            Avize Kataloğu & Stok Yönetimi
+            Tüm Ürünler • Avize Kataloğu & Stok Yönetimi
           </h2>
           <p className="text-xs text-neutral-500 mt-0.5">
             Mevcut avizelerin varyasyon stoklarını canlı artırıp azaltabilir veya modeli silebilirsiniz.
           </p>
         </div>
-        <span className="text-xs font-semibold text-neutral-500 bg-neutral-100 px-3 py-1.5 rounded-lg">
-          Toplam {products.length} Model
+        <span className="flex items-center gap-3 shrink-0">
+          <span className="text-xs font-semibold text-neutral-500 bg-neutral-100 px-3 py-1.5 rounded-lg">
+            Toplam {products.length} Model
+          </span>
+          <ChevronDown aria-hidden="true" className={`w-5 h-5 text-neutral-500 transition-transform ${open ? "rotate-180" : ""}`} />
         </span>
+      </button>
+
+      {open && (
+      <div id="admin-product-panel" className="border-t border-neutral-100">
+      <div className="p-4 sm:px-6 border-b border-neutral-100 bg-neutral-50/60">
+        <div className="relative">
+          <Search aria-hidden="true" className="w-4 h-4 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <input
+            type="search"
+            aria-label="Ürün ismi veya stok kodu ile ara"
+            placeholder="Ürün İsmi / Stok Kodu ile Ara"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="w-full text-xs pl-9 pr-3 py-2.5 rounded-xl border border-neutral-300 bg-white focus:outline-none focus:border-amber-600"
+          />
+        </div>
+        {q && (
+          <p className="text-[11px] text-neutral-500 mt-2">
+            {filtered.length} / {products.length} model gösteriliyor
+          </p>
+        )}
       </div>
 
       <div className="divide-y divide-neutral-100">
-        {products.map((product) => (
+        {filtered.length === 0 && (
+          <p className="p-10 text-center text-xs text-neutral-400">&ldquo;{query}&rdquo; ile eşleşen ürün bulunamadı.</p>
+        )}
+        {filtered.map((product) => (
           <div key={product.id} className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-neutral-50/50 transition-colors">
             {/* Sol: Görsel ve Başlık */}
             <div className="flex items-center gap-4">
@@ -160,6 +212,8 @@ export default function AdminProductList({ products }: { products: Product[] }) 
           </div>
         ))}
       </div>
+      </div>
+      )}
     </div>
   );
 }

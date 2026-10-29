@@ -2,13 +2,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { CartStepper, FavoriteButton, type QuickProduct } from "@/components/ProductQuickActions";
 
-interface Product {
-  id: string;
-  title: string;
-  category: string;
-  basePrice: number;
-}
+type Product = QuickProduct;
 
 export default function SearchBar({ variant = "nav" }: { variant?: "nav" | "hero" }) {
   const hero = variant === "hero";
@@ -105,24 +101,25 @@ export default function SearchBar({ variant = "nav" }: { variant?: "nav" | "hero
                 Eşleşen Ürünler ({results.length})
               </div>
               {results.map((product) => (
-                <Link
-                  key={product.id}
-                  href={`/urun/${product.id}`}
-                  onClick={() => setIsOpen(false)}
-                  className="p-3 flex items-center justify-between hover:bg-amber-50/50 transition-colors block"
-                >
-                  <div>
+                <div key={product.id} className="p-3 flex items-start gap-2 hover:bg-amber-50/50 transition-colors">
+                  <Link href={`/urun/${product.id}`} onClick={() => setIsOpen(false)} className="flex-1 min-w-0">
                     <h4 className="text-xs font-serif font-bold text-neutral-900">
                       {product.title}
                     </h4>
                     <span className="text-[10px] text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full font-medium inline-block mt-0.5">
                       {product.category}
                     </span>
+                    <span className="block text-xs font-bold text-neutral-800 mt-1">
+                      {product.basePrice.toLocaleString("tr-TR")} ₺
+                    </span>
+                  </Link>
+                  <div className="w-28 shrink-0 space-y-1.5">
+                    <div className="flex justify-end">
+                      <FavoriteButton product={product} />
+                    </div>
+                    <CartStepper product={product} inlineToast />
                   </div>
-                  <span className="text-xs font-bold text-neutral-800">
-                    {product.basePrice.toLocaleString("tr-TR")} ₺
-                  </span>
-                </Link>
+                </div>
               ))}
             </div>
           ) : (

@@ -21,6 +21,7 @@ export async function GET(req: Request) {
           { variations: { some: { barcode: { contains: q.trim() } } } },
         ],
       },
+      include: { variations: { select: { id: true, variationValue: true, extraPrice: true, stock: true }, orderBy: { id: "asc" } } },
       take: 6,
     });
 

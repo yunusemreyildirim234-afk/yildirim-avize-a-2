@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { useAccountSync } from "@/context/useAccountSync";
 
 export interface CartItem {
   productId: string;
@@ -20,6 +21,19 @@ interface CartContextType {
   totalItems: number;
   totalPrice: number;
 }
+
+// Girişte misafir sepeti hesap sepetiyle birleşir; aynı üründe büyük olan adet korunur
+function mergeCarts(local: CartItem[], remote: CartItem[]): CartItem[] {
+  const merged = new Map(remote.map((i) => [i.variationId, i]));
+  for (const item of local) {
+    const other = merged.get(item.variationId);
+    if (!other) merged.set(item.variationId, item);
+    else if (item.quantity > other.quantity) merged.set(item.variationId, { ...other, quantity: item.quantity });
+  }
+  return [...merged.values()];
+}
+
+const serializeCart = (cart: CartItem[]) => cart.map((i) => ({ variationId: i.variationId, quantity: i.quantity }));
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
@@ -47,6 +61,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem("yildirim_cart", JSON.stringify(cart));
     }
   }, [cart, isLoaded]);
+
+  useAccountSync({ endpoint: "/api/cart", list: cart, setList: setCart, merge: mergeCarts, serialize: serializeCart, ready: isLoaded });
 
   const addToCart = (newItem: CartItem) => {
     setCart((prev) => {

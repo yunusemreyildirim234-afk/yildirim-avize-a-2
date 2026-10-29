@@ -5,6 +5,7 @@ import ProductDetailClient from "@/components/ProductDetailClient";
 import { cookies } from "next/headers";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import ProductReviews from "@/components/ProductReviews";
+import ProductQuestionForm from "@/components/ProductQuestionForm";
 import { USER_COOKIE, verifySession } from "@/lib/session";
 import JsonLd from "@/components/JsonLd";
 import { CATEGORIES, SITE_URL } from "@/lib/site";
@@ -106,6 +107,10 @@ export default async function ProductDetailPage({ params }: Props) {
 
         <div className="mt-8">
           <ProductReviews productId={product.id} reviews={reviews} loggedIn={loggedIn} />
+        </div>
+
+        <div className="mt-8">
+          <ProductQuestionForm productId={product.id} productTitle={product.title} />
         </div>
       </div>
     </main>

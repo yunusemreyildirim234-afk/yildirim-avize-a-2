@@ -6,11 +6,12 @@ import OrderStatusSelector from "@/components/OrderStatusSelector";
 import AdminKargonomiHeader from "@/components/AdminKargonomiHeader";
 import AdminTrendyolSync from "@/components/AdminTrendyolSync";
 import AdminKargonomiOrderActions from "@/components/AdminKargonomiOrderActions";
+import AdminMessages from "@/components/AdminMessages";
 
 export const dynamic = "force-dynamic";
 
 async function getAdminData() {
-  const [orders, products] = await Promise.all([
+  const [orders, products, messages] = await Promise.all([
     prisma.order.findMany({
       include: {
         user: true,
@@ -30,13 +31,22 @@ async function getAdminData() {
       },
       orderBy: { createdAt: "desc" },
     }),
+    prisma.contactMessage.findMany({
+      include: { product: { select: { title: true } } },
+      orderBy: { createdAt: "desc" },
+      take: 200,
+    }),
   ]);
 
-  return { orders, products };
+  return { orders, products, messages };
 }
 
 export default async function AdminPage() {
-  const { orders, products } = await getAdminData();
+  const { orders, products, messages } = await getAdminData();
+  // Bekleyenler üstte, kendi içinde en yeni önce
+  const sortedMessages = [...messages].sort(
+    (a, b) => Number(b.status === "PENDING") - Number(a.status === "PENDING") || b.createdAt.getTime() - a.createdAt.getTime()
+  );
 
   const totalRevenue = orders.reduce((sum, o) => sum + o.totalAmount, 0);
   const beyogluOrdersCount = orders.filter((o) => o.shippingType === "BEYOGLU_MAGAZA_TESLIM").length;
@@ -189,11 +199,11 @@ export default async function AdminPage() {
                       <td className="p-4 space-y-1">
                         {order.shippingType === "BEYOGLU_MAGAZA_TESLIM" ? (
                           <span className="inline-block bg-amber-100 text-amber-900 text-[11px] font-semibold px-2.5 py-1 rounded-full">
-                            📍 Beyoğlu Mağaza
+                            📍 Mağazadan Teslim
                           </span>
                         ) : (
                           <span className="inline-block bg-blue-100 text-blue-900 text-[11px] font-semibold px-2.5 py-1 rounded-full">
-                            📦 Üst Düzey Korumalı Koli Kargo
+                            📦 Adrese Teslim
                           </span>
                         )}
                         <div className="font-bold text-neutral-900 text-sm pt-1">
@@ -217,6 +227,24 @@ export default async function AdminPage() {
             </div>
           )}
         </div>
+
+        {/* 5. Gelen Mesajlar & Sorular */}
+        <AdminMessages
+          messages={sortedMessages.map((m) => ({
+            id: m.id,
+            kind: m.kind,
+            name: m.name,
+            email: m.email,
+            phone: m.phone,
+            subject: m.subject,
+            message: m.message,
+            status: m.status,
+            reply: m.reply,
+            repliedAt: m.repliedAt?.toISOString() ?? null,
+            createdAt: m.createdAt.toISOString(),
+            productTitle: m.product?.title ?? null,
+          }))}
+        />
       </div>
     </main>
   );

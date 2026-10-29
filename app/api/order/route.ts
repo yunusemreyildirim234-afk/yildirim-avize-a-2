@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { finalizeOrder } from "@/lib/orders";
 import { getPaytrToken } from "@/lib/paytr";
-import { computeTotals } from "@/lib/pricing";
+import { computeTotals, SHIPPING_LABELS } from "@/lib/pricing";
 
 interface CartLine {
   variationId: string;
@@ -28,7 +28,7 @@ export async function POST(req: Request) {
     if (!email || !name || !phone || !address) {
       return NextResponse.json({ error: "Ad, e-posta, telefon ve adres zorunludur." }, { status: 400 });
     }
-    if (shippingType !== "BEYOGLU_MAGAZA_TESLIM" && shippingType !== "STANDART_KARGO") {
+    if (!(shippingType in SHIPPING_LABELS)) {
       return NextResponse.json({ error: "Geçersiz teslimat yöntemi." }, { status: 400 });
     }
 
@@ -64,6 +64,7 @@ export async function POST(req: Request) {
         userId: user.id,
         totalAmount: totals.total,
         shippingType,
+        paymentMethod,
         status: paymentMethod === "CREDIT_CARD" ? "AWAITING_PAYMENT" : "PENDING_NEW",
         phone,
         address,

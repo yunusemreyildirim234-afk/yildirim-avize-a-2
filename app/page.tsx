@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import AnnouncementBars from "@/components/AnnouncementBars";
 import FaqSection from "@/components/FaqSection";
 import Hero from "@/components/Hero";
 import JsonLd from "@/components/JsonLd";
@@ -13,7 +14,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: { absolute: "Yıldırım Avize | Beyoğlu Şişhane Kristal, Modern & Klasik Avize" },
   description:
-    "Beyoğlu Şişhane Tevfikiye Han'daki atölyemizden kristal, modern ve klasik avizeler. Üst düzey korumalı koliyle sigortalı kargo veya mağazadan teslim.",
+    "Beyoğlu Şişhane'deki merkezimizden kristal, modern ve klasik avizeler. Üst düzey korumalı koliyle sigortalı kargo veya mağazadan teslim.",
   alternates: { canonical: "/" },
 };
 
@@ -56,6 +57,7 @@ export default async function Home() {
   return (
     <main>
       <JsonLd data={localBusiness} />
+      <AnnouncementBars />
 
       {/* 1. Ferah beyaz zemin: merkezi marka + arama */}
       <Hero />

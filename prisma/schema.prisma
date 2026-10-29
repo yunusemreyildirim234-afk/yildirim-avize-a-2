@@ -9,36 +9,41 @@ datasource db {
 
 // Kullanıcılar (Müşteri ve Sistem Yöneticisi)
 model User {
-  id        String   @id @default(uuid())
+  id        String           @id @default(uuid())
   name      String
-  email     String   @unique
+  email     String           @unique
   password  String
-  role      String   @default("USER") // "USER" veya "ADMIN"
+  role      String           @default("USER") // "USER" veya "ADMIN"
   orders    Order[]
   reviews   Review[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  cartItems CartItem[]
+  favorites Favorite[]
+  messages  ContactMessage[]
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
 }
 
 // Avizeler (Ana Ürün Bilgileri)
 model Product {
-  id          String             @id @default(uuid())
-  title       String
-  description String?
-  category    String             // Örn: "Klasik", "Modern", "Kristal"
-  basePrice   Float
-  imageUrl    String?            // Yeni eklenen avize görseli alanı
-  images      String[]           @default([]) // Trendyol ürün görselleri
-  active      Boolean            @default(true) // Trendyol: satışta + arşivde değil
-  brand       String?
-  listPrice   Float?             // Trendyol liste (üstü çizili) fiyatı
-  trendyolMainId   String?       @unique // productMainId
+  id               String             @id @default(uuid())
+  title            String
+  description      String?
+  category         String // Örn: "Klasik", "Modern", "Kristal"
+  basePrice        Float
+  imageUrl         String? // Yeni eklenen avize görseli alanı
+  images           String[]           @default([]) // Trendyol ürün görselleri
+  active           Boolean            @default(true) // Trendyol: satışta + arşivde değil
+  brand            String?
+  listPrice        Float? // Trendyol liste (üstü çizili) fiyatı
+  trendyolMainId   String?            @unique // productMainId
   trendyolCategory String?
   trendyolUrl      String?
-  variations  ProductVariation[]
-  reviews     Review[]
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
+  variations       ProductVariation[]
+  reviews          Review[]
+  favorites        Favorite[]
+  messages         ContactMessage[]
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
 }
 
 // Avize Varyasyonları (Örn: Duy Sayısı, Renk/Kaplama)
@@ -46,15 +51,16 @@ model ProductVariation {
   id             String      @id @default(uuid())
   productId      String
   product        Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
-  variationType  String      // Örn: "Gövde Rengi", "Duy Sayısı"
-  variationValue String      // Örn: "Gold", "5'li"
+  variationType  String // Örn: "Gövde Rengi", "Duy Sayısı"
+  variationValue String // Örn: "Gold", "5'li"
   extraPrice     Float       @default(0) // Taban fiyata eklenecek fark
   stock          Int         @default(0)
   barcode        String?     @unique // Trendyol barkodu
   stockCode      String?
-  salePrice      Float?      // Trendyol satış fiyatı
+  salePrice      Float? // Trendyol satış fiyatı
   listPrice      Float?
   orderItems     OrderItem[]
+  cartItems      CartItem[]
 }
 
 // Müşteri Siparişleri (Kargonomi API v1 Entegrasyonlu)
@@ -63,23 +69,24 @@ model Order {
   userId               String
   user                 User        @relation(fields: [userId], references: [id])
   totalAmount          Float
-  shippingType         String      // Örn: "BEYOGLU_MAGAZA_TESLIM" veya "STANDART_KARGO"
+  paymentMethod        String? // CREDIT_CARD veya BANK_TRANSFER
+  shippingType         String // Örn: "BEYOGLU_MAGAZA_TESLIM" veya "STANDART_KARGO"
   status               String      @default("PENDING") // PENDING, READY_FOR_PICKUP, SHIPPED, DELIVERED, CANCELLED
-  phone                String?     // Alıcı Telefon Numarası
-  address              String?     // Açık Teslimat Adresi
-  buyerStateId         Int?        // Kargonomi İl (Şehir) ID (Örn: 34 = İstanbul)
-  buyerCityId          Int?        // Kargonomi İlçe ID (Örn: 425 = Beyoğlu)
-  buyerStateName       String?     // İl Adı
-  buyerCityName        String?     // İlçe Adı
+  phone                String? // Alıcı Telefon Numarası
+  address              String? // Açık Teslimat Adresi
+  buyerStateId         Int? // Kargonomi İl (Şehir) ID (Örn: 34 = İstanbul)
+  buyerCityId          Int? // Kargonomi İlçe ID (Örn: 425 = Beyoğlu)
+  buyerStateName       String? // İl Adı
+  buyerCityName        String? // İlçe Adı
   packageDesi          Float?      @default(3) // Üst Düzey Korumalı Koli Kargo Desi Değeri
-  kargonomiShipmentId  Int?        // Kargonomi Gönderi ID (/shipments/{id})
-  kargonomiStatus      String?     // draft, ready, webservice_shipment_started, webservice_shipment_delivered, vb.
-  kargonomiStatusLabel String?     // Taslak, İşleme Hazır, Kargo Teslim Sürecinde, Kargo Teslim Edildi, vb.
-  shippingProviderId   Int?        // Seçilen Kargo Firması ID (-1: Otomatik, 3: Kolay Gelsin, 4: Aras, 5: Sürat, 6: Hepsijet, 7: PTT)
-  shippingProviderName String?     // Kargo Firması Adı
-  shippingTrackingCode String?     // Kargo Takip Kodu (shipping_webservice_tracking_code)
-  shippingBarcode      String?     // Kargo Barkodu (shipping_webservice_barcode)
-  shippingPrice        String?     // Kargo Maliyet / Teklif Tutarı
+  kargonomiShipmentId  Int? // Kargonomi Gönderi ID (/shipments/{id})
+  kargonomiStatus      String? // draft, ready, webservice_shipment_started, webservice_shipment_delivered, vb.
+  kargonomiStatusLabel String? // Taslak, İşleme Hazır, Kargo Teslim Sürecinde, Kargo Teslim Edildi, vb.
+  shippingProviderId   Int? // Seçilen Kargo Firması ID (-1: Otomatik, 3: Kolay Gelsin, 4: Aras, 5: Sürat, 6: Hepsijet, 7: PTT)
+  shippingProviderName String? // Kargo Firması Adı
+  shippingTrackingCode String? // Kargo Takip Kodu (shipping_webservice_tracking_code)
+  shippingBarcode      String? // Kargo Barkodu (shipping_webservice_barcode)
+  shippingPrice        String? // Kargo Maliyet / Teklif Tutarı
   items                OrderItem[]
   createdAt            DateTime    @default(now())
   updatedAt            DateTime    @updatedAt
@@ -93,20 +100,70 @@ model OrderItem {
   variationId String
   variation   ProductVariation @relation(fields: [variationId], references: [id])
   quantity    Int
-  unitPrice   Float            // Sipariş anındaki birim fiyat
+  unitPrice   Float // Sipariş anındaki birim fiyat
 }
+
 // Müşteri Yorumları (yalnızca giriş yapmış müşteriler yazabilir)
 model Review {
-  id         String   @id @default(uuid())
-  productId  String
-  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  rating     Int      // 1-5
-  comment    String
-  verified   Boolean  @default(false) // Bu ürünü satın almış müşteri
-  createdAt  DateTime @default(now())
+  id        String   @id @default(uuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating    Int // 1-5
+  comment   String
+  verified  Boolean  @default(false) // Bu ürünü satın almış müşteri
+  createdAt DateTime @default(now())
 
   @@unique([productId, userId])
   @@index([productId])
+}
+
+// Kullanıcı hesabına bağlı kalıcı sepet (giriş yapılan her cihazda geri yüklenir)
+model CartItem {
+  id          String           @id @default(uuid())
+  userId      String
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  variationId String
+  variation   ProductVariation @relation(fields: [variationId], references: [id], onDelete: Cascade)
+  quantity    Int
+  updatedAt   DateTime         @updatedAt
+
+  @@unique([userId, variationId])
+  @@index([userId])
+}
+
+// Kullanıcı hesabına bağlı favoriler
+model Favorite {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+  @@index([userId])
+}
+
+// İletişim formu mesajları ve ürün soruları (yönetici yanıtı dahil)
+model ContactMessage {
+  id        String    @id @default(uuid())
+  kind      String    @default("CONTACT") // "CONTACT" veya "PRODUCT_QUESTION"
+  userId    String?
+  user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  name      String
+  email     String
+  phone     String?
+  subject   String?
+  message   String
+  productId String?
+  product   Product?  @relation(fields: [productId], references: [id], onDelete: SetNull)
+  status    String    @default("PENDING") // "PENDING" veya "ANSWERED"
+  reply     String?
+  repliedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([email])
+  @@index([status, createdAt])
 }

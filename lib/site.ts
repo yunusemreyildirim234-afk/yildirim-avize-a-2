@@ -1,12 +1,12 @@
 export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://yildirimavize.com.tr").replace(/\/$/, "");
 export const SITE_NAME = "Yıldırım Avize";
-export const PHONE_DISPLAY = "0545 812 69 90";
-export const PHONE_TEL = "+905458126990";
-export const WHATSAPP_NUMBER = "905458126990";
+export const PHONE_DISPLAY = "0537 211 42 23";
+export const PHONE_TEL = "+905372114223";
+export const WHATSAPP_NUMBER = "905372114223";
 export const ADDRESS_LINE =
-  "Bereketzade Mah. Tevfikiye Han, İskender Cad, Nazlı Hanım Sk. No:6 D:11, Şişhane Beyoğlu / İstanbul";
+  "Emekyemez Mah. İskender Cad, Nazlı Hanım Sk. No:6 D:11, Şişhane Beyoğlu / İstanbul";
 
-// Tevfikiye Han, Şişhane / Beyoğlu
+// İskender Cad, Şişhane / Beyoğlu
 export const LAT = 41.0266295;
 export const LNG = 28.970431;
 
@@ -48,4 +48,12 @@ export const COLLECTIONS = {
   tum: { title: "Tüm Ürünler", desc: "Yıldırım Avize'nin tüm koleksiyonu." },
   "one-cikanlar": { title: "Öne Çıkan Ürünler", desc: "Stokta bulunan seçili avize modellerimiz." },
   indirimli: { title: "İndirimli & Fırsat Ürünleri", desc: "Liste fiyatının altında satılan fırsat ürünleri." },
+} as const;
+
+export const ADMIN_EMAILS = ["yunusemreyildirim234@gmail.com", "omeryildirim_3@hotmail.com"];
+
+export const BANK_INFO = {
+  bank: "Kuveyt Türk",
+  holder: "Ömer Yıldırım",
+  iban: "TR350020500009989111400001",
 } as const;

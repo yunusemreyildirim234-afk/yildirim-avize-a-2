@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import MyMessages from "@/components/MyMessages";
 
 interface OrderItem {
   id: string;
@@ -179,8 +180,8 @@ export default function AuthPage() {
                         Teslimat:{" "}
                         <strong>
                           {order.shippingType === "BEYOGLU_MAGAZA_TESLIM"
-                            ? "📍 Beyoğlu Mağazasından Teslim Alınacak"
-                            : `📦 Kargonomi Üst Düzey Korumalı Koli Kargo ${
+                            ? "📍 Mağazadan Teslim (Şişhane)"
+                            : `📦 Adrese Teslim ${
                                 order.shippingProviderName ? `(${order.shippingProviderName})` : ""
                               }`}
                         </strong>
@@ -207,6 +208,8 @@ export default function AuthPage() {
               </div>
             )}
           </div>
+
+          <MyMessages />
         </div>
       </main>
     );

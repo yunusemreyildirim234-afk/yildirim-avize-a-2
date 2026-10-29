@@ -37,6 +37,7 @@ export async function finalizeOrder(orderId: string) {
     customerEmail: order.user.email,
     totalAmount: order.totalAmount,
     shippingType: order.shippingType,
+    paymentMethod: order.paymentMethod,
     kargonomiShipmentId: order.kargonomiShipmentId,
     shippingBarcode: order.shippingBarcode,
     items: order.items.map((i) => ({

@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
 import { useCart } from "@/context/CartContext";
-import { COUPONS, computeTotals } from "@/lib/pricing";
+import { COUPONS, computeTotals, FREE_SHIPPING_THRESHOLD, SHIPPING_COST } from "@/lib/pricing";
+import BankTransferCard from "@/components/BankTransferCard";
 
 interface LocationItem {
   id: number;
@@ -76,7 +77,7 @@ export default function CartPage() {
   }, [buyerStateId]);
 
   // Tutarlar (sunucu aynı hesabı yapar)
-  const { shipping: shippingCost, couponDiscount, bankDiscount, total: finalTotal } = computeTotals({
+  const { shipping: shippingCost, couponDiscount, pickupDiscount, bankDiscount, total: finalTotal } = computeTotals({
     itemsTotal: totalPrice,
     shippingType,
     couponCode: appliedCoupon?.code,
@@ -334,11 +335,11 @@ export default function CartPage() {
                   }`}
                 >
                   <div className="flex items-center justify-between text-xs font-semibold text-neutral-900">
-                    <span>📍 Beyoğlu Mağaza Teslimi</span>
-                    <span className="text-emerald-600 font-bold">Ücretsiz</span>
+                    <span>📍 Mağazadan Teslim</span>
+                    <span className="text-emerald-600 font-bold">Ücretsiz • %3 İndirim</span>
                   </div>
                   <p className="text-[11px] text-neutral-500 mt-1">
-                    Şişhane atölyemizden görerek teslimat. Kırılma riski sıfır.
+                    Şişhane merkezimizden görerek teslimat. Kırılma riski sıfır; sepet tutarına ekstra %3 indirim uygulanır.
                   </p>
                 </div>
 
@@ -351,11 +352,13 @@ export default function CartPage() {
                   }`}
                 >
                   <div className="flex items-center justify-between text-xs font-semibold text-neutral-900">
-                    <span>📦 Kargonomi Üst Düzey Korumalı Koli Kargo</span>
-                    <span className="text-neutral-700 font-bold">250 ₺</span>
+                    <span>📦 Adrese Teslim</span>
+                    <span className="text-neutral-700 font-bold">
+                      {totalPrice >= FREE_SHIPPING_THRESHOLD ? "Ücretsiz" : `${SHIPPING_COST} ₺`}
+                    </span>
                   </div>
                   <p className="text-[11px] text-neutral-500 mt-1">
-                    Kargonomi güvencesiyle kırılmalara karşı üst düzey korumalı kolide teslimat.
+                    Kırılmalara karşı üst düzey korumalı kolide sigortalı teslimat. {FREE_SHIPPING_THRESHOLD} ₺ ve üzeri siparişlerde kargo ücretsiz.
                   </p>
                 </div>
               </div>
@@ -413,15 +416,9 @@ export default function CartPage() {
                   </p>
                 </div>
               ) : (
-                <div className="p-4 bg-amber-50/60 border border-amber-200/60 rounded-2xl text-xs text-amber-950 space-y-2">
-                  <div className="font-bold flex items-center gap-1.5">
-                    <span>🏦</span>
-                    <span>Banka Havalesi / EFT Bilgileri:</span>
-                  </div>
-                  <p className="text-neutral-600">
-                    Sipariş onayından sonra tarafınıza iletilecek IBAN numarasına ödeme yapabilirsiniz.
-                  </p>
-                  <div className="font-semibold text-emerald-700 pt-1">
+                <div className="space-y-3">
+                  <BankTransferCard />
+                  <div className="font-semibold text-emerald-700 text-xs">
                     ✓ Havale ödemelerinde %5 nakit indirimi otomatik uygulanmıştır.
                   </div>
                 </div>
@@ -527,6 +524,14 @@ export default function CartPage() {
                   <div className="flex justify-between text-emerald-600 font-semibold">
                     <span>Kupon ({appliedCoupon?.code})</span>
                     <span>-{couponDiscount.toLocaleString("tr-TR")} ₺</span>
+                  </div>
+                )}
+
+                {/* Mağazadan Teslim İndirimi */}
+                {pickupDiscount > 0 && (
+                  <div className="flex justify-between text-emerald-600 font-semibold">
+                    <span>Mağazadan Teslim İndirimi (%3)</span>
+                    <span>-{pickupDiscount.toLocaleString("tr-TR")} ₺</span>
                   </div>
                 )}
 

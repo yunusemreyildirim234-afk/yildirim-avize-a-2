@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "İletişim & Mağaza Yol Tarifi",
-  description: "Beyoğlu Şişhane Tevfikiye Han atölyemizin adresi, telefonu ve özel avize tasarım talep formu.",
+  description: "Beyoğlu Şişhane merkezimizin adresi, telefonu ve özel avize tasarım talep formu.",
   alternates: { canonical: "/iletisim" },
 };
 

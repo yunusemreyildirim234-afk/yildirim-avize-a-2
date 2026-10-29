@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import ClearCart from "@/components/ClearCart";
+import BankTransferCard from "@/components/BankTransferCard";
 
 export const metadata: Metadata = {
   title: "Siparişiniz Alındı",
@@ -39,7 +40,7 @@ export default async function OrderConfirmationPage({ params }: { params: Promis
             ? "Ödemeniz alınamadı. Sepete dönerek tekrar deneyebilirsiniz."
             : awaitingPayment
             ? "Ödeme bilginiz bankadan onaylanıyor. Birkaç saniye içinde sayfayı yenileyin; onaylanınca e-posta ile bilgilendirileceksiniz."
-            : <>Sayın <strong>{order.user.name}</strong>, siparişiniz atölyemize iletildi. Onay ve gelişmeler e-posta ile bildirilecektir.</>}
+            : <>Sayın <strong>{order.user.name}</strong>, siparişiniz merkezimize iletildi. Onay ve gelişmeler e-posta ile bildirilecektir.</>}
         </p>
 
         <div className="bg-neutral-50 border border-neutral-200 rounded-2xl p-5 text-xs text-left space-y-3">
@@ -62,8 +63,8 @@ export default async function OrderConfirmationPage({ params }: { params: Promis
             <span className="text-neutral-400">Teslimat:</span>
             <p className="font-semibold text-neutral-800">
               {isPickup
-                ? "📍 Beyoğlu Şişhane mağazamızdan teslim alınacak"
-                : "📦 Sigortalı üst düzey korumalı koli ile adresinize gönderilecek"}
+                ? "📍 Mağazadan Teslim – Şişhane merkezimizden teslim alınacak"
+                : "📦 Adrese Teslim – sigortalı korumalı koli ile adresinize gönderilecek"}
             </p>
             {order.kargonomiShipmentId && (
               <p className="text-neutral-600 mt-1">
@@ -77,6 +78,8 @@ export default async function OrderConfirmationPage({ params }: { params: Promis
             )}
           </div>
         </div>
+
+        {order.paymentMethod === "BANK_TRANSFER" && !paymentFailed && <BankTransferCard orderId={order.id} />}
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
           <Link

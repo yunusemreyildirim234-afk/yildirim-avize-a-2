@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   LogIn,
   LogOut,
+  MessageSquare,
   MapPin,
   Package,
   ShoppingBag,
@@ -70,6 +71,7 @@ export default function Navbar() {
     close();
     await fetch("/api/auth/logout", { method: "POST" });
     setSession({ user: null, admin: false });
+    window.dispatchEvent(new Event("ya-auth"));
     router.push("/");
     router.refresh();
   };
@@ -196,6 +198,9 @@ export default function Navbar() {
                 </Link>
                 <Link href="/favorilerim" role="menuitem" onClick={close} className={itemClass}>
                   <Heart aria-hidden="true" className="w-4 h-4 text-zinc-500" /> Favorilerim
+                </Link>
+                <Link href="/giris#mesajlar" role="menuitem" onClick={close} className={itemClass}>
+                  <MessageSquare aria-hidden="true" className="w-4 h-4 text-zinc-500" /> Sorularım / Mesajlarım
                 </Link>
                 <Link href="/kargo-takip" role="menuitem" onClick={close} className={itemClass}>
                   <Truck aria-hidden="true" className="w-4 h-4 text-zinc-500" /> Kargo Takip
