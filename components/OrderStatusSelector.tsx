@@ -54,6 +54,8 @@ export default function OrderStatusSelector({ orderId, initialStatus, shippingTy
             ? "bg-purple-50 text-purple-900 border-purple-300"
             : status === "SHIPPED"
             ? "bg-blue-50 text-blue-900 border-blue-300"
+            : status === "CANCELLED" || status === "RETURNED"
+            ? "bg-red-50 text-red-900 border-red-300"
             : "bg-emerald-50 text-emerald-900 border-emerald-300"
         }`}
       >
@@ -66,6 +68,8 @@ export default function OrderStatusSelector({ orderId, initialStatus, shippingTy
         )}
 
         <option value="DELIVERED">✓ Teslim Edildi</option>
+        <option value="CANCELLED">✕ İptal Edildi</option>
+        <option value="RETURNED">↩ İade Edildi</option>
       </select>
 
       {loading && <span className="text-[10px] text-neutral-400 animate-spin">⌛</span>}

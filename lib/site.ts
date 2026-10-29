@@ -54,6 +54,6 @@ export const ADMIN_EMAILS = ["yunusemreyildirim234@gmail.com", "omeryildirim_3@h
 
 export const BANK_INFO = {
   bank: "Kuveyt Türk",
-  holder: "Ömer Yıldırım",
+  holder: "Ömer Yıldırım Ömer Yıldırım",
   iban: "TR350020500009989111400001",
 } as const;

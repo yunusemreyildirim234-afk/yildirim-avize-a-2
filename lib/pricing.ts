@@ -1,9 +1,4 @@
-export type Coupon = { type: "percent" | "fixed"; value: number };
-
-// Geçerli tek promosyon kodu
-export const COUPONS: Record<string, Coupon> = {
-  YILDIRIM5: { type: "percent", value: 5 },
-};
+export const DEFAULT_COUPON_CODE = "YILDIRIM5";
 
 export const SHIPPING_COST = 100;
 export const FREE_SHIPPING_THRESHOLD = 350;
@@ -20,6 +15,24 @@ export const SHIPPING_LABELS: Record<string, string> = {
   STANDART_KARGO: "Adrese Teslim",
 };
 
+export interface CouponRule {
+  code: string;
+  discountPercent: number;
+  productId: string | null; // null: tüm sepet
+}
+
+export interface PriceLine {
+  productId: string;
+  lineTotal: number;
+}
+
+/** Kuponun uygulanacağı tutar üzerinden yüzde indirim (ürüne özelse yalnızca o ürünün satırları). */
+export function couponDiscountFor(rule: CouponRule | null | undefined, lines: PriceLine[]): number {
+  if (!rule) return 0;
+  const base = lines.reduce((sum, l) => (rule.productId && l.productId !== rule.productId ? sum : sum + l.lineTotal), 0);
+  return Math.round((base * rule.discountPercent) / 100);
+}
+
 export interface Totals {
   shipping: number;
   couponDiscount: number;
@@ -32,20 +45,12 @@ export interface Totals {
 export function computeTotals(opts: {
   itemsTotal: number;
   shippingType: string;
-  couponCode?: string | null;
+  couponDiscount?: number;
   paymentMethod: "CREDIT_CARD" | "BANK_TRANSFER";
 }): Totals {
   const isPickup = opts.shippingType === SHIPPING_TYPES.PICKUP;
   const shipping = isPickup || opts.itemsTotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
-  const coupon = opts.couponCode ? COUPONS[opts.couponCode.toUpperCase()] : undefined;
-
-  let couponDiscount = 0;
-  if (coupon) {
-    couponDiscount =
-      coupon.type === "percent"
-        ? Math.round((opts.itemsTotal * coupon.value) / 100)
-        : Math.min(opts.itemsTotal, coupon.value);
-  }
+  const couponDiscount = Math.min(opts.itemsTotal, Math.max(0, opts.couponDiscount ?? 0));
 
   // Mağazadan teslim indirimi kuponla birlikte uygulanır (her ikisi de ürün tutarı üzerinden)
   const pickupDiscount = isPickup ? Math.round(opts.itemsTotal * PICKUP_DISCOUNT) : 0;

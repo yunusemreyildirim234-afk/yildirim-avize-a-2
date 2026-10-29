@@ -7,11 +7,13 @@ import AdminKargonomiHeader from "@/components/AdminKargonomiHeader";
 import AdminTrendyolSync from "@/components/AdminTrendyolSync";
 import AdminKargonomiOrderActions from "@/components/AdminKargonomiOrderActions";
 import AdminMessages from "@/components/AdminMessages";
+import AdminCoupons from "@/components/AdminCoupons";
+import AdminOrderRequest from "@/components/AdminOrderRequest";
 
 export const dynamic = "force-dynamic";
 
 async function getAdminData() {
-  const [orders, products, messages] = await Promise.all([
+  const [orders, products, messages, coupons, customers] = await Promise.all([
     prisma.order.findMany({
       include: {
         user: true,
@@ -36,13 +38,22 @@ async function getAdminData() {
       orderBy: { createdAt: "desc" },
       take: 200,
     }),
+    prisma.coupon.findMany({
+      include: { product: { select: { title: true, modelCode: true } } },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.user.findMany({
+      where: { role: "USER", password: { not: "guest_checkout" } },
+      select: { name: true, email: true },
+      orderBy: { email: "asc" },
+    }),
   ]);
 
-  return { orders, products, messages };
+  return { orders, products, messages, coupons, customers };
 }
 
 export default async function AdminPage() {
-  const { orders, products, messages } = await getAdminData();
+  const { orders, products, messages, coupons, customers } = await getAdminData();
   // Bekleyenler üstte, kendi içinde en yeni önce
   const sortedMessages = [...messages].sort(
     (a, b) => Number(b.status === "PENDING") - Number(a.status === "PENDING") || b.createdAt.getTime() - a.createdAt.getTime()
@@ -124,6 +135,24 @@ export default async function AdminPage() {
 
         {/* 2. Hızlı Avize Ekleme Modülü */}
         <AdminAddProduct />
+
+        {/* Promosyon Kodları Yönetimi */}
+        <AdminCoupons
+          coupons={coupons.map((c) => ({
+            id: c.id,
+            code: c.code,
+            discountPercent: c.discountPercent,
+            maxUses: c.maxUses,
+            usedCount: c.usedCount,
+            userEmail: c.userEmail,
+            productTitle: c.product?.title ?? null,
+            productModelCode: c.product?.modelCode ?? null,
+            active: c.active,
+            createdAt: c.createdAt.toISOString(),
+          }))}
+          customers={customers}
+          products={products.map((p) => ({ id: p.id, title: p.title, modelCode: p.modelCode }))}
+        />
 
         {/* 3. Canlı Avize Kataloğu & Stok Yönetimi */}
         <AdminProductList products={products} />
@@ -218,6 +247,12 @@ export default async function AdminPage() {
                           orderId={order.id}
                           initialStatus={order.status}
                           shippingType={order.shippingType}
+                        />
+                        <AdminOrderRequest
+                          orderId={order.id}
+                          type={order.cancelReturnType}
+                          status={order.cancelReturnStatus}
+                          reason={order.cancelReturnReason}
                         />
                       </td>
                     </tr>

@@ -21,7 +21,34 @@ interface Product {
   basePrice: number;
   imageUrl?: string | null;
   trendyolMainId?: string | null;
+  modelCode?: string | null;
   variations: Variation[];
+}
+
+function ModelCodeEditor({ initial, disabled, onSave }: { initial: string; disabled: boolean; onSave: (code: string) => void }) {
+  const [value, setValue] = useState(initial);
+  const dirty = value.trim() !== initial;
+  return (
+    <div className="flex items-center gap-1.5 mt-1.5">
+      <span className="text-[10px] font-semibold text-neutral-500">Site Model Kodu</span>
+      <input
+        aria-label="Site Model Kodu"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        className="w-16 text-[11px] font-mono px-2 py-1 rounded-md border border-neutral-300 focus:outline-none focus:border-amber-600"
+      />
+      {dirty && (
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => onSave(value)}
+          className="text-[10px] font-semibold bg-neutral-900 hover:bg-amber-600 text-white px-2 py-1 rounded-md disabled:opacity-50"
+        >
+          Kaydet
+        </button>
+      )}
+    </div>
+  );
 }
 
 const norm = (v?: string | null) => (v ?? "").toLocaleLowerCase("tr").trim();
@@ -38,6 +65,7 @@ export default function AdminProductList({ products }: { products: Product[] }) 
     ? products.filter(
         (p) =>
           norm(p.title).includes(q) ||
+          norm(p.modelCode) === q ||
           norm(p.trendyolMainId).includes(q) ||
           p.variations.some((v) => norm(v.stockCode).includes(q) || norm(v.barcode).includes(q))
       )
@@ -58,6 +86,25 @@ export default function AdminProductList({ products }: { products: Product[] }) 
       } else {
         alert("Stok güncellenemedi: " + data.error);
       }
+    } catch {
+      alert("İşlem tamamlanamadı.");
+    } finally {
+      setLoadingId(null);
+    }
+  };
+
+  // Site model kodunu kaydet
+  const handleModelCodeSave = async (productId: string, modelCode: string) => {
+    setLoadingId(productId);
+    try {
+      const res = await fetch("/api/admin/product", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId, modelCode }),
+      });
+      const data = await res.json();
+      if (data.success) router.refresh();
+      else alert("Model kodu kaydedilemedi: " + data.error);
     } catch {
       alert("İşlem tamamlanamadı.");
     } finally {
@@ -124,8 +171,8 @@ export default function AdminProductList({ products }: { products: Product[] }) 
           <Search aria-hidden="true" className="w-4 h-4 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="search"
-            aria-label="Ürün ismi veya stok kodu ile ara"
-            placeholder="Ürün İsmi / Stok Kodu ile Ara"
+            aria-label="Ürün ismi, stok kodu veya model kodu ile ara"
+            placeholder="Ürün İsmi / Stok Kodu / Model Kodu ile Ara"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="w-full text-xs pl-9 pr-3 py-2.5 rounded-xl border border-neutral-300 bg-white focus:outline-none focus:border-amber-600"
@@ -163,6 +210,12 @@ export default function AdminProductList({ products }: { products: Product[] }) 
                 <span className="text-xs font-semibold text-neutral-600">
                   {product.basePrice.toLocaleString("tr-TR")} ₺
                 </span>
+                <ModelCodeEditor
+                  key={`${product.id}-${product.modelCode ?? ""}`}
+                  initial={product.modelCode ?? ""}
+                  disabled={loadingId === product.id}
+                  onSave={(code) => handleModelCodeSave(product.id, code)}
+                />
               </div>
             </div>
 

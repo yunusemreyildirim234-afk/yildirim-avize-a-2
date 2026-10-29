@@ -6,6 +6,15 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { title, description, category, basePrice, imageUrl, variationType, variationValue, stock } = body;
+    let modelCode: string | null = typeof body.modelCode === "string" ? body.modelCode.trim().slice(0, 40) : "";
+    if (!modelCode) {
+      // Boş bırakılırsa mevcut en büyük sayısal koddan sonraki numara verilir
+      const codes = await prisma.product.findMany({ where: { modelCode: { not: null } }, select: { modelCode: true } });
+      const max = codes.reduce((m: number, c: { modelCode: string | null }) => Math.max(m, Number(c.modelCode) || 0), 0);
+      modelCode = String(max + 1);
+    } else if (await prisma.product.findUnique({ where: { modelCode } })) {
+      return NextResponse.json({ error: `"${modelCode}" model kodu başka bir üründe kullanılıyor.` }, { status: 409 });
+    }
 
     const newProduct = await prisma.product.create({
       data: {
@@ -14,6 +23,7 @@ export async function POST(req: Request) {
         category,
         basePrice: parseFloat(basePrice) || 0,
         imageUrl: imageUrl || null,
+        modelCode,
         variations: {
           create: [
             {
@@ -36,7 +46,22 @@ export async function POST(req: Request) {
 // 2. Stok Adedini Güncelleme (PATCH)
 export async function PATCH(req: Request) {
   try {
-    const { variationId, stock } = await req.json();
+    const body = await req.json();
+
+    // Site model kodu güncelleme (boş bırakılırsa kod kaldırılır)
+    if (typeof body.productId === "string" && "modelCode" in body) {
+      const modelCode = typeof body.modelCode === "string" ? body.modelCode.trim().slice(0, 40) : "";
+      if (modelCode) {
+        const clash = await prisma.product.findUnique({ where: { modelCode }, select: { id: true } });
+        if (clash && clash.id !== body.productId) {
+          return NextResponse.json({ error: `"${modelCode}" model kodu başka bir üründe kullanılıyor.` }, { status: 409 });
+        }
+      }
+      const product = await prisma.product.update({ where: { id: body.productId }, data: { modelCode: modelCode || null } });
+      return NextResponse.json({ success: true, product });
+    }
+
+    const { variationId, stock } = body;
 
     const updated = await prisma.productVariation.update({
       where: { id: variationId },

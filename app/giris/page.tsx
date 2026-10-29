@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import MyMessages from "@/components/MyMessages";
+import OrderRequestBox from "@/components/OrderRequestBox";
 
 interface OrderItem {
   id: string;
@@ -22,6 +23,10 @@ interface Order {
   shippingProviderName?: string | null;
   shippingTrackingCode?: string | null;
   shippingBarcode?: string | null;
+  cancelReturnType?: string | null;
+  cancelReturnStatus?: string | null;
+  cancelReturnReason?: string | null;
+  cancelReturnNote?: string | null;
   createdAt: string;
   items: OrderItem[];
 }
@@ -54,6 +59,13 @@ export default function AuthPage() {
       .then((data) => data.user && setUser(data.user))
       .catch(() => {});
   }, []);
+
+  const refreshUser = () => {
+    fetch("/api/auth/me", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data) => data.user && setUser(data.user))
+      .catch(() => {});
+  };
 
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -141,7 +153,9 @@ export default function AuthPage() {
                         </span>
                         <span
                           className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${
-                            order.status === "DELIVERED"
+                            order.status === "CANCELLED" || order.status === "RETURNED"
+                              ? "bg-red-100 text-red-800"
+                              : order.status === "DELIVERED"
                               ? "bg-emerald-100 text-emerald-800"
                               : order.status === "READY_FOR_PICKUP"
                               ? "bg-purple-100 text-purple-800"
@@ -150,7 +164,11 @@ export default function AuthPage() {
                               : "bg-amber-100 text-amber-800"
                           }`}
                         >
-                          {order.kargonomiStatusLabel ||
+                          {order.status === "CANCELLED"
+                            ? "İptal Edildi"
+                            : order.status === "RETURNED"
+                            ? "İade Edildi"
+                            : order.kargonomiStatusLabel ||
                             (order.status === "DELIVERED"
                               ? "Teslim Edildi"
                               : order.status === "READY_FOR_PICKUP"
@@ -174,6 +192,8 @@ export default function AuthPage() {
                         </div>
                       ))}
                     </div>
+
+                    <OrderRequestBox order={order} onChanged={refreshUser} />
 
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-neutral-500 pt-2 border-t border-neutral-100">
                       <div>

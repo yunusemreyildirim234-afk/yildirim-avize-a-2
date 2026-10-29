@@ -36,6 +36,8 @@ model Product {
   brand            String?
   listPrice        Float? // Trendyol liste (üstü çizili) fiyatı
   trendyolMainId   String?            @unique // productMainId
+  modelCode        String?            @unique // Site içi model kodu (1-236, yönetici değiştirebilir)
+  coupons          Coupon[]
   trendyolCategory String?
   trendyolUrl      String?
   variations       ProductVariation[]
@@ -87,6 +89,12 @@ model Order {
   shippingTrackingCode String? // Kargo Takip Kodu (shipping_webservice_tracking_code)
   shippingBarcode      String? // Kargo Barkodu (shipping_webservice_barcode)
   shippingPrice        String? // Kargo Maliyet / Teklif Tutarı
+  couponCode           String? // Uygulanan promosyon kodu
+  cancelReturnType     String? // "CANCEL" | "RETURN"
+  cancelReturnStatus   String? // "PENDING" | "APPROVED" | "REJECTED"
+  cancelReturnReason   String?
+  cancelReturnNote     String? // Yönetici notu
+  cancelReturnAt       DateTime?
   items                OrderItem[]
   createdAt            DateTime    @default(now())
   updatedAt            DateTime    @updatedAt
@@ -166,4 +174,18 @@ model ContactMessage {
 
   @@index([email])
   @@index([status, createdAt])
+}
+
+// Promosyon kodları (kişiye ve/veya ürüne özel olabilir)
+model Coupon {
+  id              String   @id @default(uuid())
+  code            String   @unique
+  discountPercent Float
+  maxUses         Int      @default(1)
+  usedCount       Int      @default(0)
+  userEmail       String? // null: herkese açık
+  productId       String? // null: tüm sepet
+  product         Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
 }

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSessionUserId } from "@/lib/account";
-import { sendNewMessageEmail } from "@/lib/email";
+import { sendNewMessageEmail, sendQuestionReceivedEmail } from "@/lib/email";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const clean = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
@@ -52,6 +52,11 @@ export async function POST(req: Request) {
       message,
       productTitle: product?.title,
     }).catch(() => false);
+    if (kind === "PRODUCT_QUESTION") {
+      await sendQuestionReceivedEmail({ to: email, name, question: message, productTitle: product?.title }).catch((err) =>
+        console.error("[email] Müşteri onay maili hatası:", err)
+      );
+    }
     if (!emailed) console.warn("Yönetici bildirim e-postası gönderilemedi (mesaj:", saved.id, ")");
 
     return NextResponse.json({

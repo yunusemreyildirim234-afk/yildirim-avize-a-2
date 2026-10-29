@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
 import { useCart } from "@/context/CartContext";
-import { COUPONS, computeTotals, FREE_SHIPPING_THRESHOLD, SHIPPING_COST } from "@/lib/pricing";
+import { computeTotals, couponDiscountFor, FREE_SHIPPING_THRESHOLD, SHIPPING_COST, type CouponRule } from "@/lib/pricing";
 import BankTransferCard from "@/components/BankTransferCard";
 
 interface LocationItem {
@@ -25,7 +25,8 @@ export default function CartPage() {
 
   // 4. Kupon Kodu Yönetimi
   const [couponInput, setCouponInput] = useState("");
-  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; type: "percent" | "fixed"; value: number } | null>(null);
+  const [appliedCoupon, setAppliedCoupon] = useState<CouponRule | null>(null);
+  const [couponLoading, setCouponLoading] = useState(false);
   const [couponError, setCouponError] = useState("");
 
   // PayTR iFrame token'ı (kart bilgileri sitemizde toplanmaz)
@@ -80,20 +81,34 @@ export default function CartPage() {
   const { shipping: shippingCost, couponDiscount, pickupDiscount, bankDiscount, total: finalTotal } = computeTotals({
     itemsTotal: totalPrice,
     shippingType,
-    couponCode: appliedCoupon?.code,
+    couponDiscount: couponDiscountFor(
+      appliedCoupon,
+      cart.map((i) => ({ productId: i.productId, lineTotal: i.price * i.quantity }))
+    ),
     paymentMethod,
   });
 
-  const handleApplyCoupon = (e: React.FormEvent) => {
+  const handleApplyCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
     setCouponError("");
-    const code = couponInput.trim().toUpperCase();
-
-    const coupon = COUPONS[code];
-    if (coupon) {
-      setAppliedCoupon({ code, ...coupon });
-    } else {
-      setCouponError("Geçersiz veya süresi dolmuş kupon kodu.");
+    setCouponLoading(true);
+    try {
+      const res = await fetch("/api/coupon", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: couponInput,
+          email,
+          lines: cart.map((i) => ({ productId: i.productId, lineTotal: i.price * i.quantity })),
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.rule) setAppliedCoupon(data.rule as CouponRule);
+      else setCouponError(data.error || "Geçersiz veya süresi dolmuş kupon kodu.");
+    } catch {
+      setCouponError("Bağlantı hatası oluştu.");
+    } finally {
+      setCouponLoading(false);
     }
   };
 
@@ -284,7 +299,7 @@ export default function CartPage() {
                     <span>
                       <strong>{appliedCoupon.code}</strong> kuponu uygulandı:{" "}
                       <strong>
-                        {appliedCoupon.type === "percent" ? `%${appliedCoupon.value} İndirim` : `${appliedCoupon.value} ₺ İndirim`}
+                        %{appliedCoupon.discountPercent} İndirim{appliedCoupon.productId ? " (seçili ürün)" : ""}
                       </strong>
                     </span>
                   </div>
@@ -307,7 +322,8 @@ export default function CartPage() {
                   />
                   <button
                     type="submit"
-                    className="bg-neutral-900 hover:bg-amber-600 text-white text-xs font-semibold px-5 py-3 rounded-xl transition-colors shrink-0"
+                    disabled={couponLoading}
+                    className="bg-neutral-900 hover:bg-amber-600 disabled:opacity-60 text-white text-xs font-semibold px-5 py-3 rounded-xl transition-colors shrink-0"
                   >
                     Kuponu Uygula
                   </button>
@@ -339,7 +355,7 @@ export default function CartPage() {
                     <span className="text-emerald-600 font-bold">Ücretsiz • %3 İndirim</span>
                   </div>
                   <p className="text-[11px] text-neutral-500 mt-1">
-                    Şişhane merkezimizden görerek teslimat. Kırılma riski sıfır; sepet tutarına ekstra %3 indirim uygulanır.
+                    Şişhane merkezimizden görerek teslimat. Sepet tutarına ekstra %3 indirim uygulanır.
                   </p>
                 </div>
 
@@ -358,7 +374,7 @@ export default function CartPage() {
                     </span>
                   </div>
                   <p className="text-[11px] text-neutral-500 mt-1">
-                    Kırılmalara karşı üst düzey korumalı kolide sigortalı teslimat. {FREE_SHIPPING_THRESHOLD} ₺ ve üzeri siparişlerde kargo ücretsiz.
+                    {FREE_SHIPPING_THRESHOLD} ₺ ve üzeri siparişlerde kargo ücretsiz.
                   </p>
                 </div>
               </div>

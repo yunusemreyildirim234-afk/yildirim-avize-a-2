@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { finalizeOrder } from "@/lib/orders";
 import { getPaytrToken } from "@/lib/paytr";
-import { computeTotals, SHIPPING_LABELS } from "@/lib/pricing";
+import { computeTotals, couponDiscountFor, SHIPPING_LABELS } from "@/lib/pricing";
+import { validateCoupon } from "@/lib/coupons";
 
 interface CartLine {
   variationId: string;
@@ -50,7 +51,23 @@ export async function POST(req: Request) {
     }
 
     const itemsTotal = orderLines.reduce((sum, l) => sum + l.unitPrice * l.quantity, 0);
-    const totals = computeTotals({ itemsTotal, shippingType, couponCode, paymentMethod });
+    // Kupon: kişiye/ürüne özel şartlar ve kullanım limiti sunucuda doğrulanır
+    let couponDiscount = 0;
+    let appliedCouponCode: string | null = null;
+    if (typeof couponCode === "string" && couponCode.trim()) {
+      const check = await validateCoupon({
+        code: couponCode,
+        email: String(email).toLowerCase(),
+        lines: orderLines.map((l) => ({ productId: l.variation.productId, lineTotal: l.unitPrice * l.quantity })),
+      });
+      if (!check.ok) return NextResponse.json({ error: check.error }, { status: 400 });
+      couponDiscount = couponDiscountFor(
+        check.rule,
+        orderLines.map((l) => ({ productId: l.variation.productId, lineTotal: l.unitPrice * l.quantity }))
+      );
+      appliedCouponCode = check.rule.code;
+    }
+    const totals = computeTotals({ itemsTotal, shippingType, couponDiscount, paymentMethod });
 
     // 2. Müşteriyi bul veya oluştur
     const user =
@@ -65,6 +82,7 @@ export async function POST(req: Request) {
         totalAmount: totals.total,
         shippingType,
         paymentMethod,
+        couponCode: appliedCouponCode,
         status: paymentMethod === "CREDIT_CARD" ? "AWAITING_PAYMENT" : "PENDING_NEW",
         phone,
         address,

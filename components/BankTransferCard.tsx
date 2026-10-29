@@ -7,15 +7,16 @@ import { BANK_INFO } from "@/lib/site";
 const IBAN_GROUPED = BANK_INFO.iban.replace(/(.{4})/g, "$1 ").trim();
 
 export default function BankTransferCard({ orderId }: { orderId?: string }) {
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<"iban" | "holder" | null>(null);
 
-  const copy = async () => {
+  const copy = async (kind: "iban" | "holder") => {
+    const text = kind === "iban" ? BANK_INFO.iban : BANK_INFO.holder;
     try {
-      await navigator.clipboard.writeText(BANK_INFO.iban);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      await navigator.clipboard.writeText(text);
+      setCopied(kind);
+      setTimeout(() => setCopied(null), 2000);
     } catch {
-      window.prompt("IBAN'ı kopyalayın:", BANK_INFO.iban);
+      window.prompt("Kopyalayın:", text);
     }
   };
 
@@ -29,18 +30,28 @@ export default function BankTransferCard({ orderId }: { orderId?: string }) {
         <dt className="text-neutral-500">Banka</dt>
         <dd className="font-semibold text-neutral-900">{BANK_INFO.bank}</dd>
         <dt className="text-neutral-500">Alıcı Adı</dt>
-        <dd className="font-semibold text-neutral-900">{BANK_INFO.holder}</dd>
+        <dd className="font-semibold text-neutral-900 flex flex-wrap items-center gap-2">
+          {BANK_INFO.holder}
+          <button
+            type="button"
+            onClick={() => copy("holder")}
+            className="inline-flex items-center gap-1 rounded-md bg-neutral-900 hover:bg-amber-600 text-white text-[10px] font-semibold px-2 py-1 transition-colors"
+          >
+            {copied === "holder" ? <Check aria-hidden="true" className="w-3 h-3" /> : <Copy aria-hidden="true" className="w-3 h-3" />}
+            {copied === "holder" ? "Kopyalandı" : "Kopyala"}
+          </button>
+        </dd>
       </dl>
 
       <div className="flex items-center justify-between gap-3 rounded-xl bg-white border border-amber-200 px-3 py-2.5">
         <span className="font-mono font-bold text-neutral-900 text-[13px] break-all">{IBAN_GROUPED}</span>
         <button
           type="button"
-          onClick={copy}
+          onClick={() => copy("iban")}
           className="shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-neutral-900 hover:bg-amber-600 text-white font-semibold px-3 py-1.5 transition-colors"
         >
-          {copied ? <Check aria-hidden="true" className="w-3.5 h-3.5" /> : <Copy aria-hidden="true" className="w-3.5 h-3.5" />}
-          {copied ? "Kopyalandı" : "Kopyala"}
+          {copied === "iban" ? <Check aria-hidden="true" className="w-3.5 h-3.5" /> : <Copy aria-hidden="true" className="w-3.5 h-3.5" />}
+          {copied === "iban" ? "Kopyalandı" : "Kopyala"}
         </button>
       </div>
 

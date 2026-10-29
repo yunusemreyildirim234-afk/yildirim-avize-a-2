@@ -14,6 +14,7 @@ export default function AdminAddProduct() {
   const [description, setDescription] = useState("");
   const [variationValue, setVariationValue] = useState("Parlak Gold");
   const [stock, setStock] = useState("10");
+  const [modelCode, setModelCode] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,6 +32,7 @@ export default function AdminAddProduct() {
           variationType: "Seçenek",
           variationValue,
           stock,
+          modelCode,
         }),
       });
 
@@ -39,6 +41,7 @@ export default function AdminAddProduct() {
         alert("✓ Yeni avize başarıyla vitrine eklendi!");
         setTitle("");
         setBasePrice("");
+        setModelCode("");
         setDescription("");
         setOpen(false);
         router.refresh();
@@ -120,6 +123,18 @@ export default function AdminAddProduct() {
               placeholder="Örn: 15"
               value={stock}
               onChange={(e) => setStock(e.target.value)}
+              className="w-full p-2.5 rounded-lg border border-neutral-300 focus:outline-none focus:border-amber-600"
+            />
+          </div>
+
+          <div>
+            <label className="font-semibold text-neutral-700 block mb-1">Site Model Kodu (boşsa otomatik)</label>
+            <input
+              aria-label="Site Model Kodu"
+              type="text"
+              placeholder="Örn: 237"
+              value={modelCode}
+              onChange={(e) => setModelCode(e.target.value)}
               className="w-full p-2.5 rounded-lg border border-neutral-300 focus:outline-none focus:border-amber-600"
             />
           </div>

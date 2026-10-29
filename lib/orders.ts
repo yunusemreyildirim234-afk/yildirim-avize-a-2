@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { sendOrderNotificationEmails } from "@/lib/email";
 import { createShipmentForOrder } from "@/lib/kargonomi";
+import { consumeCoupon } from "@/lib/coupons";
 
 /**
  * Ödemesi alınan (veya havale ile onaylanan) siparişi hazırlanıyor durumuna geçirir,
@@ -12,6 +13,13 @@ export async function finalizeOrder(orderId: string) {
     data: { status: "PENDING" },
   });
   if (claimed.count === 0) return;
+
+  // Sipariş kesinleştiğinde kupon kullanım sayısı 1 artar
+  const used = await prisma.order.findUnique({ where: { id: orderId }, select: { couponCode: true } });
+  if (used?.couponCode) {
+    const coupon = await prisma.coupon.findUnique({ where: { code: used.couponCode }, select: { id: true } });
+    if (coupon) await consumeCoupon(coupon.id).catch((err) => console.error("Kupon sayacı artırılamadı:", err));
+  }
 
   let order = await prisma.order.findUniqueOrThrow({
     where: { id: orderId },

@@ -17,7 +17,11 @@ import { ADMIN_EMAILS, BANK_INFO, PHONE_DISPLAY } from "@/lib/site";
 const ONBOARDING_FROM = "Yıldırım Avize <onboarding@resend.dev>";
 
 // RESEND_FROM (doğrulanmış alan adı) varsa onu dener; reddedilirse onboarding@resend.dev ile yeniden dener
-async function sendViaResend(apiKey: string, payload: Record<string, unknown>): Promise<boolean> {
+async function sendViaResend(apiKey: string | undefined, payload: Record<string, unknown>): Promise<boolean> {
+  if (!apiKey) {
+    console.error("[email] RESEND_API_KEY tanımlı değil; e-posta gönderilmedi:", payload.subject);
+    return false;
+  }
   const senders = [process.env.RESEND_FROM, ONBOARDING_FROM].filter((f, i, a): f is string => !!f && a.indexOf(f) === i);
   for (const from of senders) {
     try {
@@ -27,9 +31,9 @@ async function sendViaResend(apiKey: string, payload: Record<string, unknown>): 
         body: JSON.stringify({ ...payload, from }),
       });
       if (res.ok) return true;
-      console.error("Resend reddetti:", from, await res.json().catch(() => res.status));
+      console.error("[email] Resend reddetti:", { from, to: payload.to, subject: payload.subject, status: res.status, body: await res.json().catch(() => null) });
     } catch (err) {
-      console.error("Resend bağlantı hatası:", err);
+      console.error("[email] Resend bağlantı hatası:", { from, to: payload.to, subject: payload.subject, err });
     }
   }
   return false;
@@ -41,7 +45,7 @@ export async function sendOrderNotificationEmails(data: EmailOrderData) {
   const isBeyoglu = data.shippingType === "BEYOGLU_MAGAZA_TESLIM";
   const shippingText = isBeyoglu
     ? "📍 Mağazadan Teslim (Şişhane Merkezimiz)"
-    : "📦 Adrese Teslim (Sigortalı Korumalı Koli)";
+    : "📦 Adrese Teslim";
 
   const kargonomiBlock =
     !isBeyoglu && (data.kargonomiShipmentId || data.shippingTrackingCode || data.shippingBarcode)
@@ -141,13 +145,11 @@ export async function sendOrderNotificationEmails(data: EmailOrderData) {
     </div>
   `;
 
-  if (apiKey) {
-    await sendViaResend(apiKey, {
-      to: [data.customerEmail],
-      subject: `✓ Siparişiniz Alındı - #${data.orderId.slice(0, 8)}`,
-      html: customerHtml,
-    });
-  }
+  await sendViaResend(apiKey, {
+    to: [data.customerEmail],
+    subject: `✓ Siparişiniz Alındı - #${data.orderId.slice(0, 8)}`,
+    html: customerHtml,
+  });
 }
 const esc = (v: string) =>
   v.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c] as string);
@@ -164,7 +166,6 @@ export async function sendNewMessageEmail(data: {
   productTitle?: string | null;
 }) {
   const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return false;
 
   const isQuestion = data.kind === "PRODUCT_QUESTION";
   return sendViaResend(apiKey, {
@@ -188,9 +189,8 @@ export async function sendReplyEmail(data: {
   productTitle?: string | null;
 }) {
   const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return false;
 
-  return sendViaResend(apiKey, {
+  const sent = await sendViaResend(apiKey, {
     to: [data.to],
     subject: data.productTitle ? `Sorunuz yanıtlandı: ${data.productTitle}` : "Mesajınız yanıtlandı - Yıldırım Avize",
     html: `<div style="font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #171717;">
@@ -201,6 +201,70 @@ export async function sendReplyEmail(data: {
         ${multiline(data.question)}
       </div>
       <p style="font-size: 12px; color: #737373; margin-top: 24px;">Yanıtları sitemizde Hesabım → Ürün Sorularım / Mesajlarım bölümünden de görebilirsiniz.<br />Yıldırım Avize | Tel: ${PHONE_DISPLAY}</p>
+    </div>`,
+  });
+
+  // Yöneticilere yanıtın kopyası (bilgi amaçlı)
+  await sendViaResend(apiKey, {
+    to: ADMIN_EMAILS,
+    subject: `[Yanıt Kaydı] ${data.productTitle || "Mesaj"} → ${data.name}`,
+    html: `<p>Müşteriye gönderilen yanıtın kopyası: <strong>${esc(data.name)}</strong> (${esc(data.to)})</p>
+      ${data.productTitle ? `<p>Ürün: <strong>${esc(data.productTitle)}</strong></p>` : ""}
+      <p style="color:#737373">Soru:</p><p>${multiline(data.question)}</p>
+      <p style="color:#737373">Yanıt:</p><p>${multiline(data.reply)}</p>`,
+  });
+
+  return sent;
+}
+
+/** Ürün sorusunu soran müşteriye alındı onayı (sorusunun özetiyle). */
+export async function sendQuestionReceivedEmail(data: { to: string; name: string; question: string; productTitle?: string | null }) {
+  const summary = data.question.length > 300 ? `${data.question.slice(0, 300)}...` : data.question;
+  return sendViaResend(process.env.RESEND_API_KEY, {
+    to: [data.to],
+    subject: data.productTitle ? `Ürün sorunuz alındı: ${data.productTitle}` : "Mesajınız alındı - Yıldırım Avize",
+    html: `<div style="font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #171717;">
+      <h2 style="margin: 0 0 12px;">Sayın ${esc(data.name)},</h2>
+      <p style="font-size: 14px; line-height: 1.6;">Ürün sorunuz alınmıştır, en kısa sürede yanıtlanacaktır.</p>
+      ${data.productTitle ? `<p style="font-size: 13px;">Ürün: <strong>${esc(data.productTitle)}</strong></p>` : ""}
+      <div style="margin-top: 16px; padding: 12px 16px; background: #fafafa; border-left: 3px solid #d97706; font-size: 13px; color: #525252;">
+        <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #a3a3a3; margin-bottom: 4px;">Sorunuzun özeti</div>
+        ${multiline(summary)}
+      </div>
+      <p style="font-size: 12px; color: #737373; margin-top: 24px;">Yıldırım Avize | Tel: ${PHONE_DISPLAY}</p>
+    </div>`,
+  });
+}
+
+const REQUEST_LABEL: Record<string, string> = { CANCEL: "İptal", RETURN: "İade" };
+
+/** Müşteri iptal/iade talebi açınca yöneticilere bildirim. */
+export async function sendRequestAdminEmail(data: { type: string; orderId: string; customerName: string; customerEmail: string; reason?: string }) {
+  const label = REQUEST_LABEL[data.type] ?? data.type;
+  return sendViaResend(process.env.RESEND_API_KEY, {
+    to: ADMIN_EMAILS,
+    reply_to: data.customerEmail,
+    subject: `${label} Talebi: #${data.orderId.slice(0, 8)} - ${data.customerName}`,
+    html: `<p><strong>${esc(data.customerName)}</strong> (${esc(data.customerEmail)}) <strong>${label.toLowerCase()} talebi</strong> oluşturdu.</p>
+      <p>Sipariş: <code>${data.orderId}</code></p>
+      <p>Neden: ${data.reason ? multiline(data.reason) : "-"}</p>
+      <p style="color:#737373;font-size:12px">Onaylamak veya reddetmek için yönetim panelindeki sipariş tablosunu kullanın.</p>`,
+  });
+}
+
+/** Yönetici kararı müşteriye bildirilir. */
+export async function sendRequestDecisionEmail(data: { to: string; name: string; type: string; approved: boolean; orderId: string; note?: string }) {
+  const label = REQUEST_LABEL[data.type] ?? data.type;
+  const result = data.approved ? `${label} talebiniz onaylandı` : `${label} talebiniz onaylanmadı`;
+  return sendViaResend(process.env.RESEND_API_KEY, {
+    to: [data.to],
+    subject: `${result} - #${data.orderId.slice(0, 8)}`,
+    html: `<div style="font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #171717;">
+      <h2 style="margin: 0 0 12px;">Sayın ${esc(data.name)},</h2>
+      <p style="font-size: 15px; font-weight: bold; color: ${data.approved ? "#059669" : "#b91c1c"};">${result}.</p>
+      <p style="font-size: 13px; color: #525252;">Sipariş: ${data.orderId}</p>
+      ${data.note ? `<p style="font-size: 14px;">${multiline(data.note)}</p>` : ""}
+      <p style="font-size: 12px; color: #737373; margin-top: 24px;">Yıldırım Avize | Tel: ${PHONE_DISPLAY}</p>
     </div>`,
   });
 }
