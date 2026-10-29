@@ -381,8 +381,8 @@ function AdminLoginForm() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Giriş başarısız.");
-      router.push("/admin");
-      router.refresh();
+      // Tam sayfa yönlendirme: yeni çerez proxy tarafından ilk istekte görülür
+      window.location.assign("/admin");
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -399,7 +399,7 @@ function AdminLoginForm() {
       </div>
       <form onSubmit={submit} className="space-y-4 text-xs">
         <div>
-          <label htmlFor="admin-user" className="font-semibold text-neutral-700 block mb-1">Kullanıcı Adı</label>
+          <label htmlFor="admin-user" className="font-semibold text-neutral-700 block mb-1">E-posta veya Kullanıcı Adı</label>
           <input
             id="admin-user"
             required

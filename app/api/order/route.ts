@@ -10,8 +10,10 @@ interface CartLine {
 }
 
 function clientIp(req: Request) {
-  const forwarded = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  return forwarded || req.headers.get("x-real-ip") || "127.0.0.1";
+  const raw = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "";
+  const ip = raw.replace(/^::ffff:/, "");
+  // PayTR yerel/geçersiz IP'leri reddedebilir; geliştirme ortamında genel bir IP kullanılır
+  return !ip || ip === "::1" || ip.startsWith("127.") ? "88.255.0.1" : ip;
 }
 
 export async function POST(req: Request) {
@@ -89,9 +91,7 @@ export async function POST(req: Request) {
         price: l.unitPrice,
         quantity: l.quantity,
       }));
-      // Kargo/indirim farkını tek kalemle yansıt ki sepet toplamı PayTR tutarıyla eşleşsin
-      const diff = totals.total - itemsTotal;
-      if (diff > 0.001) basket.push({ name: "Kargo", price: diff, quantity: 1 });
+      if (totals.shipping > 0) basket.push({ name: "Kargo", price: totals.shipping, quantity: 1 });
 
       const token = await getPaytrToken({
         orderId: order.id,

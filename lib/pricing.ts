@@ -1,9 +1,8 @@
 export type Coupon = { type: "percent" | "fixed"; value: number };
 
+// Geçerli tek promosyon kodu
 export const COUPONS: Record<string, Coupon> = {
-  BEYOGLU10: { type: "percent", value: 10 },
-  YILDIRIM15: { type: "percent", value: 15 },
-  USTA500: { type: "fixed", value: 500 },
+  YILDIRIM5: { type: "percent", value: 5 },
 };
 
 export const SHIPPING_COST = 250;

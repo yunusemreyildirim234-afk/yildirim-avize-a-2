@@ -299,7 +299,7 @@ export default function CartPage() {
                 <form onSubmit={handleApplyCoupon} className="flex gap-2">
                   <input aria-label="Kupon kodu"
                     type="text"
-                    placeholder="Örn: BEYOGLU10 veya YILDIRIM15"
+                    placeholder="Promosyon kodu (YILDIRIM5)"
                     value={couponInput}
                     onChange={(e) => setCouponInput(e.target.value)}
                     className="flex-1 text-xs p-3 rounded-xl border border-neutral-300 font-mono uppercase focus:outline-none focus:border-amber-600"

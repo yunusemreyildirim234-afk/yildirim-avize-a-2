@@ -71,12 +71,11 @@ export async function countShipments(): Promise<number> {
 
 export function createKargonomiShipment(input: KargonomiShipmentInput) {
   const env = process.env;
-  return request("/shipments", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      shipment: {
-        ...input,
+  // Depo kimliği tanımlıysa gönderici bilgileri Kargonomi depo kaydından alınır (sender_* alanları gerekmez)
+  const warehouseId = Number(env.KARGONOMI_WAREHOUSE_ID);
+  const sender = warehouseId
+    ? { warehouse_id: warehouseId }
+    : {
         sender_name: env.KARGONOMI_SENDER_NAME,
         sender_email: env.KARGONOMI_SENDER_EMAIL,
         sender_phone: env.KARGONOMI_SENDER_PHONE,
@@ -85,8 +84,11 @@ export function createKargonomiShipment(input: KargonomiShipmentInput) {
         sender_address: env.KARGONOMI_SENDER_ADDRESS,
         sender_state_id: Number(env.KARGONOMI_SENDER_STATE_ID),
         sender_city_id: Number(env.KARGONOMI_SENDER_CITY_ID),
-      },
-    }),
+      };
+  return request("/shipments", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ shipment: { ...input, ...sender } }),
   });
 }
 
@@ -121,7 +123,7 @@ export async function createShipmentForOrder(orderId: string) {
   const created = await createKargonomiShipment({
     buyer_name: order.user.name,
     buyer_email: order.user.email,
-    buyer_phone: order.phone || "",
+    buyer_phone: (order.phone || "").replace(/[^0-9]/g, "").replace(/^(90|0)/, "").slice(-10),
     buyer_address: order.address || "",
     buyer_state_id: order.buyerStateId ?? 34,
     buyer_city_id: order.buyerCityId ?? 425,

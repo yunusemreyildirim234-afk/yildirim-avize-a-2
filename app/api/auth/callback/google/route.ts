@@ -7,9 +7,15 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const code = searchParams.get("code");
   const error = searchParams.get("error");
+  const state = searchParams.get("state");
+  const savedState = req.headers.get("cookie")?.match(/(?:^|; )ya_oauth_state=([^;]+)/)?.[1];
 
   if (error || !code) {
     return NextResponse.redirect(new URL("/giris?error=google_iptal", SITE_URL));
+  }
+
+  if (!state || state !== savedState) {
+    return NextResponse.redirect(new URL("/giris?error=gecersiz_istek", SITE_URL));
   }
 
   try {
@@ -33,7 +39,7 @@ export async function GET(req: Request) {
     const tokenData = await tokenRes.json();
 
     if (!tokenData.access_token) {
-      console.error("Google Token Hatası:", tokenData);
+      console.error("Google Token Hatası:", tokenData.error, tokenData.error_description, "redirect_uri:", redirectUri);
       return NextResponse.redirect(new URL("/giris?error=token_alinamadi", SITE_URL));
     }
 
@@ -66,6 +72,7 @@ export async function GET(req: Request) {
 
     // 4. Giriş başarılı -> imzalı oturum çerezi ile hesap sayfasına yönlendir
     const res = NextResponse.redirect(new URL("/giris", SITE_URL));
+    res.cookies.delete("ya_oauth_state");
     res.cookies.set(USER_COOKIE, await signSession({ uid: user.id, picture: googleUser.picture ?? null }), cookieOptions);
     return res;
   } catch (err) {

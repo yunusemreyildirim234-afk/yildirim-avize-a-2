@@ -11,6 +11,27 @@ interface EmailOrderData {
   items: Array<{ title: string; variationName: string; quantity: number; price: number }>;
 }
 
+const ONBOARDING_FROM = "Yıldırım Avize <onboarding@resend.dev>";
+
+// RESEND_FROM (doğrulanmış alan adı) varsa onu dener; reddedilirse onboarding@resend.dev ile yeniden dener
+async function sendViaResend(apiKey: string, payload: Record<string, unknown>): Promise<boolean> {
+  const senders = [process.env.RESEND_FROM, ONBOARDING_FROM].filter((f, i, a): f is string => !!f && a.indexOf(f) === i);
+  for (const from of senders) {
+    try {
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ ...payload, from }),
+      });
+      if (res.ok) return true;
+      console.error("Resend reddetti:", from, await res.json().catch(() => res.status));
+    } catch (err) {
+      console.error("Resend bağlantı hatası:", err);
+    }
+  }
+  return false;
+}
+
 export async function sendOrderNotificationEmails(data: EmailOrderData) {
   const apiKey = process.env.RESEND_API_KEY;
 
@@ -103,27 +124,11 @@ export async function sendOrderNotificationEmails(data: EmailOrderData) {
   `;
 
   if (apiKey) {
-    try {
-      const response = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: "Yıldırım Avize <onboarding@resend.dev>",
-          to: [data.customerEmail],
-          subject: `✓ Siparişiniz Alındı - #${data.orderId.slice(0, 8)}`,
-          html: customerHtml,
-        }),
-      });
-
-      if (!response.ok) {
-        console.error("Resend API uyarısı:", await response.json());
-      }
-    } catch (err) {
-      console.error("Resend bağlantı hatası:", err);
-    }
+    await sendViaResend(apiKey, {
+      to: [data.customerEmail],
+      subject: `✓ Siparişiniz Alındı - #${data.orderId.slice(0, 8)}`,
+      html: customerHtml,
+    });
   }
 }
 export async function sendContactEmail(data: {
@@ -139,21 +144,10 @@ export async function sendContactEmail(data: {
 
   const esc = (v: string) => v.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c] as string);
 
-  try {
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        from: "Yıldırım Avize <onboarding@resend.dev>",
-        to: [to],
-        reply_to: data.email,
-        subject: `İletişim Formu: ${data.subject || "Genel"} - ${data.name}`,
-        html: `<p><strong>${esc(data.name)}</strong> (${esc(data.email)}${data.phone ? `, ${esc(data.phone)}` : ""})</p><p>${esc(data.message).replace(/\n/g, "<br />")}</p>`,
-      }),
-    });
-    return response.ok;
-  } catch (err) {
-    console.error("Resend bağlantı hatası:", err);
-    return false;
-  }
+  return sendViaResend(apiKey, {
+    to: [to],
+    reply_to: data.email,
+    subject: `İletişim Formu: ${data.subject || "Genel"} - ${data.name}`,
+    html: `<p><strong>${esc(data.name)}</strong> (${esc(data.email)}${data.phone ? `, ${esc(data.phone)}` : ""})</p><p>${esc(data.message).replace(/\n/g, "<br />")}</p>`,
+  });
 }
