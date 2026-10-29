@@ -22,6 +22,7 @@ export const metadata: Metadata = {
   },
   description: DESCRIPTION,
   alternates: { canonical: "/" },
+  icons: { icon: "/logo.png", shortcut: "/logo.png", apple: "/logo.png" },
   openGraph: {
     type: "website",
     locale: "tr_TR",
@@ -29,8 +30,14 @@ export const metadata: Metadata = {
     title: "Yıldırım Avize | Aydınlatmada Zarafet",
     description: DESCRIPTION,
     url: "/",
+    images: [{ url: "/logo.png", width: 1512, height: 1512, alt: "Yıldırım Avize" }],
   },
-  twitter: { card: "summary_large_image", title: "Yıldırım Avize", description: DESCRIPTION },
+  twitter: {
+    card: "summary",
+    title: "Yıldırım Avize",
+    description: DESCRIPTION,
+    images: ["/logo.png"],
+  },
 };
 
 export default function RootLayout({
