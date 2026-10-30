@@ -88,6 +88,7 @@ export function CartStepper({ product, inlineToast = false }: { product: QuickPr
         productId: product.id,
         variationId: variation.id,
         title: product.title,
+        imageUrl: product.imageUrl,
         variationName: variation.variationValue,
         price: product.basePrice + variation.extraPrice,
         quantity: 1,

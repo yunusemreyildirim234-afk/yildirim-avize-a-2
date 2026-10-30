@@ -50,8 +50,25 @@ export default async function OrderConfirmationPage({ params }: { params: Promis
           </div>
           <ul className="pt-3 border-t border-neutral-200 space-y-1">
             {order.items.map((item) => (
-              <li key={item.id} className="text-neutral-700">
-                {item.quantity}x <strong>{item.variation.product.title}</strong> – {item.variation.variationValue}
+              <li key={item.id} className="text-neutral-700 flex items-center gap-3">
+                <Link
+                  href={`/urun/${item.variation.product.id}`}
+                  aria-label={`${item.variation.product.title} ürün sayfası`}
+                  className="w-12 h-12 rounded-lg bg-neutral-900 overflow-hidden shrink-0 border border-neutral-200 flex items-center justify-center"
+                >
+                  {item.variation.product.imageUrl ? (
+                    <img src={item.variation.product.imageUrl} alt={item.variation.product.title} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-amber-400">💡</span>
+                  )}
+                </Link>
+                <span>
+                  {item.quantity}x{" "}
+                  <Link href={`/urun/${item.variation.product.id}`} className="hover:text-amber-700 hover:underline">
+                    <strong>{item.variation.product.title}</strong>
+                  </Link>{" "}
+                  – {item.variation.variationValue}
+                </span>
               </li>
             ))}
           </ul>

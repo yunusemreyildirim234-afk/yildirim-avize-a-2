@@ -22,6 +22,7 @@ export async function GET() {
       productId: r.variation.productId,
       variationId: r.variationId,
       title: r.variation.product.title,
+      imageUrl: r.variation.product.imageUrl,
       variationName: r.variation.variationValue,
       price: r.variation.product.basePrice + r.variation.extraPrice,
       quantity: Math.min(r.quantity, r.variation.stock),

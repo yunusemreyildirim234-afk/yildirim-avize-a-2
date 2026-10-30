@@ -11,7 +11,7 @@ interface OrderItem {
   id: string;
   quantity: number;
   unitPrice: number;
-  variation: { variationValue: string };
+  variation: { variationValue: string; product?: { id: string; title: string; imageUrl?: string | null } };
 }
 
 interface Order {
@@ -183,9 +183,30 @@ export default function AuthPage() {
 
                     <div className="text-xs text-neutral-700 space-y-1">
                       {order.items.map((item) => (
-                        <div key={item.id} className="flex justify-between">
-                          <span>
-                            {item.quantity}x {item.variation.variationValue}
+                        <div key={item.id} className="flex justify-between items-center gap-3">
+                          <span className="flex items-center gap-2.5 min-w-0">
+                            {item.variation.product && (
+                              <Link
+                                href={`/urun/${item.variation.product.id}`}
+                                aria-label={`${item.variation.product.title} ürün sayfası`}
+                                className="w-10 h-10 rounded-lg bg-neutral-900 overflow-hidden shrink-0 border border-neutral-200 flex items-center justify-center"
+                              >
+                                {item.variation.product.imageUrl ? (
+                                  <img src={item.variation.product.imageUrl} alt={item.variation.product.title} className="w-full h-full object-cover" />
+                                ) : (
+                                  <span className="text-amber-400 text-xs">💡</span>
+                                )}
+                              </Link>
+                            )}
+                            <span className="min-w-0">
+                              {item.quantity}x{" "}
+                              {item.variation.product ? (
+                                <Link href={`/urun/${item.variation.product.id}`} className="font-semibold hover:text-amber-700 hover:underline">
+                                  {item.variation.product.title}
+                                </Link>
+                              ) : null}{" "}
+                              <span className="text-neutral-500">{item.variation.variationValue}</span>
+                            </span>
                           </span>
                           <span className="font-medium text-neutral-900">
                             {(item.quantity * item.unitPrice).toLocaleString("tr-TR")} ₺

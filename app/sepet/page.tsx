@@ -240,15 +240,30 @@ export default function CartPage() {
                   key={item.variationId}
                   className="bg-white rounded-2xl border border-neutral-200 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm"
                 >
-                  <div>
+                  <div className="flex items-center gap-4 min-w-0">
+                    <Link
+                      href={`/urun/${item.productId}`}
+                      aria-label={`${item.title} ürün sayfası`}
+                      className="w-16 h-16 rounded-xl bg-neutral-900 overflow-hidden shrink-0 border border-neutral-200 flex items-center justify-center"
+                    >
+                      {item.imageUrl ? (
+                        <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-amber-400 text-lg">💡</span>
+                      )}
+                    </Link>
+                    <div className="min-w-0">
                     <h3 className="font-serif font-bold text-neutral-900 text-base">
-                      {item.title}
+                      <Link href={`/urun/${item.productId}`} className="hover:text-amber-700 hover:underline">
+                        {item.title}
+                      </Link>
                     </h3>
                     <span className="inline-block text-xs bg-amber-50 text-amber-800 font-medium px-2.5 py-0.5 rounded-md mt-1">
                       {item.variationName}
                     </span>
                     <div className="text-sm font-bold text-neutral-900 mt-2">
                       {item.price.toLocaleString("tr-TR")} ₺
+                    </div>
                     </div>
                   </div>
 

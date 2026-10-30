@@ -6,7 +6,7 @@ export async function getCustomerWithOrders(id: string) {
     where: { id },
     include: {
       orders: {
-        include: { items: { include: { variation: true } } },
+        include: { items: { include: { variation: { include: { product: { select: { id: true, title: true, imageUrl: true } } } } } } },
         orderBy: { createdAt: "desc" },
       },
     },

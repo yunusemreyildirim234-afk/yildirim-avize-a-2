@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronDown, Search } from "lucide-react";
+import { ChevronDown, ExternalLink, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import AdminBulkBar from "@/components/AdminBulkBar";
 import AdminProductEditor from "@/components/AdminProductEditor";
@@ -246,19 +246,27 @@ export default function AdminProductList({ products }: { products: Product[] }) 
                 onChange={() => toggleOne(product.id)}
                 className="w-4 h-4 accent-amber-600 shrink-0"
               />
-              <div className="w-16 h-16 rounded-xl bg-neutral-900 overflow-hidden shrink-0 border border-neutral-200">
+              <a
+                href={`/urun/${product.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`${product.title} sayfasını yeni sekmede aç`}
+                className="w-16 h-16 rounded-xl bg-neutral-900 overflow-hidden shrink-0 border border-neutral-200 block"
+              >
                 {product.imageUrl ? (
                   <img src={product.imageUrl} alt={product.title} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-amber-400 text-xs font-serif">💡</div>
                 )}
-              </div>
+              </a>
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600 bg-amber-50 px-2 py-0.5 rounded">
                   {product.category}
                 </span>
                 <h3 className="font-serif font-bold text-neutral-900 text-sm mt-0.5">
-                  {product.title}
+                  <a href={`/urun/${product.id}`} target="_blank" rel="noopener noreferrer" className="hover:text-amber-700 hover:underline">
+                    {product.title}
+                  </a>
                 </h3>
                 <span className="text-xs font-semibold text-neutral-600">
                   {product.basePrice.toLocaleString("tr-TR")} ₺
@@ -307,6 +315,14 @@ export default function AdminProductList({ products }: { products: Product[] }) 
 
             {/* Sağ: Düzenle ve Sil */}
             <div className="flex items-center gap-1 self-end md:self-center">
+            <a
+              href={`/urun/${product.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-neutral-600 hover:text-amber-700 text-xs font-medium p-2 rounded-lg hover:bg-amber-50 transition-colors"
+            >
+              <ExternalLink aria-hidden="true" className="w-3.5 h-3.5" /> Sitede Gör
+            </a>
             <button
               type="button"
               onClick={() => setEditingId((id) => (id === product.id ? null : product.id))}

@@ -21,6 +21,7 @@ import {
   Ticket,
 } from "lucide-react";
 import HoverMenu from "@/components/HoverMenu";
+import NavSearch from "@/components/NavSearch";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useCart } from "@/context/CartContext";
 
@@ -138,6 +139,7 @@ export default function Navbar() {
 
         {/* SAĞ: Sepet + Hesabım + Avatar menüsü */}
         <div className="flex items-center gap-1 sm:gap-2">
+          <NavSearch />
           <Link
             href="/sepet"
             aria-label={`Sepetim, ${totalItems} ürün`}
