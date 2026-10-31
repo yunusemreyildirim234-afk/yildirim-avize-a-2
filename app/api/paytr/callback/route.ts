@@ -3,7 +3,7 @@ import { releaseCoupon } from "@/lib/coupons";
 import { finalizeOrder } from "@/lib/orders";
 import { fromMerchantOid, verifyPaytrCallback } from "@/lib/paytr";
 
-const ok = () => new Response("OK", { status: 200, headers: { "Content-Type": "text/plain" } });
+const ok = () => new Response("OK", { status: 200, headers: { "Content-Type": "text/plain; charset=utf-8" } });
 
 // PayTR "Bildirim URL" — PayTR panelinde https://<alan-adiniz>/api/paytr/callback olarak tanımlanmalıdır.
 // PayTR'nin URL kontrol botu GET ile erişir; 200 "OK" ile karşılanır.
