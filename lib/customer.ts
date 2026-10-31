@@ -6,7 +6,11 @@ export async function getCustomerWithOrders(id: string) {
   if (!user) return null;
   // Hesaba userId ile bağlı siparişler + aynı e-postaya (harf duyarsız) kayıtlı hesapların siparişleri
   const orders = await prisma.order.findMany({
-    where: { OR: [{ userId: user.id }, { user: { email: { equals: user.email, mode: "insensitive" } } }] },
+    where: {
+      OR: [{ userId: user.id }, { user: { email: { equals: user.email, mode: "insensitive" } } }],
+      // Ödeme ekranını terk eden denemeler müşteri geçmişinde görünmez
+      status: { notIn: ["AWAITING_PAYMENT", "PAYMENT_FAILED"] },
+    },
     include: { items: { include: { variation: { include: { product: { select: { id: true, title: true, imageUrl: true } } } } } } },
     orderBy: { createdAt: "desc" },
   });

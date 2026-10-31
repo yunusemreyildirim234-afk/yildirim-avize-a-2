@@ -10,6 +10,10 @@ import {
   LayoutDashboard,
   LogIn,
   LogOut,
+  Menu,
+  Phone,
+  Shield,
+  X,
   MessageSquare,
   MapPin,
   Package,
@@ -22,8 +26,10 @@ import {
 } from "lucide-react";
 import HoverMenu from "@/components/HoverMenu";
 import NavSearch from "@/components/NavSearch";
+import NotificationBell from "@/components/NotificationBell";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useCart } from "@/context/CartContext";
+import { PHONE_DISPLAY, PHONE_TEL } from "@/lib/site";
 
 interface Session {
   user: { name: string; email: string; picture?: string | null } | null;
@@ -45,6 +51,12 @@ const DISCOVER_LINKS = [
   { href: "/iletisim", label: "Beyoğlu Mağazamız", icon: MapPin },
 ];
 
+const CORPORATE_LINKS = [
+  { href: "/gizlilik-politikasi", label: "Gizlilik Politikası" },
+  { href: "/kullanim-sartlari", label: "Kullanım Şartları" },
+  { href: "/mesafeli-satis-sozlesmesi", label: "Mesafeli Satış Sözleşmesi" },
+];
+
 const itemClass =
   "flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 transition-colors w-full text-left";
 
@@ -53,6 +65,26 @@ export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const [session, setSession] = useState<Session>({ user: null, admin: false });
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // Sayfa değişince çekmeceyi kapat
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- rota değişiminde çekmece sıfırlanır
+    setDrawerOpen(false);
+  }, [pathname]);
+
+  // Çekmece açıkken ESC ile kapanır ve sayfa kaydırması kilitlenir
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setDrawerOpen(false);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [drawerOpen]);
 
   useEffect(() => {
     let active = true;
@@ -82,10 +114,19 @@ export default function Navbar() {
   const initial = user?.name?.trim().charAt(0).toUpperCase();
 
   return (
-    <header className="w-full bg-white/95 backdrop-blur border-b border-zinc-100 sticky top-0 z-50">
+    <header className="w-full bg-white border-b border-zinc-100 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-4">
         {/* SOL: Logo + Koleksiyonlar menüsü */}
-        <div className="flex items-center gap-1 sm:gap-3">
+        <div className="flex items-center gap-1 sm:gap-3 min-w-0">
+          <button
+            type="button"
+            aria-label="Menüyü aç"
+            aria-expanded={drawerOpen}
+            onClick={() => setDrawerOpen(true)}
+            className="md:hidden -ml-2 rounded-full p-2 hover:bg-zinc-100 transition-colors"
+          >
+            <Menu aria-hidden="true" className="w-6 h-6 text-zinc-800" />
+          </button>
           <Link href="/" aria-label="Yıldırım Avize ana sayfa" className="shrink-0 flex items-center gap-2.5">
             <Image
               src="/logo-mark.png"
@@ -100,6 +141,7 @@ export default function Navbar() {
             </span>
           </Link>
 
+          <div className="hidden md:block">
           <HoverMenu
             label="Koleksiyonlar menüsünü aç"
             panelClassName="w-[min(92vw,34rem)]"
@@ -135,15 +177,16 @@ export default function Navbar() {
               </div>
             )}
           </HoverMenu>
+          </div>
         </div>
 
         {/* SAĞ: Sepet + Hesabım + Avatar menüsü */}
-        <div className="flex items-center gap-1 sm:gap-2">
+        <div className="flex items-center gap-0 sm:gap-2 shrink-0">
           <NavSearch />
           <Link
             href="/sepet"
             aria-label={`Sepetim, ${totalItems} ürün`}
-            className="relative flex items-center gap-2 rounded-full px-3 py-2 hover:bg-zinc-100 transition-colors"
+            className="relative flex items-center gap-2 rounded-full p-2 sm:px-3 sm:py-2 hover:bg-zinc-100 transition-colors"
           >
             <ShoppingBag aria-hidden="true" className="w-5 h-5 text-zinc-800" />
             <span className="hidden sm:inline text-sm font-semibold text-zinc-800">Sepet</span>
@@ -153,6 +196,8 @@ export default function Navbar() {
               </span>
             )}
           </Link>
+
+          {(user || admin) && <NotificationBell />}
 
           <ThemeToggle />
 
@@ -180,7 +225,7 @@ export default function Navbar() {
                 </span>
                 <ChevronDown
                   aria-hidden="true"
-                  className={`w-4 h-4 text-zinc-500 transition-transform ${open ? "rotate-180" : ""}`}
+                  className={`hidden sm:block w-4 h-4 text-zinc-500 transition-transform ${open ? "rotate-180" : ""}`}
                 />
               </>
             )}
@@ -232,6 +277,79 @@ export default function Navbar() {
           </HoverMenu>
         </div>
       </div>
+
+      {/* Mobil: kaydırılabilir koleksiyon hapları */}
+      <nav aria-label="Koleksiyonlar" className="md:hidden border-t border-zinc-100 flex gap-2 overflow-x-auto px-4 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {CATEGORY_LINKS.map((l) => {
+          const active = pathname === l.href;
+          return (
+            <Link
+              key={l.href}
+              href={l.href}
+              aria-current={active ? "page" : undefined}
+              className={`shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-colors ${
+                active ? "bg-amber-600 border-amber-600 text-white" : "bg-zinc-50 border-zinc-200 text-zinc-700 hover:bg-zinc-100"
+              }`}
+            >
+              {l.label}
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* Mobil: hamburger çekmecesi */}
+      {drawerOpen && (
+        <div className="md:hidden fixed inset-0 z-[60]" role="dialog" aria-modal="true" aria-label="Menü">
+          <button type="button" aria-label="Menüyü kapat" onClick={() => setDrawerOpen(false)} className="absolute inset-0 bg-zinc-950/50" />
+          <div className="absolute left-0 top-0 bottom-0 w-[85vw] max-w-sm bg-white shadow-2xl flex flex-col">
+            <div className="flex items-center justify-between h-16 px-4 border-b border-zinc-100 shrink-0">
+              <span className="font-serif font-bold text-lg text-zinc-900">
+                Yıldırım <span className="text-red-700">Avize</span>
+              </span>
+              <button type="button" aria-label="Menüyü kapat" onClick={() => setDrawerOpen(false)} className="rounded-full p-2 hover:bg-zinc-100">
+                <X aria-hidden="true" className="w-5 h-5 text-zinc-700" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-3 space-y-5">
+              <div>
+                <h2 className="px-3 pb-1 text-[11px] font-bold uppercase tracking-wider text-zinc-400">Koleksiyonlar</h2>
+                {CATEGORY_LINKS.map((l) => (
+                  <Link key={l.href} href={l.href} onClick={() => setDrawerOpen(false)} className={itemClass}>
+                    {l.label}
+                  </Link>
+                ))}
+              </div>
+              <div>
+                <h2 className="px-3 pb-1 text-[11px] font-bold uppercase tracking-wider text-zinc-400">Keşfet</h2>
+                {DISCOVER_LINKS.map(({ href, label, icon: Icon }) => (
+                  <Link key={href} href={href} onClick={() => setDrawerOpen(false)} className={itemClass}>
+                    <Icon aria-hidden="true" className="w-4 h-4 text-amber-600 shrink-0" />
+                    {label}
+                  </Link>
+                ))}
+              </div>
+              <div>
+                <h2 className="px-3 pb-1 text-[11px] font-bold uppercase tracking-wider text-zinc-400">Kurumsal</h2>
+                {CORPORATE_LINKS.map((l) => (
+                  <Link key={l.href} href={l.href} onClick={() => setDrawerOpen(false)} className={itemClass}>
+                    <Shield aria-hidden="true" className="w-4 h-4 text-zinc-400 shrink-0" />
+                    {l.label}
+                  </Link>
+                ))}
+              </div>
+              <div>
+                <h2 className="px-3 pb-1 text-[11px] font-bold uppercase tracking-wider text-zinc-400">İletişim</h2>
+                <Link href="/iletisim" onClick={() => setDrawerOpen(false)} className={itemClass}>
+                  <MessageSquare aria-hidden="true" className="w-4 h-4 text-zinc-500 shrink-0" /> Bize Ulaşın
+                </Link>
+                <a href={`tel:${PHONE_TEL}`} className={itemClass}>
+                  <Phone aria-hidden="true" className="w-4 h-4 text-zinc-500 shrink-0" /> {PHONE_DISPLAY}
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 }

@@ -9,6 +9,7 @@ import AdminKargonomiOrderActions from "@/components/AdminKargonomiOrderActions"
 import AdminMessages from "@/components/AdminMessages";
 import AdminCoupons from "@/components/AdminCoupons";
 import AdminLiveAlerts from "@/components/AdminLiveAlerts";
+import AdminSection from "@/components/AdminSection";
 import AdminOrderRequest from "@/components/AdminOrderRequest";
 
 export const dynamic = "force-dynamic";
@@ -60,7 +61,11 @@ export default async function AdminPage() {
     (a, b) => Number(b.status === "PENDING") - Number(a.status === "PENDING") || b.createdAt.getTime() - a.createdAt.getTime()
   );
 
-  const totalRevenue = orders.reduce((sum, o) => sum + o.totalAmount, 0);
+  // Ödeme adımında terk edilen denemeler gelir/sayaçlara dahil edilmez
+  const attempts = orders.filter((o) => o.status === "AWAITING_PAYMENT");
+  const pendingOrders = orders.filter((o) => o.status === "PENDING" || o.status === "PENDING_NEW").length;
+  const pendingMessages = messages.filter((m) => m.status === "PENDING").length;
+  const totalRevenue = orders.filter((o) => o.status !== "AWAITING_PAYMENT" && o.status !== "PAYMENT_FAILED").reduce((sum, o) => sum + o.totalAmount, 0);
   const beyogluOrdersCount = orders.filter((o) => o.shippingType === "BEYOGLU_MAGAZA_TESLIM").length;
   const kargonomiOrdersCount = orders.filter((o) => Boolean(o.kargonomiShipmentId)).length;
 
@@ -160,21 +165,15 @@ export default async function AdminPage() {
         <AdminProductList products={products} />
 
         {/* 4. Canlı Siparişler & Kargonomi Operasyon Tablosu */}
-        <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden shadow-sm">
-          <div className="p-6 border-b border-neutral-100 flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-serif font-bold text-neutral-900">
-                Gelen Siparişler, Durum & Kargonomi Yönetimi
-              </h2>
-              <p className="text-xs text-neutral-500 mt-0.5">
-                Siparişler için Kargonomi gönderisi oluşturabilir, kargo firmalarının fiyat tekliflerini karşılaştırıp onaylayabilir ve PDF barkod çıktısı alabilirsiniz.
-              </p>
-            </div>
-            <span className="text-xs text-neutral-500">
-              Son {orders.length} işlem listeleniyor
-            </span>
-          </div>
-
+        <AdminSection
+          id="siparisler"
+          title="Gelen Siparişler, Durum & Kargonomi Yönetimi"
+          description="Kargonomi gönderisi oluşturabilir, fiyat tekliflerini onaylayabilir ve PDF barkod çıktısı alabilirsiniz."
+          badges={[
+            { label: `${pendingOrders} bekleyen sipariş`, tone: pendingOrders > 0 ? "amber" : "neutral" },
+            ...(attempts.length > 0 ? [{ label: `${attempts.length} deneme`, tone: "neutral" as const }] : []),
+          ]}
+        >
           {orders.length === 0 ? (
             <div className="p-12 text-center text-neutral-400 text-xs">
               Henüz verilmiş bir sipariş bulunmuyor.
@@ -245,6 +244,16 @@ export default async function AdminPage() {
                         <AdminKargonomiOrderActions order={order} />
                       </td>
                       <td className="p-4">
+                        {order.status === "AWAITING_PAYMENT" && (
+                          <span className="inline-block mb-2 bg-yellow-100 text-yellow-900 border border-yellow-300 text-[11px] font-bold px-2.5 py-1 rounded-full">
+                            Sipariş Denemesi (Ödeme Tamamlanmadı)
+                          </span>
+                        )}
+                        {order.status === "PAYMENT_FAILED" && (
+                          <span className="inline-block mb-2 bg-red-100 text-red-800 border border-red-200 text-[11px] font-bold px-2.5 py-1 rounded-full">
+                            Ödeme Başarısız
+                          </span>
+                        )}
                         <OrderStatusSelector
                           orderId={order.id}
                           initialStatus={order.status}
@@ -263,9 +272,15 @@ export default async function AdminPage() {
               </table>
             </div>
           )}
-        </div>
+        </AdminSection>
 
         {/* 5. Gelen Mesajlar & Sorular */}
+        <AdminSection
+          id="mesajlar"
+          title="Gelen Mesajlar & Ürün Soruları"
+          description="İletişim formu mesajları ve ürün soruları. Yanıtınız müşteriye e-posta ile iletilir ve hesabında görünür."
+          badges={[{ label: `${pendingMessages} okunmamış`, tone: pendingMessages > 0 ? "amber" : "neutral" }]}
+        >
         <AdminMessages
           messages={sortedMessages.map((m) => ({
             id: m.id,
@@ -282,6 +297,7 @@ export default async function AdminPage() {
             productTitle: m.product?.title ?? null,
           }))}
         />
+        </AdminSection>
       </div>
     </main>
   );

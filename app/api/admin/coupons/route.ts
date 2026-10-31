@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { sendCouponEmail } from "@/lib/email";
+import { notifyCustomer } from "@/lib/notifications";
 
 // Promosyon kodu yönetimi (proxy yalnızca yöneticiye açar)
 export async function POST(req: Request) {
@@ -25,6 +27,16 @@ export async function POST(req: Request) {
   }
 
   const coupon = await prisma.coupon.create({ data: { code, discountPercent, maxUses, userEmail, productId } });
+  // Kişiye özel kuponda müşteriye hem bildirim hem e-posta
+  if (userEmail) {
+    const customer = await prisma.user.findFirst({ where: { email: { equals: userEmail, mode: "insensitive" } }, select: { name: true } });
+    await notifyCustomer(
+      { email: userEmail },
+      { title: "Size özel kupon tanımlandı!", message: `Size özel %${discountPercent} indirim kuponu tanımlandı! Kod: ${code}`, type: "COUPON", link: "/giris#kuponlar" }
+    );
+    await sendCouponEmail({ to: userEmail, name: customer?.name ?? "Değerli Müşterimiz", code, discountPercent }).catch(() => false);
+  }
+
   return NextResponse.json({ success: true, coupon });
 }
 

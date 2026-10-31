@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSessionUserId } from "@/lib/account";
 import { sendNewMessageEmail, sendQuestionReceivedEmail } from "@/lib/email";
+import { notifyAdmins } from "@/lib/notifications";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const clean = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
@@ -40,6 +41,13 @@ export async function POST(req: Request) {
         message,
         productId: product?.id ?? null,
       },
+    });
+
+    await notifyAdmins({
+      title: `Yeni Soru/Mesaj: ${product?.title || subject || "Genel"}`,
+      message: `${name} (${email})`,
+      type: "QUESTION",
+      link: "/admin#mesajlar",
     });
 
     // Bildirim e-postası başarısız olsa bile mesaj kaydedilmiştir

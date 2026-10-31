@@ -190,3 +190,19 @@ model Coupon {
   active          Boolean  @default(true)
   createdAt       DateTime @default(now())
 }
+
+// Bildirim merkezi: userId/userEmail boş ise yönetici bildirimidir
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String?
+  userEmail String?
+  title     String
+  message   String
+  type      String   @default("SYSTEM") // ORDER, COUPON, QUESTION, SYSTEM
+  link      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, read, createdAt])
+  @@index([userEmail])
+}

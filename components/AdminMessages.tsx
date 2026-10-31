@@ -24,8 +24,6 @@ export default function AdminMessages({ messages }: { messages: AdminMessage[] }
   const [sendingId, setSendingId] = useState<string | null>(null);
   const [notice, setNotice] = useState<Record<string, string>>({});
 
-  const pending = messages.filter((m) => m.status === "PENDING").length;
-
   const send = async (m: AdminMessage) => {
     const reply = (drafts[m.id] ?? m.reply ?? "").trim();
     if (!reply) return;
@@ -51,19 +49,7 @@ export default function AdminMessages({ messages }: { messages: AdminMessage[] }
   };
 
   return (
-    <div id="mesajlar" className="bg-white rounded-2xl border border-neutral-200 overflow-hidden shadow-sm">
-      <div className="p-6 border-b border-neutral-100 flex items-center justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-serif font-bold text-neutral-900">Gelen Mesajlar & Sorular</h2>
-          <p className="text-xs text-neutral-500 mt-0.5">
-            İletişim formu mesajları ve ürün soruları. Yanıtınız müşteriye e-posta ile iletilir ve hesabında görünür.
-          </p>
-        </div>
-        <span className="text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg shrink-0">
-          {pending} bekleyen
-        </span>
-      </div>
-
+    <div>
       {messages.length === 0 ? (
         <div className="p-12 text-center text-neutral-400 text-xs">Henüz gelen mesaj veya soru yok.</div>
       ) : (

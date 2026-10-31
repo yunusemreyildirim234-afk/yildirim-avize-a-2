@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { sendOrderNotificationEmails } from "@/lib/email";
 import { createShipmentForOrder } from "@/lib/kargonomi";
+import { notifyAdmins } from "@/lib/notifications";
 
 /** Sipariş kalemleri kadar varyasyon stoğunu düşer (0'ın altına inmez); bir sipariş için yalnızca bir kez. */
 export async function deductOrderStock(orderId: string) {
@@ -52,6 +53,13 @@ export async function finalizeOrder(orderId: string) {
       console.warn("Kargonomi gönderisi oluşturulamadı:", (err as Error).message);
     }
   }
+
+  await notifyAdmins({
+    title: `Yeni Sipariş: #${order.id.slice(0, 8)}`,
+    message: `${order.user.name} • ${order.totalAmount.toLocaleString("tr-TR")} ₺`,
+    type: "ORDER",
+    link: "/admin#siparisler",
+  });
 
   await sendOrderNotificationEmails({
     orderId: order.id,

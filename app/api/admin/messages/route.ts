@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { sendReplyEmail } from "@/lib/email";
+import { notifyCustomer } from "@/lib/notifications";
 
 // Yönetici yanıtı: kaydeder ve müşterinin e-posta adresine gönderir (proxy yalnızca yöneticiye açar)
 export async function POST(req: Request) {
@@ -16,6 +17,16 @@ export async function POST(req: Request) {
     where: { id },
     data: { reply, repliedAt: new Date(), status: "ANSWERED" },
   });
+
+  await notifyCustomer(
+    { userId: existing.userId, email: existing.email },
+    {
+      title: "Sorunuz yanıtlandı!",
+      message: existing.product?.title ? `"${existing.product.title}" hakkındaki sorunuza yanıt verdik.` : "Mesajınıza yanıt verdik.",
+      type: "QUESTION",
+      link: "/giris#mesajlar",
+    }
+  );
 
   const emailed = await sendReplyEmail({
     to: existing.email,
