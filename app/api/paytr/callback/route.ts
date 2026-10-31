@@ -1,7 +1,8 @@
+import { createHmac, timingSafeEqual } from "node:crypto";
 import { prisma } from "@/lib/db";
 import { releaseCoupon } from "@/lib/coupons";
 import { finalizeOrder } from "@/lib/orders";
-import { fromMerchantOid, verifyPaytrCallback } from "@/lib/paytr";
+import { fromMerchantOid } from "@/lib/paytr";
 
 const ok = () => new Response("OK", { status: 200, headers: { "Content-Type": "text/plain; charset=utf-8" } });
 
@@ -18,7 +19,18 @@ export async function POST(req: Request) {
   // Test isteği / eksik parametre: hata vermeden "OK"
   if (!p.merchant_oid || !p.status || !p.total_amount || !p.hash) return ok();
 
-  if (!verifyPaytrCallback({ merchant_oid: p.merchant_oid, status: p.status, total_amount: p.total_amount, hash: p.hash })) {
+  const merchantKey = (process.env.PAYTR_MERCHANT_KEY || process.env.MERCHANT_KEY || "").trim();
+  const merchantSalt = (process.env.PAYTR_MERCHANT_SALT || process.env.MERCHANT_SALT || "").trim();
+
+  // Callback hash: HMAC-SHA256(merchant_oid + salt + status + total_amount, key) — salt yalnızca bir kez eklenir
+  const hashStr = `${p.merchant_oid}${merchantSalt}${p.status}${p.total_amount}`;
+  const token = createHmac("sha256", merchantKey).update(hashStr).digest("base64");
+  const a = Buffer.from(token);
+  const b = Buffer.from(p.hash);
+  if (a.length !== b.length || !timingSafeEqual(a, b)) {
+    console.log("PayTR Gelen Hash:", p.hash);
+    console.log("Hesaplanan Hash:", token);
+    console.log("Kullanılan Salt Dolu mu?:", !!merchantSalt, "Key Dolu mu?:", !!merchantKey);
     return new Response("PAYTR notification failed: bad hash", { status: 400, headers: { "Content-Type": "text/plain" } });
   }
 

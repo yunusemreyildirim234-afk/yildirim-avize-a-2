@@ -1,9 +1,9 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { SITE_URL } from "@/lib/site";
 
-const merchantId = () => process.env.PAYTR_MERCHANT_ID || process.env.MERCHANT_ID || "";
-const merchantKey = () => process.env.PAYTR_MERCHANT_KEY || process.env.MERCHANT_KEY || "";
-const merchantSalt = () => process.env.PAYTR_MERCHANT_SALT || process.env.MERCHANT_SALT || "";
+const merchantId = () => (process.env.PAYTR_MERCHANT_ID || process.env.MERCHANT_ID || "").trim();
+const merchantKey = () => (process.env.PAYTR_MERCHANT_KEY || process.env.MERCHANT_KEY || "").trim();
+const merchantSalt = () => (process.env.PAYTR_MERCHANT_SALT || process.env.MERCHANT_SALT || "").trim();
 
 // PayTR merchant_oid yalnızca alfanümerik olabilir: UUID'nin tireleri kaldırılır
 export const toMerchantOid = (orderId: string) => orderId.replace(/-/g, "");
