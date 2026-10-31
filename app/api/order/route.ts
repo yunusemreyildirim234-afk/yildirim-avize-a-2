@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { finalizeOrder } from "@/lib/orders";
 import { getPaytrToken } from "@/lib/paytr";
 import { computeTotals, couponDiscountFor, SHIPPING_LABELS } from "@/lib/pricing";
+import { getSessionUserId } from "@/lib/account";
 import { releaseCoupon, reserveCoupon, validateCoupon } from "@/lib/coupons";
 
 interface CartLine {
@@ -70,9 +71,13 @@ export async function POST(req: Request) {
     const totals = computeTotals({ itemsTotal, shippingType, couponDiscount, paymentMethod });
 
     // 2. Müşteriyi bul veya oluştur
+    // Oturum açıksa sipariş doğrudan o hesaba bağlanır; değilse e-posta ile (harf duyarsız) eşleşen hesap kullanılır
+    const sessionUserId = await getSessionUserId();
+    const normalizedEmail = String(email).trim().toLowerCase();
     const user =
-      (await prisma.user.findUnique({ where: { email } })) ??
-      (await prisma.user.create({ data: { name, email, password: "guest_checkout", role: "USER" } }));
+      (sessionUserId ? await prisma.user.findUnique({ where: { id: sessionUserId } }) : null) ??
+      (await prisma.user.findFirst({ where: { email: { equals: normalizedEmail, mode: "insensitive" } } })) ??
+      (await prisma.user.create({ data: { name, email: normalizedEmail, password: "guest_checkout", role: "USER" } }));
 
     // 3. Siparişi kaydet (kartlı ödemede ödeme onayına kadar AWAITING_PAYMENT)
     const itemRows = orderLines.map((l) => ({ variationId: l.variation.id, quantity: l.quantity, unitPrice: l.unitPrice }));

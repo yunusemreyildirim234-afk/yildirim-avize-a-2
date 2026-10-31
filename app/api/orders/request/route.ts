@@ -2,10 +2,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSessionUserId } from "@/lib/account";
 import { sendRequestAdminEmail } from "@/lib/email";
+import { requestTypeFor } from "@/lib/orderStatus";
 
-// Kargoya verilmeden önce iptal, kargolandıktan sonra iade talebi
-const CANCELLABLE = ["PENDING", "PENDING_NEW"];
-const RETURNABLE = ["SHIPPED", "READY_FOR_PICKUP", "DELIVERED"];
+// Teslim edilmemiş siparişte iptal, teslim edilmiş siparişte iade talebi
 
 export async function POST(req: Request) {
   const userId = await getSessionUserId();
@@ -21,7 +20,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Bu sipariş için zaten bir talep oluşturulmuş." }, { status: 409 });
   }
 
-  const type = CANCELLABLE.includes(order.status) ? "CANCEL" : RETURNABLE.includes(order.status) ? "RETURN" : null;
+  const type = requestTypeFor(order.status);
   if (!type) return NextResponse.json({ error: "Bu sipariş durumunda talep oluşturulamaz." }, { status: 400 });
 
   await prisma.order.update({

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import MyMessages from "@/components/MyMessages";
 import MyCoupons from "@/components/MyCoupons";
 import OrderRequestBox from "@/components/OrderRequestBox";
+import OrderTracker from "@/components/OrderTracker";
 
 interface OrderItem {
   id: string;
@@ -16,6 +17,9 @@ interface OrderItem {
 
 interface Order {
   id: string;
+  paymentMethod?: string | null;
+  kargonomiStatus?: string | null;
+  updatedAt?: string;
   totalAmount: number;
   shippingType: string;
   status: string;
@@ -169,6 +173,10 @@ export default function AuthPage() {
                             ? "İptal Edildi"
                             : order.status === "RETURNED"
                             ? "İade Edildi"
+                            : order.status === "AWAITING_PAYMENT"
+                            ? "Ödeme Bekleniyor"
+                            : order.status === "PAYMENT_FAILED"
+                            ? "Ödeme Alınamadı"
                             : order.kargonomiStatusLabel ||
                             (order.status === "DELIVERED"
                               ? "Teslim Edildi"
@@ -181,6 +189,8 @@ export default function AuthPage() {
                       </div>
                     </div>
 
+                    <OrderTracker order={order} />
+
                     <div className="text-xs text-neutral-700 space-y-3">
                       {order.items.map((item) => (
                         <div key={item.id} className="flex justify-between items-center gap-3">
@@ -189,7 +199,7 @@ export default function AuthPage() {
                               <Link
                                 href={`/urun/${item.variation.product.id}`}
                                 aria-label={`${item.variation.product.title} ürün sayfası`}
-                                className="w-[72px] h-[72px] rounded-xl bg-neutral-100 overflow-hidden shrink-0 border border-neutral-200 flex items-center justify-center"
+                                className="w-16 h-16 rounded-xl bg-neutral-100 overflow-hidden shrink-0 border border-neutral-200 flex items-center justify-center"
                               >
                                 {item.variation.product.imageUrl && (
                                   <img src={item.variation.product.imageUrl} alt={item.variation.product.title} className="w-full h-full object-cover" />

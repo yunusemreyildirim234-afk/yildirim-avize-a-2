@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { requestTypeFor } from "@/lib/orderStatus";
 
 interface Props {
   order: {
@@ -13,8 +14,6 @@ interface Props {
   onChanged: () => void;
 }
 
-const CANCELLABLE = ["PENDING", "PENDING_NEW"];
-const RETURNABLE = ["SHIPPED", "READY_FOR_PICKUP", "DELIVERED"];
 
 // Hesabım → Siparişlerim: iptal/iade talebi butonu ve talep sonucu rozetleri
 export default function OrderRequestBox({ order, onChanged }: Props) {
@@ -47,7 +46,7 @@ export default function OrderRequestBox({ order, onChanged }: Props) {
     );
   }
 
-  const type = CANCELLABLE.includes(order.status) ? "CANCEL" : RETURNABLE.includes(order.status) ? "RETURN" : null;
+  const type = requestTypeFor(order.status);
   if (!type) return null;
   const actionLabel = type === "CANCEL" ? "İptal Talebi Gönder" : "İade Talebi Gönder";
 
