@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -171,10 +172,10 @@ export default function CartPage() {
         clearCart();
         router.push(`/siparis-onay/${data.orderId}`);
       } else {
-        alert("Sipariş oluşturulamadı: " + data.error);
+        toast.error("Sipariş oluşturulamadı", { description: data.error });
       }
     } catch {
-      alert("Bir bağlantı hatası oluştu.");
+      toast.error("Bir bağlantı hatası oluştu.");
     } finally {
       setLoading(false);
     }

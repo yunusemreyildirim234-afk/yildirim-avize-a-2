@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 
 export default function ProductQuestionForm({ productId, productTitle }: { productId: string; productTitle: string }) {
   const [name, setName] = useState("");
@@ -37,6 +38,7 @@ export default function ProductQuestionForm({ productId, productTitle }: { produ
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Soru gönderilemedi.");
       setDone(true);
+      toast.success("Sorunuz iletildi", { description: "Yanıt e-posta adresinize gönderilecek." });
       setMessage("");
     } catch (err) {
       setError((err as Error).message);

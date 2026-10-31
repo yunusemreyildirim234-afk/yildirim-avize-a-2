@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { HoverMagnifier, ImageLightbox } from "@/components/ImageZoom";
 import { useCart } from "@/context/CartContext";
 
@@ -47,6 +48,7 @@ export default function ProductDetailClient({ product }: { product: Product }) {
       quantity: quantity,
     });
 
+    toast.success("Sepete eklendi", { description: `${quantity}x ${product.title}`, action: { label: "Sepete Git", onClick: () => (window.location.href = "/sepet") } });
     setAddedToCart(true);
     setTimeout(() => setAddedToCart(false), 2500);
   };

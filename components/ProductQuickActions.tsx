@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast as notify } from "sonner";
 import Link from "next/link";
 import { Heart, Minus, Plus, X } from "lucide-react";
 import { useCart } from "@/context/CartContext";
@@ -30,6 +31,7 @@ export function FavoriteButton({ product, className = "" }: { product: QuickProd
       imageUrl: product.imageUrl,
     });
     setBubble(!fav);
+    notify(fav ? "Favorilerden çıkarıldı" : "Favorilere eklendi", { description: product.title });
   };
 
   return (
@@ -93,6 +95,7 @@ export function CartStepper({ product, inlineToast = false }: { product: QuickPr
         price: product.basePrice + variation.extraPrice,
         quantity: 1,
       });
+    if (!inCart) notify.success("Sepete eklendi", { description: product.title });
     setToast(true);
   };
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -100,10 +101,10 @@ export default function AuthPage() {
         setUser(data.user);
         window.dispatchEvent(new Event("ya-auth"));
       } else {
-        alert(data.error);
+        toast.error(data.error);
       }
     } catch {
-      alert("Bağlantı hatası oluştu.");
+      toast.error("Bağlantı hatası oluştu.");
     } finally {
       setLoading(false);
     }

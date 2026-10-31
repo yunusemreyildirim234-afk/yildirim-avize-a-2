@@ -52,11 +52,9 @@ export async function POST(req: Request) {
       message,
       productTitle: product?.title,
     }).catch(() => false);
-    if (kind === "PRODUCT_QUESTION") {
-      await sendQuestionReceivedEmail({ to: email, name, question: message, productTitle: product?.title }).catch((err) =>
-        console.error("[email] Müşteri onay maili hatası:", err)
-      );
-    }
+    await sendQuestionReceivedEmail({ to: email, name, question: message, productTitle: product?.title }).catch((err) =>
+      console.error("[email] Müşteri onay maili hatası:", err)
+    );
     if (!emailed) console.warn("Yönetici bildirim e-postası gönderilemedi (mesaj:", saved.id, ")");
 
     return NextResponse.json({

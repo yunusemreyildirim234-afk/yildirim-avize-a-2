@@ -8,6 +8,7 @@ import AdminTrendyolSync from "@/components/AdminTrendyolSync";
 import AdminKargonomiOrderActions from "@/components/AdminKargonomiOrderActions";
 import AdminMessages from "@/components/AdminMessages";
 import AdminCoupons from "@/components/AdminCoupons";
+import AdminLiveAlerts from "@/components/AdminLiveAlerts";
 import AdminOrderRequest from "@/components/AdminOrderRequest";
 
 export const dynamic = "force-dynamic";
@@ -65,6 +66,7 @@ export default async function AdminPage() {
 
   return (
     <main className="min-h-screen bg-neutral-100 py-10 px-4 sm:px-6 lg:px-8">
+      <AdminLiveAlerts />
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Üst Başlık */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-neutral-200 pb-6">

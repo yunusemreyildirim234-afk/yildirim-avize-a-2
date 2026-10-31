@@ -57,6 +57,7 @@ export async function finalizeOrder(orderId: string) {
     orderId: order.id,
     customerName: order.user.name,
     customerEmail: order.user.email,
+    customerPhone: order.phone,
     totalAmount: order.totalAmount,
     shippingType: order.shippingType,
     paymentMethod: order.paymentMethod,

@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import { useState } from "react";
 import { Check, Copy, X } from "lucide-react";
 
@@ -18,6 +19,7 @@ export default function AnnouncementBars() {
       window.prompt("Kupon kodunu kopyalayın:", COUPON_CODE);
     }
     setCopied(true);
+    toast.success("Kupon kodu kopyalandı", { description: COUPON_CODE });
     setTimeout(() => setCopied(false), 2000);
   };
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import { Check, Copy } from "lucide-react";
 
@@ -28,6 +29,7 @@ export default function MyCoupons() {
     try {
       await navigator.clipboard.writeText(code);
       setCopied(code);
+      toast.success("Kupon kodu kopyalandı", { description: code });
       setTimeout(() => setCopied(null), 2000);
     } catch {
       window.prompt("Kuponu kopyalayın:", code);

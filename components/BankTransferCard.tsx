@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import { useState } from "react";
 import { Check, Copy, Landmark } from "lucide-react";
 import { BANK_INFO } from "@/lib/site";
@@ -14,6 +15,7 @@ export default function BankTransferCard({ orderId }: { orderId?: string }) {
     try {
       await navigator.clipboard.writeText(text);
       setCopied(kind);
+      toast.success(kind === "iban" ? "IBAN kopyalandı" : "Alıcı adı kopyalandı");
       setTimeout(() => setCopied(null), 2000);
     } catch {
       window.prompt("Kopyalayın:", text);

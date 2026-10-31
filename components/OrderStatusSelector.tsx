@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -29,10 +30,10 @@ export default function OrderStatusSelector({ orderId, initialStatus, shippingTy
       if (data.success) {
         router.refresh();
       } else {
-        alert("Durum güncellenemedi: " + data.error);
+        toast.error("Durum güncellenemedi", { description: data.error });
       }
     } catch {
-      alert("Bağlantı hatası oluştu.");
+      toast.error("Bağlantı hatası oluştu.");
     } finally {
       setLoading(false);
     }

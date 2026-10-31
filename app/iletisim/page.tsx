@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import { useState } from "react";
 
 export default function IletisimPage() {
@@ -26,15 +27,16 @@ export default function IletisimPage() {
       const data = await res.json();
       if (data.success) {
         setSent(true);
+        toast.success("Mesajınız iletildi", { description: "En kısa sürede e-posta ile dönüş yapacağız." });
         setName("");
         setEmail("");
         setPhone("");
         setMessage("");
       } else {
-        alert("Hata: " + data.error);
+        toast.error(data.error || "Mesaj gönderilemedi.");
       }
     } catch {
-      alert("Bağlantı hatası oluştu.");
+      toast.error("Bağlantı hatası oluştu.");
     } finally {
       setLoading(false);
     }
