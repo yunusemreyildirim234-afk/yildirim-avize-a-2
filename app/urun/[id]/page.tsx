@@ -7,6 +7,7 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import ProductReviews from "@/components/ProductReviews";
 import ProductQuestionForm from "@/components/ProductQuestionForm";
 import { USER_COOKIE, verifySession } from "@/lib/session";
+import { reviewEligibility, type ReviewEligibility } from "@/lib/reviews";
 import JsonLd from "@/components/JsonLd";
 import { CATEGORIES, SITE_URL } from "@/lib/site";
 
@@ -50,9 +51,10 @@ export default async function ProductDetailPage({ params }: Props) {
     notFound();
   }
 
-  const loggedIn = Boolean(await verifySession((await cookies()).get(USER_COOKIE)?.value));
+  const userSession = await verifySession<{ uid: string }>((await cookies()).get(USER_COOKIE)?.value);
+  const eligibility: ReviewEligibility | "guest" = userSession?.uid ? await reviewEligibility(userSession.uid, product.id) : "guest";
   const reviews = product.reviews.map((r) => {
-    const [first, ...rest] = r.user.name.trim().split(/s+/);
+    const [first, ...rest] = r.user.name.trim().split(/\s+/);
     return {
       id: r.id,
       author: rest.length ? `${first} ${rest[rest.length - 1][0]}.` : first,
@@ -106,7 +108,7 @@ export default async function ProductDetailPage({ params }: Props) {
         <ProductDetailClient product={product} />
 
         <div className="mt-8">
-          <ProductReviews productId={product.id} reviews={reviews} loggedIn={loggedIn} />
+          <ProductReviews productId={product.id} reviews={reviews} eligibility={eligibility} />
         </div>
 
         <div className="mt-8">

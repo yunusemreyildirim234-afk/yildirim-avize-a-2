@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
 
 interface Payload {
   orders: { id: string; total: number; customer: string }[];
@@ -11,7 +10,7 @@ interface Payload {
 
 const POLL_MS = 30_000;
 
-/** Yönetim paneli açıkken yeni sipariş veya soru düşünce kayan uyarı gösterir. */
+/** Yönetim paneli açıkken yeni sipariş/soru düşünce listeleri yeniler (kayan uyarıyı bildirim zili gösterir). */
 export default function AdminLiveAlerts() {
   const router = useRouter();
   const seen = useRef<Set<string> | null>(null);
@@ -30,20 +29,7 @@ export default function AdminLiveAlerts() {
           seen.current = new Set(keys);
           return;
         }
-        let fresh = false;
-        for (const o of data.orders) {
-          if (seen.current.has(`o:${o.id}`)) continue;
-          fresh = true;
-          toast.success(`Yeni Sipariş: #${o.id.slice(0, 8)}`, {
-            description: `${o.customer} • ${o.total.toLocaleString("tr-TR")} ₺`,
-            duration: 15000,
-          });
-        }
-        for (const m of data.messages) {
-          if (seen.current.has(`m:${m.id}`)) continue;
-          fresh = true;
-          toast.info(`Yeni Soru/Mesaj: ${m.topic}`, { description: m.name, duration: 15000 });
-        }
+        const fresh = keys.some((k) => !seen.current?.has(k));
         keys.forEach((k) => seen.current?.add(k));
         if (fresh) router.refresh();
       } catch {

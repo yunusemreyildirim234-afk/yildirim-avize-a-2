@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Star } from "lucide-react";
+import type { ReviewEligibility } from "@/lib/reviews";
 
 export interface ReviewItem {
   id: string;
@@ -31,11 +32,11 @@ function Stars({ value, className = "w-4 h-4" }: { value: number; className?: st
 export default function ProductReviews({
   productId,
   reviews,
-  loggedIn,
+  eligibility,
 }: {
   productId: string;
   reviews: ReviewItem[];
-  loggedIn: boolean;
+  eligibility: ReviewEligibility | "guest";
 }) {
   const router = useRouter();
   const [rating, setRating] = useState(5);
@@ -106,7 +107,21 @@ export default function ProductReviews({
       )}
 
       <div className="border-t border-neutral-100 pt-5">
-        {loggedIn ? (
+        {typeof eligibility === "object" && eligibility.state === "reviewed" ? (
+          <div className="rounded-2xl bg-emerald-50 border border-emerald-200 p-4 text-sm text-emerald-900 space-y-1.5">
+            <p className="font-semibold">Bu ürün için değerlendirmeniz bulunmaktadır.</p>
+            {(
+              <>
+                <Stars value={eligibility.review.rating} />
+                <p className="text-neutral-700 whitespace-pre-line">{eligibility.review.comment}</p>
+              </>
+            )}
+          </div>
+        ) : typeof eligibility === "object" && eligibility.state === "no-purchase" ? (
+          <p className="rounded-2xl bg-amber-50 border border-amber-200 p-4 text-sm text-amber-950">
+            Bu ürüne yalnızca ürünü satın almış olan müşterilerimiz yorum yapabilir.
+          </p>
+        ) : typeof eligibility === "object" ? (
           <form onSubmit={submit} className="space-y-3">
             <h3 className="text-sm font-bold text-neutral-900">Yorum Yaz</h3>
             <div role="radiogroup" aria-label="Puan" className="flex gap-1">

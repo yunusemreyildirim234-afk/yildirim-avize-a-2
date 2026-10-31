@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Bell, CheckCheck, Package, Sparkles, Ticket, MessageSquare } from "lucide-react";
 
 interface Item {
@@ -16,13 +17,15 @@ interface Item {
 }
 
 const ICONS: Record<string, typeof Bell> = { ORDER: Package, COUPON: Ticket, QUESTION: MessageSquare, SYSTEM: Sparkles };
-const POLL_MS = 60_000;
+const POLL_MS = 30_000;
 
 const fmt = (d: string) =>
   new Date(d).toLocaleString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
 export default function NotificationBell() {
   const pathname = usePathname();
+  const router = useRouter();
+  const seen = useRef<Set<string> | null>(null);
   const [items, setItems] = useState<Item[]>([]);
   const [unread, setUnread] = useState(0);
   const [open, setOpen] = useState(false);
@@ -32,13 +35,34 @@ export default function NotificationBell() {
     fetch("/api/notifications", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
-        if (d) {
-          setItems(d.items);
-          setUnread(d.unread);
+        if (!d) return;
+        const list: Item[] = d.items;
+        setItems(list);
+        setUnread(d.unread);
+
+        // İlk yükleme sessiz; sonradan düşen okunmamış bildirimler tıklanabilir toast olur
+        if (seen.current === null) {
+          seen.current = new Set(list.map((n) => n.id));
+          return;
+        }
+        for (const n of list) {
+          if (seen.current.has(n.id) || n.read) continue;
+          seen.current.add(n.id);
+          const go = () => {
+            if (n.link) router.push(n.link);
+            fetch("/api/notifications", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: n.id }) }).catch(() => {});
+          };
+          toast.info(
+            <div onClick={go} className={n.link ? "cursor-pointer" : ""}>
+              <div className="font-semibold">{n.title}</div>
+              <div className="text-xs opacity-80">{n.message}</div>
+            </div>,
+            { duration: 12000, ...(n.link ? { action: { label: "Aç", onClick: go } } : {}) }
+          );
         }
       })
       .catch(() => {});
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     load();

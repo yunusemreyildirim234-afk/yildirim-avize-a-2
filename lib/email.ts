@@ -13,7 +13,7 @@ interface EmailOrderData {
   items: Array<{ title: string; variationName: string; quantity: number; price: number }>;
 }
 
-import { ADMIN_EMAILS, BANK_INFO, PHONE_DISPLAY } from "@/lib/site";
+import { ADMIN_EMAILS, BANK_INFO, PHONE_DISPLAY, SITE_URL } from "@/lib/site";
 
 const DEFAULT_FROM = "Yıldırım Avize <siparis@yildirimavize.com.tr>";
 const ONBOARDING_FROM = "Yıldırım Avize <onboarding@resend.dev>";
@@ -279,6 +279,17 @@ export async function sendCouponEmail(data: { to: string; name: string; code: st
       <p style="text-align: center; margin: 20px 0;"><span style="display: inline-block; font-family: monospace; font-size: 20px; font-weight: bold; letter-spacing: 2px; background: #fffbeb; border: 1px dashed #d97706; border-radius: 10px; padding: 10px 20px; color: #92400e;">${esc(data.code)}</span></p>
       <p style="font-size: 12px; color: #737373;">Kuponu sepet sayfasında kullanabilir, Hesabım → Kuponlarım bölümünden de görebilirsiniz.<br />Yıldırım Avize | Tel: ${PHONE_DISPLAY}</p>
     </div>`,
+  });
+}
+
+/** Yeni ürün yorumunu yöneticilere bildirir. */
+export async function sendReviewAdminEmail(data: { productTitle: string; productId: string; rating: number; comment: string; name: string; email: string }) {
+  return sendViaResend(process.env.RESEND_API_KEY, {
+    to: ADMIN_EMAILS,
+    subject: `Yeni Ürün Yorumu: ${data.productTitle} - ${data.rating} Yıldız`,
+    html: `<p><strong>${esc(data.name)}</strong> (${esc(data.email)}) <strong>${esc(data.productTitle)}</strong> ürününe ${"★".repeat(data.rating)}${"☆".repeat(5 - data.rating)} verdi.</p>
+      <p>${multiline(data.comment)}</p>
+      <p><a href="${SITE_URL}/urun/${data.productId}#yorumlar">Ürün sayfasında gör</a></p>`,
   });
 }
 

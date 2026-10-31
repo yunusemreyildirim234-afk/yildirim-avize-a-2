@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronDown } from "lucide-react";
 
 interface Badge {
@@ -29,8 +29,21 @@ export default function AdminSection({
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+
+  // Bildirimden gelen /admin#<id> bağlantısı bölümü açar ve ekrana getirir
+  useEffect(() => {
+    const check = () => {
+      if (window.location.hash !== `#${id}`) return;
+      setOpen(true);
+      setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" }), 120);
+    };
+    check();
+    window.addEventListener("hashchange", check);
+    return () => window.removeEventListener("hashchange", check);
+  }, [id]);
+
   return (
-    <section id={id} className="bg-white rounded-2xl border border-neutral-200 overflow-hidden shadow-sm">
+    <section id={id} className="scroll-mt-4 bg-white rounded-2xl border border-neutral-200 overflow-hidden shadow-sm">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}

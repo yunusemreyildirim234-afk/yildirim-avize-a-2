@@ -2,8 +2,11 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
 import { USER_COOKIE, verifySession } from "@/lib/session";
+import { reviewEligibility } from "@/lib/reviews";
+import { notifyAdmins, notifyCustomer } from "@/lib/notifications";
+import { sendReviewAdminEmail } from "@/lib/email";
 
-// Yorum yazmak için müşteri girişi gerekir; ürünü satın alanlar "doğrulanmış alıcı" olarak işaretlenir.
+// Yorum yalnızca giriş yapmış ve ürünü satın almış müşteriye açıktır; ürün başına tek yorum yazılabilir.
 export async function POST(req: Request) {
   const session = await verifySession<{ uid: string }>((await cookies()).get(USER_COOKIE)?.value);
   if (!session) {
@@ -21,22 +24,34 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Yorum 10 ile 1000 karakter arasında olmalıdır." }, { status: 400 });
   }
 
-  const product = await prisma.product.findUnique({ where: { id: productId }, select: { id: true } });
+  const product = await prisma.product.findUnique({ where: { id: productId }, select: { id: true, title: true } });
   if (!product) return NextResponse.json({ error: "Ürün bulunamadı." }, { status: 404 });
 
-  const purchased = await prisma.orderItem.findFirst({
-    where: {
-      variation: { productId },
-      order: { userId: session.uid, status: { notIn: ["AWAITING_PAYMENT", "PAYMENT_FAILED", "CANCELLED"] } },
-    },
-    select: { id: true },
-  });
+  const eligibility = await reviewEligibility(session.uid, productId);
+  if (eligibility.state === "no-purchase") {
+    return NextResponse.json({ error: "Bu ürüne yalnızca ürünü satın almış olan müşterilerimiz yorum yapabilir." }, { status: 403 });
+  }
+  if (eligibility.state === "reviewed") {
+    return NextResponse.json({ error: "Bu ürün için değerlendirmeniz bulunmaktadır." }, { status: 409 });
+  }
 
-  await prisma.review.upsert({
-    where: { productId_userId: { productId, userId: session.uid } },
-    create: { productId, userId: session.uid, rating: stars, comment: text, verified: Boolean(purchased) },
-    update: { rating: stars, comment: text, verified: Boolean(purchased) },
-  });
+  const author = await prisma.user.findUnique({ where: { id: session.uid }, select: { name: true, email: true } });
+  try {
+    await prisma.review.create({ data: { productId, userId: session.uid, rating: stars, comment: text, verified: true } });
+  } catch {
+    // @@unique([productId, userId]) yarış durumunda ikinci kaydı engeller
+    return NextResponse.json({ error: "Bu ürün için değerlendirmeniz bulunmaktadır." }, { status: 409 });
+  }
+
+  const link = `/urun/${product.id}#yorumlar`;
+  await Promise.allSettled([
+    notifyAdmins({ title: `Yeni Ürün Yorumu: ${product.title} - ${stars} Yıldız`, message: `${author?.name ?? "Müşteri"}: ${text.slice(0, 120)}`, type: "SYSTEM", link }),
+    notifyCustomer(
+      { userId: session.uid },
+      { title: "Değerlendirmeniz için teşekkür ederiz!", message: `Yorumunuz yayınlandı: ${product.title}`, type: "SYSTEM", link: `/urun/${product.id}` }
+    ),
+    sendReviewAdminEmail({ productTitle: product.title, productId: product.id, rating: stars, comment: text, name: author?.name ?? "Müşteri", email: author?.email ?? "" }),
+  ]);
 
   return NextResponse.json({ success: true });
 }

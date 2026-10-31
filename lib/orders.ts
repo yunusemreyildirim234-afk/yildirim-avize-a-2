@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/db";
 import { sendOrderNotificationEmails } from "@/lib/email";
 import { createShipmentForOrder } from "@/lib/kargonomi";
-import { notifyAdmins } from "@/lib/notifications";
+import { notifyAdmins, notifyCustomer } from "@/lib/notifications";
 
 /** Sipariş kalemleri kadar varyasyon stoğunu düşer (0'ın altına inmez); bir sipariş için yalnızca bir kez. */
 export async function deductOrderStock(orderId: string) {
@@ -54,6 +54,10 @@ export async function finalizeOrder(orderId: string) {
     }
   }
 
+  await notifyCustomer(
+    { userId: order.userId },
+    { title: "Siparişiniz Alındı", message: `#${order.id.slice(0, 8)} numaralı siparişiniz alındı.`, type: "ORDER", link: `/siparis-onay/${order.id}` }
+  );
   await notifyAdmins({
     title: `Yeni Sipariş: #${order.id.slice(0, 8)}`,
     message: `${order.user.name} • ${order.totalAmount.toLocaleString("tr-TR")} ₺`,
