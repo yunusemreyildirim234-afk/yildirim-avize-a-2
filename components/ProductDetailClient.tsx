@@ -88,6 +88,22 @@ export default function ProductDetailClient({ product }: { product: Product }) {
             {product.description}
           </p>
 
+          <ul className="space-y-2 pt-1 text-xs">
+            <li className="flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50/70 px-3.5 py-2.5 text-amber-950">
+              <span aria-hidden="true">💡</span>
+              <span>
+                <strong>Ampul Durumu:</strong> Ampuller ürüne dahil değildir.
+              </span>
+            </li>
+            <li className="flex items-start gap-2.5 rounded-xl border border-neutral-200 bg-neutral-50 px-3.5 py-2.5 text-neutral-800">
+              <span aria-hidden="true">📏</span>
+              <span>
+                <strong>Ölçü &amp; Tavan Uyumu:</strong> Özel ölçü ve tavan yükseklik talepleriniz için{" "}
+                <a href="/iletisim" className="text-amber-700 underline font-semibold">İletişim</a> bölümünden bize ulaşabilir veya sipariş notunda zincir/bakla payını belirtebilirsiniz.
+              </span>
+            </li>
+          </ul>
+
           <div className="pt-4">
             <span className="text-xs text-neutral-400 block mb-1">Toplam Tutar</span>
             <span className="text-3xl font-bold text-neutral-900">

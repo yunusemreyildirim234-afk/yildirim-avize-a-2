@@ -8,6 +8,9 @@ import MyMessages from "@/components/MyMessages";
 import MyCoupons from "@/components/MyCoupons";
 import OrderRequestBox from "@/components/OrderRequestBox";
 import OrderTracker from "@/components/OrderTracker";
+import AuthForms from "@/components/AuthForms";
+import AccountSecurity from "@/components/AccountSecurity";
+import ReceiptUpload from "@/components/ReceiptUpload";
 
 interface OrderItem {
   id: string;
@@ -18,6 +21,8 @@ interface OrderItem {
 
 interface Order {
   id: string;
+  receiptUrl?: string | null;
+  receiptSenderName?: string | null;
   paymentMethod?: string | null;
   kargonomiStatus?: string | null;
   updatedAt?: string;
@@ -42,17 +47,13 @@ interface UserData {
   name: string;
   email: string;
   role: string;
+  twoFactorEnabled?: boolean;
   orders?: Order[];
 }
 
 export default function AuthPage() {
   const router = useRouter();
   const [tab, setTab] = useState<"musteri" | "yonetici">("musteri");
-  const [isLogin, setIsLogin] = useState(true);
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<UserData | null>(null);
 
   useEffect(() => {
@@ -80,36 +81,6 @@ export default function AuthPage() {
     router.refresh();
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      const res = await fetch("/api/auth", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: isLogin ? "login" : "register",
-          name,
-          email,
-          password,
-        }),
-      });
-
-      const data = await res.json();
-      if (data.success) {
-        setUser(data.user);
-        window.dispatchEvent(new Event("ya-auth"));
-      } else {
-        toast.error(data.error);
-      }
-    } catch {
-      toast.error("Bağlantı hatası oluştu.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   if (user) {
     return (
       <main className="min-h-screen bg-neutral-50 py-16 px-4 sm:px-6 lg:px-8">
@@ -117,7 +88,7 @@ export default function AuthPage() {
           <div className="bg-white rounded-3xl border border-neutral-200 p-8 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <span className="text-xs uppercase tracking-wider text-amber-600 font-bold">
-                Müşteri Hesabı
+                Kullanıcı Hesabı
               </span>
               <h1 className="text-2xl font-serif font-bold text-neutral-900 mt-1">
                 Hoş Geldiniz, {user.name}
@@ -174,6 +145,8 @@ export default function AuthPage() {
                             ? "İptal Edildi"
                             : order.status === "RETURNED"
                             ? "İade Edildi"
+                            : order.status === "PENDING_NEW"
+                            ? "Havale Onayı Bekleniyor"
                             : order.status === "AWAITING_PAYMENT"
                             ? "Ödeme Bekleniyor"
                             : order.status === "PAYMENT_FAILED"
@@ -224,6 +197,10 @@ export default function AuthPage() {
                       ))}
                     </div>
 
+                    {order.status === "PENDING_NEW" && order.paymentMethod === "BANK_TRANSFER" && (
+                      <ReceiptUpload orderId={order.id} uploaded={Boolean(order.receiptUrl)} defaultSender={order.receiptSenderName ?? user.name} onDone={refreshUser} />
+                    )}
+
                     <OrderRequestBox order={order} onChanged={refreshUser} />
 
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-neutral-500 pt-2 border-t border-neutral-100">
@@ -259,6 +236,8 @@ export default function AuthPage() {
               </div>
             )}
           </div>
+
+          <AccountSecurity email={user.email} twoFactorEnabled={Boolean(user.twoFactorEnabled)} onChanged={refreshUser} />
 
           <MyCoupons />
 
@@ -297,12 +276,10 @@ export default function AuthPage() {
             Yıldırım Avize
           </span>
           <h1 className="text-2xl font-serif font-bold text-neutral-900">
-            {isLogin ? "Hesabınıza Giriş Yapın" : "Yeni Hesap Oluştur"}
+            Hesabınıza Giriş Yapın
           </h1>
           <p className="text-xs text-neutral-500">
-            {isLogin
-              ? "Siparişlerinizi ve kargo durumunuzu takip etmek için giriş yapın."
-              : "Beyoğlu koleksiyonuna özel ayrıcalıklar için kayıt olun."}
+            Siparişlerinizi ve kargo durumunuzu takip etmek için giriş yapın veya kayıt olun.
           </p>
         </div>
 
@@ -328,7 +305,7 @@ export default function AuthPage() {
               d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
             />
           </svg>
-          <span>{isLogin ? "Google ile Hızlı Giriş Yap" : "Google ile Hızlı Kayıt Ol"}</span>
+          <span>Google ile Hızlı Giriş Yap</span>
         </a>
 
         <div className="relative flex items-center justify-center my-3">
@@ -338,74 +315,11 @@ export default function AuthPage() {
           </span>
         </div>
 
-        <div className="flex bg-neutral-100 p-1 rounded-2xl text-xs font-semibold">
-          <button
-            type="button"
-            onClick={() => setIsLogin(true)}
-            className={`flex-1 py-2.5 rounded-xl transition-all ${
-              isLogin ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-500 hover:text-neutral-900"
-            }`}
-          >
-            Giriş Yap
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsLogin(false)}
-            className={`flex-1 py-2.5 rounded-xl transition-all ${
-              !isLogin ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-500 hover:text-neutral-900"
-            }`}
-          >
-            Kayıt Ol
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-          {!isLogin && (
-            <div>
-              <label className="font-semibold text-neutral-700 block mb-1">Adınız Soyadınız</label>
-              <input aria-label="Müşteri Adı"
-                required
-                type="text"
-                placeholder="Örn: Müşteri Adı"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
-              />
-            </div>
-          )}
-
-          <div>
-            <label className="font-semibold text-neutral-700 block mb-1">E-posta Adresi</label>
-            <input aria-label="E-posta adresi"
-              required
-              type="email"
-              placeholder="ornek@mail.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
-            />
-          </div>
-
-          <div>
-            <label className="font-semibold text-neutral-700 block mb-1">Şifre</label>
-            <input aria-label="Şifre"
-              required
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-neutral-900 hover:bg-amber-600 text-white font-semibold py-3.5 rounded-xl transition-colors shadow-sm disabled:opacity-50 mt-2"
-          >
-            {loading ? "İşleniyor..." : isLogin ? "Giriş Yap" : "Hesap Oluştur"}
-          </button>
-        </form>
+        <AuthForms
+          onAuthenticated={(u) => {
+            setUser(u as UserData);
+          }}
+        />
 
         <div className="text-center pt-2">
           <Link href="/" className="text-xs text-neutral-500 hover:text-amber-600 transition-colors">

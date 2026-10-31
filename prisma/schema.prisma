@@ -9,18 +9,19 @@ datasource db {
 
 // Kullanıcılar (Müşteri ve Sistem Yöneticisi)
 model User {
-  id        String           @id @default(uuid())
-  name      String
-  email     String           @unique
-  password  String
-  role      String           @default("USER") // "USER" veya "ADMIN"
-  orders    Order[]
-  reviews   Review[]
-  cartItems CartItem[]
-  favorites Favorite[]
-  messages  ContactMessage[]
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
+  id               String           @id @default(uuid())
+  name             String
+  email            String           @unique
+  password         String
+  role             String           @default("USER") // "USER" veya "ADMIN"
+  twoFactorEnabled Boolean          @default(false) // E-posta ile iki aşamalı doğrulama
+  orders           Order[]
+  reviews          Review[]
+  cartItems        CartItem[]
+  favorites        Favorite[]
+  messages         ContactMessage[]
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
 }
 
 // Avizeler (Ana Ürün Bilgileri)
@@ -67,20 +68,20 @@ model ProductVariation {
 
 // Müşteri Siparişleri (Kargonomi API v1 Entegrasyonlu)
 model Order {
-  id                   String      @id @default(uuid())
+  id                   String       @id @default(uuid())
   userId               String
-  user                 User        @relation(fields: [userId], references: [id])
+  user                 User         @relation(fields: [userId], references: [id])
   totalAmount          Float
   paymentMethod        String? // CREDIT_CARD veya BANK_TRANSFER
   shippingType         String // Örn: "BEYOGLU_MAGAZA_TESLIM" veya "STANDART_KARGO"
-  status               String      @default("PENDING") // PENDING, READY_FOR_PICKUP, SHIPPED, DELIVERED, CANCELLED
+  status               String       @default("PENDING") // PENDING, READY_FOR_PICKUP, SHIPPED, DELIVERED, CANCELLED
   phone                String? // Alıcı Telefon Numarası
   address              String? // Açık Teslimat Adresi
   buyerStateId         Int? // Kargonomi İl (Şehir) ID (Örn: 34 = İstanbul)
   buyerCityId          Int? // Kargonomi İlçe ID (Örn: 425 = Beyoğlu)
   buyerStateName       String? // İl Adı
   buyerCityName        String? // İlçe Adı
-  packageDesi          Float?      @default(3) // Üst Düzey Korumalı Koli Kargo Desi Değeri
+  packageDesi          Float?       @default(3) // Üst Düzey Korumalı Koli Kargo Desi Değeri
   kargonomiShipmentId  Int? // Kargonomi Gönderi ID (/shipments/{id})
   kargonomiStatus      String? // draft, ready, webservice_shipment_started, webservice_shipment_delivered, vb.
   kargonomiStatusLabel String? // Taslak, İşleme Hazır, Kargo Teslim Sürecinde, Kargo Teslim Edildi, vb.
@@ -90,15 +91,25 @@ model Order {
   shippingBarcode      String? // Kargo Barkodu (shipping_webservice_barcode)
   shippingPrice        String? // Kargo Maliyet / Teklif Tutarı
   couponCode           String? // Uygulanan promosyon kodu
-  stockDeducted        Boolean     @default(false) // Sipariş stoğu düşüldü mü (iptalde iade için)
+  stockDeducted        Boolean      @default(false) // Sipariş stoğu düşüldü mü (iptalde iade için)
   cancelReturnType     String? // "CANCEL" | "RETURN"
   cancelReturnStatus   String? // "PENDING" | "APPROVED" | "REJECTED"
   cancelReturnReason   String?
   cancelReturnNote     String? // Yönetici notu
   cancelReturnAt       DateTime?
+  orderNote            String? // Müşteri sipariş notu (tavan yüksekliği, zincir/kablo/bakla uzunluğu)
+  receiptUrl           String? // Havale dekontu (/api/receipts/{id})
+  receiptSenderName    String? // Havale gönderici ad-soyad
+  invoiceType          String       @default("INDIVIDUAL") // INDIVIDUAL | CORPORATE
+  taxNumber            String? // Bireysel: TC Kimlik No, Kurumsal: VKN
+  taxOffice            String?
+  companyTitle         String?
+  abandonedEmailSent   Boolean      @default(false)
+  receiptReminderSent  Boolean      @default(false)
+  receipt              ReceiptFile?
   items                OrderItem[]
-  createdAt            DateTime    @default(now())
-  updatedAt            DateTime    @updatedAt
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
 }
 
 // Sipariş Kalemleri
@@ -205,4 +216,29 @@ model Notification {
 
   @@index([userId, read, createdAt])
   @@index([userEmail])
+}
+
+// E-posta doğrulama kodları (6 haneli, 10 dk geçerli)
+model VerificationCode {
+  id        String   @id @default(cuid())
+  email     String
+  code      String
+  type      String // REGISTER, RESET_PASSWORD, CHANGE_PASSWORD, TWO_FACTOR_ENABLE, TWO_FACTOR_LOGIN
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  ip        String?
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([email, type])
+  @@index([ip, createdAt])
+}
+
+// Havale dekont dosyası (sipariş başına bir adet)
+model ReceiptFile {
+  orderId   String   @id
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  mime      String
+  data      Bytes
+  createdAt DateTime @default(now())
 }

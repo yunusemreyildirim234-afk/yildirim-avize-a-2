@@ -3,6 +3,12 @@ interface EmailOrderData {
   customerName: string;
   customerEmail: string;
   customerPhone?: string | null;
+  orderNote?: string | null;
+  invoiceType?: string | null;
+  taxNumber?: string | null;
+  taxOffice?: string | null;
+  companyTitle?: string | null;
+  receiptPending?: boolean;
   totalAmount: number;
   shippingType: string;
   paymentMethod?: string | null;
@@ -104,6 +110,16 @@ export async function sendOrderNotificationEmails(data: EmailOrderData) {
     )
     .join("");
   const shortId = data.orderId.slice(0, 8);
+  const noteBlock = data.orderNote
+    ? `<div style="background-color: #ffffff; padding: 14px 18px; border-radius: 12px; border: 1px solid #e5e5e5; margin: 0 0 25px 0; font-size: 13px; color: #171717;"><div style="font-size: 12px; font-weight: bold; color: #92400e; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">Sipariş Notunuz</div>${multiline(data.orderNote)}</div>`
+    : "";
+  const invoiceText =
+    data.invoiceType === "CORPORATE"
+      ? `Kurumsal — ${esc(data.companyTitle || "-")} / VD: ${esc(data.taxOffice || "-")} / VKN: ${esc(data.taxNumber || "-")}`
+      : `Bireysel${data.taxNumber ? ` — T.C. ${esc(data.taxNumber)}` : ""}`;
+  const adminNoteBlock = data.orderNote
+    ? `<div style="margin: 16px 0; padding: 12px 16px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; font-size: 14px;"><strong>📝 SİPARİŞ NOTU (zincir / kablo / bakla / montaj):</strong><br />${multiline(data.orderNote)}</div>`
+    : "";
 
   // Müşteriye Gidecek Lüks HTML Fatura Şablonu
   const customerHtml = `
@@ -146,6 +162,8 @@ export async function sendOrderNotificationEmails(data: EmailOrderData) {
         <table style="width: 100%; border-collapse: collapse; font-size: 13px;">${itemRows}</table>
       </div>
 
+      ${noteBlock}
+
       ${bankBlock}
 
       ${kargonomiBlock}
@@ -172,8 +190,10 @@ export async function sendOrderNotificationEmails(data: EmailOrderData) {
         <tr><td style="padding: 4px 0; color: #737373;">Telefon</td><td style="padding: 4px 0; text-align: right;">${esc(data.customerPhone || "-")}</td></tr>
         <tr><td style="padding: 4px 0; color: #737373;">Teslimat</td><td style="padding: 4px 0; text-align: right;">${isBeyoglu ? "Mağazadan Teslim" : "Adrese Teslim"}</td></tr>
         <tr><td style="padding: 4px 0; color: #737373;">Ödeme</td><td style="padding: 4px 0; text-align: right;">${data.paymentMethod === "BANK_TRANSFER" ? "Havale / EFT" : "Kredi Kartı"}</td></tr>
+        <tr><td style="padding: 4px 0; color: #737373;">Fatura</td><td style="padding: 4px 0; text-align: right;">${invoiceText}</td></tr>
         <tr><td style="padding: 8px 0 4px; border-top: 1px solid #e5e5e5; font-weight: bold;">Tutar</td><td style="padding: 8px 0 4px; border-top: 1px solid #e5e5e5; text-align: right; font-size: 18px; font-weight: bold; color: #d97706;">${data.totalAmount.toLocaleString("tr-TR")} ₺</td></tr>
       </table>
+      ${adminNoteBlock}
       <h3 style="margin: 20px 0 6px; font-size: 14px;">Ürünler</h3>
       <table style="width: 100%; border-collapse: collapse; font-size: 13px;">${itemRows}</table>
       <p style="color: #737373; font-size: 12px; margin-top: 20px;">Detaylar için yönetim paneline giriş yapın.</p>
@@ -290,6 +310,75 @@ export async function sendReviewAdminEmail(data: { productTitle: string; product
     html: `<p><strong>${esc(data.name)}</strong> (${esc(data.email)}) <strong>${esc(data.productTitle)}</strong> ürününe ${"★".repeat(data.rating)}${"☆".repeat(5 - data.rating)} verdi.</p>
       <p>${multiline(data.comment)}</p>
       <p><a href="${SITE_URL}/urun/${data.productId}#yorumlar">Ürün sayfasında gör</a></p>`,
+  });
+}
+
+const CODE_COPY: Record<string, { subject: string; lead: string }> = {
+  REGISTER: { subject: "Kayıt Doğrulama Kodunuz", lead: "Yıldırım Avize hesabınızı oluşturmak için doğrulama kodunuz:" },
+  RESET_PASSWORD: { subject: "Şifre Sıfırlama Kodunuz", lead: "Şifrenizi sıfırlamak için doğrulama kodunuz:" },
+  CHANGE_PASSWORD: { subject: "Şifre Değiştirme Kodunuz", lead: "Şifrenizi değiştirmek için doğrulama kodunuz:" },
+  TWO_FACTOR_ENABLE: { subject: "İki Aşamalı Doğrulama Onay Kodunuz", lead: "İki aşamalı doğrulamayı etkinleştirmek için onay kodunuz:" },
+  TWO_FACTOR_LOGIN: { subject: "Giriş Doğrulama Kodunuz", lead: "Hesabınıza giriş yapmak için doğrulama kodunuz:" },
+};
+
+/** 6 haneli e-posta doğrulama kodu (kurumsal şablon). */
+export async function sendVerificationCodeEmail(data: { to: string; code: string; type: string }) {
+  const copy = CODE_COPY[data.type] ?? CODE_COPY.REGISTER;
+  return sendViaResend(process.env.RESEND_API_KEY, {
+    to: [data.to],
+    subject: `${copy.subject} - Yıldırım Avize`,
+    html: `<div style="font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 28px; background: #fafafa; border: 1px solid #e5e5e5; border-radius: 16px; color: #171717;">
+      <h1 style="text-align: center; font-size: 22px; letter-spacing: 1px; margin: 0;">YILDIRIM AVİZE</h1>
+      <p style="text-align: center; color: #d97706; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; font-weight: bold; margin: 4px 0 20px;">Beyoğlu Şişhane Mirası</p>
+      <p style="font-size: 14px; line-height: 1.6;">${copy.lead}</p>
+      <div style="text-align: center; margin: 22px 0;"><span style="display: inline-block; font-family: monospace; font-size: 34px; font-weight: bold; letter-spacing: 8px; background: #ffffff; border: 2px dashed #d97706; border-radius: 12px; padding: 14px 24px; color: #92400e;">${data.code}</span></div>
+      <p style="font-size: 12px; color: #b91c1c; text-align: center; font-weight: bold;">Bu kod 10 dakika süreyle geçerlidir. Güvenliğiniz için kimseyle paylaşmayınız.</p>
+      <p style="font-size: 11px; color: #a3a3a3; text-align: center; margin-top: 18px;">Bu işlemi siz başlatmadıysanız bu e-postayı dikkate almayınız.</p>
+    </div>`,
+  });
+}
+
+/** Terk edilen ödeme denemesi için hatırlatma (%5 kupon ile). */
+export async function sendAbandonedCartEmail(data: { to: string; name: string; orderId: string; items: { title: string; quantity: number }[]; couponCode: string }) {
+  return sendViaResend(process.env.RESEND_API_KEY, {
+    to: [data.to],
+    subject: `Sepetinizdeki avize sizi bekliyor! Size özel %5 indirim: ${data.couponCode}`,
+    html: `<div style="font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 28px; background: #fafafa; border: 1px solid #e5e5e5; border-radius: 16px; color: #171717;">
+      <h1 style="text-align: center; font-size: 22px; letter-spacing: 1px; margin: 0 0 16px;">YILDIRIM AVİZE</h1>
+      <h2 style="font-size: 17px; margin: 0 0 10px;">Sayın ${esc(data.name)},</h2>
+      <p style="font-size: 14px; line-height: 1.6;">Sepetinizdeki avize sizi bekliyor! Siparişinizi tamamlamanız için size özel <strong>%5 indirim</strong> kuponunuz:</p>
+      <p style="text-align: center; margin: 18px 0;"><span style="display: inline-block; font-family: monospace; font-size: 22px; font-weight: bold; letter-spacing: 3px; background: #fffbeb; border: 1px dashed #d97706; border-radius: 10px; padding: 10px 22px; color: #92400e;">${esc(data.couponCode)}</span></p>
+      <ul style="font-size: 13px; color: #525252; padding-left: 18px;">${data.items.map((i) => `<li>${i.quantity}x ${esc(i.title)}</li>`).join("")}</ul>
+      <p style="text-align: center; margin: 22px 0 8px;"><a href="${SITE_URL}/sepet" style="display: inline-block; background: #171717; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 14px; padding: 12px 28px; border-radius: 10px;">Siparişimi Tamamla</a></p>
+      <p style="font-size: 12px; color: #737373; text-align: center;">Yıldırım Avize | Tel: ${PHONE_DISPLAY}</p>
+    </div>`,
+  });
+}
+
+/** Havale yapıp dekont yüklemeyen müşteriye hatırlatma. */
+export async function sendReceiptReminderEmail(data: { to: string; name: string; orderId: string }) {
+  const url = `${SITE_URL}/siparis-onay/${data.orderId}`;
+  return sendViaResend(process.env.RESEND_API_KEY, {
+    to: [data.to],
+    subject: `Havale dekontunuzu bekliyoruz - #${data.orderId.slice(0, 8)}`,
+    html: `<div style="font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 28px; background: #fafafa; border: 1px solid #e5e5e5; border-radius: 16px; color: #171717;">
+      <h1 style="text-align: center; font-size: 22px; letter-spacing: 1px; margin: 0 0 16px;">YILDIRIM AVİZE</h1>
+      <h2 style="font-size: 17px; margin: 0 0 10px;">Sayın ${esc(data.name)},</h2>
+      <p style="font-size: 14px; line-height: 1.6;">Siparişinizin onaylanması için havale dekontunuzu bekliyoruz. Aşağıdaki bağlantıdan dekontunuzu yükleyebilir veya sipariş detaylarını görebilirsiniz.</p>
+      <p style="text-align: center; margin: 22px 0 8px;"><a href="${url}" style="display: inline-block; background: #d97706; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 14px; padding: 12px 28px; border-radius: 10px;">Dekontumu Yükle</a></p>
+      <p style="font-size: 12px; color: #737373; text-align: center;">Sipariş: ${data.orderId}<br />Yıldırım Avize | Tel: ${PHONE_DISPLAY}</p>
+    </div>`,
+  });
+}
+
+/** Müşteri dekont yükleyince yöneticilere bildirim. */
+export async function sendReceiptUploadedAdminEmail(data: { orderId: string; senderName: string; customerName: string; totalAmount: number }) {
+  return sendViaResend(process.env.RESEND_API_KEY, {
+    to: ADMIN_EMAILS,
+    subject: `Dekont Yüklendi: #${data.orderId.slice(0, 8)} - ${data.customerName}`,
+    html: `<p><strong>${esc(data.customerName)}</strong> havale dekontu yükledi.</p>
+      <p>Gönderici: <strong>${esc(data.senderName)}</strong><br />Tutar: <strong>${data.totalAmount.toLocaleString("tr-TR")} ₺</strong><br />Sipariş: <code>${data.orderId}</code></p>
+      <p><a href="${SITE_URL}/admin#siparisler">Yönetim panelinde incele ve ödemeyi onayla</a></p>`,
   });
 }
 

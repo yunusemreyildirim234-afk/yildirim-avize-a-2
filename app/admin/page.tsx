@@ -10,6 +10,7 @@ import AdminMessages from "@/components/AdminMessages";
 import AdminCoupons from "@/components/AdminCoupons";
 import AdminLiveAlerts from "@/components/AdminLiveAlerts";
 import AdminSection from "@/components/AdminSection";
+import AdminReceiptActions from "@/components/AdminReceiptActions";
 import AdminOrderRequest from "@/components/AdminOrderRequest";
 
 export const dynamic = "force-dynamic";
@@ -208,6 +209,16 @@ export default async function AdminPage() {
                             📞 {order.phone}
                           </span>
                         )}
+                        <span className="text-neutral-500 text-[10px] block mt-0.5">
+                          🧾 {order.invoiceType === "CORPORATE"
+                            ? `Kurumsal: ${order.companyTitle ?? "-"} • VD: ${order.taxOffice ?? "-"} • VKN: ${order.taxNumber ?? "-"}`
+                            : `Bireysel${order.taxNumber ? ` • T.C. ${order.taxNumber}` : ""}`}
+                        </span>
+                        {order.orderNote && (
+                          <span className="block mt-1.5 max-w-xs rounded-lg bg-amber-50 border border-amber-200 px-2.5 py-1.5 text-[11px] text-amber-950 whitespace-pre-line">
+                            📝 <strong>Sipariş Notu:</strong> {order.orderNote}
+                          </span>
+                        )}
                         {order.address && (
                           <span className="text-neutral-400 text-[10px] block mt-0.5 max-w-xs line-clamp-2">
                             📍 {order.address}{" "}
@@ -253,6 +264,9 @@ export default async function AdminPage() {
                           <span className="inline-block mb-2 bg-red-100 text-red-800 border border-red-200 text-[11px] font-bold px-2.5 py-1 rounded-full">
                             Ödeme Başarısız
                           </span>
+                        )}
+                        {order.status === "PENDING_NEW" && order.paymentMethod === "BANK_TRANSFER" && (
+                          <AdminReceiptActions orderId={order.id} hasReceipt={Boolean(order.receiptUrl)} senderName={order.receiptSenderName} />
                         )}
                         <OrderStatusSelector
                           orderId={order.id}

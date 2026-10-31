@@ -6,8 +6,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
 import { useCart } from "@/context/CartContext";
-import { computeTotals, couponDiscountFor, FREE_SHIPPING_THRESHOLD, SHIPPING_COST, type CouponRule } from "@/lib/pricing";
+import { computeTotals, couponDiscountFor, FREE_SHIPPING_THRESHOLD, SHIPPING_COST, SHIPPING_LABELS, type CouponRule } from "@/lib/pricing";
 import BankTransferCard from "@/components/BankTransferCard";
+import ContractModal from "@/components/ContractModal";
+import { invoiceError } from "@/lib/validation";
 
 interface LocationItem {
   id: number;
@@ -61,6 +63,16 @@ export default function CartPage() {
   const [buyerCityId, setBuyerCityId] = useState<number>(425);
 
   const [loading, setLoading] = useState(false);
+
+  // Sipariş notu, fatura bilgileri ve yasal onaylar
+  const [orderNote, setOrderNote] = useState("");
+  const [invoiceType, setInvoiceType] = useState<"INDIVIDUAL" | "CORPORATE">("INDIVIDUAL");
+  const [taxNumber, setTaxNumber] = useState("");
+  const [taxOffice, setTaxOffice] = useState("");
+  const [companyTitle, setCompanyTitle] = useState("");
+  const [agreePre, setAgreePre] = useState(false);
+  const [agreeSales, setAgreeSales] = useState(false);
+  const [contract, setContract] = useState<"pre" | "sales" | null>(null);
 
   // PayTR başarısız ödeme dönüşü
   useEffect(() => {
@@ -139,6 +151,16 @@ export default function CartPage() {
     e.preventDefault();
     if (cart.length === 0) return;
 
+    const invErr = invoiceError({ invoiceType, taxNumber, taxOffice, companyTitle });
+    if (invErr) {
+      toast.error(invErr);
+      return;
+    }
+    if (!agreePre || !agreeSales) {
+      toast.error("Devam etmek için iki sözleşmeyi de onaylamalısınız.");
+      return;
+    }
+
     const selectedStateObj = states.find((s) => Number(s.id) === Number(buyerStateId));
     const selectedCityObj = cities.find((c) => Number(c.id) === Number(buyerCityId));
 
@@ -159,6 +181,12 @@ export default function CartPage() {
           shippingType,
           paymentMethod,
           couponCode: appliedCoupon?.code,
+          orderNote,
+          invoiceType,
+          taxNumber,
+          taxOffice,
+          companyTitle,
+          consent: true,
           items: cart,
         }),
       });
@@ -314,6 +342,25 @@ export default function CartPage() {
                   </div>
                 </div>
               ))}
+            </div>
+
+            {/* SİPARİŞ NOTU */}
+            <div className="bg-amber-50/70 rounded-3xl border border-amber-200 p-6 shadow-sm space-y-2">
+              <label htmlFor="order-note" className="text-sm font-bold text-amber-950 block">
+                📝 Sipariş Notu / Özel İstekleriniz
+              </label>
+              <p className="text-xs text-amber-900/80">
+                Tavan yüksekliğinize göre zincir, kablo veya bakla uzunluğu taleplerinizi, özel montaj isteklerinizi buraya yazabilirsiniz.
+              </p>
+              <textarea
+                id="order-note"
+                rows={3}
+                maxLength={1000}
+                value={orderNote}
+                onChange={(e) => setOrderNote(e.target.value)}
+                placeholder="Örn: Tavan yüksekliğim 280 cm, zincir boyu 60 cm olsun."
+                className="w-full text-xs p-3 rounded-xl border border-amber-300 bg-white focus:outline-none focus:border-amber-600"
+              />
             </div>
 
             {/* KUPON KODU GİRİŞ KUTUSU */}
@@ -554,6 +601,41 @@ export default function CartPage() {
                 className="w-full text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
               />
 
+              {/* Fatura Bilgileri */}
+              <fieldset className="space-y-2 pt-3 border-t border-neutral-100">
+                <legend className="text-xs font-bold text-neutral-700 uppercase tracking-wider mb-1">Fatura Bilgileri</legend>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  {([["INDIVIDUAL", "Bireysel Fatura"], ["CORPORATE", "Kurumsal Fatura"]] as const).map(([val, label]) => (
+                    <label
+                      key={val}
+                      className={`flex items-center gap-2 rounded-xl border p-2.5 cursor-pointer ${invoiceType === val ? "border-amber-600 bg-amber-50" : "border-neutral-300"}`}
+                    >
+                      <input type="radio" name="invoiceType" checked={invoiceType === val} onChange={() => setInvoiceType(val)} className="accent-amber-600" />
+                      {label}
+                    </label>
+                  ))}
+                </div>
+                {invoiceType === "INDIVIDUAL" ? (
+                  <input
+                    aria-label="T.C. Kimlik Numarası (isteğe bağlı)"
+                    inputMode="numeric"
+                    maxLength={11}
+                    placeholder="T.C. Kimlik Numarası (isteğe bağlı)"
+                    value={taxNumber}
+                    onChange={(e) => setTaxNumber(e.target.value.replace(/\D/g, ""))}
+                    className="w-full text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
+                  />
+                ) : (
+                  <>
+                    <input aria-label="Şirket / Firma Unvanı" required placeholder="Şirket / Firma Unvanı" value={companyTitle} onChange={(e) => setCompanyTitle(e.target.value)} className="w-full text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600" />
+                    <div className="grid grid-cols-2 gap-2">
+                      <input aria-label="Vergi Dairesi" required placeholder="Vergi Dairesi" value={taxOffice} onChange={(e) => setTaxOffice(e.target.value)} className="w-full text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600" />
+                      <input aria-label="Vergi Kimlik No (VKN)" required inputMode="numeric" maxLength={10} placeholder="VKN (10 hane)" value={taxNumber} onChange={(e) => setTaxNumber(e.target.value.replace(/\D/g, ""))} className="w-full text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600" />
+                    </div>
+                  </>
+                )}
+              </fieldset>
+
               {/* Fiyat Dökümü */}
               <div className="space-y-2 pt-4 border-t border-neutral-100 text-xs">
                 <div className="flex justify-between text-neutral-600">
@@ -596,9 +678,24 @@ export default function CartPage() {
 
               </div>
 
+              <div className="space-y-2 pt-3 text-[11px] text-neutral-700">
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input type="checkbox" checked={agreePre} onChange={(e) => setAgreePre(e.target.checked)} className="mt-0.5 w-4 h-4 accent-amber-600 shrink-0" />
+                  <span>
+                    <button type="button" onClick={() => setContract("pre")} className="text-amber-700 underline font-semibold">Ön Bilgilendirme Koşulları&apos;nı</button> okudum ve kabul ediyorum.
+                  </span>
+                </label>
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input type="checkbox" checked={agreeSales} onChange={(e) => setAgreeSales(e.target.checked)} className="mt-0.5 w-4 h-4 accent-amber-600 shrink-0" />
+                  <span>
+                    <button type="button" onClick={() => setContract("sales")} className="text-amber-700 underline font-semibold">Mesafeli Satış Sözleşmesi&apos;ni</button> okudum ve kabul ediyorum.
+                  </span>
+                </label>
+              </div>
+
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || !agreePre || !agreeSales}
                 className="w-full bg-neutral-900 hover:bg-amber-600 text-white py-3.5 px-4 rounded-xl transition-colors text-xs font-semibold shadow-sm mt-4 disabled:opacity-50"
               >
                 {loading
@@ -615,6 +712,26 @@ export default function CartPage() {
           </div>
         </div>
       </div>
+      {contract && (
+        <ContractModal
+          kind={contract}
+          onClose={() => setContract(null)}
+          data={{
+            name,
+            email,
+            phone,
+            address,
+            region: [cities.find((c) => Number(c.id) === Number(buyerCityId))?.name, states.find((st) => Number(st.id) === Number(buyerStateId))?.name].filter(Boolean).join(" / "),
+            items: cart.map((i) => ({ title: i.title, variation: i.variationName, quantity: i.quantity, price: i.price })),
+            itemsTotal: totalPrice,
+            shippingLabel: SHIPPING_LABELS[shippingType] ?? shippingType,
+            shippingCost,
+            discount: couponDiscount + pickupDiscount + bankDiscount,
+            total: finalTotal,
+            paymentLabel: paymentMethod === "CREDIT_CARD" ? "Kredi / Banka Kartı (PayTR)" : "Havale / EFT",
+          }}
+        />
+      )}
     </main>
   );
 }

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import ClearCart from "@/components/ClearCart";
 import BankTransferCard from "@/components/BankTransferCard";
+import ReceiptUpload from "@/components/ReceiptUpload";
 
 export const metadata: Metadata = {
   title: "Siparişiniz Alındı",
@@ -70,6 +71,12 @@ export default async function OrderConfirmationPage({ params }: { params: Promis
               </li>
             ))}
           </ul>
+          {order.orderNote && (
+            <div className="pt-3 border-t border-neutral-200">
+              <span className="text-neutral-400">Sipariş Notunuz:</span>
+              <p className="font-medium text-neutral-800 whitespace-pre-line">{order.orderNote}</p>
+            </div>
+          )}
           <div className="pt-3 border-t border-neutral-200">
             <span className="text-neutral-400">Toplam:</span>
             <p className="font-bold text-neutral-900 text-sm">{order.totalAmount.toLocaleString("tr-TR")} ₺</p>
@@ -95,6 +102,13 @@ export default async function OrderConfirmationPage({ params }: { params: Promis
         </div>
 
         {order.paymentMethod === "BANK_TRANSFER" && !paymentFailed && <BankTransferCard orderId={order.id} />}
+
+        {order.paymentMethod === "BANK_TRANSFER" && order.status === "PENDING_NEW" && (
+          <div className="text-left space-y-2">
+            <p className="text-xs text-neutral-600">Havaleyi yaptıktan sonra dekontunuzu yükleyerek ödemenizin hızla onaylanmasını sağlayabilirsiniz.</p>
+            <ReceiptUpload orderId={order.id} uploaded={Boolean(order.receiptUrl)} defaultSender={order.user.name} />
+          </div>
+        )}
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
           <Link

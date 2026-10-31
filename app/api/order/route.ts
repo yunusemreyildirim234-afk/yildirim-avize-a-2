@@ -4,6 +4,7 @@ import { finalizeOrder } from "@/lib/orders";
 import { getPaytrToken } from "@/lib/paytr";
 import { computeTotals, couponDiscountFor, SHIPPING_LABELS } from "@/lib/pricing";
 import { getSessionUserId } from "@/lib/account";
+import { invoiceError } from "@/lib/validation";
 import { releaseCoupon, reserveCoupon, validateCoupon } from "@/lib/coupons";
 
 interface CartLine {
@@ -30,6 +31,17 @@ export async function POST(req: Request) {
     if (!email || !name || !phone || !address) {
       return NextResponse.json({ error: "Ad, e-posta, telefon ve adres zorunludur." }, { status: 400 });
     }
+    // Yasal onaylar, fatura bilgileri ve sipariş notu
+    if (body.consent !== true) {
+      return NextResponse.json({ error: "Ön Bilgilendirme Koşulları ve Mesafeli Satış Sözleşmesi'ni onaylamanız gerekir." }, { status: 400 });
+    }
+    const invoiceType = body.invoiceType === "CORPORATE" ? "CORPORATE" : "INDIVIDUAL";
+    const taxNumber = typeof body.taxNumber === "string" ? body.taxNumber.replace(/\s/g, "").slice(0, 20) : "";
+    const taxOffice = typeof body.taxOffice === "string" ? body.taxOffice.trim().slice(0, 120) : "";
+    const companyTitle = typeof body.companyTitle === "string" ? body.companyTitle.trim().slice(0, 200) : "";
+    const orderNote = typeof body.orderNote === "string" ? body.orderNote.trim().slice(0, 1000) : "";
+    const invErr = invoiceError({ invoiceType, taxNumber, taxOffice, companyTitle });
+    if (invErr) return NextResponse.json({ error: invErr }, { status: 400 });
     if (!(shippingType in SHIPPING_LABELS)) {
       return NextResponse.json({ error: "Geçersiz teslimat yöntemi." }, { status: 400 });
     }
@@ -95,6 +107,11 @@ export async function POST(req: Request) {
         shippingType,
         paymentMethod,
         couponCode: appliedCouponCode,
+        orderNote: orderNote || null,
+        invoiceType,
+        taxNumber: taxNumber || null,
+        taxOffice: invoiceType === "CORPORATE" ? taxOffice : null,
+        companyTitle: invoiceType === "CORPORATE" ? companyTitle : null,
         status: paymentMethod === "CREDIT_CARD" ? "AWAITING_PAYMENT" : "PENDING_NEW",
         phone,
         address,
@@ -118,7 +135,8 @@ export async function POST(req: Request) {
 
     // 4a. Havale/EFT: sipariş hemen onaylanır
     if (paymentMethod === "BANK_TRANSFER") {
-      await finalizeOrder(order.id);
+      // Stok rezerve edilir, bildirimler gider; sipariş yönetici ödemeyi onaylayana kadar PENDING_NEW kalır
+      await finalizeOrder(order.id, { awaitPayment: true });
       return NextResponse.json({ success: true, orderId: order.id });
     }
 

@@ -49,7 +49,7 @@ export default function OrderStatusSelector({ orderId, initialStatus, shippingTy
         value={status}
         onChange={(e) => handleStatusChange(e.target.value)}
         className={`text-xs font-semibold px-3 py-1.5 rounded-full border outline-none cursor-pointer transition-all ${
-          status === "PENDING" || status === "AWAITING_PAYMENT"
+          status === "PENDING" || status === "AWAITING_PAYMENT" || status === "PENDING_NEW"
             ? "bg-amber-50 text-amber-900 border-amber-300"
             : status === "READY_FOR_PICKUP"
             ? "bg-purple-50 text-purple-900 border-purple-300"
@@ -60,8 +60,8 @@ export default function OrderStatusSelector({ orderId, initialStatus, shippingTy
             : "bg-emerald-50 text-emerald-900 border-emerald-300"
         }`}
       >
-        {(status === "AWAITING_PAYMENT" || status === "PAYMENT_FAILED") && (
-          <option value={status}>{status === "AWAITING_PAYMENT" ? "Ödeme Bekleniyor" : "Ödeme Başarısız"}</option>
+        {(status === "AWAITING_PAYMENT" || status === "PAYMENT_FAILED" || status === "PENDING_NEW") && (
+          <option value={status}>{status === "AWAITING_PAYMENT" ? "Ödeme Bekleniyor" : status === "PENDING_NEW" ? "Havale Onayı Bekleniyor" : "Ödeme Başarısız"}</option>
         )}
         <option value="PENDING">⏳ Hazırlanıyor</option>
 
