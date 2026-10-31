@@ -413,3 +413,20 @@ export async function sendRequestDecisionEmail(data: { to: string; name: string;
     </div>`,
   });
 }
+
+/** Sipariş kargoya verilince müşteriye takip numarası ve canlı takip bağlantısı. */
+export async function sendShippedEmail(data: { to: string; name: string; orderId: string; carrier: string; trackingNumber: string }) {
+  const live = `https://kargotakip.araskargo.com.tr/?kargotakipno=${encodeURIComponent(data.trackingNumber)}`;
+  return sendViaResend(process.env.RESEND_API_KEY, {
+    to: [data.to],
+    subject: `Siparişiniz ${data.carrier}'ya Verildi - Takip No: ${data.trackingNumber}`,
+    html: `<div style="font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 28px; background: #fafafa; border: 1px solid #e5e5e5; border-radius: 16px; color: #171717;">
+      <h1 style="text-align: center; font-size: 22px; letter-spacing: 1px; margin: 0 0 16px;">YILDIRIM AVİZE</h1>
+      <h2 style="font-size: 17px; margin: 0 0 10px;">Sayın ${esc(data.name)},</h2>
+      <p style="font-size: 14px; line-height: 1.6;"><strong>#${data.orderId.slice(0, 8)}</strong> numaralı siparişiniz sigortalı, korumalı kolide <strong>${esc(data.carrier)}</strong>'ya teslim edildi.</p>
+      <p style="text-align: center; margin: 18px 0;"><span style="display: inline-block; font-family: monospace; font-size: 20px; font-weight: bold; letter-spacing: 2px; background: #ffffff; border: 2px dashed #d97706; border-radius: 10px; padding: 10px 20px; color: #92400e;">${esc(data.trackingNumber)}</span></p>
+      <p style="text-align: center; margin: 22px 0 8px;"><a href="${live}" style="display: inline-block; background: #171717; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 14px; padding: 12px 28px; border-radius: 10px;">Kargomu Takip Et</a></p>
+      <p style="font-size: 12px; color: #737373; text-align: center;">Yıldırım Avize | Tel: ${PHONE_DISPLAY}</p>
+    </div>`,
+  });
+}

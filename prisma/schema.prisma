@@ -90,6 +90,8 @@ model Order {
   shippingTrackingCode String? // Kargo Takip Kodu (shipping_webservice_tracking_code)
   shippingBarcode      String? // Kargo Barkodu (shipping_webservice_barcode)
   shippingPrice        String? // Kargo Maliyet / Teklif Tutarı
+  barcodeUrl           String? // Yazdırılabilir barkod/etiket PDF bağlantısı
+  labelCreated         Boolean      @default(false) // Kargo barkodu oluşturuldu mu
   couponCode           String? // Uygulanan promosyon kodu
   stockDeducted        Boolean      @default(false) // Sipariş stoğu düşüldü mü (iptalde iade için)
   cancelReturnType     String? // "CANCEL" | "RETURN"

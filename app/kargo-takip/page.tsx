@@ -63,7 +63,8 @@ export default async function TrackingPage({ searchParams }: { searchParams: Pro
             </div>
             {order.kargonomiShipmentId && (
               <div className="pt-3 border-t border-neutral-100 space-y-1">
-                <span className="text-neutral-400">Kargo (Kargonomi #{order.kargonomiShipmentId})</span>
+                <span className="text-neutral-400">Kargo Firması</span>
+                <p className="text-sm font-bold text-orange-700">{order.shippingProviderName || "Aras Kargo"}</p>
                 <p className="font-semibold text-neutral-900">{order.kargonomiStatusLabel || "Taslak"}</p>
                 {order.shippingTrackingCode && (
                   <p className="text-neutral-600">
@@ -74,6 +75,16 @@ export default async function TrackingPage({ searchParams }: { searchParams: Pro
                   <p className="text-neutral-600">
                     Barkod: <span className="font-mono">{order.shippingBarcode}</span>
                   </p>
+                )}
+                {(order.shippingTrackingCode || order.shippingBarcode) && (
+                  <a
+                    href={`https://kargotakip.araskargo.com.tr/?kargotakipno=${encodeURIComponent(order.shippingTrackingCode || order.shippingBarcode || "")}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block mt-2 bg-orange-600 hover:bg-orange-700 text-white font-semibold px-4 py-2.5 rounded-xl transition-colors"
+                  >
+                    Aras Kargo ile Canlı Takip Et ↗
+                  </a>
                 )}
               </div>
             )}

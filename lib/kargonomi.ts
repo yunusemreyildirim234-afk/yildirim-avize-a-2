@@ -1,6 +1,12 @@
 import { prisma } from "@/lib/db";
 
-const BASE_URL = (process.env.KARGONOMI_BASE_URL || "https://app.kargonomi.com.tr/api/v1").replace(/\/$/, "");
+const BASE_URL = (process.env.KARGONOMI_API_URL || process.env.KARGONOMI_BASE_URL || "https://app.kargonomi.com.tr/api/v1").replace(/\/$/, "");
+
+// Kargonomi kargo firması kimlikleri (-1: otomatik, 3: Kolay Gelsin, 4: Aras, 5: Sürat, 6: Hepsijet, 7: PTT)
+const CARRIERS: Record<string, { id: number; name: string }> = {
+  ARAS: { id: 4, name: "Aras Kargo" },
+};
+const carrier = () => CARRIERS[(process.env.KARGONOMI_DEFAULT_CARRIER || "ARAS").toUpperCase()] ?? CARRIERS.ARAS;
 
 export const KARGONOMI_STATUS_LABELS: Record<string, string> = {
   draft: "Taslak",
@@ -36,8 +42,8 @@ export class KargonomiError extends Error {
 }
 
 export function kargonomiHeaders(): Record<string, string> {
-  const token = process.env.KARGONOMI_API_TOKEN;
-  if (!token) throw new KargonomiError("KARGONOMI_API_TOKEN tanımlı değil.", 500);
+  const token = process.env.KARGONOMI_API_KEY || process.env.KARGONOMI_API_TOKEN;
+  if (!token) throw new KargonomiError("KARGONOMI_API_KEY tanımlı değil.", 500);
   return { Authorization: `Bearer ${token}`, Accept: "application/json" };
 }
 
@@ -88,7 +94,8 @@ export function createKargonomiShipment(input: KargonomiShipmentInput) {
   return request("/shipments", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ shipment: { ...input, ...sender } }),
+    // Taşıyıcı Aras Kargo'ya sabitlenir (otomatik seçim yerine)
+    body: JSON.stringify({ shipment: { ...input, ...sender, shipping_provider_id: carrier().id, carrier_code: "ARAS" } }),
   });
 }
 
@@ -103,22 +110,28 @@ function statusFields(s: Json) {
     kargonomiStatusLabel: s.status_label || KARGONOMI_STATUS_LABELS[status] || status,
     shippingTrackingCode: s.shipping_webservice_tracking_code ?? undefined,
     shippingBarcode: s.shipping_webservice_barcode ?? s.shipment_packages?.[0]?.barcode ?? undefined,
+    barcodeUrl: s.barcode_url ?? s.label_url ?? s.shipment_packages?.[0]?.barcode_url ?? undefined,
   };
 }
 
-/** Siparişe ait Kargonomi gönderisini oluşturur ve sonucu siparişe yazar. */
-export async function createShipmentForOrder(orderId: string) {
+/** Barkod PDF'i: Kargonomi bağlantı döndürdüyse o, yoksa yönetici korumalı barkod vekil rotası. */
+const barcodeLink = (orderId: string, url?: string | null) => url || `/api/admin/kargonomi/barcode?orderId=${orderId}`;
+
+/**
+ * Siparişe ait Kargonomi (Aras Kargo) gönderisini oluşturur ve sonucu siparişe yazar.
+ * `regenerate`: mevcut gönderi bağlantısı bırakılıp yeni gönderi açılır (eski kayıt Kargonomi panelinden iptal edilmelidir).
+ */
+export async function createShipmentForOrder(orderId: string, opts: { regenerate?: boolean } = {}) {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
     include: { user: true, items: { include: { variation: { include: { product: true } } } } },
   });
   if (!order) throw new KargonomiError("Sipariş bulunamadı.", 404);
-  if (order.kargonomiShipmentId) throw new KargonomiError("Bu sipariş için gönderi zaten oluşturulmuş.", 409);
+  if (order.kargonomiShipmentId && !opts.regenerate) throw new KargonomiError("Bu sipariş için gönderi zaten oluşturulmuş.", 409);
 
-  const content = order.items
-    .map((i) => `${i.quantity}x ${i.variation.product.title} (${i.variation.variationValue})`)
-    .join(", ")
-    .slice(0, 200);
+  const totalQty = order.items.reduce((sum, i) => sum + i.quantity, 0);
+  // Ürün adedine göre desi (adet başına 2), en az 2; sipariş için tanımlı desi daha yüksekse o kullanılır
+  const desi = Math.max(2, totalQty * 2, order.packageDesi ?? 0);
 
   const created = await createKargonomiShipment({
     buyer_name: order.user.name,
@@ -129,9 +142,9 @@ export async function createShipmentForOrder(orderId: string) {
     buyer_city_id: order.buyerCityId ?? 425,
     packages: [
       {
-        content: content || "Yıldırım Avize Üst Düzey Korumalı Koli Kargo",
+        content: "Avize / Aydınlatma Malzemesi",
         barcode: `YA-${order.id.slice(0, 8).toUpperCase()}`,
-        desi: order.packageDesi ?? 3,
+        desi,
       },
     ],
   });
@@ -139,12 +152,17 @@ export async function createShipmentForOrder(orderId: string) {
   const shipment = unwrap(created);
   if (!shipment?.id) throw new KargonomiError("Kargonomi gönderi kimliği döndürmedi.", 502);
 
+  const fields = statusFields(shipment);
   return prisma.order.update({
     where: { id: order.id },
     data: {
       kargonomiShipmentId: Number(shipment.id),
-      ...statusFields(shipment),
-      shippingBarcode: statusFields(shipment).shippingBarcode ?? `YA-${order.id.slice(0, 8).toUpperCase()}`,
+      ...fields,
+      shippingBarcode: fields.shippingBarcode ?? `YA-${order.id.slice(0, 8).toUpperCase()}`,
+      barcodeUrl: barcodeLink(order.id, fields.barcodeUrl),
+      shippingProviderId: carrier().id,
+      shippingProviderName: carrier().name,
+      packageDesi: desi,
     },
   });
 }
@@ -155,5 +173,6 @@ export async function refreshOrderShipment(orderId: string) {
   if (!order?.kargonomiShipmentId) throw new KargonomiError("Siparişin Kargonomi gönderisi yok.", 404);
 
   const shipment = unwrap(await getShipment(order.kargonomiShipmentId));
-  return prisma.order.update({ where: { id: order.id }, data: statusFields(shipment) });
+  const { barcodeUrl, ...fields } = statusFields(shipment);
+  return prisma.order.update({ where: { id: order.id }, data: { ...fields, ...(barcodeUrl ? { barcodeUrl } : {}) } });
 }

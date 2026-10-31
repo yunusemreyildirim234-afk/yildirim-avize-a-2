@@ -220,12 +220,24 @@ export default function AuthPage() {
                         )}
                       </div>
 
-                      <Link
-                        href={`/kargo-takip?code=${order.shippingTrackingCode || order.id}`}
-                        className="text-amber-700 hover:underline font-semibold"
-                      >
-                        🚚 Canlı Kargo Takip →
-                      </Link>
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                        <Link
+                          href={`/kargo-takip?code=${order.shippingTrackingCode || order.id}`}
+                          className="text-amber-700 hover:underline font-semibold"
+                        >
+                          🚚 Kargo Takip →
+                        </Link>
+                        {order.shippingTrackingCode && (
+                          <a
+                            href={`https://kargotakip.araskargo.com.tr/?kargotakipno=${encodeURIComponent(order.shippingTrackingCode)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-orange-700 hover:underline font-semibold"
+                          >
+                            Aras Kargo ile Canlı Takip Et ↗
+                          </a>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
