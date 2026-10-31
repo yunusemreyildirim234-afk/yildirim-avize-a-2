@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { DEFAULT_COUPON_CODE, type CouponRule, type PriceLine } from "@/lib/pricing";
 
@@ -43,13 +44,18 @@ export async function validateCoupon(opts: {
   };
 }
 
-/** Sipariş tamamlandığında kullanım sayısını limiti aşmadan artırır. */
-export async function consumeCoupon(couponId: string): Promise<boolean> {
-  const coupon = await prisma.coupon.findUnique({ where: { id: couponId }, select: { maxUses: true } });
-  if (!coupon) return false;
-  const res = await prisma.coupon.updateMany({
-    where: { id: couponId, usedCount: { lt: coupon.maxUses } },
-    data: { usedCount: { increment: 1 } },
-  });
-  return res.count > 0;
+/**
+ * Kupon hakkını sipariş kaydıyla AYNI veritabanı işleminde (tx) rezerve eder.
+ * Tek SQL ifadesi kontrol + artırımı atomik yapar; eşzamanlı isteklerde limit aşılamaz.
+ * Kupon pasifse veya usedCount >= maxUses ise false döner.
+ */
+export async function reserveCoupon(tx: Prisma.TransactionClient, code: string): Promise<boolean> {
+  const n = await tx.$executeRaw`UPDATE "Coupon" SET "usedCount" = "usedCount" + 1 WHERE "code" = ${code} AND "active" = true AND "usedCount" < "maxUses"`;
+  return n > 0;
+}
+
+/** Ödemesi başarısız olan veya iptal edilen siparişin kupon hakkını geri verir. */
+export async function releaseCoupon(code: string | null | undefined) {
+  if (!code) return;
+  await prisma.$executeRaw`UPDATE "Coupon" SET "usedCount" = GREATEST(0, "usedCount" - 1) WHERE "code" = ${code}`;
 }

@@ -1,10 +1,23 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { CartStepper, type QuickProduct } from "@/components/ProductQuickActions";
 import { useWishlist } from "@/context/WishlistContext";
 
 export default function FavorilerimPage() {
   const { favorites, toggleFavorite } = useWishlist();
+  const [quick, setQuick] = useState<Record<string, QuickProduct>>({});
+
+  // Sepete ekleme için güncel varyasyon/stok bilgisi
+  const idsKey = favorites.map((f) => f.id).sort().join(",");
+  useEffect(() => {
+    if (!idsKey) return;
+    fetch(`/api/quick-products?ids=${encodeURIComponent(idsKey)}`)
+      .then((r) => r.json())
+      .then((d: { products?: QuickProduct[] }) => setQuick(Object.fromEntries((d.products ?? []).map((p) => [p.id, p]))))
+      .catch(() => {});
+  }, [idsKey]);
 
   if (favorites.length === 0) {
     return (
@@ -52,17 +65,19 @@ export default function FavorilerimPage() {
               className="bg-white rounded-2xl border border-neutral-200 overflow-hidden shadow-sm flex flex-col justify-between group"
             >
               <div className="h-60 bg-neutral-900 relative overflow-hidden">
-                {product.imageUrl ? (
-                  <img
-                    src={product.imageUrl}
-                    alt={product.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-neutral-950 text-amber-400 text-xs">
-                    💡 Yıldırım Avize
-                  </div>
-                )}
+                <Link href={`/urun/${product.id}`} aria-label={`${product.title} ürün sayfası`} className="block w-full h-full">
+                  {product.imageUrl ? (
+                    <img
+                      src={product.imageUrl}
+                      alt={product.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-neutral-950 text-neutral-500 text-xs">
+                      Yıldırım Avize
+                    </div>
+                  )}
+                </Link>
 
                 <span className="absolute top-3 left-3 bg-white/95 text-neutral-900 text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm">
                   {product.category}
@@ -82,8 +97,12 @@ export default function FavorilerimPage() {
 
               <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
                 <h3 className="font-serif font-bold text-neutral-900 text-base">
-                  {product.title}
+                  <Link href={`/urun/${product.id}`} className="hover:text-amber-700 hover:underline">
+                    {product.title}
+                  </Link>
                 </h3>
+
+                {quick[product.id] && <CartStepper product={quick[product.id]} />}
 
                 <div className="pt-3 border-t border-neutral-100 flex items-center justify-between">
                   <span className="text-base font-bold text-neutral-900">

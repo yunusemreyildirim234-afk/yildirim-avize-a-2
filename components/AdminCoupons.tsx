@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, Search, Tag } from "lucide-react";
+import { ChevronDown, Search, Tag, Users } from "lucide-react";
 
 export interface CouponRow {
   id: string;
@@ -175,13 +175,18 @@ export default function AdminCoupons({ coupons, customers, products }: Props) {
                 </div>
               ) : (
                 <>
+                  <div className="flex items-center gap-2 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2.5 mb-2 text-emerald-900">
+                    <Users aria-hidden="true" className="w-4 h-4 shrink-0" />
+                    <span className="font-semibold">Herkes İçin (Genel Kupon)</span>
+                    <span className="ml-auto text-[10px] font-bold uppercase tracking-wider">Seçili</span>
+                  </div>
                   <div className="relative">
                     <Search aria-hidden="true" className="w-3.5 h-3.5 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
                     <input
                       aria-label="Müşteri ara"
                       value={customerQuery}
                       onChange={(e) => setCustomerQuery(e.target.value)}
-                      placeholder="Tüm Müşteriler (aramak için e-posta veya ad yazın)"
+                      placeholder="Veya kişiye özel yapmak için e-posta / ad yazın"
                       className={`${inputCls} pl-8`}
                     />
                   </div>

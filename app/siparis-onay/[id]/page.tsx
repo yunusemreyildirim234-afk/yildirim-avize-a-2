@@ -48,18 +48,16 @@ export default async function OrderConfirmationPage({ params }: { params: Promis
             <span className="text-neutral-400">Sipariş Takip Kodu:</span>
             <p className="font-mono font-bold text-neutral-800 break-all">{order.id}</p>
           </div>
-          <ul className="pt-3 border-t border-neutral-200 space-y-1">
+          <ul className="pt-3 border-t border-neutral-200 space-y-3">
             {order.items.map((item) => (
               <li key={item.id} className="text-neutral-700 flex items-center gap-3">
                 <Link
                   href={`/urun/${item.variation.product.id}`}
                   aria-label={`${item.variation.product.title} ürün sayfası`}
-                  className="w-12 h-12 rounded-lg bg-neutral-900 overflow-hidden shrink-0 border border-neutral-200 flex items-center justify-center"
+                  className="w-[72px] h-[72px] rounded-xl bg-neutral-100 overflow-hidden shrink-0 border border-neutral-200 flex items-center justify-center"
                 >
-                  {item.variation.product.imageUrl ? (
+                  {item.variation.product.imageUrl && (
                     <img src={item.variation.product.imageUrl} alt={item.variation.product.title} className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-amber-400">💡</span>
                   )}
                 </Link>
                 <span>

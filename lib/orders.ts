@@ -1,7 +1,6 @@
 import { prisma } from "@/lib/db";
 import { sendOrderNotificationEmails } from "@/lib/email";
 import { createShipmentForOrder } from "@/lib/kargonomi";
-import { consumeCoupon } from "@/lib/coupons";
 
 /** Sipariş kalemleri kadar varyasyon stoğunu düşer (0'ın altına inmez); bir sipariş için yalnızca bir kez. */
 export async function deductOrderStock(orderId: string) {
@@ -33,13 +32,6 @@ export async function finalizeOrder(orderId: string) {
     data: { status: "PENDING" },
   });
   if (claimed.count === 0) return;
-
-  // Sipariş kesinleştiğinde kupon kullanım sayısı 1 artar
-  const used = await prisma.order.findUnique({ where: { id: orderId }, select: { couponCode: true } });
-  if (used?.couponCode) {
-    const coupon = await prisma.coupon.findUnique({ where: { code: used.couponCode }, select: { id: true } });
-    if (coupon) await consumeCoupon(coupon.id).catch((err) => console.error("Kupon sayacı artırılamadı:", err));
-  }
 
   await deductOrderStock(orderId);
 

@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { finalizeOrder } from "@/lib/orders";
 import { getPaytrToken } from "@/lib/paytr";
 import { computeTotals, couponDiscountFor, SHIPPING_LABELS } from "@/lib/pricing";
-import { validateCoupon } from "@/lib/coupons";
+import { releaseCoupon, reserveCoupon, validateCoupon } from "@/lib/coupons";
 
 interface CartLine {
   variationId: string;
@@ -75,8 +75,15 @@ export async function POST(req: Request) {
       (await prisma.user.create({ data: { name, email, password: "guest_checkout", role: "USER" } }));
 
     // 3. Siparişi kaydet (kartlı ödemede ödeme onayına kadar AWAITING_PAYMENT)
+    const itemRows = orderLines.map((l) => ({ variationId: l.variation.id, quantity: l.quantity, unitPrice: l.unitPrice }));
     const totalQty = orderLines.reduce((sum, l) => sum + l.quantity, 0);
-    const order = await prisma.order.create({
+    // Kupon hakkı rezervasyonu ve sipariş kaydı tek işlemde: limit doluysa sipariş hiç oluşmaz
+    class CouponLimitError extends Error {}
+    let order;
+    try {
+      order = await prisma.$transaction(async (tx) => {
+        if (appliedCouponCode && !(await reserveCoupon(tx, appliedCouponCode))) throw new CouponLimitError();
+        return tx.order.create({
       data: {
         userId: user.id,
         totalAmount: totals.total,
@@ -92,10 +99,17 @@ export async function POST(req: Request) {
         buyerCityName: buyerCityName || "BEYOĞLU",
         packageDesi: Math.max(3, totalQty * 3),
         items: {
-          create: orderLines.map((l) => ({ variationId: l.variation.id, quantity: l.quantity, unitPrice: l.unitPrice })),
+          create: itemRows,
         },
       },
-    });
+        });
+      });
+    } catch (err) {
+      if (err instanceof CouponLimitError) {
+        return NextResponse.json({ error: "Bu kuponun kullanım hakkı dolmuştur veya kupon artık geçerli değil." }, { status: 400 });
+      }
+      throw err;
+    }
 
     // 4a. Havale/EFT: sipariş hemen onaylanır
     if (paymentMethod === "BANK_TRANSFER") {
@@ -125,6 +139,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, orderId: order.id, paytrToken: token });
     } catch (err) {
       await prisma.order.update({ where: { id: order.id }, data: { status: "PAYMENT_FAILED" } });
+      await releaseCoupon(appliedCouponCode).catch(() => {});
       return NextResponse.json({ error: (err as Error).message }, { status: 502 });
     }
   } catch (error) {

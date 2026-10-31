@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { sendRequestDecisionEmail } from "@/lib/email";
 import { restoreOrderStock } from "@/lib/orders";
+import { releaseCoupon } from "@/lib/coupons";
 
 // Yönetici iptal/iade talebini onaylar veya reddeder (proxy yalnızca yöneticiye açar)
 export async function POST(req: Request) {
@@ -28,7 +29,10 @@ export async function POST(req: Request) {
   });
 
   // Onaylanan iptalde sipariş stoğu geri eklenir
-  if (approve && isCancel) await restoreOrderStock(orderId);
+  if (approve && isCancel) {
+    await restoreOrderStock(orderId);
+    await releaseCoupon(order.couponCode).catch(() => {});
+  }
 
   const emailed = await sendRequestDecisionEmail({
     to: order.user.email,

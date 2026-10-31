@@ -130,7 +130,7 @@ export default function AuthPage() {
 
           <div id="siparisler" className="bg-white rounded-3xl border border-neutral-200 p-8 shadow-sm space-y-6 scroll-mt-24">
             <h2 className="text-lg font-serif font-bold text-neutral-900 border-b border-neutral-100 pb-3">
-              Geçmiş Siparişleriniz & Kargonomi Durumu
+              Geçmiş Siparişleriniz & Kargo Durumu
             </h2>
 
             {user.orders && user.orders.length > 0 ? (
@@ -181,7 +181,7 @@ export default function AuthPage() {
                       </div>
                     </div>
 
-                    <div className="text-xs text-neutral-700 space-y-1">
+                    <div className="text-xs text-neutral-700 space-y-3">
                       {order.items.map((item) => (
                         <div key={item.id} className="flex justify-between items-center gap-3">
                           <span className="flex items-center gap-2.5 min-w-0">
@@ -189,12 +189,10 @@ export default function AuthPage() {
                               <Link
                                 href={`/urun/${item.variation.product.id}`}
                                 aria-label={`${item.variation.product.title} ürün sayfası`}
-                                className="w-10 h-10 rounded-lg bg-neutral-900 overflow-hidden shrink-0 border border-neutral-200 flex items-center justify-center"
+                                className="w-[72px] h-[72px] rounded-xl bg-neutral-100 overflow-hidden shrink-0 border border-neutral-200 flex items-center justify-center"
                               >
-                                {item.variation.product.imageUrl ? (
+                                {item.variation.product.imageUrl && (
                                   <img src={item.variation.product.imageUrl} alt={item.variation.product.title} className="w-full h-full object-cover" />
-                                ) : (
-                                  <span className="text-amber-400 text-xs">💡</span>
                                 )}
                               </Link>
                             )}

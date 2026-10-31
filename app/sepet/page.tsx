@@ -17,6 +17,22 @@ export default function CartPage() {
   const router = useRouter();
   const { cart, removeFromCart, updateQuantity, clearCart, totalPrice } = useCart();
 
+  // Eski sepet kayıtlarında görsel yoksa ürün görselleri veritabanından tamamlanır
+  const [images, setImages] = useState<Record<string, string>>({});
+  const missingIds = cart.filter((i) => !i.imageUrl).map((i) => i.productId);
+  const missingKey = [...new Set(missingIds)].sort().join(",");
+  useEffect(() => {
+    if (!missingKey) return;
+    fetch(`/api/quick-products?ids=${encodeURIComponent(missingKey)}`)
+      .then((r) => r.json())
+      .then((d: { products?: { id: string; imageUrl?: string | null }[] }) => {
+        const map: Record<string, string> = {};
+        for (const p of d.products ?? []) if (p.imageUrl) map[p.id] = p.imageUrl;
+        setImages((prev) => ({ ...prev, ...map }));
+      })
+      .catch(() => {});
+  }, [missingKey]);
+
   // 1. Teslimat Yöntemi
   const [shippingType, setShippingType] = useState<string>("BEYOGLU_MAGAZA_TESLIM");
 
@@ -244,12 +260,10 @@ export default function CartPage() {
                     <Link
                       href={`/urun/${item.productId}`}
                       aria-label={`${item.title} ürün sayfası`}
-                      className="w-16 h-16 rounded-xl bg-neutral-900 overflow-hidden shrink-0 border border-neutral-200 flex items-center justify-center"
+                      className="w-[72px] h-[72px] rounded-xl bg-neutral-100 overflow-hidden shrink-0 border border-neutral-200 flex items-center justify-center"
                     >
-                      {item.imageUrl ? (
-                        <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover" />
-                      ) : (
-                        <span className="text-amber-400 text-lg">💡</span>
+                      {(item.imageUrl || images[item.productId]) && (
+                        <img src={item.imageUrl || images[item.productId]} alt={item.title} className="w-full h-full object-cover" />
                       )}
                     </Link>
                     <div className="min-w-0">

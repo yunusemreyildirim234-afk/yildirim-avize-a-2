@@ -48,11 +48,7 @@ function Results({
             className="flex items-center gap-3 px-3 py-2.5 hover:bg-amber-50/60 transition-colors"
           >
             <span className="w-12 h-12 rounded-lg bg-zinc-900 overflow-hidden shrink-0 border border-zinc-200 flex items-center justify-center">
-              {p.imageUrl ? (
-                <img src={p.imageUrl} alt="" className="w-full h-full object-cover" />
-              ) : (
-                <span className="text-amber-400 text-sm">💡</span>
-              )}
+              {p.imageUrl && <img src={p.imageUrl} alt="" className="w-full h-full object-cover" />}
             </span>
             <span className="flex-1 min-w-0">
               <span className="block text-xs font-serif font-bold text-zinc-900 truncate">{p.title}</span>
