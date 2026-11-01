@@ -2,20 +2,36 @@ import JsonLd from "@/components/JsonLd";
 
 const FAQS = [
   {
-    q: "Avizeler kargoda kırılmadan nasıl ulaşıyor?",
-    a: "Her avize, içi özel dolgu malzemesiyle desteklenmiş üst düzey korumalı koliyle paketlenir ve Kargonomi altyapısıyla sigortalı olarak gönderilir. Paketleme ustalarımız tarafından Beyoğlu merkezimizde yapılır.",
+    q: "Ampuller avizeye dahil midir? Hangi ampulü almalıyım?",
+    a: "Güvenli kargo taşımacılığı ve kişisel ışık rengi (gün ışığı / beyaz / sarı) tercihleriniz doğrultusunda ampuller ürünlerimize dahil değildir. Ürün detayında belirtilen standart duy tipine (E14, E27 veya G9) uygun tüm tasarruflu LED ampulleri güvenle tercih edebilirsiniz.",
   },
   {
-    q: "Kırılma veya hasar durumunda garanti var mı?",
-    a: "Taşıma sırasında oluşan kırılma ve hasarlar sigorta kapsamındadır. Teslimatta paketi kurye önünde kontrol edip tutanak tutturmanız yeterlidir; ürün ücretsiz değiştirilir veya iade edilir.",
+    q: "Ödeme seçenekleri ve taksit imkanı var mı?",
+    a: "Tüm siparişlerinizde PayTR altyapısıyla 3D Secure güvencesinde tüm kredi kartlarına peşin veya taksitli ödeme yapabilirsiniz. Ayrıca Kuveyt Türk hesabımıza Havale/EFT ile ödeme seçeneğimiz de mevcuttur.",
   },
   {
-    q: "Avize montajını siz yapıyor musunuz?",
-    a: "İstanbul içi siparişlerde montaj için usta yönlendirmesi yapabiliyoruz. Diğer şehirler için adım adım montaj kılavuzu ve WhatsApp üzerinden canlı teknik destek sağlıyoruz.",
+    q: "Kargo süreci ne kadar sürer ve nasıl takip edebilirim?",
+    a: "Siparişiniz onaylandıktan sonra ürününüz Şişhane atölyemizde özenle kontrol edilip paketlenir ve Aras Kargo güvencesiyle 1-3 iş günü içinde kargoya verilir. Kargo takip kodunuz SMS ve e-posta ile iletilir; ayrıca sitemizdeki \"Kargo Takip\" sayfasından paketinizi canlı izleyebilirsiniz.",
   },
   {
-    q: "Tavan yüksekliğime uygun avizeyi nasıl seçerim?",
-    a: "Tavan yüksekliğinizi ve salon fotoğrafınızı WhatsApp hattımıza (0537 211 42 23) gönderin; boyut, duy sayısı ve zincir uzunluğu konusunda ücretsiz danışmanlık verelim.",
+    q: "Eksik veya hasarlı taş/parça çıkarsa ne yapmalıyım?",
+    a: "Kargo açılışında herhangi bir kristal taşta çatlak veya eksik parça fark ederseniz WhatsApp destek hattımıza fotoğrafını iletmeniz yeterlidir. Kusurlu veya eksik parçalar hiçbir kargo ve ürün ücreti talep edilmeksizin 24 saat içinde adresinize ücretsiz olarak kargolanır.",
+  },
+  {
+    q: "Kurumsal fatura alabilir miyim?",
+    a: "Evet. Ödeme adımında \"Kurumsal Fatura\" seçeneğini işaretleyip şirket unvanı, vergi dairesi ve VKN bilgilerinizi girerek şirketiniz adına resmi e-Arşiv faturanızı oluşturabilirsiniz.",
+  },
+  {
+    q: "Beğenmezsem iade veya değişim yapabilir miyim?",
+    a: "Standart ürünlerimizi teslim aldığınız tarihten itibaren 14 gün içinde faturası ve orijinal koruyucu ambalajıyla birlikte koşulsuz iade edebilir veya başka bir modelle değiştirebilirsiniz. (Özel ölçü veya isteğe bağlı modifiye edilen ürünler cayma hakkı kapsamı dışındadır).",
+  },
+  {
+    q: "Kristal avizelerin temizliği ve bakımı nasıl yapılmalıdır?",
+    a: "Avizenizin ışığını ve kristal parlaklığını uzun yıllar koruması için kimyasal deterjanlar yerine hafif nemli mikrofiber bez ile silinmesi veya özel kristal temizleme spreyleri kullanılması tavsiye edilir. Temizlik öncesinde elektrik bağlantısının kapalı olduğundan emin olunmalıdır.",
+  },
+  {
+    q: "Avize montaj hizmetiniz var mı?",
+    a: "Montaj hizmeti tarafımızca verilmemektedir. Ancak tüm modellerimiz kolay kurulum için ön montajlı ve detaylı montaj şemasıyla birlikte gönderilmektedir. İhtiyaç duymanız halinde elektrikçiniz için WhatsApp destek hattımız üzerinden uzaktan teknik bilgilendirme desteği sağlamaktayız.",
   },
   {
     q: "Siparişimi mağazadan teslim alabilir miyim?",
