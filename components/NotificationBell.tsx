@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Bell, CheckCheck, Package, Sparkles, Ticket, MessageSquare } from "lucide-react";
+import { Bell, CheckCheck, Package, Sparkles, Ticket, MessageSquare, Trash2 } from "lucide-react";
 
 interface Item {
   id: string;
@@ -91,6 +91,20 @@ export default function NotificationBell() {
     await post({ all: true });
   };
 
+  const clearAll = async () => {
+    const previous = { items, unread };
+    setItems([]);
+    setUnread(0);
+    try {
+      const res = await fetch("/api/notifications", { method: "DELETE" });
+      if (!res.ok) throw new Error();
+    } catch {
+      setItems(previous.items);
+      setUnread(previous.unread);
+      toast.error("Bildirimler temizlenemedi. Lütfen tekrar deneyin.");
+    }
+  };
+
   const readOne = (n: Item) => {
     setOpen(false);
     if (n.read) return;
@@ -124,11 +138,18 @@ export default function NotificationBell() {
         >
           <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-100">
             <h2 className="text-sm font-bold text-zinc-900">Bildirimler</h2>
-            {unread > 0 && (
-              <button type="button" onClick={readAll} className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 hover:underline">
-                <CheckCheck aria-hidden="true" className="w-3.5 h-3.5" /> Tümünü Okundu İşaretle
-              </button>
-            )}
+            <div className="flex items-center gap-3">
+              {unread > 0 && (
+                <button type="button" onClick={readAll} className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 hover:underline">
+                  <CheckCheck aria-hidden="true" className="w-3.5 h-3.5" /> Tümünü Okundu İşaretle
+                </button>
+              )}
+              {items.length > 0 && (
+                <button type="button" onClick={clearAll} className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-700 hover:underline">
+                  <Trash2 aria-hidden="true" className="w-3.5 h-3.5" /> Tümünü Temizle
+                </button>
+              )}
+            </div>
           </div>
           {items.length === 0 ? (
             <p className="p-8 text-center text-xs text-zinc-400">Henüz bildiriminiz yok.</p>

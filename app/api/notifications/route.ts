@@ -30,6 +30,15 @@ export async function GET() {
   return NextResponse.json({ items, unread });
 }
 
+// Oturumdaki müşterinin kendi bildirimlerini (yönetici oturumu varsa yönetici bildirimlerini de) tek seferde siler.
+// Kapsam scope() ile sınırlıdır: müşteri yalnızca kendi kayıtlarını, yönetici kayıtları ise yalnızca geçerli yönetici oturumuyla silebilir.
+export async function DELETE() {
+  const where = await scope();
+  if (!where) return NextResponse.json({ error: "Oturum yok" }, { status: 401 });
+  const { count } = await prisma.notification.deleteMany({ where });
+  return NextResponse.json({ success: true, deleted: count });
+}
+
 // { all: true } tümünü, { id } tek bildirimi okundu yapar
 export async function POST(req: Request) {
   const where = await scope();
