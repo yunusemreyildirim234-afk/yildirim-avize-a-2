@@ -3,7 +3,7 @@ import LegalPage from "@/components/LegalPage";
 import { ADDRESS_LINE, PHONE_DISPLAY } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "Gizlilik Politikası & KVKK Aydınlatma Metni",
+  title: "Gizlilik Politikası",
   description: "Yıldırım Avize kişisel verilerin korunması (KVKK), çerez ve gizlilik politikası.",
   alternates: { canonical: "/gizlilik-politikasi" },
 };
@@ -13,35 +13,26 @@ export default function Page() {
     <LegalPage
       path="/gizlilik-politikasi"
       title="Gizlilik Politikası"
-      intro="Yıldırım Avize olarak kişisel verilerinizin güvenliğine önem veriyoruz. Bu metin, 6698 sayılı Kişisel Verilerin Korunması Kanunu (KVKK) kapsamında hazırlanmış aydınlatma metnidir."
+      intro="Yıldırım Avize olarak kişisel verilerinizin güvenliğine önem veriyoruz. Bu sayfa gizlilik yaklaşımımızın kısa özetidir; ayrıntılar KVKK Aydınlatma Metni ve Çerez Politikası'ndadır."
       sections={[
         {
           title: "Veri Sorumlusu",
-          body: [`Veri sorumlusu Yıldırım Avize Aydınlatma'dır. Adres: ${ADDRESS_LINE}. Telefon: ${PHONE_DISPLAY}.`],
+          body: [`Veri sorumlusu Yıldırım Avize Aydınlatma'dır. Adres: ${ADDRESS_LINE}. Telefon: ${PHONE_DISPLAY}. Unvan ve vergi bilgileri sayfa altındaki "Kurumsal & Yasal Bilgiler" bölümünde ve Aydınlatma Metni'nde yer alır.`],
         },
         {
-          title: "İşlenen Veriler ve Amaçlar",
+          title: "Genel İlkeler",
           body: [
-            "Ad-soyad, e-posta, telefon, teslimat adresi ve sipariş bilgileriniz; siparişinizin alınması, ödemenin ve teslimatın gerçekleştirilmesi, müşteri iletişimi ve yasal yükümlülüklerin yerine getirilmesi amacıyla işlenir.",
-          ],
-        },
-        {
-          title: "Verilerin Aktarılması",
-          body: [
-            "Verileriniz yalnızca hizmetin gerektirdiği ölçüde kargo/lojistik firmaları (Kargonomi ve anlaşmalı taşıyıcılar), ödeme kuruluşları ve e-posta hizmet sağlayıcılarıyla paylaşılır. Verileriniz üçüncü kişilere satılmaz.",
+            "Kişisel verilerinizi yalnızca siparişinizi almak, teslim etmek, sizinle iletişim kurmak ve yasal yükümlülükleri yerine getirmek için gerektiği ölçüde işleriz. Verilerinizi üçüncü kişilere satmayız; yalnızca hizmetin gerektirdiği kargo, ödeme, e-posta ve altyapı hizmet sağlayıcılarıyla paylaşırız.",
+            "İşlenen veriler, amaçlar, hukuki sebepler, aktarım yapılan alıcı grupları, yurt dışına aktarım ve KVKK madde 11 haklarınız hakkında ayrıntılı bilgi için Aydınlatma Metni'ni (/aydinlatma-metni) okuyabilirsiniz.",
           ],
         },
         {
           title: "Çerezler",
-          body: [
-            "Sitemiz sepet ve favori tercihlerinizi tarayıcınızda saklamak için zorunlu çerez/yerel depolama kullanır. Tercihinizi ilk ziyarette çerez barından belirtebilirsiniz.",
-          ],
+          body: ["Sitede kullanılan çerezler ve yerel depolama kayıtları Çerez Politikası'nda (/cerez-politikasi) açıklanmıştır."],
         },
         {
-          title: "Haklarınız",
-          body: [
-            "KVKK madde 11 uyarınca verilerinize erişme, düzeltme, silme, işlenmesine itiraz etme ve zararın giderilmesini talep etme haklarına sahipsiniz. Taleplerinizi yukarıdaki iletişim bilgilerinden bize iletebilirsiniz.",
-          ],
+          title: "Başvuru",
+          body: ["Kişisel verilerinize ilişkin taleplerinizi Aydınlatma Metni'nde belirtilen yazılı, KEP veya e-posta yollarıyla bize iletebilirsiniz."],
         },
       ]}
     />

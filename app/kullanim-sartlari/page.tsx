@@ -27,6 +27,20 @@ export default function Page() {
           ],
         },
         {
+          title: "Hesap Güvenliği",
+          body: [
+            "Hesabınıza giriş bilgilerinizin (e-posta doğrulama kodu veya Google hesabı) güvenliğinden siz sorumlusunuz. Hesabınızın yetkisiz kullanıldığını fark ederseniz bizimle gecikmeden iletişime geçmelisiniz. Başkası adına hesap açmak veya sistemin güvenliğini bozmaya yönelik girişimlerde bulunmak yasaktır; bu durumda hesabınız kapatılabilir.",
+          ],
+        },
+        {
+          title: "Yorum ve Fotoğraf Yükleme Kuralları",
+          body: [
+            "Ürün yorumu yalnızca ilgili ürünü satın almış müşterilerimiz tarafından yazılabilir. Yorumlar ve yüklenen fotoğraflar yayınlanmadan önce mağaza tarafından incelenir; onaylanmayan içerik yayınlanmaz.",
+            "Hakaret, küfür, tehdit, ayrımcılık, reklam, başka kişilere ait kişisel veriler, yanıltıcı veya hukuka aykırı içerik ile üçüncü kişilerin telif haklarını ihlal eden görseller yüklenemez. Fotoğraflarda başka kişilerin yüzü veya özel bilgileri bulunmamalıdır.",
+            "Yorum ve fotoğraf yükleyerek, içeriğin size ait olduğunu ve Yıldırım Avize'nin bu içeriği sitede ve resmi sosyal medya kanallarında ürün tanıtımı amacıyla, ücretsiz olarak yayınlamasına izin verdiğinizi kabul edersiniz. İçeriğinizin kaldırılmasını istediğinizde bize yazabilirsiniz.",
+          ],
+        },
+        {
           title: "Fikri Mülkiyet",
           body: [
             "Sitedeki marka, logo, görsel ve metinler Yıldırım Avize'ye aittir; izinsiz kopyalanamaz, çoğaltılamaz veya ticari amaçla kullanılamaz.",
