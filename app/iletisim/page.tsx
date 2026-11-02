@@ -57,7 +57,7 @@ export default function IletisimPage() {
     },
     {
       q: "Montaj hizmetiniz var mı?",
-      a: "Montaj hizmeti verilmemektedir. Ürünlerimiz ön montajlı ve montaj şemasıyla gönderilir; ihtiyaç halinde elektrikçiniz için WhatsApp destek hattımız üzerinden uzaktan teknik destek sağlıyoruz.",
+      a: "Montaj hizmeti verilmemektedir. İhtiyaç duymanız halinde elektrikçiniz için WhatsApp destek hattımız üzerinden uzaktan teknik bilgilendirme desteği sağlamaktayız.",
     },
   ];
 

@@ -27,15 +27,15 @@ const FAQS = [
   },
   {
     q: "Kristal avizelerin temizliği ve bakımı nasıl yapılmalıdır?",
-    a: "Avizenizin ışığını ve kristal parlaklığını uzun yıllar koruması için kimyasal deterjanlar yerine hafif nemli mikrofiber bez ile silinmesi veya özel kristal temizleme spreyleri kullanılması tavsiye edilir. Temizlik öncesinde elektrik bağlantısının kapalı olduğundan emin olunmalıdır.",
+    a: "Avizenizin kristal parlaklığını ve metal aksamını uzun yıllar koruması için kimyasal deterjanlar kesinlikle kullanılmamalıdır bunun yerine hafif nemli mikrofiber bez kullanılması uygundur. Temizlik öncesinde elektrik bağlantısının kapalı olduğundan emin olunmalıdır.",
   },
   {
     q: "Avize montaj hizmetiniz var mı?",
-    a: "Montaj hizmeti tarafımızca verilmemektedir. Ancak tüm modellerimiz kolay kurulum için ön montajlı ve detaylı montaj şemasıyla birlikte gönderilmektedir. İhtiyaç duymanız halinde elektrikçiniz için WhatsApp destek hattımız üzerinden uzaktan teknik bilgilendirme desteği sağlamaktayız.",
+    a: "Montaj hizmeti tarafımızca verilmemektedir. İhtiyaç duymanız halinde elektrikçiniz için WhatsApp destek hattımız üzerinden uzaktan teknik bilgilendirme desteği sağlamaktayız.",
   },
   {
     q: "Siparişimi mağazadan teslim alabilir miyim?",
-    a: "Evet. Sepette \"Mağazadan Teslim\" seçeneğini seçerek siparişinizi Şişhane merkezimizden görerek kargo ücreti ödemeden, ışık kontrolünü yaptırarak teslim alabilirsiniz.",
+    a: "Evet. Sepette \"Mağazadan Teslim\" seçeneğini seçerek %3 indirim kampanyamızı kullanabilir ve siparişinizi Şişhane merkezimizden teslim alabilirsiniz.",
   },
 ];
 

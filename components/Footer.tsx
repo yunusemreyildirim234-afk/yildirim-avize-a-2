@@ -3,7 +3,7 @@ import CompanyInfo from "@/components/CompanyInfo";
 import { ADDRESS_LINE, CATEGORIES, LAT, LNG, PHONE_DISPLAY, PHONE_TEL } from "@/lib/site";
 
 const MAP_SRC = `https://www.google.com/maps?q=${LAT},${LNG}&z=17&hl=tr&output=embed`;
-const DIRECTIONS = `https://www.google.com/maps/dir/?api=1&destination=${LAT},${LNG}`;
+const DIRECTIONS = "https://maps.app.goo.gl/sGP19dX98od62Vsq5";
 
 const CHANNELS = [
   { label: "Instagram (@yildirimavize)", href: "https://www.instagram.com/yildirimavize/", icon: "📸", highlight: false },
