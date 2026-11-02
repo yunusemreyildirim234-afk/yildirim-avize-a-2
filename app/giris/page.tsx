@@ -190,8 +190,18 @@ export default function AuthPage() {
                               <span className="text-neutral-500">{item.variation.variationValue}</span>
                             </span>
                           </span>
-                          <span className="font-medium text-neutral-900">
-                            {(item.quantity * item.unitPrice).toLocaleString("tr-TR")} ₺
+                          <span className="flex flex-col items-end gap-1.5 shrink-0">
+                            <span className="font-medium text-neutral-900">
+                              {(item.quantity * item.unitPrice).toLocaleString("tr-TR")} ₺
+                            </span>
+                            {item.variation.product && ["PENDING", "READY_FOR_PICKUP", "SHIPPED", "DELIVERED"].includes(order.status) && (
+                              <Link
+                                href={`/urun/${item.variation.product.id}#yorumlar`}
+                                className="text-[11px] font-semibold text-amber-800 bg-amber-50 border border-amber-200 hover:bg-amber-100 px-2.5 py-1 rounded-lg transition-colors"
+                              >
+                                ★ Yorum Yap / Fotoğraf Ekle
+                              </Link>
+                            )}
                           </span>
                         </div>
                       ))}

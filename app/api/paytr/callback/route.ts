@@ -35,6 +35,10 @@ export async function POST(req: Request) {
   }
 
   const orderId = fromMerchantOid(p.merchant_oid);
+
+  // İdempotency: sipariş zaten işlenmişse (PENDING/SHIPPED/DELIVERED/PAYMENT_FAILED/CANCELLED vb.) stok ve kupon işlemleri tekrarlanmaz
+  const current = await prisma.order.findUnique({ where: { id: orderId }, select: { status: true } });
+  if (!current || !["AWAITING_PAYMENT", "PENDING_NEW"].includes(current.status)) return ok();
   if (p.status === "success") {
     // Ödendi → AWAITING_PAYMENT/PENDING_NEW siparişi PENDING (hazırlanıyor) olur; tekrar bildirimde işlem yapılmaz
     await finalizeOrder(orderId);

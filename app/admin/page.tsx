@@ -12,11 +12,14 @@ import AdminLiveAlerts from "@/components/AdminLiveAlerts";
 import AdminSection from "@/components/AdminSection";
 import AdminReceiptActions from "@/components/AdminReceiptActions";
 import AdminOrderRequest from "@/components/AdminOrderRequest";
+import AdminReviews from "@/components/AdminReviews";
+import AdminCompany from "@/components/AdminCompany";
+import { getCompanyInfo } from "@/lib/company";
 
 export const dynamic = "force-dynamic";
 
 async function getAdminData() {
-  const [orders, products, messages, coupons, customers] = await Promise.all([
+  const [orders, products, messages, coupons, customers, reviews, company] = await Promise.all([
     prisma.order.findMany({
       include: {
         user: true,
@@ -50,13 +53,23 @@ async function getAdminData() {
       select: { name: true, email: true },
       orderBy: { email: "asc" },
     }),
+    prisma.review.findMany({
+      include: { user: { select: { name: true, email: true } }, product: { select: { title: true } } },
+      orderBy: { createdAt: "desc" },
+      take: 300,
+    }),
+    getCompanyInfo(),
   ]);
 
-  return { orders, products, messages, coupons, customers };
+  return { orders, products, messages, coupons, customers, reviews, company };
 }
 
 export default async function AdminPage() {
-  const { orders, products, messages, coupons, customers } = await getAdminData();
+  const { orders, products, messages, coupons, customers, reviews, company } = await getAdminData();
+  const pendingReviews = reviews.filter((r) => r.status === "PENDING").length;
+  const sortedReviews = [...reviews].sort(
+    (a, b) => Number(b.status === "PENDING") - Number(a.status === "PENDING") || b.createdAt.getTime() - a.createdAt.getTime()
+  );
   // Bekleyenler üstte, kendi içinde en yeni önce
   const sortedMessages = [...messages].sort(
     (a, b) => Number(b.status === "PENDING") - Number(a.status === "PENDING") || b.createdAt.getTime() - a.createdAt.getTime()
@@ -311,6 +324,37 @@ export default async function AdminPage() {
             productTitle: m.product?.title ?? null,
           }))}
         />
+        </AdminSection>
+
+        {/* 6. Müşteri Yorumları & Fotoğraflar */}
+        <AdminSection
+          id="yorumlar"
+          title="Müşteri Yorumları & Fotoğraflar"
+          description="Yorumlar ve fotoğraflar onaylanana kadar sitede görünmez. Yeşil tik yayınlar, kırmızı çarpı reddeder."
+          badges={[{ label: `${pendingReviews} onay bekliyor`, tone: pendingReviews > 0 ? "amber" : "neutral" }]}
+        >
+          <AdminReviews
+            reviews={sortedReviews.map((r) => ({
+              id: r.id,
+              author: r.user.name,
+              email: r.user.email,
+              productTitle: r.product.title,
+              rating: r.rating,
+              comment: r.comment,
+              imageUrl: r.imageUrl,
+              status: r.status,
+              createdAt: r.createdAt.toISOString(),
+            }))}
+          />
+        </AdminSection>
+
+        {/* 7. Kurumsal & Yasal Bilgiler */}
+        <AdminSection
+          id="kurumsal"
+          title="Kurumsal & Yasal Bilgiler (MERSİS / KEP / ETBİS)"
+          description="Footer ve İletişim sayfasında görünen unvan, vergi, MERSİS, KEP, adres ve ETBİS karekodu."
+        >
+          <AdminCompany initial={company} />
         </AdminSection>
       </div>
     </main>

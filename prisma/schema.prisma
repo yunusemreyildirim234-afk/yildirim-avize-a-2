@@ -127,18 +127,46 @@ model OrderItem {
 
 // Müşteri Yorumları (yalnızca giriş yapmış müşteriler yazabilir)
 model Review {
-  id        String   @id @default(uuid())
+  id        String       @id @default(uuid())
   productId String
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product   Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orderId   String? // Yorumu hak ettiren sipariş
   rating    Int // 1-5
   comment   String
-  verified  Boolean  @default(false) // Bu ürünü satın almış müşteri
-  createdAt DateTime @default(now())
+  imageUrl  String? // Müşterinin yüklediği avize fotoğrafı (/api/review-images/{id})
+  status    String       @default("PENDING") // "PENDING" | "APPROVED" | "REJECTED"
+  verified  Boolean      @default(false) // Bu ürünü satın almış müşteri
+  image     ReviewImage?
+  createdAt DateTime     @default(now())
 
   @@unique([productId, userId])
-  @@index([productId])
+  @@index([productId, status])
+  @@index([status, createdAt])
+}
+
+// Yorum fotoğrafı (yorum başına bir adet)
+model ReviewImage {
+  reviewId  String   @id
+  review    Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  mime      String
+  data      Bytes
+  createdAt DateTime @default(now())
+}
+
+// Kurumsal & yasal bilgiler (tek satır: id = 1)
+model SiteConfig {
+  id                  Int      @id @default(1)
+  companyTitle        String   @default("Ömer Yıldırım - Yıldırım Avize")
+  taxOffice           String   @default("Beyoğlu Vergi Dairesi")
+  taxNumber           String   @default("11111111111")
+  mersisNo            String   @default("0000000000000000 (Örnek MERSİS No)")
+  kepAddress          String   @default("ornek@hs01.kep.tr")
+  headquartersAddress String   @default("Emekyemez Mah. İskender Cad, Nazlı Hanım Sk. No:6 D:11, Şişhane Beyoğlu / İstanbul")
+  etbisUrl            String?  @default("https://www.eticaret.gov.tr")
+  etbisQrImage        String? // ETBİS karekod görseli (data URL veya bağlantı)
+  updatedAt           DateTime @updatedAt
 }
 
 // Kullanıcı hesabına bağlı kalıcı sepet (giriş yapılan her cihazda geri yüklenir)

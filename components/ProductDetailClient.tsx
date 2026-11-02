@@ -89,10 +89,10 @@ export default function ProductDetailClient({ product }: { product: Product }) {
           </p>
 
           <ul className="space-y-2 pt-1 text-xs">
-            <li className="flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50/70 px-3.5 py-2.5 text-amber-950">
+            <li className="flex items-start gap-2.5 rounded-xl border border-amber-300 bg-amber-50 px-3.5 py-2.5 text-amber-950">
               <span aria-hidden="true">💡</span>
               <span>
-                <strong>Ampul Durumu:</strong> Ampuller ürüne dahil değildir.
+                <strong>Ampul Dahil Değildir</strong> (Standart E14/E27 LED ampullerle uyumludur)
               </span>
             </li>
             <li className="flex items-start gap-2.5 rounded-xl border border-neutral-200 bg-neutral-50 px-3.5 py-2.5 text-neutral-800">

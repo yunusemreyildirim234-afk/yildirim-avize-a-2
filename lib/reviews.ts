@@ -1,12 +1,20 @@
 import { prisma } from "@/lib/db";
 
-/** Yorum hakkı veren sipariş durumları (ödenmiş / hazırlanan / kargolanan / teslim edilen). */
+/** Yorum hakkı veren sipariş durumları (PENDING = ödemesi alınmış/hazırlanan; havale onayı bekleyen PENDING_NEW dahil değildir). */
 export const REVIEWABLE_STATUSES = ["PENDING", "READY_FOR_PICKUP", "SHIPPED", "DELIVERED"];
 
+export const REVIEW_STATUS = { PENDING: "PENDING", APPROVED: "APPROVED", REJECTED: "REJECTED" } as const;
+
+/** "Ayşe Yılmaz" → "A. Y." */
+export function initials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  return parts.map((p) => p[0]!.toLocaleUpperCase("tr-TR") + ".").join(" ") || "M.";
+}
+
 export type ReviewEligibility =
-  | { state: "can" }
+  | { state: "can"; orderId: string }
   | { state: "no-purchase" }
-  | { state: "reviewed"; review: { rating: number; comment: string } };
+  | { state: "reviewed"; review: { rating: number; comment: string; status: string; imageUrl: string | null } };
 
 /** Kullanıcı (userId veya aynı e-postalı hesap) ürünü satın almış ve daha önce yorum yapmamış mı? */
 export async function reviewEligibility(userId: string, productId: string): Promise<ReviewEligibility> {
@@ -15,9 +23,10 @@ export async function reviewEligibility(userId: string, productId: string): Prom
 
   const existing = await prisma.review.findFirst({
     where: { productId, user: { OR: [{ id: user.id }, { email: { equals: user.email, mode: "insensitive" } }] } },
-    select: { rating: true, comment: true },
+    select: { rating: true, comment: true, status: true, imageUrl: true },
   });
-  if (existing) return { state: "reviewed", review: existing };
+  // Reddedilen yorum yeniden yazılabilir
+  if (existing && existing.status !== REVIEW_STATUS.REJECTED) return { state: "reviewed", review: existing };
 
   const purchased = await prisma.orderItem.findFirst({
     where: {
@@ -27,7 +36,8 @@ export async function reviewEligibility(userId: string, productId: string): Prom
         OR: [{ userId: user.id }, { user: { email: { equals: user.email, mode: "insensitive" } } }],
       },
     },
-    select: { id: true },
+    select: { orderId: true },
+    orderBy: { order: { createdAt: "desc" } },
   });
-  return purchased ? { state: "can" } : { state: "no-purchase" };
+  return purchased ? { state: "can", orderId: purchased.orderId } : { state: "no-purchase" };
 }

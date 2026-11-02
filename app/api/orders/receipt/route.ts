@@ -2,9 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { sendReceiptUploadedAdminEmail } from "@/lib/email";
 import { notifyAdmins } from "@/lib/notifications";
+import { RECEIPT_MIMES, validateUpload } from "@/lib/uploads";
 
-const MAX_BYTES = 4 * 1024 * 1024; // Vercel istek gövdesi sınırı ~4.5 MB
-const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"];
 
 // Havale dekontu: sipariş numarası (tahmin edilemez UUID) ile, onay sayfasındaki erişim modeliyle aynı
 export async function POST(req: Request) {
@@ -14,19 +13,18 @@ export async function POST(req: Request) {
   const file = form?.get("file");
 
   if (!orderId || senderName.length < 3) return NextResponse.json({ error: "Gönderici ad-soyadını giriniz." }, { status: 400 });
-  if (!(file instanceof File) || file.size === 0) return NextResponse.json({ error: "Dekont dosyası seçiniz." }, { status: 400 });
-  if (!ALLOWED.includes(file.type)) return NextResponse.json({ error: "Yalnızca görsel (JPG, PNG, WEBP) veya PDF yüklenebilir." }, { status: 400 });
-  if (file.size > MAX_BYTES) return NextResponse.json({ error: "Dosya en fazla 4 MB olabilir." }, { status: 400 });
+  const upload = await validateUpload(file, RECEIPT_MIMES);
+  if (!upload.ok) return NextResponse.json({ error: upload.error }, { status: 400 });
 
   const order = await prisma.order.findUnique({ where: { id: orderId }, include: { user: { select: { name: true } } } });
   if (!order || order.paymentMethod !== "BANK_TRANSFER") return NextResponse.json({ error: "Sipariş bulunamadı." }, { status: 404 });
   if (order.status !== "PENDING_NEW") return NextResponse.json({ error: "Bu sipariş için dekont yüklenemez." }, { status: 409 });
 
-  const data = Buffer.from(await file.arrayBuffer());
+  const { mime, data } = upload;
   await prisma.receiptFile.upsert({
     where: { orderId },
-    create: { orderId, mime: file.type, data },
-    update: { mime: file.type, data, createdAt: new Date() },
+    create: { orderId, mime, data },
+    update: { mime, data, createdAt: new Date() },
   });
   await prisma.order.update({ where: { id: orderId }, data: { receiptUrl: `/api/receipts/${orderId}`, receiptSenderName: senderName } });
 

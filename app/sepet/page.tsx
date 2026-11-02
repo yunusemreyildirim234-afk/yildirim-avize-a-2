@@ -304,6 +304,12 @@ export default function CartPage() {
                     <span className="inline-block text-xs bg-amber-50 text-amber-800 font-medium px-2.5 py-0.5 rounded-md mt-1">
                       {item.variationName}
                     </span>
+                    <span className="mt-1.5 flex items-start gap-1.5 text-[11px] leading-snug text-amber-900 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1 w-fit max-w-full">
+                      <span aria-hidden="true">💡</span>
+                      <span>
+                        <strong>Ampul Dahil Değildir</strong> (Standart E14/E27 LED ampullerle uyumludur)
+                      </span>
+                    </span>
                     <div className="text-sm font-bold text-neutral-900 mt-2">
                       {item.price.toLocaleString("tr-TR")} ₺
                     </div>

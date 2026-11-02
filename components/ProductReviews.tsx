@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Star } from "lucide-react";
@@ -11,6 +11,7 @@ export interface ReviewItem {
   author: string;
   rating: number;
   comment: string;
+  imageUrl: string | null;
   verified: boolean;
   createdAt: string;
 }
@@ -41,6 +42,8 @@ export default function ProductReviews({
   const router = useRouter();
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
+  const [photo, setPhoto] = useState<File | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -51,14 +54,17 @@ export default function ProductReviews({
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("/api/reviews", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productId, rating, comment }),
-      });
+      const body = new FormData();
+      body.set("productId", productId);
+      body.set("rating", String(rating));
+      body.set("comment", comment);
+      if (photo) body.set("image", photo);
+      const res = await fetch("/api/reviews", { method: "POST", body });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Yorum gönderilemedi.");
       setComment("");
+      setPhoto(null);
+      if (fileRef.current) fileRef.current.value = "";
       router.refresh();
     } catch (err) {
       setError((err as Error).message);
@@ -101,6 +107,12 @@ export default function ProductReviews({
                 </time>
               </div>
               <p className="text-sm text-neutral-700 leading-relaxed whitespace-pre-line">{r.comment}</p>
+              {r.imageUrl && (
+                <a href={r.imageUrl} target="_blank" rel="noopener noreferrer" className="inline-block pt-1">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={r.imageUrl} alt={`${r.author} müşterimizin gönderdiği fotoğraf`} loading="lazy" className="h-28 w-28 rounded-xl object-cover border border-neutral-200" />
+                </a>
+              )}
             </li>
           ))}
         </ul>
@@ -109,11 +121,19 @@ export default function ProductReviews({
       <div className="border-t border-neutral-100 pt-5">
         {typeof eligibility === "object" && eligibility.state === "reviewed" ? (
           <div className="rounded-2xl bg-emerald-50 border border-emerald-200 p-4 text-sm text-emerald-900 space-y-1.5">
-            <p className="font-semibold">Bu ürün için değerlendirmeniz bulunmaktadır.</p>
+            <p className="font-semibold">
+              {eligibility.review.status === "APPROVED"
+                ? "Bu ürün için değerlendirmeniz bulunmaktadır."
+                : "Değerlendirmeniz alındı; incelendikten sonra yayınlanacaktır."}
+            </p>
             {(
               <>
                 <Stars value={eligibility.review.rating} />
                 <p className="text-neutral-700 whitespace-pre-line">{eligibility.review.comment}</p>
+                {eligibility.review.imageUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={eligibility.review.imageUrl} alt="Gönderdiğiniz fotoğraf" className="h-24 w-24 rounded-xl object-cover border border-neutral-200" />
+                )}
               </>
             )}
           </div>
@@ -152,6 +172,27 @@ export default function ProductReviews({
               placeholder="Ürünle ilgili deneyiminizi paylaşın..."
               className="w-full p-3 rounded-xl border border-neutral-300 text-sm focus:outline-none focus:border-amber-600"
             />
+            <div className="text-xs">
+              <label className="font-semibold text-neutral-700 block mb-1">Avize fotoğrafı (isteğe bağlı — JPG, PNG, WEBP, en çok 5 MB)</label>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={(e) => {
+                  const f = e.target.files?.[0] ?? null;
+                  if (f && f.size > 5 * 1024 * 1024) {
+                    setError("Fotoğraf en fazla 5 MB olabilir.");
+                    e.target.value = "";
+                    setPhoto(null);
+                    return;
+                  }
+                  setError("");
+                  setPhoto(f);
+                }}
+                className="block w-full text-xs text-neutral-600 file:mr-3 file:rounded-lg file:border-0 file:bg-neutral-100 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-neutral-800 hover:file:bg-neutral-200"
+              />
+            </div>
+            <p className="text-[11px] text-neutral-500">Yorumunuz ve fotoğrafınız yönetici onayından sonra yayınlanır.</p>
             {error && (
               <p role="alert" className="text-xs text-red-600">
                 {error}

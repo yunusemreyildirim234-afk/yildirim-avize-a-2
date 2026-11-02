@@ -33,33 +33,31 @@ export default function CookieBanner() {
     <div
       role="dialog"
       aria-label="Çerez ve KVKK bilgilendirmesi"
-      className="fixed bottom-0 inset-x-0 z-[60] bg-neutral-900 text-neutral-200 border-t border-neutral-700 px-4 py-3 sm:py-4"
+      className="fixed bottom-3 left-3 right-24 sm:right-auto sm:bottom-6 sm:left-6 sm:max-w-md z-[55] rounded-2xl bg-zinc-900 text-zinc-200 border border-zinc-700 shadow-xl p-4"
     >
-      <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 text-xs">
-        <p className="flex-1 leading-relaxed text-neutral-300">
-          Sitemizde deneyiminizi iyileştirmek için zorunlu çerezler kullanılır. Kişisel verileriniz 6698 sayılı KVKK
-          kapsamında işlenir; ayrıntılar için{" "}
-          <Link href="/gizlilik-politikasi" className="text-amber-400 underline underline-offset-2">
-            Gizlilik Politikası
-          </Link>
-          &apos;nı inceleyebilirsiniz.
-        </p>
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            type="button"
-            onClick={() => answer("rejected")}
-            className="px-4 py-2 rounded-lg border border-neutral-600 text-neutral-300 hover:bg-neutral-800 transition-colors font-medium"
-          >
-            Reddet
-          </button>
-          <button
-            type="button"
-            onClick={() => answer("accepted")}
-            className="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-neutral-950 font-semibold transition-colors"
-          >
-            Kabul Et
-          </button>
-        </div>
+      <p className="text-xs leading-relaxed text-zinc-300">
+        Deneyiminizi iyileştirmek için zorunlu çerezler kullanılır. Kişisel verileriniz 6698 sayılı KVKK kapsamında
+        işlenir; ayrıntılar için{" "}
+        <Link href="/gizlilik-politikasi" className="text-amber-400 underline underline-offset-2">
+          Gizlilik Politikası
+        </Link>
+        &apos;nı inceleyebilirsiniz.
+      </p>
+      <div className="flex items-center gap-2 mt-3 text-xs">
+        <button
+          type="button"
+          onClick={() => answer("accepted")}
+          className="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 font-semibold transition-colors"
+        >
+          Kabul Et
+        </button>
+        <button
+          type="button"
+          onClick={() => answer("rejected")}
+          className="px-4 py-2 rounded-lg border border-zinc-600 text-zinc-300 hover:bg-zinc-800 transition-colors font-medium"
+        >
+          Reddet
+        </button>
       </div>
     </div>
   );

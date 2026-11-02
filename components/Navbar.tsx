@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  Camera,
   ChevronDown,
   Heart,
   LayoutDashboard,
@@ -47,6 +48,7 @@ const CATEGORY_LINKS = [
 const DISCOVER_LINKS = [
   { href: "/kategori/one-cikanlar", label: "Öne Çıkanlar", icon: Sparkles },
   { href: "/kategori/indirimli", label: "İndirimli Ürünler", icon: Tag },
+  { href: "/musterilerimizden-gelenler", label: "Müşterilerimizden Gelenler", icon: Camera },
   { href: "/kargo-takip", label: "Kargo & Sipariş Takibi", icon: Truck },
   { href: "/iletisim", label: "Beyoğlu Mağazamız", icon: MapPin },
 ];

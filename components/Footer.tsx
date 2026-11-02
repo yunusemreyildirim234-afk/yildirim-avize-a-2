@@ -1,4 +1,5 @@
 import Link from "next/link";
+import CompanyInfo from "@/components/CompanyInfo";
 import { ADDRESS_LINE, CATEGORIES, LAT, LNG, PHONE_DISPLAY, PHONE_TEL } from "@/lib/site";
 
 const MAP_SRC = `https://www.google.com/maps?q=${LAT},${LNG}&z=17&hl=tr&output=embed`;
@@ -89,6 +90,11 @@ export default function Footer() {
               </Link>
             </li>
             <li>
+              <Link href="/musterilerimizden-gelenler" className="hover:text-amber-400 transition-colors block">
+                Müşterilerimizden Gelenler
+              </Link>
+            </li>
+            <li>
               <Link href="/kargo-takip" className="hover:text-amber-400 transition-colors block">
                 Kargo & Sipariş Takibi
               </Link>
@@ -96,6 +102,8 @@ export default function Footer() {
           </ul>
         </div>
       </div>
+
+      <CompanyInfo variant="dark" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 flex flex-col md:flex-row items-center justify-between text-[11px] text-neutral-500 gap-4">
         <p>© 2026 Yıldırım Avize. Tüm hakları saklıdır.</p>

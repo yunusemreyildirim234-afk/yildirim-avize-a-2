@@ -86,11 +86,11 @@ export default function ReceiptUpload({
         />
       </div>
       <div>
-        <label className="font-semibold text-neutral-700 block mb-1">Dekont Dosyası (Görsel veya PDF, en çok 4 MB)</label>
+        <label className="font-semibold text-neutral-700 block mb-1">Dekont Dosyası (Görsel veya PDF, en çok 5 MB)</label>
         <input
           required
           type="file"
-          accept="image/jpeg,image/png,image/webp,image/gif,application/pdf"
+          accept="image/jpeg,image/png,image/webp,application/pdf"
           onChange={(e) => setFile(e.target.files?.[0] ?? null)}
           className="w-full text-xs file:mr-3 file:rounded-lg file:border-0 file:bg-neutral-900 file:text-white file:px-3 file:py-2 file:font-semibold"
         />

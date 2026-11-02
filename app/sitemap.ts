@@ -4,11 +4,11 @@ import { CATEGORIES, SITE_URL } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
-const STATIC_PAGES = ["/iletisim", "/gizlilik-politikasi", "/kullanim-sartlari", "/mesafeli-satis-sozlesmesi"];
+const STATIC_PAGES = ["/musterilerimizden-gelenler", "/iletisim", "/gizlilik-politikasi", "/kullanim-sartlari", "/mesafeli-satis-sozlesmesi"];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const products = await prisma.product
-    .findMany({ select: { id: true, updatedAt: true } })
+    .findMany({ where: { active: true }, select: { id: true, updatedAt: true } })
     .catch(() => []);
 
   return [

@@ -43,7 +43,7 @@ export default async function ProductDetailPage({ params }: Props) {
     where: { id },
     include: {
       variations: true,
-      reviews: { orderBy: { createdAt: "desc" }, include: { user: { select: { name: true } } } },
+      reviews: { where: { status: "APPROVED" }, orderBy: { createdAt: "desc" }, include: { user: { select: { name: true } } } },
     },
   });
 
@@ -60,6 +60,7 @@ export default async function ProductDetailPage({ params }: Props) {
       author: rest.length ? `${first} ${rest[rest.length - 1][0]}.` : first,
       rating: r.rating,
       comment: r.comment,
+      imageUrl: r.imageUrl,
       verified: r.verified,
       createdAt: r.createdAt.toISOString(),
     };
@@ -68,6 +69,7 @@ export default async function ProductDetailPage({ params }: Props) {
   const category = CATEGORIES.find((c) => c.dbCategory === product.category);
   const inStock = product.variations.some((v) => v.stock > 0);
   const prices = product.variations.map((v) => product.basePrice + v.extraPrice);
+  const productImages = [product.imageUrl, ...product.images].filter((u): u is string => Boolean(u));
   const productSchema = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -75,9 +77,20 @@ export default async function ProductDetailPage({ params }: Props) {
     description: product.description || product.title,
     category: product.category,
     brand: { "@type": "Brand", name: "Yıldırım Avize" },
-    ...(product.imageUrl ? { image: [product.imageUrl] } : {}),
+    url: `${SITE_URL}/urun/${id}`,
+    ...(productImages.length ? { image: productImages.slice(0, 6) } : {}),
+    ...(product.modelCode ? { sku: product.modelCode } : {}),
     ...(reviews.length
-      ? { aggregateRating: { "@type": "AggregateRating", ratingValue: ratingAvg.toFixed(1), reviewCount: reviews.length } }
+      ? {
+          aggregateRating: { "@type": "AggregateRating", ratingValue: ratingAvg.toFixed(1), reviewCount: reviews.length },
+          review: reviews.slice(0, 10).map((r) => ({
+            "@type": "Review",
+            author: { "@type": "Person", name: r.author },
+            datePublished: r.createdAt.slice(0, 10),
+            reviewBody: r.comment,
+            reviewRating: { "@type": "Rating", ratingValue: r.rating, bestRating: 5, worstRating: 1 },
+          })),
+        }
       : {}),
     offers: {
       "@type": "Offer",
