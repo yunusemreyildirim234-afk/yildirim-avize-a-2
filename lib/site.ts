@@ -7,12 +7,12 @@ export const ADDRESS_LINE =
   "Emekyemez Mah. İskender Cad, Nazlı Hanım Sk. No:6 D:11, Şişhane Beyoğlu / İstanbul";
 
 // İskender Cad, Şişhane / Beyoğlu
-export const LAT = 41.0266295;
-export const LNG = 28.970431;
+export const LAT = 41.026876;
+export const LNG = 28.970359;
 
-// Harita: "Yol Tarifi Al" kısa linki ve gömülü harita tek kaynaktan (kısa link -> 41.026876,28.970359)
+// Harita: "Yol Tarifi Al" kısa linki ve gömülü harita tek kaynaktan (kısa link -> LAT,LNG)
 export const MAP_LINK = "https://maps.app.goo.gl/sGP19dX98od62Vsq5";
-export const MAP_EMBED_SRC = `https://www.google.com/maps?q=${encodeURIComponent("41.026876,28.970359")}&z=17&hl=tr&output=embed`;
+export const MAP_EMBED_SRC = `https://www.google.com/maps?q=${encodeURIComponent(`${LAT},${LNG}`)}&z=17&hl=tr&output=embed`;
 
 export const CATEGORIES = [
   {
