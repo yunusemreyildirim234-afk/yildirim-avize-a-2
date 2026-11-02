@@ -1,4 +1,5 @@
 import Breadcrumbs from "@/components/Breadcrumbs";
+import { LEGAL_UPDATED } from "@/lib/legal-texts";
 
 export interface LegalSection {
   title: string;
@@ -40,7 +41,7 @@ export default function LegalPage({
           ))}
         </div>
         <p className="text-[11px] text-neutral-400 mt-10 pt-4 border-t border-neutral-100">
-          Son güncelleme: Ekim 2026
+          Son güncelleme: {LEGAL_UPDATED}
         </p>
       </article>
     </main>

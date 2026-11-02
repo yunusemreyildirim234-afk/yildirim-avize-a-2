@@ -755,6 +755,7 @@ export default function CartPage() {
             email,
             phone,
             address: effectiveAddress,
+            isPickup,
             region: [cities.find((c) => Number(c.id) === Number(buyerCityId))?.name, states.find((st) => Number(st.id) === Number(buyerStateId))?.name].filter(Boolean).join(" / "),
             items: cart.map((i) => ({ title: i.title, variation: i.variationName, quantity: i.quantity, price: i.price })),
             itemsTotal: totalPrice,
