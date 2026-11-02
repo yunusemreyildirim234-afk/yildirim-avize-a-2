@@ -287,3 +287,17 @@ model OrderInvoice {
   uploadedAt  DateTime  @default(now())
   emailSentAt DateTime?
 }
+
+// Ticari elektronik ileti (kampanya e-postası) onayı: açık rıza kaydı. E-posta küçük harfle ve benzersiz tutulur.
+// Not: Bu tabloya dokunan tüm sorgular try/catch içindedir; tablo yoksa sistem "onay yok" varsayar.
+model MarketingConsent {
+  id             String    @id @default(uuid())
+  email          String    @unique
+  consentedAt    DateTime
+  textVersion    String
+  ip             String?
+  userAgent      String?
+  source         String    @default("sepet")
+  unsubscribedAt DateTime?
+  createdAt      DateTime  @default(now())
+}

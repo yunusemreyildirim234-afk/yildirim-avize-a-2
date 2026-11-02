@@ -57,6 +57,14 @@ export default async function Page() {
           ],
         },
         {
+          title: "Ticari Elektronik İleti (Kampanya E-postası) Onayı",
+          body: [
+            "Sipariş sırasında isteğe bağlı olarak sunulan kutuyu işaretlemeniz halinde, e-posta adresinize kampanya, indirim ve fırsat içerikli ticari elektronik iletiler göndermemiz için açık rızanızı vermiş olursunuz. Bu kutu varsayılan olarak işaretsizdir; işaretlemeden de sipariş verebilirsiniz ve siparişiniz, sipariş ve kargo bildirimleriniz bundan etkilenmez.",
+            "6563 sayılı Elektronik Ticaretin Düzenlenmesi Hakkında Kanun'un 6. maddesi uyarınca ticari elektronik iletiler alıcının önceden onayı alınarak gönderilir. Onayınız yazılı veya elektronik ortamda alınır; onayın verildiğini ispat edebilmek için e-posta adresiniz, onay tarihi ve saati (zaman damgası), onayın verildiği IP adresi, tarayıcı bilgisi, onay metninin sürümü ve onayın alındığı kaynak (sepet formu) kayıt altına alınır. Bu kayıtlar, hukuki yükümlülüğümüzü yerine getirmek ve bir hakkın tesisi, kullanılması veya korunması amacıyla saklanır.",
+            "Onayınızı dilediğiniz zaman, hiçbir gerekçe göstermeden ve ücretsiz olarak geri alabilirsiniz. Her kampanya e-postasının en altında yer alan çıkış bağlantısına tıklamanız yeterlidir; geri alma işlemi derhal uygulanır. Ayrıca yukarıdaki başvuru yollarıyla da talepte bulunabilirsiniz. Onayı geri alınan e-posta adresine kampanya içerikli ileti gönderilmez; ödeme tamamlanmayan siparişiniz için tek seferlik sade bir sepet hatırlatması ise indirim veya kampanya içermeden gönderilebilir.",
+          ],
+        },
+        {
           title: "Kişisel Verilerin Toplanma Yöntemi",
           body: [
             "Verileriniz; sitedeki sipariş, üyelik/giriş, iletişim, ürün sorusu, yorum ve dekont yükleme formları aracılığıyla, e-posta ve WhatsApp üzerinden yazışmalarınızla, Google ile giriş yapmanız halinde Google hesabınızdan ve site kullanımınız sırasında tarayıcınızın otomatik ilettiği teknik bilgilerle, elektronik ortamda toplanır.",

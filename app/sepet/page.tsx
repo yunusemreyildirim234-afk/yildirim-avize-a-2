@@ -74,6 +74,8 @@ export default function CartPage() {
   const [companyTitle, setCompanyTitle] = useState("");
   const [agreePre, setAgreePre] = useState(false);
   const [agreeSales, setAgreeSales] = useState(false);
+  // Ticari elektronik ileti onayı: isteğe bağlı, varsayılan işaretsiz
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
   const [contract, setContract] = useState<"pre" | "sales" | null>(null);
 
   // PayTR başarısız ödeme dönüşü
@@ -177,6 +179,16 @@ export default function CartPage() {
     if (!agreePre || !agreeSales) {
       toast.error("Devam etmek için iki sözleşmeyi de onaylamalısınız.");
       return;
+    }
+
+    // Kampanya e-postası onayı arka planda kaydedilir; hata alsa bile sipariş akışı durmaz
+    if (marketingOptIn) {
+      fetch("/api/marketing-consent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, consent: true }),
+        keepalive: true,
+      }).catch(() => {});
     }
 
     const selectedStateObj = states.find((s) => Number(s.id) === Number(buyerStateId));
@@ -570,6 +582,24 @@ export default function CartPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
               />
+              <div className="text-[11px] text-neutral-600">
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={marketingOptIn}
+                    onChange={(e) => setMarketingOptIn(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 accent-amber-600 shrink-0"
+                  />
+                  <span className="font-medium text-neutral-800">Kampanya, indirim ve fırsat e-postaları almak istiyorum. (İsteğe bağlı)</span>
+                </label>
+                <p className="mt-1 ml-6 text-neutral-500 leading-relaxed">
+                  Onayınızı dilediğiniz zaman e-postalardaki bağlantıdan geri alabilirsiniz. Kişisel verileriniz{" "}
+                  <a href="/aydinlatma-metni" target="_blank" rel="noopener noreferrer" className="text-amber-700 underline">
+                    Aydınlatma Metni
+                  </a>{" "}
+                  kapsamında işlenir.
+                </p>
+              </div>
               <input aria-label="Telefon Numaranız (Örn: 0555 123 45 67)"
                 required
                 type="tel"
