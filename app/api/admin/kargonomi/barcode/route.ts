@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { adminGuard } from "@/lib/admin-guard";
 import { prisma } from "@/lib/db";
 import { kargonomiRaw } from "@/lib/kargonomi";
 
@@ -6,6 +7,8 @@ const pdfResponse = (bytes: Uint8Array<ArrayBuffer>) => new NextResponse(bytes, 
 
 // Kargonomi barkod çıktısını (PDF veya Base64 PDF/JSON) yazdırılabilir PDF olarak iletir
 export async function GET(req: Request) {
+  const denied = await adminGuard();
+  if (denied) return denied;
   const orderId = new URL(req.url).searchParams.get("orderId");
   const order = orderId ? await prisma.order.findUnique({ where: { id: orderId } }) : null;
   if (!order?.kargonomiShipmentId) {

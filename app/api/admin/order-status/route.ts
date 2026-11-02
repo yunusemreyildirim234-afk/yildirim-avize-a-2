@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { adminGuard } from "@/lib/admin-guard";
 import { prisma } from "@/lib/db";
 import { notifyCustomer } from "@/lib/notifications";
 import { restoreOrderStock } from "@/lib/orders";
@@ -12,6 +13,8 @@ const STATUS_NOTICE: Record<string, string> = {
 };
 
 export async function POST(req: Request) {
+  const denied = await adminGuard();
+  if (denied) return denied;
   try {
     const { orderId, status } = await req.json();
 

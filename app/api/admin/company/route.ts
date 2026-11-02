@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { adminGuard } from "@/lib/admin-guard";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { prisma } from "@/lib/db";
 import { COMPANY_TAG } from "@/lib/company";
@@ -7,6 +8,8 @@ const TEXT_FIELDS = ["companyTitle", "taxOffice", "taxNumber", "mersisNo", "kepA
 
 // Kurumsal & yasal bilgiler (yalnızca yönetici — proxy.ts /api/admin altını korur)
 export async function PUT(req: Request) {
+  const denied = await adminGuard();
+  if (denied) return denied;
   const body = await req.json().catch(() => null);
   if (!body || typeof body !== "object") return NextResponse.json({ error: "Geçersiz istek." }, { status: 400 });
 

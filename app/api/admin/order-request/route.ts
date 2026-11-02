@@ -1,4 +1,5 @@
 import { cleanGuestEmail } from "@/lib/guest-email";
+import { adminGuard } from "@/lib/admin-guard";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { sendRequestDecisionEmail } from "@/lib/email";
@@ -7,6 +8,8 @@ import { releaseCoupon } from "@/lib/coupons";
 
 // Yönetici iptal/iade talebini onaylar veya reddeder (proxy yalnızca yöneticiye açar)
 export async function POST(req: Request) {
+  const denied = await adminGuard();
+  if (denied) return denied;
   const body = await req.json().catch(() => ({}));
   const orderId = typeof body.orderId === "string" ? body.orderId : "";
   const approve = body.decision === "APPROVE";

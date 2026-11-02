@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
+import { adminGuard } from "@/lib/admin-guard";
 import { countShipments, listWarehouses } from "@/lib/kargonomi";
 
 // Kargonomi API bağlantı kontrolü ve özet bilgiler
 export async function GET() {
+  const denied = await adminGuard();
+  if (denied) return denied;
   try {
     const [warehouses, shipmentCount] = await Promise.all([listWarehouses(), countShipments()]);
     const list: { name: string; city: string }[] = warehouses?.data ?? [];

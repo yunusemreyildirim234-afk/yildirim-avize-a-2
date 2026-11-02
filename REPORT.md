@@ -11,6 +11,7 @@ Dokunulmayanlar: `/api/paytr/*`, `lib/kargonomi.ts`, WhatsApp butonları, Kuveyt
 
 ## 2. Güvenlik
 - `proxy.ts` matcher'ı `/admin`, `/api/admin/*`, `/api/seed` için yönetici oturumu zorunlu kılıyor (doğrulandı).
+- Savunma derinliği: 16 `/api/admin/*` route dosyasındaki 23 handler, `lib/admin-guard.ts` ile oturumu kendi içinde de doğruluyor (proxy atlansa bile 401).
 - Dekont (`/api/receipts/[orderId]`), yorum görseli, dekont yükleme: sahip veya admin dışına 403 (IDOR korumalı, doğrulandı).
 - Yeni rate-limit: `/api/auth/verify-code`, `/api/reviews` (POST), `/api/orders/request` (POST).
 - Başlıklar: `X-Frame-Options: SAMEORIGIN`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` (kamera/mikrofon/konum kapalı, `payment=(self)`). CSP eklenmedi (PayTR iframe/Google OAuth riski).

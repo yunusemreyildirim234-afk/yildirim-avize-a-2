@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
+import { adminGuard } from "@/lib/admin-guard";
 import { prisma } from "@/lib/db";
 import { notifyCustomer } from "@/lib/notifications";
 import { REVIEW_STATUS } from "@/lib/reviews";
 
 // Yorum onay/ret ve silme (yalnızca yönetici — proxy.ts /api/admin altını korur)
 export async function PATCH(req: Request) {
+  const denied = await adminGuard();
+  if (denied) return denied;
   const { reviewId, status } = await req.json().catch(() => ({}));
   if (typeof reviewId !== "string" || (status !== REVIEW_STATUS.APPROVED && status !== REVIEW_STATUS.REJECTED)) {
     return NextResponse.json({ error: "reviewId ve geçerli bir durum (APPROVED | REJECTED) zorunlu" }, { status: 400 });
@@ -29,6 +32,8 @@ export async function PATCH(req: Request) {
 }
 
 export async function DELETE(req: Request) {
+  const denied = await adminGuard();
+  if (denied) return denied;
   const { reviewId } = await req.json().catch(() => ({}));
   if (typeof reviewId !== "string") return NextResponse.json({ error: "reviewId zorunlu" }, { status: 400 });
   await prisma.review.delete({ where: { id: reviewId } }).catch(() => null);

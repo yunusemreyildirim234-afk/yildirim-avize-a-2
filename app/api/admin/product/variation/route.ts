@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
+import { adminGuard } from "@/lib/admin-guard";
 import { prisma } from "@/lib/db";
 
 // Tekil ürüne renk varyasyonu ekleme / silme (proxy yalnızca yöneticiye açar)
 export async function POST(req: Request) {
+  const denied = await adminGuard();
+  if (denied) return denied;
   const body = await req.json().catch(() => ({}));
   const productId = typeof body.productId === "string" ? body.productId : "";
   const value = typeof body.variationValue === "string" ? body.variationValue.trim().slice(0, 100) : "";
@@ -22,6 +25,8 @@ export async function POST(req: Request) {
 }
 
 export async function DELETE(req: Request) {
+  const denied = await adminGuard();
+  if (denied) return denied;
   const { variationId } = await req.json().catch(() => ({}));
   if (typeof variationId !== "string") return NextResponse.json({ error: "Eksik parametre" }, { status: 400 });
 

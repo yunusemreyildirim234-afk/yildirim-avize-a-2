@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
+import { adminGuard } from "@/lib/admin-guard";
 import { prisma } from "@/lib/db";
 
 // Yönetim paneli canlı uyarıları: son 24 saatteki yeni siparişler ve bekleyen sorular (proxy yalnızca yöneticiye açar)
 export async function GET() {
+  const denied = await adminGuard();
+  if (denied) return denied;
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
   const [orders, messages] = await Promise.all([
     prisma.order.findMany({

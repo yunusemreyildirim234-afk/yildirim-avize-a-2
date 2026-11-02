@@ -1,4 +1,5 @@
 import { cleanGuestEmail } from "@/lib/guest-email";
+import { adminGuard } from "@/lib/admin-guard";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { KargonomiError, createShipmentForOrder, refreshOrderShipment } from "@/lib/kargonomi";
@@ -7,6 +8,8 @@ import { notifyCustomer } from "@/lib/notifications";
 
 /** Aras Kargo barkodunu Kargonomi'de oluşturur, siparişi "kargoya verildi" yapar ve müşteriyi bilgilendirir (yönetici oturumu proxy.ts ile doğrulanır). */
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
+  const denied = await adminGuard();
+  if (denied) return denied;
   try {
     const { id } = await ctx.params;
     const { regenerate } = (await req.json().catch(() => ({}))) as { regenerate?: boolean };

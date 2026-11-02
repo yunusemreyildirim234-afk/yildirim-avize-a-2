@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
+import { adminGuard } from "@/lib/admin-guard";
 import { prisma } from "@/lib/db";
 import { sendCouponEmail } from "@/lib/email";
 import { notifyCustomer } from "@/lib/notifications";
 
 // Promosyon kodu yönetimi (proxy yalnızca yöneticiye açar)
 export async function POST(req: Request) {
+  const denied = await adminGuard();
+  if (denied) return denied;
   const body = await req.json().catch(() => ({}));
   const code = typeof body.code === "string" ? body.code.trim().toUpperCase().replace(/\s+/g, "") : "";
   const discountPercent = Number(body.discountPercent);
@@ -42,6 +45,8 @@ export async function POST(req: Request) {
 
 // Pasife alma / yeniden aktifleştirme
 export async function PATCH(req: Request) {
+  const denied = await adminGuard();
+  if (denied) return denied;
   const { id, active } = await req.json().catch(() => ({}));
   if (typeof id !== "string" || typeof active !== "boolean") return NextResponse.json({ error: "Eksik parametre" }, { status: 400 });
   await prisma.coupon.update({ where: { id }, data: { active } });
@@ -49,6 +54,8 @@ export async function PATCH(req: Request) {
 }
 
 export async function DELETE(req: Request) {
+  const denied = await adminGuard();
+  if (denied) return denied;
   const { id } = await req.json().catch(() => ({}));
   if (typeof id !== "string") return NextResponse.json({ error: "Eksik parametre" }, { status: 400 });
   await prisma.coupon.delete({ where: { id } });

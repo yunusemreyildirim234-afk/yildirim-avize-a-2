@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
+import { adminGuard } from "@/lib/admin-guard";
 import { prisma } from "@/lib/db";
 
 // 1. Yeni Avize Ekleme (POST)
 export async function POST(req: Request) {
+  const denied = await adminGuard();
+  if (denied) return denied;
   try {
     const body = await req.json();
     const { title, description, category, basePrice, imageUrl, variationType, variationValue, stock } = body;
@@ -45,6 +48,8 @@ export async function POST(req: Request) {
 
 // 2. Stok Adedini Güncelleme (PATCH)
 export async function PATCH(req: Request) {
+  const denied = await adminGuard();
+  if (denied) return denied;
   try {
     const body = await req.json();
 
@@ -115,6 +120,8 @@ export async function PATCH(req: Request) {
 
 // 3. Avizeyi Güvenle Silme (DELETE)
 export async function DELETE(req: Request) {
+  const denied = await adminGuard();
+  if (denied) return denied;
   try {
     const { productId } = await req.json();
 

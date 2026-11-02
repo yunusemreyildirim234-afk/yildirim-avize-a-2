@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
+import { adminGuard } from "@/lib/admin-guard";
 import { syncTrendyolProducts } from "@/lib/trendyol";
 
 export const maxDuration = 300;
 
 export async function POST() {
+  const denied = await adminGuard();
+  if (denied) return denied;
   try {
     return NextResponse.json({ success: true, result: await syncTrendyolProducts() });
   } catch (error) {

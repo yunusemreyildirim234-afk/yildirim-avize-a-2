@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
+import { adminGuard } from "@/lib/admin-guard";
 import { prisma } from "@/lib/db";
 import { sendReplyEmail } from "@/lib/email";
 import { notifyCustomer } from "@/lib/notifications";
 
 // Yönetici yanıtı: kaydeder ve müşterinin e-posta adresine gönderir (proxy yalnızca yöneticiye açar)
 export async function POST(req: Request) {
+  const denied = await adminGuard();
+  if (denied) return denied;
   const body = await req.json().catch(() => ({}));
   const id = typeof body.id === "string" ? body.id : "";
   const reply = typeof body.reply === "string" ? body.reply.trim().slice(0, 5000) : "";
