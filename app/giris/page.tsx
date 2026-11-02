@@ -61,14 +61,14 @@ export default function AuthPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- URL parametresi ilk render sonrası okunur
     if (params.get("tab") === "yonetici") setTab("yonetici");
 
-    fetch("/api/auth/me")
+    fetch("/api/auth/me?orders=1")
       .then((res) => res.json())
       .then((data) => data.user && setUser(data.user))
       .catch(() => {});
   }, []);
 
   const refreshUser = () => {
-    fetch("/api/auth/me", { cache: "no-store" })
+    fetch("/api/auth/me?orders=1", { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => data.user && setUser(data.user))
       .catch(() => {});

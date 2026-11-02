@@ -6,8 +6,7 @@ import { CartStepper, FavoriteButton, type QuickProduct } from "@/components/Pro
 
 type Product = QuickProduct;
 
-export default function SearchBar({ variant = "nav" }: { variant?: "nav" | "hero" }) {
-  const hero = variant === "hero";
+export default function SearchBar() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
@@ -59,23 +58,19 @@ export default function SearchBar({ variant = "nav" }: { variant?: "nav" | "hero
   }, []);
 
   return (
-    <div ref={searchRef} className={`relative w-full ${hero ? "" : "max-w-xs sm:max-w-sm"}`}>
+    <div ref={searchRef} className="relative w-full">
       <div className="relative">
         <input
           type="text"
           aria-label="Avize ara"
-          placeholder={hero ? "Avize modeli, kristal veya koleksiyon ara..." : "Avize modeli, kristal, tarz ara..."}
+          placeholder="Avize modeli, kristal veya koleksiyon ara..."
           value={query}
           onFocus={() => query.trim() && setIsOpen(true)}
           onChange={(e) => setQuery(e.target.value)}
-          className={`w-full text-neutral-800 placeholder-neutral-400 rounded-full focus:outline-none focus:ring-2 focus:ring-amber-500/30 border transition-all ${
-            hero
-              ? "bg-white text-base pl-12 pr-12 py-4 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.25)] border-zinc-200 focus:border-amber-400"
-              : "bg-neutral-100 text-xs pl-9 pr-8 py-2 focus:bg-white border-transparent focus:border-amber-400"
-          }`}
+          className="w-full text-neutral-800 placeholder-neutral-400 rounded-full focus:outline-none focus:ring-2 focus:ring-amber-500/30 border transition-all bg-white text-base pl-12 pr-12 py-4 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.25)] border-zinc-200 focus:border-amber-400"
         />
         {/* Arama İkonu */}
-        <span className={`absolute text-neutral-400 ${hero ? "left-5 top-4 text-base" : "left-3 top-2.5 text-xs"}`}>
+        <span className="absolute text-neutral-400 left-5 top-4 text-base">
           🔍
         </span>
 
@@ -88,7 +83,7 @@ export default function SearchBar({ variant = "nav" }: { variant?: "nav" | "hero
               setQuery("");
               setIsOpen(false);
             }}
-            className={`absolute text-neutral-400 hover:text-neutral-600 ${hero ? "right-5 top-4 text-sm" : "right-3 top-2 text-xs"}`}
+            className="absolute text-neutral-400 hover:text-neutral-600 right-5 top-4 text-sm"
           >
             ✕
           </button>
@@ -97,7 +92,7 @@ export default function SearchBar({ variant = "nav" }: { variant?: "nav" | "hero
 
       {/* Açılır Canlı Sonuç Kutusu */}
       {isOpen && (
-        <div className={`absolute ${hero ? "top-16 text-left" : "top-11"} left-0 right-0 bg-white rounded-2xl border border-neutral-200 shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-150`}>
+        <div className={`absolute top-16 text-left left-0 right-0 bg-white rounded-2xl border border-neutral-200 shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-150`}>
           {loading ? (
             <div className="p-4 text-center text-xs text-neutral-400">
               Aranıyor...
@@ -117,9 +112,9 @@ export default function SearchBar({ variant = "nav" }: { variant?: "nav" | "hero
                       )}
                     </span>
                     <span className="min-w-0">
-                    <h4 className="text-xs font-serif font-bold text-neutral-900">
+                    <span className="block text-xs font-serif font-bold text-neutral-900">
                       {product.title}
-                    </h4>
+                    </span>
                     <span className="text-[10px] text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full font-medium inline-block mt-0.5">
                       {product.category}
                     </span>

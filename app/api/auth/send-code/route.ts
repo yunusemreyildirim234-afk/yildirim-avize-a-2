@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { getSessionUserId } from "@/lib/account";
 import { sendVerificationCodeEmail } from "@/lib/email";
 import { EMAIL_RE } from "@/lib/validation";
+import { rateLimit, tooMany } from "@/lib/rate-limit";
 import { clientIp, createCode, rateLimitRemaining, type CodeType } from "@/lib/verification";
 
 const GUEST_PASSWORD = "guest_checkout";
@@ -11,6 +12,9 @@ const PUBLIC_TYPES: CodeType[] = ["REGISTER", "RESET_PASSWORD"];
 const SESSION_TYPES: CodeType[] = ["CHANGE_PASSWORD", "TWO_FACTOR_ENABLE"];
 
 export async function POST(req: Request) {
+  // IP bazlı: 10 dakikada en fazla 5 kod gönderimi (e-posta kotası koruması)
+  const rl = rateLimit(req, "send-code", 5, 10 * 60_000);
+  if (rl.limited) return tooMany(rl.retryAfter, "Kısa sürede çok fazla kod istediniz. Lütfen birkaç dakika sonra tekrar deneyin.");
   const body = await req.json().catch(() => ({}));
   const type = body.type as CodeType;
   let email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";

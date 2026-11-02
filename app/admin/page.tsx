@@ -79,7 +79,7 @@ export default async function AdminPage() {
   const attempts = orders.filter((o) => o.status === "AWAITING_PAYMENT");
   const pendingOrders = orders.filter((o) => o.status === "PENDING" || o.status === "PENDING_NEW").length;
   const pendingMessages = messages.filter((m) => m.status === "PENDING").length;
-  const totalRevenue = orders.filter((o) => !["AWAITING_PAYMENT", "PAYMENT_FAILED", "CANCELLED", "RETURNED"].includes(o.status)).reduce((sum, o) => sum + o.totalAmount, 0);
+  const totalRevenue = orders.filter((o) => !["AWAITING_PAYMENT", "PAYMENT_FAILED", "PENDING_NEW", "CANCELLED", "RETURNED"].includes(o.status)).reduce((sum, o) => sum + o.totalAmount, 0);
   const beyogluOrdersCount = orders.filter((o) => o.shippingType === "BEYOGLU_MAGAZA_TESLIM").length;
   const kargonomiOrdersCount = orders.filter((o) => Boolean(o.kargonomiShipmentId)).length;
 

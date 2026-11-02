@@ -26,7 +26,7 @@ export default function Hero() {
         <h1 className="mt-2 text-5xl sm:text-7xl font-serif font-black tracking-tight text-zinc-950">Yıldırım Avize</h1>
 
         <div className="mt-8 sm:mt-10 max-w-2xl mx-auto">
-          <SearchBar variant="hero" />
+          <SearchBar />
         </div>
 
         <p className="mt-8 text-xl sm:text-2xl font-serif font-bold tracking-[0.35em] text-[#B5002A]">LIGHTING</p>

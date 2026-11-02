@@ -1,5 +1,10 @@
 import { prisma } from "@/lib/db";
 
+/** Hafif profil: sipariş, varyasyon ve dekont yüklemeden (varsayılan /api/auth/me yanıtı). */
+export async function getCustomerProfile(id: string) {
+  return prisma.user.findUnique({ where: { id }, select: { id: true, name: true, email: true, role: true, twoFactorEnabled: true } });
+}
+
 /** Şifre alanı olmadan müşteri + siparişleri. */
 export async function getCustomerWithOrders(id: string) {
   const user = await prisma.user.findUnique({ where: { id } });

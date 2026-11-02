@@ -21,6 +21,9 @@ async function respond(userId: string) {
 const findByEmail = (email: string) => prisma.user.findFirst({ where: { email: { equals: email, mode: "insensitive" } } });
 
 export async function POST(req: Request) {
+  // Tüm aksiyonlar (login, register, 2FA, şifre işlemleri) için IP bazlı genel sınır
+  const rlAll = rateLimit(req, "auth-all", 15, 15 * 60_000);
+  if (rlAll.limited) return tooMany(rlAll.retryAfter);
   try {
     const body = await req.json();
     const action = body.action as string;

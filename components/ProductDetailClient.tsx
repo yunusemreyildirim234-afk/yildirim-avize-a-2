@@ -4,6 +4,8 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { HoverMagnifier, ImageLightbox } from "@/components/ImageZoom";
 import { useCart } from "@/context/CartContext";
+import { BANK_TRANSFER_DISCOUNT, FREE_SHIPPING_THRESHOLD, PICKUP_DISCOUNT } from "@/lib/pricing";
+import { SITE_URL, WHATSAPP_NUMBER } from "@/lib/site";
 
 interface Variation {
   id: string;
@@ -20,6 +22,7 @@ interface Product {
   category: string;
   basePrice: number;
   imageUrl?: string | null;
+  modelCode?: string | null;
   images?: string[];
   listPrice?: number | null;
   variations: Variation[];
@@ -42,6 +45,10 @@ export default function ProductDetailClient({ product }: { product: Product }) {
   const listShown = product.listPrice && product.listPrice > product.basePrice ? product.listPrice + (selectedVariation?.extraPrice || 0) : null;
   const maxQty = selectedVariation ? Math.max(0, selectedVariation.stock) : 0;
   const outOfStock = !selectedVariation || maxQty <= 0;
+  const bankPrice = Math.round(currentPrice * (1 - BANK_TRANSFER_DISCOUNT));
+  const freeShipping = currentPrice >= FREE_SHIPPING_THRESHOLD;
+  const waMessage = `Merhaba, ${product.title}${product.modelCode ? ` (Model: ${product.modelCode})` : ""} avize modeli hakkında bilgi almak istiyorum: ${SITE_URL}/urun/${product.id}`;
+  const waUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(waMessage)}`;
 
   const handleAddToCart = () => {
     if (!selectedVariation || outOfStock) return;
@@ -116,6 +123,11 @@ export default function ProductDetailClient({ product }: { product: Product }) {
           <span className="text-xs font-semibold text-amber-600 uppercase tracking-wider">
             {product.category} Serisi
           </span>
+          {product.modelCode && (
+            <span className="inline-block text-[11px] font-mono font-semibold text-neutral-700 bg-neutral-100 border border-neutral-200 px-2.5 py-1 rounded-md">
+              Model Kodu: #{product.modelCode}
+            </span>
+          )}
           <h1 className="text-2xl sm:text-3xl font-serif font-bold text-neutral-900">
             {product.title}
           </h1>
@@ -147,6 +159,14 @@ export default function ProductDetailClient({ product }: { product: Product }) {
             <span className="text-3xl font-bold text-neutral-900">
               {(currentPrice * quantity).toLocaleString("tr-TR")} ₺
             </span>
+            <p className="mt-2 text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-1.5 w-fit">
+              Havale/EFT ile %{Math.round(BANK_TRANSFER_DISCOUNT * 100)} İndirimli: <strong>{(bankPrice * quantity).toLocaleString("tr-TR")} ₺</strong>
+            </p>
+            {freeShipping && (
+              <p className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-emerald-600 rounded-full px-3 py-1">
+                <span aria-hidden="true">🚚</span> Ücretsiz &amp; Sigortalı Kargo
+              </p>
+            )}
           </div>
         </div>
 
@@ -226,10 +246,20 @@ export default function ProductDetailClient({ product }: { product: Product }) {
             </button>
           </div>
 
+          <a
+            href={waUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 w-full rounded-xl border border-emerald-600 text-emerald-700 hover:bg-emerald-50 text-sm font-semibold py-2.5 transition-colors"
+          >
+            WhatsApp ile Bu Ürünü Sor
+          </a>
+
           <div className="bg-amber-50/60 border border-amber-200/60 rounded-xl p-3.5 text-xs text-amber-950 flex items-start gap-2.5">
             <span className="text-base">📍</span>
             <div>
               <strong className="font-semibold">Beyoğlu Mağazasından Teslim Alabilirsiniz</strong>
+              <p className="mt-1 text-amber-900/80">Mağazadan teslim seçeneğinde sepette %{Math.round(PICKUP_DISCOUNT * 100)} ek indirim uygulanır</p>
             </div>
           </div>
         </div>

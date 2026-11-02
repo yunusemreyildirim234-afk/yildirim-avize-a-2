@@ -6,6 +6,8 @@ import { cookies } from "next/headers";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import ProductReviews from "@/components/ProductReviews";
 import ProductQuestionForm from "@/components/ProductQuestionForm";
+import ProductCard from "@/components/ProductCard";
+import { getProducts } from "@/lib/products";
 import { USER_COOKIE, verifySession } from "@/lib/session";
 import { reviewEligibility, type ReviewEligibility } from "@/lib/reviews";
 import JsonLd from "@/components/JsonLd";
@@ -18,7 +20,7 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const product = await prisma.product.findUnique({ where: { id } });
-  if (!product) return {};
+  if (!product || !product.active) return {};
   const description =
     product.description?.slice(0, 160) || `${product.title} – Yıldırım Avize Beyoğlu Şişhane`;
   return {
@@ -50,6 +52,8 @@ export default async function ProductDetailPage({ params }: Props) {
   if (!product || !product.active) {
     notFound();
   }
+
+  const similar = await getProducts({ category: product.category, id: { not: product.id } }, 4).catch(() => []);
 
   const userSession = await verifySession<{ uid: string }>((await cookies()).get(USER_COOKIE)?.value);
   const eligibility: ReviewEligibility | "guest" = userSession?.uid ? await reviewEligibility(userSession.uid, product.id) : "guest";
@@ -119,6 +123,19 @@ export default async function ProductDetailPage({ params }: Props) {
 
         {/* İstemci Tarafı İnteraktif Detay Bileşeni */}
         <ProductDetailClient product={product} />
+
+        {similar.length > 0 && (
+          <section aria-labelledby="benzer" className="mt-10">
+            <h2 id="benzer" className="text-lg font-serif font-bold text-neutral-900 mb-4">
+              Benzer Avize Modelleri
+            </h2>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {similar.map((p) => (
+                <ProductCard key={p.id} product={p} />
+              ))}
+            </div>
+          </section>
+        )}
 
         <div className="mt-8">
           <ProductReviews productId={product.id} reviews={reviews} eligibility={eligibility} />

@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHmac } from "node:crypto";
 import { SITE_URL } from "@/lib/site";
 
 const merchantId = () => (process.env.PAYTR_MERCHANT_ID || process.env.MERCHANT_ID || "").trim();
@@ -75,11 +75,4 @@ export async function getPaytrToken(input: PaytrTokenInput): Promise<string> {
     throw new Error(`PayTR token alınamadı: ${data?.reason ?? res.status}`);
   }
   return data.token;
-}
-
-/** PayTR bildirim (callback) imzasını doğrular. */
-export function verifyPaytrCallback(p: { merchant_oid: string; status: string; total_amount: string; hash: string }) {
-  const expected = Buffer.from(hmac(`${p.merchant_oid}${merchantSalt()}${p.status}${p.total_amount}`));
-  const actual = Buffer.from(p.hash ?? "");
-  return expected.length === actual.length && timingSafeEqual(expected, actual);
 }

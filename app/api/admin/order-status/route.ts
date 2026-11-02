@@ -26,8 +26,9 @@ export async function POST(req: Request) {
     });
 
     // Doğrudan iptal/iade: düşülmüş stok geri eklenir, kupon hakkı iade edilir (yalnızca durum ilk kez değiştiğinde)
-    const closing = ["CANCELLED", "RETURNED"];
-    if (closing.includes(status) && before && !closing.includes(before.status)) {
+    // Stok yalnızca ödemesi/rezervasyonu alınmış siparişte düşülmüştür; AWAITING_PAYMENT/PAYMENT_FAILED iptalinde iade yapılmaz
+    const NO_STOCK_STATES = ["AWAITING_PAYMENT", "PAYMENT_FAILED", "CANCELLED", "RETURNED"];
+    if (["CANCELLED", "RETURNED"].includes(status) && before && !NO_STOCK_STATES.includes(before.status)) {
       await restoreOrderStock(orderId);
       await releaseCoupon(updatedOrder.couponCode).catch(() => {});
     }
