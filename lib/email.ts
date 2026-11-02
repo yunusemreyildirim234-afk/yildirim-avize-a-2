@@ -430,3 +430,20 @@ export async function sendShippedEmail(data: { to: string; name: string; orderId
     </div>`,
   });
 }
+
+/** Teslim edilen siparişin PDF faturası (e-postaya EK olarak; indirme bağlantısı verilmez). */
+export async function sendInvoiceEmail(data: { to: string; name: string; orderId: string; fileName: string; pdf: Buffer }) {
+  const no = `#${data.orderId.slice(0, 8)}`;
+  return sendViaResend(process.env.RESEND_API_KEY, {
+    to: [data.to],
+    subject: `Yıldırım Avize | ${no} numaralı siparişinizin faturası`,
+    attachments: [{ filename: data.fileName, content: data.pdf.toString("base64") }],
+    html: `<div style="font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 28px; background: #fafafa; border: 1px solid #e5e5e5; border-radius: 16px; color: #171717;">
+      <h1 style="text-align: center; font-size: 22px; letter-spacing: 1px; margin: 0 0 16px;">YILDIRIM AVİZE</h1>
+      <p style="font-size: 14px; line-height: 1.6;">Merhaba ${esc(data.name)},</p>
+      <p style="font-size: 14px; line-height: 1.6;"><strong>${no}</strong> numaralı siparişinize ait faturanız bu e-postanın ekinde yer almaktadır. Bizi tercih ettiğiniz için teşekkür ederiz.</p>
+      <p style="font-size: 14px; line-height: 1.6;">Ürününüzle ilgili bir sorunuz olursa WhatsApp destek hattımızdan (${PHONE_DISPLAY}) bize ulaşabilirsiniz.</p>
+      <p style="font-size: 14px; line-height: 1.6; margin-top: 20px;">Saygılarımızla,<br />Yıldırım Avize</p>
+    </div>`,
+  });
+}

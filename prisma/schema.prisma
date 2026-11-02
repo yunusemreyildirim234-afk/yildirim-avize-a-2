@@ -109,6 +109,7 @@ model Order {
   abandonedEmailSent   Boolean      @default(false)
   receiptReminderSent  Boolean      @default(false)
   receipt              ReceiptFile?
+  invoice              OrderInvoice? // Yalnızca ilişki alanı (sütun değil); sipariş sorgularına include ile bağlanmaz
   items                OrderItem[]
   createdAt            DateTime     @default(now())
   updatedAt            DateTime     @updatedAt
@@ -271,4 +272,18 @@ model ReceiptFile {
   mime      String
   data      Bytes
   createdAt DateTime @default(now())
+}
+
+// Teslim edilen siparişin yönetici tarafından yüklenen PDF faturası (sipariş başına bir adet).
+// Not: veri (data) alanı sipariş listelerinde asla çekilmez; metadata ayrı sorguyla okunur.
+model OrderInvoice {
+  id          String    @id @default(uuid())
+  orderId     String    @unique
+  order       Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  fileName    String
+  mimeType    String
+  size        Int
+  data        Bytes
+  uploadedAt  DateTime  @default(now())
+  emailSentAt DateTime?
 }

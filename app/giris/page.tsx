@@ -67,6 +67,17 @@ export default function AuthPage() {
       .catch(() => {});
   }, []);
 
+  // Faturası yüklenmiş siparişler: ana sipariş sorgusundan ayrı alınır; hata olursa fatura düğmesi görünmez, sayfa etkilenmez
+  const [invoiceIds, setInvoiceIds] = useState<string[]>([]);
+  const hasUser = Boolean(user);
+  useEffect(() => {
+    if (!hasUser) return;
+    fetch("/api/orders/invoices")
+      .then((res) => res.json())
+      .then((data) => Array.isArray(data.orderIds) && setInvoiceIds(data.orderIds))
+      .catch(() => {});
+  }, [hasUser]);
+
   const refreshUser = () => {
     fetch("/api/auth/me?orders=1", { cache: "no-store" })
       .then((res) => res.json())
@@ -212,6 +223,15 @@ export default function AuthPage() {
                     )}
 
                     <OrderRequestBox order={order} onChanged={refreshUser} />
+
+                    {order.status === "DELIVERED" && invoiceIds.includes(order.id) && (
+                      <a
+                        href={`/api/orders/${order.id}/invoice`}
+                        className="inline-block text-[11px] font-semibold text-amber-800 bg-amber-50 border border-amber-200 hover:bg-amber-100 px-3 py-2 rounded-xl transition-colors"
+                      >
+                        🧾 Faturayı İndir (PDF)
+                      </a>
+                    )}
 
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-neutral-500 pt-2 border-t border-neutral-100">
                       <div>
