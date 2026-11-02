@@ -28,7 +28,7 @@ export default function AnnouncementBars() {
       className: "bg-amber-100 text-amber-950 border-amber-200",
       content: (
         <>
-          <strong>Sınırlı Süreli Teklif:</strong> Peşin ödemelere %10&apos;a varan indirimi kaçırma! Size özel %5 indirim kodu:{" "}
+          <strong>İndirim Kodu:</strong> Sepetinizde %5 indirim için kupon kodu (Havale/EFT %5 ve Mağazadan Teslim %3 indirimiyle birleştirilebilir):{" "}
           <span className="inline-flex items-center gap-1.5 align-middle">
             <strong className="font-mono bg-white/70 border border-amber-300 rounded px-1.5 py-0.5">{COUPON_CODE}</strong>
             <button
