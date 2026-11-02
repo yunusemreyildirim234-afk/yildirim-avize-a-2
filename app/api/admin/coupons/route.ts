@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { adminGuard } from "@/lib/admin-guard";
 import { prisma } from "@/lib/db";
-import { sendCouponEmail } from "@/lib/email";
+import { sendCampaignCouponEmail } from "@/lib/email";
+import { buildCampaignFooter, hasActiveConsent } from "@/lib/marketing";
 import { notifyCustomer } from "@/lib/notifications";
 
 // Promosyon kodu yönetimi (proxy yalnızca yöneticiye açar)
@@ -30,17 +31,23 @@ export async function POST(req: Request) {
   }
 
   const coupon = await prisma.coupon.create({ data: { code, discountPercent, maxUses, userEmail, productId } });
-  // Kişiye özel kuponda müşteriye hem bildirim hem e-posta
+  // Kişiye özel kuponda müşteriye hesap bildirimi gider; kampanya e-postası yalnızca ticari ileti onayı olana gönderilir
+  let emailSkipped = false;
   if (userEmail) {
     const customer = await prisma.user.findFirst({ where: { email: { equals: userEmail, mode: "insensitive" } }, select: { name: true } });
     await notifyCustomer(
       { email: userEmail },
       { title: "Size özel kupon tanımlandı!", message: `Size özel %${discountPercent} indirim kuponu tanımlandı! Kod: ${code}`, type: "COUPON", link: "/giris#kuponlar" }
     );
-    await sendCouponEmail({ to: userEmail, name: customer?.name ?? "Değerli Müşterimiz", code, discountPercent }).catch(() => false);
+    const footerHtml = (await hasActiveConsent(userEmail)) ? await buildCampaignFooter(userEmail) : null;
+    if (footerHtml) {
+      await sendCampaignCouponEmail({ to: userEmail, name: customer?.name ?? "Değerli Müşterimiz", code, discountPercent, footerHtml }).catch(() => false);
+    } else {
+      emailSkipped = true;
+    }
   }
 
-  return NextResponse.json({ success: true, coupon });
+  return NextResponse.json({ success: true, coupon, emailSkipped });
 }
 
 // Pasife alma / yeniden aktifleştirme

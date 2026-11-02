@@ -1,7 +1,8 @@
 import { cleanGuestEmail } from "@/lib/guest-email";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { sendAbandonedCartEmail, sendReceiptReminderEmail } from "@/lib/email";
+import { sendAbandonedCartEmail, sendCartReminderEmail, sendReceiptReminderEmail } from "@/lib/email";
+import { buildCampaignFooter, hasActiveConsent } from "@/lib/marketing";
 import { DEFAULT_COUPON_CODE } from "@/lib/pricing";
 
 const HOUR = 60 * 60 * 1000;
@@ -31,13 +32,14 @@ export async function GET(req: Request) {
     // Önce işaretle: aynı mail ikinci kez gitmesin
     const claimed = await prisma.order.updateMany({ where: { id: o.id, abandonedEmailSent: false }, data: { abandonedEmailSent: true } });
     if (claimed.count === 0) continue;
-    const ok = await sendAbandonedCartEmail({
-      to: cleanGuestEmail(o.user.email),
-      name: o.user.name,
-      orderId: o.id,
-      couponCode: DEFAULT_COUPON_CODE,
-      items: o.items.map((i) => ({ title: i.variation.product.title, quantity: i.quantity })),
-    }).catch(() => false);
+    const to = cleanGuestEmail(o.user.email);
+    const items = o.items.map((i) => ({ title: i.variation.product.title, quantity: i.quantity }));
+    // Ticari ileti onayı kontrolü (hata/tablo yoksa "onay yok" sayılır): onaylıya kampanya, diğerlerine indirimsiz sade hatırlatma
+    const footerHtml = (await hasActiveConsent(to)) ? await buildCampaignFooter(to) : null;
+    const ok = await (footerHtml
+      ? sendAbandonedCartEmail({ to, name: o.user.name, orderId: o.id, couponCode: DEFAULT_COUPON_CODE, items, footerHtml })
+      : sendCartReminderEmail({ to, name: o.user.name, items })
+    ).catch(() => false);
     if (ok) abandoned++;
     else await prisma.order.update({ where: { id: o.id }, data: { abandonedEmailSent: false } });
   }

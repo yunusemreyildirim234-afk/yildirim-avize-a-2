@@ -339,8 +339,8 @@ export async function sendVerificationCodeEmail(data: { to: string; code: string
   });
 }
 
-/** Terk edilen ödeme denemesi için hatırlatma (%5 kupon ile). */
-export async function sendAbandonedCartEmail(data: { to: string; name: string; orderId: string; items: { title: string; quantity: number }[]; couponCode: string }) {
+/** Terk edilen ödeme denemesi için KAMPANYA sürümü (%5 kupon ile). Yalnızca ticari ileti onayı olanlara gönderilir; footerHtml (unvan, adres, çıkış bağlantısı) zorunludur. */
+export async function sendAbandonedCartEmail(data: { to: string; name: string; orderId: string; items: { title: string; quantity: number }[]; couponCode: string; footerHtml: string }) {
   return sendViaResend(process.env.RESEND_API_KEY, {
     to: [data.to],
     subject: `Sepetinizdeki avize sizi bekliyor! Size özel %5 indirim: ${data.couponCode}`,
@@ -352,6 +352,39 @@ export async function sendAbandonedCartEmail(data: { to: string; name: string; o
       <ul style="font-size: 13px; color: #525252; padding-left: 18px;">${data.items.map((i) => `<li>${i.quantity}x ${esc(i.title)}</li>`).join("")}</ul>
       <p style="text-align: center; margin: 22px 0 8px;"><a href="${SITE_URL}/sepet" style="display: inline-block; background: #171717; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 14px; padding: 12px 28px; border-radius: 10px;">Siparişimi Tamamla</a></p>
       <p style="font-size: 12px; color: #737373; text-align: center;">Yıldırım Avize | Tel: ${PHONE_DISPLAY}</p>
+      ${data.footerHtml}
+    </div>`,
+  });
+}
+
+/** Terk edilen ödeme denemesi için SADE hatırlatma: indirim, kupon veya özendirici ifade içermez (onayı olmayanlara gider). */
+export async function sendCartReminderEmail(data: { to: string; name: string; items: { title: string; quantity: number }[] }) {
+  return sendViaResend(process.env.RESEND_API_KEY, {
+    to: [data.to],
+    subject: "Siparişiniz tamamlanmadı - Yıldırım Avize",
+    html: `<div style="font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 28px; background: #fafafa; border: 1px solid #e5e5e5; border-radius: 16px; color: #171717;">
+      <h1 style="text-align: center; font-size: 22px; letter-spacing: 1px; margin: 0 0 16px;">YILDIRIM AVİZE</h1>
+      <h2 style="font-size: 17px; margin: 0 0 10px;">Sayın ${esc(data.name)},</h2>
+      <p style="font-size: 14px; line-height: 1.6;">Sitemizde başlattığınız sipariş işlemi tamamlanmadı. Sepetinizde aşağıdaki ürünler bulunmaktadır:</p>
+      <ul style="font-size: 13px; color: #525252; padding-left: 18px;">${data.items.map((i) => `<li>${i.quantity}x ${esc(i.title)}</li>`).join("")}</ul>
+      <p style="text-align: center; margin: 22px 0 8px;"><a href="${SITE_URL}/sepet" style="display: inline-block; background: #171717; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 14px; padding: 12px 28px; border-radius: 10px;">Sepetime Dön</a></p>
+      <p style="font-size: 13px; line-height: 1.6; color: #525252; text-align: center;">Sorularınız için WhatsApp destek hattımızdan (${PHONE_DISPLAY}) bize ulaşabilirsiniz.</p>
+      <p style="font-size: 12px; color: #737373; text-align: center;">Yıldırım Avize | Tel: ${PHONE_DISPLAY}</p>
+    </div>`,
+  });
+}
+
+/** Müşteriye özel kupon e-postası, KAMPANYA sürümü: zorunlu alt bilgi ve çıkış bağlantısı içerir (yalnızca ticari ileti onayı olanlara). */
+export async function sendCampaignCouponEmail(data: { to: string; name: string; code: string; discountPercent: number; footerHtml: string }) {
+  return sendViaResend(process.env.RESEND_API_KEY, {
+    to: [data.to],
+    subject: `Size özel %${data.discountPercent} indirim kuponu - Yıldırım Avize`,
+    html: `<div style="font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #171717;">
+      <h2 style="margin: 0 0 12px;">Sayın ${esc(data.name)},</h2>
+      <p style="font-size: 14px; line-height: 1.6;">Size özel <strong>%${data.discountPercent}</strong> indirim kuponu tanımlandı!</p>
+      <p style="text-align: center; margin: 20px 0;"><span style="display: inline-block; font-family: monospace; font-size: 20px; font-weight: bold; letter-spacing: 2px; background: #fffbeb; border: 1px dashed #d97706; border-radius: 10px; padding: 10px 20px; color: #92400e;">${esc(data.code)}</span></p>
+      <p style="font-size: 12px; color: #737373;">Kuponu sepet sayfasında kullanabilir, Hesabım → Kuponlarım bölümünden de görebilirsiniz.<br />Yıldırım Avize | Tel: ${PHONE_DISPLAY}</p>
+      ${data.footerHtml}
     </div>`,
   });
 }

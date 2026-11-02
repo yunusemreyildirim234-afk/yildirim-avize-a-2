@@ -69,6 +69,9 @@ export default function AdminCoupons({ coupons, customers, products }: Props) {
         alert(data.error || "İşlem başarısız.");
         return false;
       }
+      if (method === "POST" && data.emailSkipped) {
+        alert("Kupon tanımlandı ve müşterinin hesabında bildirim olarak görünecek. Ancak bu müşterinin ticari elektronik ileti onayı bulunmamaktadır; bu nedenle kampanya e-postası gönderilmedi.");
+      }
       router.refresh();
       return true;
     } catch {
