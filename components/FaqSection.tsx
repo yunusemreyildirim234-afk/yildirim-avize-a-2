@@ -30,8 +30,8 @@ const FAQS = [
     a: "Avizenizin kristal parlaklığını ve metal aksamını uzun yıllar koruması için kimyasal deterjanlar kesinlikle kullanılmamalıdır bunun yerine hafif nemli mikrofiber bez kullanılması uygundur. Temizlik öncesinde elektrik bağlantısının kapalı olduğundan emin olunmalıdır.",
   },
   {
-    q: "Avize montaj hizmetiniz var mı?",
-    a: "Montaj hizmeti tarafımızca verilmemektedir. İhtiyaç duymanız halinde elektrikçiniz için WhatsApp destek hattımız üzerinden uzaktan teknik bilgilendirme desteği sağlamaktayız.",
+    q: "Tavana montaj hizmeti veriyor musunuz?",
+    a: "Evin tavanına montaj hizmeti verilmemektedir. İhtiyaç duymanız halinde elektrikçiniz için WhatsApp destek hattımız üzerinden uzaktan teknik bilgilendirme desteği sağlamaktayız.",
   },
   {
     q: "Siparişimi mağazadan teslim alabilir miyim?",

@@ -56,8 +56,8 @@ export default function IletisimPage() {
       a: "Evet! Yüksek tavanlı villalar, camiler, otel lobileri, restoranlar veya özel mekanlar için mimari çizimlerinize göre kristal avize üretimi yapmaktayız.",
     },
     {
-      q: "Montaj hizmetiniz var mı?",
-      a: "Montaj hizmeti verilmemektedir. İhtiyaç duymanız halinde elektrikçiniz için WhatsApp destek hattımız üzerinden uzaktan teknik bilgilendirme desteği sağlamaktayız.",
+      q: "Tavana montaj hizmeti veriyor musunuz?",
+      a: "Evin tavanına montaj hizmeti verilmemektedir. İhtiyaç duymanız halinde elektrikçiniz için WhatsApp destek hattımız üzerinden uzaktan teknik bilgilendirme desteği sağlamaktayız.",
     },
   ];
 

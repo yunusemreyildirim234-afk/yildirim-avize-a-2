@@ -374,7 +374,7 @@ export default function CartPage() {
                 📝 Sipariş Notu / Özel İstekleriniz
               </label>
               <p className="text-xs text-amber-900/80">
-                Tavan yüksekliğinize göre zincir, kablo veya bakla uzunluğu taleplerinizi, özel montaj isteklerinizi buraya yazabilirsiniz.
+                Tavan yüksekliğinize göre zincir, kablo veya bakla uzunluğu taleplerinizi, ürünün nasıl birleştirilerek gönderileceğine dair isteklerinizi buraya yazabilirsiniz.
               </p>
               <textarea
                 id="order-note"
