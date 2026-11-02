@@ -1,9 +1,9 @@
 import Link from "next/link";
 import CompanyInfo from "@/components/CompanyInfo";
-import { ADDRESS_LINE, CATEGORIES, LAT, LNG, PHONE_DISPLAY, PHONE_TEL } from "@/lib/site";
+import { ADDRESS_LINE, CATEGORIES, MAP_EMBED_SRC, MAP_LINK, PHONE_DISPLAY, PHONE_TEL } from "@/lib/site";
 
-const MAP_SRC = `https://www.google.com/maps?q=${LAT},${LNG}&z=17&hl=tr&output=embed`;
-const DIRECTIONS = "https://maps.app.goo.gl/sGP19dX98od62Vsq5";
+const MAP_SRC = MAP_EMBED_SRC;
+const DIRECTIONS = MAP_LINK;
 
 const CHANNELS = [
   { label: "Instagram (@yildirimavize)", href: "https://www.instagram.com/yildirimavize/", icon: "📸", highlight: false },

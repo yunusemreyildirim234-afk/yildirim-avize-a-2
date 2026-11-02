@@ -10,6 +10,10 @@ export const ADDRESS_LINE =
 export const LAT = 41.0266295;
 export const LNG = 28.970431;
 
+// Harita: "Yol Tarifi Al" kısa linki ve gömülü harita tek kaynaktan (kısa link -> 41.026876,28.970359)
+export const MAP_LINK = "https://maps.app.goo.gl/sGP19dX98od62Vsq5";
+export const MAP_EMBED_SRC = `https://www.google.com/maps?q=${encodeURIComponent("41.026876,28.970359")}&z=17&hl=tr&output=embed`;
+
 export const CATEGORIES = [
   {
     slug: "kristal",

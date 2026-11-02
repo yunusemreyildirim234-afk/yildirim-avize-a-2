@@ -48,12 +48,12 @@ export default function IletisimPage() {
       a: "Sipariş verirken 'Mağazadan Teslim' seçeneğini işaretlediğinizde kargo ücreti ödemezsiniz ve sepet tutarına ekstra %3 indirim uygulanır. Avizeniz Şişhane merkezimizde özenle hazırlanıp kontrolden geçirildiğinde size haber verilir; hafta içi dilediğiniz gün gelip görerek teslim alabilirsiniz.",
     },
     {
-      q: "Kargoda kırılma riski var mı?",
-      a: "Tüm kristal ve metal avizelerimiz, darbelere karşı özel üst düzey korumalı koliyler ve strafor korumalarla sigortalı olarak sevk edilir. Olası bir hasarda koşulsuz ücretsiz parça/ürün değişimi garantimiz mevcuttur.",
+      q: "Ödeme seçenekleri ve taksit imkanı var mı?",
+      a: "Tüm siparişlerinizde PayTR altyapısıyla 3D Secure güvencesinde tüm kredi kartlarına peşin veya taksitli ödeme yapabilirsiniz. Ayrıca Kuveyt Türk hesabımıza Havale/EFT ile ödeme seçeneğimiz de mevcuttur.",
     },
     {
       q: "Mekanımıza özel ölçülerde avize üretiyor musunuz?",
-      a: "Evet! Yüksek tavanlı villalar, otel lobileri, restoranlar veya özel mekanlar için mimari çizimlerinize göre pirinç döküm ve kristal avize üretimi yapmaktayız.",
+      a: "Evet! Yüksek tavanlı villalar, camiler, otel lobileri, restoranlar veya özel mekanlar için mimari çizimlerinize göre kristal avize üretimi yapmaktayız.",
     },
     {
       q: "Montaj hizmetiniz var mı?",
