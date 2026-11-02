@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Star } from "lucide-react";
 import type { ReviewEligibility } from "@/lib/reviews";
+import SmartFilterChips from "@/components/SmartFilterChips";
 import { compressImageToWebP, MAX_RAW_BYTES, MAX_UPLOAD_BYTES } from "@/lib/client-image";
 
 export interface ReviewItem {
@@ -48,6 +49,11 @@ export default function ProductReviews({
   const fileRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Yıldız filtresi: boş seçim = Tümü; birden fazla puan birlikte seçilebilir
+  const [starFilter, setStarFilter] = useState<string[]>([]);
+  const visibleReviews = starFilter.length === 0 ? reviews : reviews.filter((r) => starFilter.includes(String(Math.round(r.rating))));
+  const starOptions = [5, 4, 3, 2, 1].map((n) => ({ key: String(n), label: `★ ${n}`, count: reviews.filter((r) => Math.round(r.rating) === n).length }));
 
   const average = reviews.length ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length : 0;
 
@@ -93,8 +99,15 @@ export default function ProductReviews({
       {reviews.length === 0 ? (
         <p className="text-sm text-neutral-500">Bu ürün için henüz yorum yapılmamış. İlk yorumu siz yazın.</p>
       ) : (
+        <>
+          <SmartFilterChips label="Yıldıza göre yorum filtresi" options={starOptions} selected={starFilter} total={reviews.length} onChange={setStarFilter} />
+          {visibleReviews.length === 0 ? (
+            <p role="status" className="rounded-2xl bg-neutral-50 border border-neutral-200 p-5 text-center text-sm text-neutral-500">
+              Bu puanda henüz değerlendirme bulunmuyor.
+            </p>
+          ) : (
         <ul className="space-y-5">
-          {reviews.map((r) => (
+          {visibleReviews.map((r) => (
             <li key={r.id} className="space-y-1.5">
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                 <Stars value={r.rating} />
@@ -118,6 +131,8 @@ export default function ProductReviews({
             </li>
           ))}
         </ul>
+          )}
+        </>
       )}
 
       <div className="border-t border-neutral-100 pt-5">

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import SmartFilterChips from "@/components/SmartFilterChips";
 
 export interface AdminMessage {
   id: string;
@@ -18,11 +19,22 @@ export interface AdminMessage {
   productTitle: string | null;
 }
 
+// Filtre grupları (birden fazla seçilirse birleşimi listelenir; boş seçim = Tümü)
+const GROUPS = [
+  { key: "iletisim", label: "İletişim Soruları", test: (m: AdminMessage) => m.kind !== "PRODUCT_QUESTION" },
+  { key: "urun", label: "Ürün Soruları", test: (m: AdminMessage) => m.kind === "PRODUCT_QUESTION" },
+  { key: "yeni", label: "Yeni Gelen Mesajlar", test: (m: AdminMessage) => m.status !== "ANSWERED" },
+  { key: "cevap", label: "Cevaplanmış Olanlar", test: (m: AdminMessage) => m.status === "ANSWERED" },
+] as const;
+
 export default function AdminMessages({ messages }: { messages: AdminMessage[] }) {
   const router = useRouter();
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [sendingId, setSendingId] = useState<string | null>(null);
   const [notice, setNotice] = useState<Record<string, string>>({});
+  const [selected, setSelected] = useState<string[]>([]);
+
+  const visible = selected.length === 0 ? messages : messages.filter((m) => GROUPS.some((g) => selected.includes(g.key) && g.test(m)));
 
   const send = async (m: AdminMessage) => {
     const reply = (drafts[m.id] ?? m.reply ?? "").trim();
@@ -50,11 +62,24 @@ export default function AdminMessages({ messages }: { messages: AdminMessage[] }
 
   return (
     <div>
+      {messages.length > 0 && (
+        <div className="px-6 py-4 border-b border-neutral-100">
+          <SmartFilterChips
+            label="Mesaj filtreleri"
+            options={GROUPS.map((g) => ({ key: g.key, label: g.label, count: messages.filter(g.test).length }))}
+            selected={selected}
+            total={messages.length}
+            onChange={setSelected}
+          />
+        </div>
+      )}
       {messages.length === 0 ? (
         <div className="p-12 text-center text-neutral-400 text-xs">Henüz gelen mesaj veya soru yok.</div>
+      ) : visible.length === 0 ? (
+        <div className="p-12 text-center text-neutral-400 text-xs">Seçili filtrelere uyan mesaj yok.</div>
       ) : (
         <ul className="divide-y divide-neutral-100">
-          {messages.map((m) => {
+          {visible.map((m) => {
             const answered = m.status === "ANSWERED";
             return (
               <li key={m.id} className="p-5 space-y-3 text-xs">

@@ -78,17 +78,15 @@ export const ORDER_GROUPS = [
 
 export type OrderGroupKey = (typeof ORDER_GROUPS)[number]["key"];
 export const ALL_GROUP_KEYS: OrderGroupKey[] = ORDER_GROUPS.map((g) => g.key);
-export const DEFAULT_GROUP_KEYS: OrderGroupKey[] = ["yeni", "hazir", "kargoda", "talep"];
 
-/** ?durum= değerini grup anahtarlarına çevirir. Parametre yoksa varsayılan; "tumu" hepsi; boş değer hiçbiri. */
+/** ?durum= değerini seçili grup anahtarlarına çevirir. Boş dizi = "Tümü" (filtre yok); parametre yoksa veya "tumu" ise de boştur. */
 export function parseGroupParam(param: string | undefined): OrderGroupKey[] {
-  if (param === undefined) return DEFAULT_GROUP_KEYS;
-  if (param === "tumu") return ALL_GROUP_KEYS;
+  if (!param || param === "tumu") return [];
   const wanted = param.split(",").map((k) => k.trim());
   return ALL_GROUP_KEYS.filter((k) => wanted.includes(k));
 }
 
-/** Seçili gruplardan en az birine giren sipariş mi? */
+/** Seçim boşsa (Tümü) her sipariş görünür; değilse seçili gruplardan en az birine giren sipariş. */
 export function matchesGroups(o: GroupInput, keys: readonly OrderGroupKey[]): boolean {
-  return ORDER_GROUPS.some((g) => keys.includes(g.key) && g.test(o));
+  return keys.length === 0 || ORDER_GROUPS.some((g) => keys.includes(g.key) && g.test(o));
 }
