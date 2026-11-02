@@ -1,4 +1,4 @@
-export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://yildirimavize.com.tr").replace(/\/$/, "");
+export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://www.yildirimavize.com.tr").replace(/\/$/, "");
 export const SITE_NAME = "Yıldırım Avize";
 export const PHONE_DISPLAY = "0537 211 42 23";
 export const PHONE_TEL = "+905372114223";

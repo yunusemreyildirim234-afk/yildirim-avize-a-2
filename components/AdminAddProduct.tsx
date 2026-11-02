@@ -100,6 +100,7 @@ export default function AdminAddProduct() {
               <option value="Modern">Modern</option>
               <option value="Klasik">Klasik</option>
               <option value="Sarkıt">Sarkıt & Aplik</option>
+              <option value="Aksesuar">Aksesuar & Yedek Parça</option>
             </select>
           </div>
 

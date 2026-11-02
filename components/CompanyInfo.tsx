@@ -5,11 +5,14 @@ export default async function CompanyInfo({ variant }: { variant: "dark" | "ligh
   const c = await getCompanyInfo();
   const dark = variant === "dark";
 
+  // Yönetici gerçek veriyi girene kadar örnek/boş MERSİS ve KEP satırları müşteriye gösterilmez
+  const isPlaceholder = (v: string) => !v.trim() || /örnek|ornek/i.test(v);
+
   const rows: [string, string][] = [
     ["Unvan", c.companyTitle],
     ["Vergi Dairesi / No", `${c.taxOffice} / ${c.taxNumber}`],
-    ["MERSİS No", c.mersisNo],
-    ["KEP Adresi", c.kepAddress],
+    ...(isPlaceholder(c.mersisNo) ? [] : [["MERSİS No", c.mersisNo] as [string, string]]),
+    ...(isPlaceholder(c.kepAddress) ? [] : [["KEP Adresi", c.kepAddress] as [string, string]]),
     ["Merkez Adresi", c.headquartersAddress],
   ];
 

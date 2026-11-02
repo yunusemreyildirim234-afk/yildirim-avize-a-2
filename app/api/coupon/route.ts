@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { rateLimit, tooMany } from "@/lib/rate-limit";
 import { getSessionUserId } from "@/lib/account";
 import { validateCoupon } from "@/lib/coupons";
 import type { PriceLine } from "@/lib/pricing";
 
 // Sepetteki kupon doğrulaması (oturum açıksa hesabın e-postası, değilse formdaki e-posta kullanılır)
 export async function POST(req: Request) {
+  const rl = rateLimit(req, "coupon", 10, 60_000);
+  if (rl.limited) return tooMany(rl.retryAfter);
   const body = await req.json().catch(() => ({}));
   const code = typeof body.code === "string" ? body.code : "";
   const rawLines: { productId?: unknown; lineTotal?: unknown }[] = Array.isArray(body.lines) ? body.lines.slice(0, 100) : [];

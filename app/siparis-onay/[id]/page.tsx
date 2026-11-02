@@ -25,7 +25,7 @@ export default async function OrderConfirmationPage({ params }: { params: Promis
 
   return (
     <main className="min-h-screen bg-neutral-50 py-12 sm:py-16 px-4">
-      {!paymentFailed && <ClearCart />}
+      {!paymentFailed && order.status !== "CANCELLED" && order.status !== "RETURNED" && Date.now() - order.createdAt.getTime() < 2 * 60 * 60 * 1000 && <ClearCart orderId={order.id} />}
       <div className="max-w-xl mx-auto bg-white rounded-3xl border border-neutral-200 p-6 sm:p-12 text-center space-y-6 shadow-sm">
         <div
           aria-hidden="true"

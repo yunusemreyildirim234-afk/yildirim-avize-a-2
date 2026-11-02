@@ -156,7 +156,7 @@ export default function AdminProductList({ products }: { products: Product[] }) 
       });
       const data = await res.json();
       if (data.success) {
-        alert("✓ Avize katalogdan silindi.");
+        alert(data.message ? "ℹ " + data.message : "✓ Avize katalogdan silindi.");
         router.refresh();
       } else {
         alert("Silinemedi: " + data.error);

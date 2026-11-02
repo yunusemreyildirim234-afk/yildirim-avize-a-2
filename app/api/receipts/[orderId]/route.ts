@@ -1,12 +1,12 @@
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
 import { getSessionUserId } from "@/lib/account";
-import { ADMIN_COOKIE, verifySession } from "@/lib/session";
+import { ADMIN_COOKIE, verifyAdminSession } from "@/lib/session";
 
 // Dekont yalnızca yöneticiye veya siparişin sahibine açıktır
 export async function GET(_req: Request, { params }: { params: Promise<{ orderId: string }> }) {
   const { orderId } = await params;
-  const isAdmin = Boolean(await verifySession((await cookies()).get(ADMIN_COOKIE)?.value));
+  const isAdmin = Boolean(await verifyAdminSession((await cookies()).get(ADMIN_COOKIE)?.value));
   if (!isAdmin) {
     const uid = await getSessionUserId();
     const owner = uid ? await prisma.order.findFirst({ where: { id: orderId, userId: uid }, select: { id: true } }) : null;

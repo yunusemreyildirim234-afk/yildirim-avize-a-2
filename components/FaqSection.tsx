@@ -11,7 +11,7 @@ const FAQS = [
   },
   {
     q: "Kargo süreci ne kadar sürer ve nasıl takip edebilirim?",
-    a: "Siparişiniz onaylandıktan sonra ürününüz Şişhane atölyemizde özenle kontrol edilip paketlenir ve Aras Kargo güvencesiyle 1-3 iş günü içinde kargoya verilir. Kargo takip kodunuz SMS ve e-posta ile iletilir; ayrıca sitemizdeki \"Kargo Takip\" sayfasından paketinizi canlı izleyebilirsiniz.",
+    a: "Siparişiniz onaylandıktan sonra ürününüz Şişhane atölyemizde özenle kontrol edilip paketlenir ve Aras Kargo güvencesiyle 1-3 iş günü içinde kargoya verilir. Kargo takip kodunuz e-posta ile iletilir; ayrıca sitemizdeki \"Kargo Takip\" sayfasından paketinizi canlı izleyebilirsiniz.",
   },
   {
     q: "Eksik veya hasarlı taş/parça çıkarsa ne yapmalıyım?",

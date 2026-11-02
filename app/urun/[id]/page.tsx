@@ -47,7 +47,7 @@ export default async function ProductDetailPage({ params }: Props) {
     },
   });
 
-  if (!product) {
+  if (!product || !product.active) {
     notFound();
   }
 

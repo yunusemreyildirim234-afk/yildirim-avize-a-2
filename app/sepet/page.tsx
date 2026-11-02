@@ -10,6 +10,7 @@ import { computeTotals, couponDiscountFor, FREE_SHIPPING_THRESHOLD, SHIPPING_COS
 import BankTransferCard from "@/components/BankTransferCard";
 import ContractModal from "@/components/ContractModal";
 import { invoiceError } from "@/lib/validation";
+import { ADDRESS_LINE } from "@/lib/site";
 
 interface LocationItem {
   id: number;
@@ -80,6 +81,18 @@ export default function CartPage() {
     if (new URLSearchParams(window.location.search).get("odeme") === "basarisiz") setPaymentFailed(true);
   }, []);
 
+  // Giriş yapmış müşterinin ad ve e-postasını otomatik doldur
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((res) => res.json())
+      .then((data) => {
+        if (!data.user) return;
+        setName((v) => v || data.user.name || "");
+        setEmail((v) => v || data.user.email || "");
+      })
+      .catch(() => {});
+  }, []);
+
   // Kargonomi Şehir Listesini Yükle
   useEffect(() => {
     fetch("/api/kargonomi/locations")
@@ -105,6 +118,10 @@ export default function CartPage() {
       })
       .catch(() => {});
   }, [buyerStateId]);
+
+  // Mağazadan teslimde il/ilçe/adres istenmez; mağaza adresi varsayılan atanır
+  const isPickup = shippingType === "BEYOGLU_MAGAZA_TESLIM";
+  const effectiveAddress = isPickup ? ADDRESS_LINE : address;
 
   // Tutarlar (sunucu aynı hesabı yapar)
   const { shipping: shippingCost, couponDiscount, pickupDiscount, bankDiscount, total: finalTotal } = computeTotals({
@@ -173,11 +190,11 @@ export default function CartPage() {
           name,
           email,
           phone,
-          address,
-          buyerStateId,
-          buyerCityId,
-          buyerStateName: selectedStateObj?.name || "İSTANBUL",
-          buyerCityName: selectedCityObj?.name || "MERKEZ",
+          address: effectiveAddress,
+          buyerStateId: isPickup ? 34 : buyerStateId,
+          buyerCityId: isPickup ? 425 : buyerCityId,
+          buyerStateName: isPickup ? "İSTANBUL" : selectedStateObj?.name || "İSTANBUL",
+          buyerCityName: isPickup ? "BEYOĞLU" : selectedCityObj?.name || "MERKEZ",
           shippingType,
           paymentMethod,
           couponCode: appliedCoupon?.code,
@@ -561,7 +578,15 @@ export default function CartPage() {
                 className="w-full text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
               />
 
+              {isPickup && (
+                <p className="text-xs text-neutral-600 bg-neutral-50 border border-neutral-200 rounded-xl p-3">
+                  📍 Siparişiniz mağazamızdan teslim alınacaktır: <strong>{ADDRESS_LINE}</strong>
+                </p>
+              )}
+
               {/* Kargonomi Şehir (State) ve İlçe (City) Seçimi */}
+              {!isPickup && (
+              <>
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-[10px] font-semibold text-neutral-500 uppercase block mb-1">
@@ -606,6 +631,8 @@ export default function CartPage() {
                 onChange={(e) => setAddress(e.target.value)}
                 className="w-full text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
               />
+              </>
+              )}
 
               {/* Fatura Bilgileri */}
               <fieldset className="space-y-2 pt-3 border-t border-neutral-100">
@@ -726,7 +753,7 @@ export default function CartPage() {
             name,
             email,
             phone,
-            address,
+            address: effectiveAddress,
             region: [cities.find((c) => Number(c.id) === Number(buyerCityId))?.name, states.find((st) => Number(st.id) === Number(buyerStateId))?.name].filter(Boolean).join(" / "),
             items: cart.map((i) => ({ title: i.title, variation: i.variationName, quantity: i.quantity, price: i.price })),
             itemsTotal: totalPrice,

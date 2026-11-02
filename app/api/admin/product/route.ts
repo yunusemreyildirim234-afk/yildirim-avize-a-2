@@ -118,17 +118,18 @@ export async function DELETE(req: Request) {
   try {
     const { productId } = await req.json();
 
-    // Bağlı varyasyonları bul
-    const variations = await prisma.productVariation.findMany({
-      where: { productId },
-      select: { id: true },
-    });
-    const variationIds = variations.map((v) => v.id);
+    if (typeof productId !== "string") return NextResponse.json({ error: "productId zorunlu" }, { status: 400 });
 
-    // Varsa bağlı sipariş kalemlerini ve varyasyonları temizle
-    await prisma.orderItem.deleteMany({
-      where: { variationId: { in: variationIds } },
-    });
+    // Geçmiş siparişi olan ürün silinmez: pasife alınır ve stokları sıfırlanır (sipariş geçmişi korunur)
+    const hasOrders = await prisma.orderItem.findFirst({ where: { variation: { productId } }, select: { id: true } });
+    if (hasOrders) {
+      await prisma.$transaction([
+        prisma.product.update({ where: { id: productId }, data: { active: false } }),
+        prisma.productVariation.updateMany({ where: { productId }, data: { stock: 0 } }),
+      ]);
+      return NextResponse.json({ success: true, deactivated: true, message: "Ürünün geçmiş siparişleri olduğu için silinmedi; pasife alındı." });
+    }
+
     await prisma.productVariation.deleteMany({
       where: { productId },
     });

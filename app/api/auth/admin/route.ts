@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { rateLimit, tooMany } from "@/lib/rate-limit";
 import { verifyPassword } from "@/lib/password";
 import { ADMIN_COOKIE, cookieOptions, safeCompare, signSession } from "@/lib/session";
 
 // Yönetici girişi: .env (ADMIN_USER / ADMIN_PASSWORD) veya veritabanındaki ADMIN rolüne sahip hesapla doğrular
 export async function POST(req: Request) {
+  const rl = rateLimit(req, "admin-login", 10, 15 * 60_000);
+  if (rl.limited) return tooMany(rl.retryAfter);
   const { username, password } = await req.json().catch(() => ({}));
   if (typeof username !== "string" || typeof password !== "string" || !username.trim() || !password) {
     return NextResponse.json({ error: "Kullanıcı adı ve şifre zorunludur." }, { status: 400 });

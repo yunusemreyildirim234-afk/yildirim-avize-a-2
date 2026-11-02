@@ -13,6 +13,7 @@ export interface QuickProduct {
   category: string;
   basePrice: number;
   imageUrl?: string | null;
+  modelCode?: string | null;
   variations: { id: string; variationValue: string; extraPrice: number; stock: number }[];
 }
 

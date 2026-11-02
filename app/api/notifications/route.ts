@@ -2,14 +2,14 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import { ADMIN_COOKIE, USER_COOKIE, verifySession } from "@/lib/session";
+import { ADMIN_COOKIE, USER_COOKIE, verifyAdminSession, verifySession } from "@/lib/session";
 
 // Oturumdaki müşteri ve/veya yöneticiye ait bildirimleri kapsayan filtre
 async function scope(): Promise<Prisma.NotificationWhereInput | null> {
   const jar = await cookies();
   const [userSession, adminSession] = await Promise.all([
     verifySession<{ uid: string }>(jar.get(USER_COOKIE)?.value),
-    verifySession(jar.get(ADMIN_COOKIE)?.value),
+    verifyAdminSession(jar.get(ADMIN_COOKIE)?.value),
   ]);
   const or: Prisma.NotificationWhereInput[] = [];
   if (userSession?.uid) {

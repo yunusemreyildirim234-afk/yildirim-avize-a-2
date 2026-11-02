@@ -57,7 +57,7 @@ export default function IletisimPage() {
     },
     {
       q: "Montaj hizmetiniz var mı?",
-      a: "İstanbul içi profesyonel montaj desteği sağlıyoruz. Şehir dışı gönderimlerde ise usta montaj şeması ve telefonla görüntülü destek veriyoruz.",
+      a: "Montaj hizmeti verilmemektedir. Ürünlerimiz ön montajlı ve montaj şemasıyla gönderilir; ihtiyaç halinde elektrikçiniz için WhatsApp destek hattımız üzerinden uzaktan teknik destek sağlıyoruz.",
     },
   ];
 

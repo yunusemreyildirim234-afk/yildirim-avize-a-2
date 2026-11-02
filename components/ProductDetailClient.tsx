@@ -20,6 +20,8 @@ interface Product {
   category: string;
   basePrice: number;
   imageUrl?: string | null;
+  images?: string[];
+  listPrice?: number | null;
   variations: Variation[];
 }
 
@@ -27,16 +29,27 @@ export default function ProductDetailClient({ product }: { product: Product }) {
   const { addToCart } = useCart();
 
   const [selectedVariation, setSelectedVariation] = useState<Variation | null>(
-    product.variations[0] || null
+    product.variations.find((v) => v.stock > 0) || product.variations[0] || null
   );
+  const gallery = Array.from(new Set([product.imageUrl, ...(product.images ?? [])].filter((u): u is string => Boolean(u))));
+  const [activeImage, setActiveImage] = useState(0);
+  const mainImage = gallery[activeImage] ?? null;
   const [quantity, setQuantity] = useState(1);
   const [addedToCart, setAddedToCart] = useState(false);
   const [zoomed, setZoomed] = useState(false);
 
   const currentPrice = product.basePrice + (selectedVariation?.extraPrice || 0);
+  const listShown = product.listPrice && product.listPrice > product.basePrice ? product.listPrice + (selectedVariation?.extraPrice || 0) : null;
+  const maxQty = selectedVariation ? Math.max(0, selectedVariation.stock) : 0;
+  const outOfStock = !selectedVariation || maxQty <= 0;
 
   const handleAddToCart = () => {
-    if (!selectedVariation) return;
+    if (!selectedVariation || outOfStock) return;
+    if (quantity > maxQty) {
+      setQuantity(maxQty);
+      toast.error(`Bu seçenekte en fazla ${maxQty} adet stok var.`);
+      return;
+    }
 
     addToCart({
       productId: product.id,
@@ -56,9 +69,10 @@ export default function ProductDetailClient({ product }: { product: Product }) {
   return (
     <div className="bg-white rounded-3xl border border-neutral-200 overflow-hidden shadow-sm grid grid-cols-1 lg:grid-cols-2">
       {/* Sol: Büyük Boy Gerçek Avize Fotoğraf Alanı */}
-      <div className="relative min-h-[440px] bg-neutral-900 overflow-hidden flex items-center justify-center">
-        {product.imageUrl ? (
-          <HoverMagnifier src={product.imageUrl} alt={product.title} onZoom={() => setZoomed(true)} />
+      <div className="flex flex-col bg-neutral-900">
+      <div className="relative min-h-[440px] flex-1 overflow-hidden flex items-center justify-center">
+        {mainImage ? (
+          <HoverMagnifier key={mainImage} src={mainImage} alt={product.title} onZoom={() => setZoomed(true)} />
         ) : (
           <div className="text-amber-400/80 p-8 text-center">
             <span className="text-4xl block mb-2">💡</span>
@@ -73,6 +87,27 @@ export default function ProductDetailClient({ product }: { product: Product }) {
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
           <span>Beyoğlu Mağazamızda Sergileniyor</span>
         </div>
+      </div>
+      {gallery.length > 1 && (
+        <div className="flex gap-2 overflow-x-auto p-3 border-t border-neutral-800" role="tablist" aria-label="Ürün fotoğrafları">
+          {gallery.map((src, i) => (
+            <button
+              key={src}
+              type="button"
+              role="tab"
+              aria-selected={i === activeImage}
+              aria-label={`${i + 1}. fotoğraf`}
+              onClick={() => setActiveImage(i)}
+              className={`shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${
+                i === activeImage ? "border-amber-500" : "border-transparent opacity-70 hover:opacity-100"
+              }`}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={src} alt="" loading="lazy" className="w-full h-full object-cover" />
+            </button>
+          ))}
+        </div>
+      )}
       </div>
 
       {/* Sağ: Ürün Bilgileri ve Seçenekler */}
@@ -106,6 +141,9 @@ export default function ProductDetailClient({ product }: { product: Product }) {
 
           <div className="pt-4">
             <span className="text-xs text-neutral-400 block mb-1">Toplam Tutar</span>
+            {listShown && listShown > currentPrice && (
+              <span className="block text-sm text-neutral-400 line-through">{(listShown * quantity).toLocaleString("tr-TR")} ₺</span>
+            )}
             <span className="text-3xl font-bold text-neutral-900">
               {(currentPrice * quantity).toLocaleString("tr-TR")} ₺
             </span>
@@ -125,8 +163,12 @@ export default function ProductDetailClient({ product }: { product: Product }) {
                   <button
                     key={v.id}
                     type="button"
-                    onClick={() => setSelectedVariation(v)}
-                    className={`p-3 rounded-xl border text-left transition-all ${
+                    disabled={v.stock <= 0}
+                    onClick={() => {
+                      setSelectedVariation(v);
+                      setQuantity((q) => Math.max(1, Math.min(q, v.stock)));
+                    }}
+                    className={`p-3 rounded-xl border text-left transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
                       isSelected
                         ? "border-amber-600 bg-amber-50/50 ring-2 ring-amber-600/20"
                         : "border-neutral-200 hover:border-neutral-300 bg-white"
@@ -138,8 +180,8 @@ export default function ProductDetailClient({ product }: { product: Product }) {
                     <div className="text-[11px] text-neutral-500 mt-0.5">
                       {v.extraPrice > 0 ? `+${v.extraPrice} ₺` : "Fark Yok"}
                     </div>
-                    <div className="text-[10px] text-emerald-600 mt-1 font-medium">
-                      Stok: {v.stock} adet
+                    <div className={`text-[10px] mt-1 font-medium ${v.stock > 0 ? "text-emerald-600" : "text-red-600"}`}>
+                      {v.stock > 0 ? `Stok: ${v.stock} adet` : "Tükendi"}
                     </div>
                   </button>
                 );
@@ -165,9 +207,10 @@ export default function ProductDetailClient({ product }: { product: Product }) {
               </span>
               <button
                 type="button"
-                onClick={() => setQuantity((q) => q + 1)}
+                onClick={() => setQuantity((q) => Math.min(maxQty, q + 1))}
+                disabled={quantity >= maxQty}
                 aria-label="Adedi artır"
-                className="px-3.5 py-2.5 hover:bg-neutral-200 text-sm font-semibold transition-colors"
+                className="px-3.5 py-2.5 hover:bg-neutral-200 text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 +
               </button>
@@ -176,23 +219,24 @@ export default function ProductDetailClient({ product }: { product: Product }) {
             <button
               type="button"
               onClick={handleAddToCart}
-              className="flex-1 bg-neutral-900 hover:bg-amber-600 text-white font-medium py-3 px-6 rounded-xl transition-colors shadow-sm text-sm"
+              disabled={outOfStock}
+              className="flex-1 bg-neutral-900 hover:bg-amber-600 text-white font-medium py-3 px-6 rounded-xl transition-colors shadow-sm text-sm disabled:opacity-50 disabled:hover:bg-neutral-900 disabled:cursor-not-allowed"
             >
-              {addedToCart ? "✓ Sepete Eklendi!" : "Sepete Ekle"}
+              {outOfStock ? "Stokta Yok" : addedToCart ? "✓ Sepete Eklendi!" : "Sepete Ekle"}
             </button>
           </div>
 
           <div className="bg-amber-50/60 border border-amber-200/60 rounded-xl p-3.5 text-xs text-amber-950 flex items-start gap-2.5">
             <span className="text-base">📍</span>
             <div>
-              <strong className="font-semibold">Beyoğlu Mağazasından Teslim Alabilirsiniz:</strong>
+              <strong className="font-semibold">Beyoğlu Mağazasından Teslim Alabilirsiniz</strong>
             </div>
           </div>
         </div>
       </div>
 
-      {zoomed && product.imageUrl && (
-        <ImageLightbox src={product.imageUrl} alt={product.title} onClose={() => setZoomed(false)} />
+      {zoomed && mainImage && (
+        <ImageLightbox src={mainImage} alt={product.title} onClose={() => setZoomed(false)} />
       )}
     </div>
   );

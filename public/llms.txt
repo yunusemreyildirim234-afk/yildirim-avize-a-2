@@ -3,6 +3,7 @@
 > Yıldırım Avize, İstanbul Beyoğlu Şişhane'de faaliyet gösteren avize ve aydınlatma mağazasıdır. Bohem el kesimi kristal, modern LED sarkıt, klasik pirinç avize ve aplik modelleri satar; siparişler mağazadan teslim alınabilir veya üst düzey korumalı koliyle sigortalı kargoyla gönderilir.
 
 ## Mağaza
+- Web sitesi: https://www.yildirimavize.com.tr
 - Adres: Emekyemez Mah. İskender Cad, Nazlı Hanım Sk. No:6 D:11, Şişhane Beyoğlu / İstanbul
 - Telefon / WhatsApp: 0537 211 42 23
 - Çalışma saatleri: Hafta içi 09:00 - 18:00, hafta sonu kapalı

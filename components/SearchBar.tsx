@@ -23,21 +23,28 @@ export default function SearchBar({ variant = "nav" }: { variant?: "nav" | "hero
       return;
     }
 
+    const controller = new AbortController();
     const timer = setTimeout(async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`, { signal: controller.signal });
         const data = await res.json();
         setResults(data.products || []);
         setIsOpen(true);
-      } catch (err) {
-        console.error(err);
-      } finally {
         setLoading(false);
+      } catch (err) {
+        // Yeni yazımla iptal edilen istek yoksayılır
+        if ((err as Error).name !== "AbortError") {
+          console.error(err);
+          setLoading(false);
+        }
       }
     }, 250); // 250ms gecikme ile veritabanını yormayan akıllı sorgu
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
   }, [query]);
 
   // Arama çubuğunun dışına tıklandığında menüyü kapat
@@ -102,15 +109,24 @@ export default function SearchBar({ variant = "nav" }: { variant?: "nav" | "hero
               </div>
               {results.map((product) => (
                 <div key={product.id} className="p-3 flex items-start gap-2 hover:bg-amber-50/50 transition-colors">
-                  <Link href={`/urun/${product.id}`} onClick={() => setIsOpen(false)} className="flex-1 min-w-0">
+                  <Link href={`/urun/${product.id}`} onClick={() => setIsOpen(false)} className="flex-1 min-w-0 flex items-start gap-2.5">
+                    <span className="w-12 h-12 rounded-lg bg-neutral-900 overflow-hidden shrink-0 border border-neutral-200">
+                      {product.imageUrl && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={product.imageUrl} alt="" loading="lazy" className="w-full h-full object-cover" />
+                      )}
+                    </span>
+                    <span className="min-w-0">
                     <h4 className="text-xs font-serif font-bold text-neutral-900">
                       {product.title}
                     </h4>
                     <span className="text-[10px] text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full font-medium inline-block mt-0.5">
                       {product.category}
                     </span>
+                    {product.modelCode && <span className="ml-1.5 text-[10px] font-mono text-neutral-500">Model {product.modelCode}</span>}
                     <span className="block text-xs font-bold text-neutral-800 mt-1">
                       {product.basePrice.toLocaleString("tr-TR")} ₺
+                    </span>
                     </span>
                   </Link>
                   <div className="w-28 shrink-0 space-y-1.5">

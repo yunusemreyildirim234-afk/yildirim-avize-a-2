@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { rateLimit, tooMany } from "@/lib/rate-limit";
 import { finalizeOrder } from "@/lib/orders";
 import { getPaytrToken } from "@/lib/paytr";
 import { computeTotals, couponDiscountFor, SHIPPING_LABELS } from "@/lib/pricing";
@@ -20,6 +21,8 @@ function clientIp(req: Request) {
 }
 
 export async function POST(req: Request) {
+  const rl = rateLimit(req, "order", 5, 10 * 60_000);
+  if (rl.limited) return tooMany(rl.retryAfter, "Kısa sürede çok fazla sipariş denemesi yaptınız. Lütfen daha sonra tekrar deneyin.");
   try {
     const body = await req.json();
     const { name, email, phone, address, buyerStateId, buyerCityId, buyerStateName, buyerCityName, shippingType, couponCode } =
@@ -83,13 +86,17 @@ export async function POST(req: Request) {
     const totals = computeTotals({ itemsTotal, shippingType, couponDiscount, paymentMethod });
 
     // 2. Müşteriyi bul veya oluştur
-    // Oturum açıksa sipariş doğrudan o hesaba bağlanır; değilse e-posta ile (harf duyarsız) eşleşen hesap kullanılır
+    // Sipariş yalnızca geçerli bir oturum varsa mevcut hesaba bağlanır; misafir, e-postayla başkasının hesabına bağlanamaz
     const sessionUserId = await getSessionUserId();
     const normalizedEmail = String(email).trim().toLowerCase();
-    const user =
-      (sessionUserId ? await prisma.user.findUnique({ where: { id: sessionUserId } }) : null) ??
-      (await prisma.user.findFirst({ where: { email: { equals: normalizedEmail, mode: "insensitive" } } })) ??
-      (await prisma.user.create({ data: { name, email: normalizedEmail, password: "guest_checkout", role: "USER" } }));
+    let user = sessionUserId ? await prisma.user.findUnique({ where: { id: sessionUserId } }) : null;
+    if (!user) {
+      const existing = await prisma.user.findFirst({ where: { email: { equals: normalizedEmail, mode: "insensitive" } } });
+      if (existing && existing.password !== "guest_checkout") {
+        return NextResponse.json({ error: "Bu e-posta adresiyle kayıtlı bir hesap var. Lütfen giriş yaparak siparişinizi tamamlayın." }, { status: 409 });
+      }
+      user = existing ?? (await prisma.user.create({ data: { name, email: normalizedEmail, password: "guest_checkout", role: "USER" } }));
+    }
 
     // 3. Siparişi kaydet (kartlı ödemede ödeme onayına kadar AWAITING_PAYMENT)
     const itemRows = orderLines.map((l) => ({ variationId: l.variation.id, quantity: l.quantity, unitPrice: l.unitPrice }));

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { rateLimit, tooMany } from "@/lib/rate-limit";
 import { getSessionUserId } from "@/lib/account";
 import { sendNewMessageEmail, sendQuestionReceivedEmail } from "@/lib/email";
 import { notifyAdmins } from "@/lib/notifications";
@@ -9,6 +10,8 @@ const clean = (v: unknown, max: number) => (typeof v === "string" ? v.trim().sli
 
 // İletişim formu ve ürün sorusu: veritabanına kaydeder, yöneticilere e-posta gönderir
 export async function POST(req: Request) {
+  const rl = rateLimit(req, "contact", 3, 10 * 60_000);
+  if (rl.limited) return tooMany(rl.retryAfter, "Çok fazla mesaj gönderdiniz. Lütfen 10 dakika sonra tekrar deneyin.");
   try {
     const body = await req.json().catch(() => ({}));
     const name = clean(body.name, 120);

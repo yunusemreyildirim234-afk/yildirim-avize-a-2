@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { sendReceiptUploadedAdminEmail } from "@/lib/email";
+import { cookies } from "next/headers";
+import { getSessionUserId } from "@/lib/account";
+import { ADMIN_COOKIE, verifyAdminSession } from "@/lib/session";
 import { notifyAdmins } from "@/lib/notifications";
 import { RECEIPT_MIMES, validateUpload } from "@/lib/uploads";
 
@@ -19,6 +22,16 @@ export async function POST(req: Request) {
   const order = await prisma.order.findUnique({ where: { id: orderId }, include: { user: { select: { name: true } } } });
   if (!order || order.paymentMethod !== "BANK_TRANSFER") return NextResponse.json({ error: "Sipariş bulunamadı." }, { status: 404 });
   if (order.status !== "PENDING_NEW") return NextResponse.json({ error: "Bu sipariş için dekont yüklenemez." }, { status: 409 });
+
+  // Mevcut dekont yalnızca sipariş sahibi veya yönetici tarafından değiştirilebilir (UUID bilen biri üzerine yazamaz)
+  const existing = await prisma.receiptFile.findUnique({ where: { orderId }, select: { orderId: true } });
+  if (existing) {
+    const isAdmin = Boolean(await verifyAdminSession((await cookies()).get(ADMIN_COOKIE)?.value));
+    const uid = isAdmin ? null : await getSessionUserId();
+    if (!isAdmin && uid !== order.userId) {
+      return NextResponse.json({ error: "Bu sipariş için zaten dekont yüklenmiş. Değiştirmek için hesabınıza giriş yapın." }, { status: 403 });
+    }
+  }
 
   const { mime, data } = upload;
   await prisma.receiptFile.upsert({

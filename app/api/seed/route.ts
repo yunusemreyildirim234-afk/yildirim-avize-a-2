@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
 export async function GET() {
+  // Bu uç tüm ürünleri ve sipariş kalemlerini siler; canlı ortamda tamamen kapalıdır
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json({ error: "Bu uç canlı ortamda devre dışıdır." }, { status: 403 });
+  }
   try {
     await prisma.orderItem.deleteMany();
     await prisma.productVariation.deleteMany();

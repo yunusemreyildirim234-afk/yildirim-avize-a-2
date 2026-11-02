@@ -50,13 +50,13 @@ export async function GET(req: Request) {
 
     const googleUser = await userRes.json();
 
-    if (!googleUser.email) {
+    if (!googleUser.email || googleUser.verified_email !== true) {
       return NextResponse.redirect(new URL("/giris?error=eposta_yok", SITE_URL));
     }
 
     // 3. Veritabanımızda Bu Kullanıcıyı Bul veya Sıfırdan Güvenle Kaydet
-    let user = await prisma.user.findUnique({
-      where: { email: googleUser.email },
+    let user = await prisma.user.findFirst({
+      where: { email: { equals: googleUser.email, mode: "insensitive" } },
     });
 
     if (!user) {

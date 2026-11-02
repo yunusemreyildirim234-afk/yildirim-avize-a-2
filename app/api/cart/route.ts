@@ -44,7 +44,7 @@ export async function PUT(req: Request) {
   }
 
   const existing = await prisma.productVariation.findMany({
-    where: { id: { in: [...quantities.keys()] } },
+    where: { id: { in: [...quantities.keys()] }, product: { active: true } },
     select: { id: true },
   });
 

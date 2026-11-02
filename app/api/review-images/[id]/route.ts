@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
 import { getSessionUserId } from "@/lib/account";
-import { ADMIN_COOKIE, verifySession } from "@/lib/session";
+import { ADMIN_COOKIE, verifyAdminSession } from "@/lib/session";
 import { REVIEW_STATUS } from "@/lib/reviews";
 
 // Onaylı yorum fotoğrafları herkese açıktır; onaysız olanlar yalnızca yöneticiye ve yorum sahibine görünür
@@ -15,7 +15,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
   const approved = image.review.status === REVIEW_STATUS.APPROVED;
   if (!approved) {
-    const isAdmin = Boolean(await verifySession((await cookies()).get(ADMIN_COOKIE)?.value));
+    const isAdmin = Boolean(await verifyAdminSession((await cookies()).get(ADMIN_COOKIE)?.value));
     const uid = isAdmin ? null : await getSessionUserId();
     if (!isAdmin && uid !== image.review.userId) return new Response("Yetkisiz", { status: 403 });
   }

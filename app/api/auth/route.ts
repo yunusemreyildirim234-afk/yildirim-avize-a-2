@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { rateLimit, tooMany } from "@/lib/rate-limit";
 import { getSessionUserId } from "@/lib/account";
 import { getCustomerWithOrders } from "@/lib/customer";
 import { hashPassword, verifyPassword } from "@/lib/password";
@@ -28,6 +29,8 @@ export async function POST(req: Request) {
 
     // Giriş: şifre doğruysa ve 2FA açıksa oturum açılmaz, e-postaya kod gider
     if (action === "login") {
+      const rl = rateLimit(req, "user-login", 10, 15 * 60_000);
+      if (rl.limited) return tooMany(rl.retryAfter);
       if (!email || !password) return NextResponse.json({ error: "E-posta ve şifre zorunludur" }, { status: 400 });
       const user = await findByEmail(email);
       if (!user || user.password === GUEST_PASSWORD || !verifyPassword(password, user.password)) {

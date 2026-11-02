@@ -43,6 +43,7 @@ const CATEGORY_LINKS = [
   { href: "/kategori/modern", label: "Modern Avizeler" },
   { href: "/kategori/klasik", label: "Klasik Koleksiyon" },
   { href: "/kategori/sarkit", label: "Sarkıt & Aplikler" },
+  { href: "/kategori/aksesuar", label: "Aksesuar & Yedek Parça" },
 ];
 
 const DISCOVER_LINKS = [

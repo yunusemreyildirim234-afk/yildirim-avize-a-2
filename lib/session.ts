@@ -58,3 +58,9 @@ export const cookieOptions = {
 export function safeCompare(a: string, b: string) {
   return safeEqual(a, b);
 }
+
+/** Yönetici oturumu: imza geçerli olmalı VE payload'da role === "admin" bulunmalı (üye/proof token'ları kabul edilmez). */
+export async function verifyAdminSession(token?: string | null) {
+  const session = await verifySession<{ role?: string }>(token);
+  return session?.role === "admin" ? session : null;
+}

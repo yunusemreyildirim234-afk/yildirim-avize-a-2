@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { notifyCustomer } from "@/lib/notifications";
+import { restoreOrderStock } from "@/lib/orders";
+import { releaseCoupon } from "@/lib/coupons";
 
 const STATUS_NOTICE: Record<string, string> = {
   PENDING: "Siparişiniz hazırlanıyor.",
@@ -22,6 +24,13 @@ export async function POST(req: Request) {
       where: { id: orderId },
       data: { status },
     });
+
+    // Doğrudan iptal/iade: düşülmüş stok geri eklenir, kupon hakkı iade edilir (yalnızca durum ilk kez değiştiğinde)
+    const closing = ["CANCELLED", "RETURNED"];
+    if (closing.includes(status) && before && !closing.includes(before.status)) {
+      await restoreOrderStock(orderId);
+      await releaseCoupon(updatedOrder.couponCode).catch(() => {});
+    }
 
     if (before?.status !== status && STATUS_NOTICE[status]) {
       await notifyCustomer(

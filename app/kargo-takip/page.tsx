@@ -8,12 +8,20 @@ export const metadata: Metadata = {
   alternates: { canonical: "/kargo-takip" },
 };
 
+/** KVKK: "Ahmet Yılmaz" → "Ahmet Y." */
+function maskName(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length < 2) return parts[0] ?? "Müşteri";
+  return `${parts.slice(0, -1).join(" ")} ${parts[parts.length - 1][0].toLocaleUpperCase("tr-TR")}.`;
+}
+
 export default async function TrackingPage({ searchParams }: { searchParams: Promise<{ code?: string }> }) {
   const code = (await searchParams).code?.trim();
 
   const order = code
     ? await prisma.order.findFirst({
         where: { OR: [{ id: code }, { shippingTrackingCode: code }, { shippingBarcode: code }] },
+        include: { user: { select: { name: true } } },
       })
     : null;
 
@@ -58,6 +66,10 @@ export default async function TrackingPage({ searchParams }: { searchParams: Pro
               <p className="font-mono font-bold text-neutral-800 break-all">{order.id}</p>
             </div>
             <div className="pt-3 border-t border-neutral-100">
+              <span className="text-neutral-400">Alıcı</span>
+              <p className="font-semibold text-neutral-800">{maskName(order.user.name)}</p>
+            </div>
+            <div className="pt-3 border-t border-neutral-100">
               <span className="text-neutral-400 block mb-2">Sipariş Durumu</span>
               <OrderTracker order={order} />
             </div>
@@ -65,7 +77,9 @@ export default async function TrackingPage({ searchParams }: { searchParams: Pro
               <div className="pt-3 border-t border-neutral-100 space-y-1">
                 <span className="text-neutral-400">Kargo Firması</span>
                 <p className="text-sm font-bold text-orange-700">{order.shippingProviderName || "Aras Kargo"}</p>
-                <p className="font-semibold text-neutral-900">{order.kargonomiStatusLabel || "Taslak"}</p>
+                <p className="font-semibold text-neutral-900">
+                  {order.shippingTrackingCode || order.shippingBarcode ? order.kargonomiStatusLabel || "Kargo kaydı oluşturuldu" : "Kargo bilgileriniz hazırlanıyor"}
+                </p>
                 {order.shippingTrackingCode && (
                   <p className="text-neutral-600">
                     Takip kodu: <span className="font-mono">{order.shippingTrackingCode}</span>

@@ -1,10 +1,10 @@
 import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/db";
-import { CATEGORIES, SITE_URL } from "@/lib/site";
+import { CATEGORIES, COLLECTIONS, SITE_URL } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
-const STATIC_PAGES = ["/musterilerimizden-gelenler", "/iletisim", "/gizlilik-politikasi", "/kullanim-sartlari", "/mesafeli-satis-sozlesmesi"];
+const STATIC_PAGES = ["/musterilerimizden-gelenler", "/kargo-takip", "/iletisim", "/gizlilik-politikasi", "/kullanim-sartlari", "/mesafeli-satis-sozlesmesi"];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const products = await prisma.product
@@ -15,6 +15,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: SITE_URL, changeFrequency: "weekly", priority: 1 },
     ...CATEGORIES.map((c) => ({
       url: `${SITE_URL}/kategori/${c.slug}`,
+      changeFrequency: "weekly" as const,
+      priority: 0.8,
+    })),
+    ...Object.keys(COLLECTIONS).map((slug) => ({
+      url: `${SITE_URL}/kategori/${slug}`,
       changeFrequency: "weekly" as const,
       priority: 0.8,
     })),
