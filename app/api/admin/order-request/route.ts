@@ -1,3 +1,4 @@
+import { cleanGuestEmail } from "@/lib/guest-email";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { sendRequestDecisionEmail } from "@/lib/email";
@@ -35,7 +36,7 @@ export async function POST(req: Request) {
   }
 
   const emailed = await sendRequestDecisionEmail({
-    to: order.user.email,
+    to: cleanGuestEmail(order.user.email),
     name: order.user.name,
     type: order.cancelReturnType,
     approved: approve,

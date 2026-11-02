@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { sendOrderNotificationEmails } from "@/lib/email";
 import { createShipmentForOrder } from "@/lib/kargonomi";
 import { notifyAdmins, notifyCustomer } from "@/lib/notifications";
+import { cleanGuestEmail } from "@/lib/guest-email";
 
 /** Sipariş kalemleri kadar varyasyon stoğunu düşer (0'ın altına inmez); bir sipariş için yalnızca bir kez. */
 export async function deductOrderStock(orderId: string) {
@@ -57,7 +58,7 @@ async function announceNewOrder(order: FullOrder) {
   await sendOrderNotificationEmails({
     orderId: order.id,
     customerName: order.user.name,
-    customerEmail: order.user.email,
+    customerEmail: cleanGuestEmail(order.user.email),
     customerPhone: order.phone,
     orderNote: order.orderNote,
     invoiceType: order.invoiceType,

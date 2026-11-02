@@ -1,3 +1,4 @@
+import { cleanGuestEmail } from "@/lib/guest-email";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import AdminAddProduct from "@/components/AdminAddProduct";
@@ -216,7 +217,7 @@ export default async function AdminPage() {
                       </td>
                       <td className="p-4">
                         <span className="font-bold text-neutral-900 block">{order.user.name}</span>
-                        <span className="text-neutral-500 text-[11px] block">{order.user.email}</span>
+                        <span className="text-neutral-500 text-[11px] block">{cleanGuestEmail(order.user.email)}</span>
                         {order.phone && (
                           <span className="text-neutral-500 text-[11px] font-mono block mt-0.5">
                             📞 {order.phone}

@@ -1,3 +1,4 @@
+import { cleanGuestEmail } from "@/lib/guest-email";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { KargonomiError, createShipmentForOrder, refreshOrderShipment } from "@/lib/kargonomi";
@@ -48,7 +49,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
           link: `/kargo-takip?code=${encodeURIComponent(tracking)}`,
         }
       );
-      await sendShippedEmail({ to: order.user.email, name: order.user.name, orderId: id, carrier, trackingNumber: tracking }).catch((e) =>
+      await sendShippedEmail({ to: cleanGuestEmail(order.user.email), name: order.user.name, orderId: id, carrier, trackingNumber: tracking }).catch((e) =>
         console.warn("Kargo e-postası gönderilemedi:", (e as Error).message)
       );
     }

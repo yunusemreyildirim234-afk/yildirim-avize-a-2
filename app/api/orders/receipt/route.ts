@@ -5,11 +5,14 @@ import { cookies } from "next/headers";
 import { getSessionUserId } from "@/lib/account";
 import { ADMIN_COOKIE, verifyAdminSession } from "@/lib/session";
 import { notifyAdmins } from "@/lib/notifications";
+import { rateLimit, tooMany } from "@/lib/rate-limit";
 import { RECEIPT_MIMES, validateUpload } from "@/lib/uploads";
 
 
 // Havale dekontu: sipariş numarası (tahmin edilemez UUID) ile, onay sayfasındaki erişim modeliyle aynı
 export async function POST(req: Request) {
+  const rl = rateLimit(req, "receipt", 5, 10 * 60_000);
+  if (rl.limited) return tooMany(rl.retryAfter, "Kısa sürede çok fazla dekont yüklediniz. Lütfen birkaç dakika sonra tekrar deneyin.");
   const form = await req.formData().catch(() => null);
   const orderId = String(form?.get("orderId") ?? "");
   const senderName = String(form?.get("senderName") ?? "").trim().slice(0, 120);

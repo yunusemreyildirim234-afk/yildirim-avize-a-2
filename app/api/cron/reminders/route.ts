@@ -1,3 +1,4 @@
+import { cleanGuestEmail } from "@/lib/guest-email";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { sendAbandonedCartEmail, sendReceiptReminderEmail } from "@/lib/email";
@@ -31,7 +32,7 @@ export async function GET(req: Request) {
     const claimed = await prisma.order.updateMany({ where: { id: o.id, abandonedEmailSent: false }, data: { abandonedEmailSent: true } });
     if (claimed.count === 0) continue;
     const ok = await sendAbandonedCartEmail({
-      to: o.user.email,
+      to: cleanGuestEmail(o.user.email),
       name: o.user.name,
       orderId: o.id,
       couponCode: DEFAULT_COUPON_CODE,
@@ -55,7 +56,7 @@ export async function GET(req: Request) {
   for (const o of pending) {
     const claimed = await prisma.order.updateMany({ where: { id: o.id, receiptReminderSent: false }, data: { receiptReminderSent: true } });
     if (claimed.count === 0) continue;
-    const ok = await sendReceiptReminderEmail({ to: o.user.email, name: o.user.name, orderId: o.id }).catch(() => false);
+    const ok = await sendReceiptReminderEmail({ to: cleanGuestEmail(o.user.email), name: o.user.name, orderId: o.id }).catch(() => false);
     if (ok) receipts++;
     else await prisma.order.update({ where: { id: o.id }, data: { receiptReminderSent: false } });
   }
