@@ -62,7 +62,7 @@
 
 \- \*\*Banka Alıcı Adı:\*\* `lib/site.ts` içindeki Kuveyt Türk alıcı adı (`holder: "Ömer Yıldırım Ömer Yıldırım"`) resmi banka hesap adı olduğu için çift yazılmaktadır; hata sanıp düzeltme.
 
-\- \*\*İndirim \& Kargo Sabitleri:\*\* 350 TL üzeri ücretsiz kargo, %5 Havale/EFT indirimi, %3 Beyoğlu mağazadan teslim indirimi (`lib/pricing.ts`). Montaj hizmeti yoktur (yalnızca WhatsApp uzaktan teknik destek vardır). SMS bildirimi yoktur (yalnızca e-posta).
+\- \*\*İndirim \& Kargo Sabitleri:\*\* 350 TL üzeri ücretsiz kargo, %5 Havale/EFT indirimi, %3 Beyoğlu mağazadan teslim indirimi (`lib/pricing.ts`). Ürünler birleştirilmiş (montajlı) gönderilir; evin tavanına montaj hizmeti yoktur (yalnızca WhatsApp uzaktan teknik destek vardır). SMS bildirimi yoktur (yalnızca e-posta).
 
 \- \*\*ETBİS \& Kurumsal Bilgiler:\*\* Site `.tr` uzantılı (`www.yildirimavize.com.tr`) olduğu için yeni mevzuat gereği ETBİS karekod zorunluluğu yoktur; ETBİS alanı genel sorgulama linki olarak çalışır. Kullanıcının girdiği gerçek KEP adresi, Vergi No ve kurumsal bilgileri koru.
 
