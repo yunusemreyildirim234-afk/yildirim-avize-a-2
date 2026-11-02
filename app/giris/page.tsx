@@ -10,6 +10,7 @@ import OrderRequestBox from "@/components/OrderRequestBox";
 import OrderTracker from "@/components/OrderTracker";
 import AuthForms from "@/components/AuthForms";
 import AccountSecurity from "@/components/AccountSecurity";
+import ProfileName from "@/components/ProfileName";
 import ReceiptUpload from "@/components/ReceiptUpload";
 
 interface OrderItem {
@@ -278,6 +279,8 @@ export default function AuthPage() {
               </div>
             )}
           </div>
+
+          <ProfileName key={user.name} name={user.name} onChanged={refreshUser} />
 
           <AccountSecurity email={user.email} twoFactorEnabled={Boolean(user.twoFactorEnabled)} onChanged={refreshUser} />
 

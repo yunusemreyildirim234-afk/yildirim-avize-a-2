@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { toast } from "sonner";
 import { useAccountSync } from "@/context/useAccountSync";
 
 export interface WishlistItem {
@@ -14,6 +15,8 @@ export interface WishlistItem {
 interface WishlistContextType {
   favorites: WishlistItem[];
   toggleFavorite: (product: WishlistItem) => void;
+  removeFavoriteUndoable: (product: WishlistItem) => void;
+  clearFavorites: () => void;
   isFavorite: (productId: string) => boolean;
   totalFavorites: number;
 }
@@ -62,6 +65,27 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  // Listeden çıkarma + 6 saniyelik geri alma
+  const removeFavoriteUndoable = (product: WishlistItem) => {
+    setFavorites((prev) => prev.filter((i) => i.id !== product.id));
+    toast("Favorilerden çıkarıldı", {
+      description: product.title,
+      duration: 6000,
+      action: { label: "↩ Geri Al", onClick: () => setFavorites((prev) => (prev.some((i) => i.id === product.id) ? prev : [...prev, product])) },
+    });
+  };
+
+  const clearFavorites = () => {
+    const removed = favorites;
+    if (removed.length === 0) return;
+    setFavorites([]);
+    toast("Favoriler temizlendi", {
+      description: `${removed.length} ürün çıkarıldı`,
+      duration: 6000,
+      action: { label: "↩ Geri Al", onClick: () => setFavorites((prev) => (prev.length === 0 ? removed : prev)) },
+    });
+  };
+
   const isFavorite = (productId: string) => {
     return favorites.some((item) => item.id === productId);
   };
@@ -71,6 +95,8 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
       value={{
         favorites,
         toggleFavorite,
+        removeFavoriteUndoable,
+        clearFavorites,
         isFavorite,
         totalFavorites: favorites.length,
       }}

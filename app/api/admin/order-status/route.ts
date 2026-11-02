@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { adminGuard } from "@/lib/admin-guard";
 import { prisma } from "@/lib/db";
 import { notifyCustomer } from "@/lib/notifications";
-import { restoreOrderStock } from "@/lib/orders";
+import { deductOrderStock, restoreOrderStock } from "@/lib/orders";
 import { releaseCoupon } from "@/lib/coupons";
 
 const STATUS_NOTICE: Record<string, string> = {
@@ -16,7 +16,7 @@ export async function POST(req: Request) {
   const denied = await adminGuard();
   if (denied) return denied;
   try {
-    const { orderId, status } = await req.json();
+    const { orderId, status, undo } = await req.json();
 
     if (!orderId || !status) {
       return NextResponse.json({ error: "Eksik parametre" }, { status: 400 });
@@ -36,7 +36,12 @@ export async function POST(req: Request) {
       await releaseCoupon(updatedOrder.couponCode).catch(() => {});
     }
 
-    if (before?.status !== status && STATUS_NOTICE[status]) {
+    // Geri Al: iptal/iade durumundan geri dönülürse iade edilen stok yeniden düşülür (idempotent). Kupon hakkı yeniden rezerve edilmez.
+    if (undo === true && before && ["CANCELLED", "RETURNED"].includes(before.status) && !NO_STOCK_STATES.includes(status)) {
+      await deductOrderStock(orderId);
+    }
+
+    if (undo !== true && before?.status !== status && STATUS_NOTICE[status]) {
       await notifyCustomer(
         { userId: updatedOrder.userId },
         { title: "Sipariş durumunuz güncellendi", message: `#${orderId.slice(0, 8)}: ${STATUS_NOTICE[status]}`, type: "ORDER", link: "/giris#siparisler" }

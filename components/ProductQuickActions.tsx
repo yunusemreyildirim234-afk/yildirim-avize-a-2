@@ -15,7 +15,7 @@ export interface QuickProduct {
   basePrice: number;
   imageUrl?: string | null;
   modelCode?: string | null;
-  bulk?: BulkRule | null;
+  bulk?: BulkRule[] | null;
   variations: { id: string; variationValue: string; extraPrice: number; stock: number }[];
 }
 

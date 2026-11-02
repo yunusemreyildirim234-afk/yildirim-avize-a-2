@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSessionUserId } from "@/lib/account";
 import type { Prisma } from "@prisma/client";
-import { bulkRuleOf } from "@/lib/bulk-pricing";
+import { bulkTiersOf } from "@/lib/bulk-pricing";
 
 type CartRow = Prisma.CartItemGetPayload<{ include: { variation: { include: { product: true } } } }>;
 
@@ -26,7 +26,7 @@ export async function GET() {
       imageUrl: r.variation.product.imageUrl,
       variationName: r.variation.variationValue,
       price: r.variation.product.basePrice + r.variation.extraPrice,
-      bulk: bulkRuleOf(r.variation.product),
+      bulk: bulkTiersOf(r.variation.product),
       quantity: Math.min(r.quantity, r.variation.stock),
     }));
   return NextResponse.json({ items });

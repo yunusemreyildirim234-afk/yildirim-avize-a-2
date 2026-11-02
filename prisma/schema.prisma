@@ -41,6 +41,7 @@ model Product {
   bulkMinQty       Int? // Adet indirimi: en az bu kadar alımda geçerli
   bulkDiscountType String? // "PERCENT" | "FIXED" (adet başı ₺)
   bulkDiscountValue Float?
+  bulkTiers        Json? // Adet kademeleri: [{ minQty, type: "PERCENT"|"FIXED", value }] (bulk* alanlarının yerine geçer)
   trendyolMainId   String?            @unique // productMainId
   modelCode        String?            @unique // Site içi model kodu (1-236, yönetici değiştirebilir)
   coupons          Coupon[]

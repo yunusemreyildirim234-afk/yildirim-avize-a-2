@@ -29,4 +29,6 @@ export function saveRecentSearch(term: string): string[] {
 }
 
 export const removeRecentSearch = (term: string) => write(getRecentSearches().filter((s) => s !== term));
+/** Geri Al için listeyi aynen yazar. */
+export const restoreRecentSearches = (list: string[]) => write(list.slice(0, MAX));
 export const clearRecentSearches = () => write([]);

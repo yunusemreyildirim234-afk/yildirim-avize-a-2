@@ -15,7 +15,8 @@ export default function OrderStatusSelector({ orderId, initialStatus, shippingTy
   const [status, setStatus] = useState(initialStatus);
   const [loading, setLoading] = useState(false);
 
-  const handleStatusChange = async (newStatus: string) => {
+  const handleStatusChange = async (newStatus: string, undo = false) => {
+    const previous = status;
     setStatus(newStatus);
     setLoading(true);
 
@@ -23,11 +24,14 @@ export default function OrderStatusSelector({ orderId, initialStatus, shippingTy
       const res = await fetch("/api/admin/order-status", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId, status: newStatus }),
+        body: JSON.stringify({ orderId, status: newStatus, undo }),
       });
 
       const data = await res.json();
       if (data.success) {
+        if (!undo && previous !== newStatus) {
+          toast.success("Sipariş durumu güncellendi", { duration: 8000, action: { label: "↩ Geri Al", onClick: () => handleStatusChange(previous, true) } });
+        }
         router.refresh();
       } else {
         toast.error("Durum güncellenemedi", { description: data.error });

@@ -2,8 +2,9 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useAccountSync } from "@/context/useAccountSync";
+import { toast } from "sonner";
 import { track } from "@/lib/track";
-import { lineTotalFor, type BulkRule } from "@/lib/bulk-pricing";
+import { bulkTiersOf, lineTotalFor, type BulkRule } from "@/lib/bulk-pricing";
 
 export interface CartItem {
   productId: string;
@@ -13,13 +14,14 @@ export interface CartItem {
   variationName: string;
   price: number;
   quantity: number;
-  bulk?: BulkRule | null; // adet indirimi kuralı (sunucu yeniden hesaplar)
+  bulk?: BulkRule[] | null; // adet kademeleri (sunucu yeniden hesaplar)
 }
 
 interface CartContextType {
   cart: CartItem[];
   addToCart: (item: CartItem) => void;
   removeFromCart: (variationId: string) => void;
+  emptyCart: () => void; // kullanıcı eylemi: geri alınabilir
   updateQuantity: (variationId: string, quantity: number) => void;
   clearCart: () => void;
   totalItems: number;
@@ -51,7 +53,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     if (saved) {
       try {
         // eslint-disable-next-line react-hooks/set-state-in-effect -- istemci depolamasını ilk render sonrası okumak gerekir (hydration)
-        setCart(JSON.parse(saved));
+        setCart((JSON.parse(saved) as CartItem[]).map((i) => ({ ...i, bulk: bulkTiersOf(i.bulk) })));
       } catch (e) {
         console.error(e);
       }
@@ -83,8 +85,37 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  // Geri alınabilir ürün çıkarma: 6 saniye boyunca aynı adet ve varyasyonla geri eklenebilir
   const removeFromCart = (variationId: string) => {
+    const index = cart.findIndex((item) => item.variationId === variationId);
+    if (index < 0) return;
+    const removed = cart[index];
     setCart((prev) => prev.filter((item) => item.variationId !== variationId));
+    toast("Ürün sepetten çıkarıldı", {
+      description: removed.title,
+      duration: 6000,
+      action: {
+        label: "↩ Geri Al",
+        onClick: () =>
+          setCart((prev) => {
+            if (prev.some((i) => i.variationId === removed.variationId)) return prev;
+            const next = [...prev];
+            next.splice(Math.min(index, next.length), 0, removed);
+            return next;
+          }),
+      },
+    });
+  };
+
+  const emptyCart = () => {
+    if (cart.length === 0) return;
+    const removed = cart;
+    setCart([]);
+    toast("Sepet boşaltıldı", {
+      description: `${removed.length} ürün çıkarıldı`,
+      duration: 6000,
+      action: { label: "↩ Geri Al", onClick: () => setCart((prev) => (prev.length === 0 ? removed : prev)) },
+    });
   };
 
   const updateQuantity = (variationId: string, quantity: number) => {
@@ -110,6 +141,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         cart,
         addToCart,
         removeFromCart,
+        emptyCart,
         updateQuantity,
         clearCart,
         totalItems,

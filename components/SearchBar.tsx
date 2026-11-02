@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import RecentSearches from "@/components/RecentSearches";
-import { clearRecentSearches, getRecentSearches, removeRecentSearch, saveRecentSearch } from "@/lib/recent-searches";
+import { toast } from "sonner";
+import { clearRecentSearches, getRecentSearches, removeRecentSearch, restoreRecentSearches, saveRecentSearch } from "@/lib/recent-searches";
 import { track } from "@/lib/track";
 import { CartStepper, FavoriteButton, type QuickProduct } from "@/components/ProductQuickActions";
 
@@ -63,6 +64,13 @@ export default function SearchBar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Son aramaları değiştirir; 6 saniye içinde geri alınabilir
+  const undoable = (change: () => string[], message: string) => {
+    const before = recent;
+    setRecent(change());
+    toast(message, { duration: 6000, action: { label: "↩ Geri Al", onClick: () => setRecent(restoreRecentSearches(before)) } });
+  };
+
   const remember = (term: string) => {
     if (term.trim().length < 2) return;
     setRecent(saveRecentSearch(term));
@@ -121,8 +129,8 @@ export default function SearchBar() {
               setShowRecent(false);
               remember(t);
             }}
-            onRemove={(t) => setRecent(removeRecentSearch(t))}
-            onClear={() => setRecent(clearRecentSearches())}
+            onRemove={(t) => undoable(() => removeRecentSearch(t), "Arama kaldırıldı")}
+            onClear={() => undoable(clearRecentSearches, "Son aramalar temizlendi")}
           />
         </div>
       )}

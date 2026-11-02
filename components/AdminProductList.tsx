@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import AdminBulkBar from "@/components/AdminBulkBar";
 import AdminProductEditor from "@/components/AdminProductEditor";
 import SmartFilterChips from "@/components/SmartFilterChips";
-import { bulkRuleOf, bulkShortLabel } from "@/lib/bulk-pricing";
+import { bulkTiersOf, tierBadgeLabel, tierValueLabel } from "@/lib/bulk-pricing";
 import { COLLECTION_OPTIONS } from "@/lib/site";
 
 interface Variation {
@@ -31,14 +31,12 @@ interface Product {
   listPrice?: number | null;
   isFeatured?: boolean;
   isBestSeller?: boolean;
-  bulkMinQty?: number | null;
-  bulkDiscountType?: string | null;
-  bulkDiscountValue?: number | null;
+  bulkTiers?: unknown;
   variations: Variation[];
 }
 
 // Otomatik indirim: üstü çizili eski fiyat veya adet indirimi
-const hasDiscount = (p: Product) => Boolean(p.listPrice && p.listPrice > p.basePrice) || bulkRuleOf(p) !== null;
+const hasDiscount = (p: Product) => Boolean(p.listPrice && p.listPrice > p.basePrice) || bulkTiersOf(p).length > 0;
 const CHIP_TESTS: Record<string, (p: Product) => boolean> = {
   discount: hasDiscount,
   featured: (p) => Boolean(p.isFeatured),
@@ -71,24 +69,33 @@ function ModelCodeEditor({ initial, disabled, onSave }: { initial: string; disab
   );
 }
 
-function DiscountBadges({ product }: { product: Product }) {
+function DiscountBadges({ product, onRemove, disabled }: { product: Product; onRemove: (payload: Record<string, unknown>, label: string) => void; disabled: boolean }) {
   const old = product.listPrice && product.listPrice > product.basePrice ? product.listPrice : null;
-  const rule = bulkRuleOf(product);
-  const badge = "text-[10px] font-bold px-2 py-0.5 rounded";
-  if (!old && !rule && !product.isFeatured && !product.isBestSeller) return null;
+  const tiers = bulkTiersOf(product);
+  const badge = "inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded";
+  const x = "ml-0.5 rounded-sm px-1 leading-none hover:bg-black/10 disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-amber-600";
+  if (!old && tiers.length === 0 && !product.isFeatured && !product.isBestSeller) return null;
   return (
     <div className="flex flex-wrap items-center gap-1 mt-1">
       {old && (
         <>
           <span className="text-[10px] text-neutral-400 line-through">{old.toLocaleString("tr-TR")} ₺</span>
-          <span className={`${badge} bg-red-50 text-red-700`}>%{Math.round((1 - product.basePrice / old) * 100)} (−{(old - product.basePrice).toLocaleString("tr-TR")} ₺)</span>
+          <span className={`${badge} bg-red-50 text-red-700`}>
+            Normal İndirim: %{Math.round((1 - product.basePrice / old) * 100)} (−{(old - product.basePrice).toLocaleString("tr-TR")} ₺)
+            <button type="button" disabled={disabled} aria-label="Normal indirimi kaldır" onClick={() => onRemove({ scope: "normal" }, "Normal indirim kaldırma")} className={x}>
+              ×
+            </button>
+          </span>
         </>
       )}
-      {rule && (
-        <span className={`${badge} bg-amber-100 text-amber-950`} title={rule.type === "PERCENT" ? `%${rule.value}` : `${rule.value} ₺ adet başı`}>
-          {bulkShortLabel(rule)} ({rule.type === "PERCENT" ? `%${rule.value}` : `${rule.value} ₺`})
+      {tiers.map((t) => (
+        <span key={t.minQty} className={`${badge} bg-amber-100 text-amber-950`} title={tierValueLabel(t)}>
+          {tierBadgeLabel(t)}
+          <button type="button" disabled={disabled} aria-label={`${t.minQty}+ adet indirimini kaldır`} onClick={() => onRemove({ scope: "tier", minQty: t.minQty }, `${t.minQty}+ adet indirimi kaldırma`)} className={x}>
+            ×
+          </button>
         </span>
-      )}
+      ))}
       {product.isFeatured && <span className={`${badge} bg-neutral-900 text-white`}>Öne Çıkan</span>}
       {product.isBestSeller && <span className={`${badge} bg-emerald-100 text-emerald-900`}>Çok Satan</span>}
     </div>
@@ -105,6 +112,47 @@ export default function AdminProductList({ products }: { products: Product[] }) 
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [editingId, setEditingId] = useState<string | null>(null);
   const [chips, setChips] = useState<string[]>([]);
+  // Son işlem öncesi durum (Geri Al)
+  const [undo, setUndo] = useState<{ snapshot: unknown; label: string } | null>(null);
+  const [undoing, setUndoing] = useState(false);
+
+  const doUndo = async () => {
+    if (!undo) return;
+    setUndoing(true);
+    try {
+      const res = await fetch("/api/admin/undo", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ snapshot: undo.snapshot }) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Geri alınamadı.");
+      setUndo(null);
+      router.refresh();
+    } catch (e) {
+      alert((e as Error).message);
+    } finally {
+      setUndoing(false);
+    }
+  };
+
+  // Rozet ×: tek ürün için seçici indirim kaldırma
+  const removeFromProduct = async (productId: string, payload: Record<string, unknown>, label: string) => {
+    setLoadingId(productId);
+    try {
+      const res = await fetch("/api/admin/product/bulk", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids: [productId], action: "removeDiscount", ...payload }) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "İşlem başarısız.");
+      setUndo({ snapshot: data.snapshot, label });
+      router.refresh();
+    } catch (e) {
+      alert((e as Error).message);
+    } finally {
+      setLoadingId(null);
+    }
+  };
+
+  const selectedProducts = products.filter((p) => selected.has(p.id));
+  const scopes = {
+    normal: selectedProducts.some((p) => Boolean(p.listPrice && p.listPrice > p.basePrice)),
+    tiers: [...new Set(selectedProducts.flatMap((p) => bulkTiersOf(p).map((t) => t.minQty)))].sort((a, b) => a - b),
+  };
 
   // Ürün adı, stok kodu, barkod veya Trendyol ana kodu ile anlık filtre
   const q = norm(query);
@@ -153,6 +201,7 @@ export default function AdminProductList({ products }: { products: Product[] }) 
       });
       const data = await res.json();
       if (data.success) {
+        if (data.snapshot) setUndo({ snapshot: data.snapshot, label: "Stok değişikliği" });
         router.refresh();
       } else {
         alert("Stok güncellenemedi: " + data.error);
@@ -174,8 +223,10 @@ export default function AdminProductList({ products }: { products: Product[] }) 
         body: JSON.stringify({ productId, modelCode }),
       });
       const data = await res.json();
-      if (data.success) router.refresh();
-      else alert("Model kodu kaydedilemedi: " + data.error);
+      if (data.success) {
+        if (data.snapshot) setUndo({ snapshot: data.snapshot, label: "Model kodu değişikliği" });
+        router.refresh();
+      } else alert("Model kodu kaydedilemedi: " + data.error);
     } catch {
       alert("İşlem tamamlanamadı.");
     } finally {
@@ -198,7 +249,8 @@ export default function AdminProductList({ products }: { products: Product[] }) 
       });
       const data = await res.json();
       if (data.success) {
-        alert(data.message ? "ℹ " + data.message : "✓ Avize katalogdan silindi.");
+        if (data.snapshot) setUndo({ snapshot: data.snapshot, label: `"${title}" silme` });
+        alert(data.message ? "ℹ " + data.message : "✓ Avize katalogdan silindi. Aşağıdaki çubuktan geri alabilirsiniz.");
         router.refresh();
       } else {
         alert("Silinemedi: " + data.error);
@@ -270,7 +322,7 @@ export default function AdminProductList({ products }: { products: Product[] }) 
       </div>
 
       {selected.size > 0 && (
-        <AdminBulkBar ids={[...selected]} extraCategories={extraCategories} onDone={() => setSelected(new Set())} />
+        <AdminBulkBar ids={[...selected]} scopes={scopes} onApplied={(snapshot, label) => setUndo({ snapshot, label })} extraCategories={extraCategories} onDone={() => setSelected(new Set())} />
       )}
 
       {filtered.length > 0 && (
@@ -326,7 +378,7 @@ export default function AdminProductList({ products }: { products: Product[] }) 
                 <span className="text-xs font-semibold text-neutral-600">
                   {product.basePrice.toLocaleString("tr-TR")} ₺
                 </span>
-                <DiscountBadges product={product} />
+                <DiscountBadges product={product} disabled={loadingId === product.id} onRemove={(payload, label) => removeFromProduct(product.id, payload, label)} />
                 <ModelCodeEditor
                   key={`${product.id}-${product.modelCode ?? ""}`}
                   initial={product.modelCode ?? ""}
@@ -402,12 +454,24 @@ export default function AdminProductList({ products }: { products: Product[] }) 
             <AdminProductEditor
               key={`${product.id}:${product.variations.map((v) => `${v.id}${v.stock}${v.extraPrice}`).join("|")}`}
               product={product}
+              onSaved={(snapshot) => snapshot && setUndo({ snapshot, label: "Ürün düzenleme" })}
             />
           )}
           </div>
         ))}
       </div>
       </div>
+      )}
+      {undo && (
+        <div role="status" className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-full bg-neutral-900 text-white text-xs pl-5 pr-2 py-2 shadow-2xl">
+          <span>{undo.label} uygulandı.</span>
+          <button type="button" disabled={undoing} onClick={doUndo} className="rounded-full bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold px-3 py-1.5 disabled:opacity-60">
+            {undoing ? "Geri alınıyor..." : "↩ Son İşlemi Geri Al"}
+          </button>
+          <button type="button" aria-label="Kapat" onClick={() => setUndo(null)} className="px-2 text-neutral-400 hover:text-white">
+            ×
+          </button>
+        </div>
       )}
     </div>
   );

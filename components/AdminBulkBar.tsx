@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { COLLECTION_OPTIONS } from "@/lib/site";
 
 type Tab = "stock" | "rename" | "color" | "collection" | "discount" | "showcase";
-type DiscountMode = "PERCENT" | "FIXED" | "QTY_PERCENT" | "QTY_FIXED";
 
+const TAB_LABEL: Record<Tab, string> = { stock: "Stok", rename: "İsim değişikliği", color: "Renk ekleme", collection: "Koleksiyon", discount: "İndirim", showcase: "Vitrin" };
 const NEW_COLLECTION = "__new__";
 const TABS: { id: Tab; label: string }[] = [
   { id: "stock", label: "Stok" },
@@ -19,12 +19,15 @@ const TABS: { id: Tab; label: string }[] = [
 
 interface Props {
   ids: string[];
+  /** Seçili ürünlerde tanımlı indirimler (kaldırma menüsü için) */
+  scopes: { normal: boolean; tiers: number[] };
+  onApplied: (snapshot: unknown, label: string) => void;
   extraCategories: string[]; // varsayılan listede olmayan mevcut koleksiyonlar
   onDone: () => void;
 }
 
 // Seçili ürünler için toplu işlem çubuğu
-export default function AdminBulkBar({ ids, extraCategories, onDone }: Props) {
+export default function AdminBulkBar({ ids, scopes, onApplied, extraCategories, onDone }: Props) {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("stock");
   const [busy, setBusy] = useState(false);
@@ -38,9 +41,10 @@ export default function AdminBulkBar({ ids, extraCategories, onDone }: Props) {
   const [colorExtra, setColorExtra] = useState("0");
   const [collection, setCollection] = useState<string>(COLLECTION_OPTIONS[0].value);
   const [newCollection, setNewCollection] = useState("");
-  const [discMode, setDiscMode] = useState<DiscountMode>("PERCENT");
+  const [discMode, setDiscMode] = useState<"PERCENT" | "FIXED">("PERCENT");
   const [discValue, setDiscValue] = useState("10");
-  const [minQty, setMinQty] = useState("2");
+  const [minQty, setMinQty] = useState("1");
+  const [removeOpen, setRemoveOpen] = useState(false);
   const [showField, setShowField] = useState<"isFeatured" | "isBestSeller">("isFeatured");
   const [showValue, setShowValue] = useState(true);
 
@@ -57,6 +61,7 @@ export default function AdminBulkBar({ ids, extraCategories, onDone }: Props) {
         alert(data.error || "İşlem başarısız.");
         return;
       }
+      if (data.snapshot) onApplied(data.snapshot, String(payload.label ?? TAB_LABEL[tab]));
       const skipped = data.skipped ? ` (${data.skipped} üründe ${payload.action === "addVariation" ? "bu renk zaten vardı" : "değişiklik gerekmedi"}, atlandı)` : "";
       alert(`✓ ${ids.length} ürün seçili, işlem uygulandı${skipped}.`);
       router.refresh();
@@ -77,8 +82,11 @@ export default function AdminBulkBar({ ids, extraCategories, onDone }: Props) {
     }
     if (tab === "discount") {
       const value = Number(discValue);
-      if (discMode === "PERCENT" || discMode === "FIXED") return run({ action: "discount", mode: discMode, value });
-      return run({ action: "bulkQty", type: discMode === "QTY_PERCENT" ? "PERCENT" : "FIXED", minQty: Number(minQty), value });
+      const qty = Math.floor(Number(minQty));
+      if (!(qty >= 1)) return alert("Adet en az 1 olmalıdır.");
+      // Adet 1: normal indirim (eski fiyat korunur); 2 ve üzeri: adet kademesi eklenir/güncellenir
+      if (qty === 1) return run({ action: "discount", mode: discMode, value, label: "İndirim uygulama" });
+      return run({ action: "tier", type: discMode, minQty: qty, value, label: `${qty}+ adet kademesi` });
     }
     if (tab === "showcase") return run({ action: "showcase", field: showField, value: showValue });
     const category = collection === NEW_COLLECTION ? newCollection.trim() : collection;
@@ -86,8 +94,9 @@ export default function AdminBulkBar({ ids, extraCategories, onDone }: Props) {
     return run({ action: "category", category });
   };
 
-  const removeAll = (action: "removeDiscount" | "removeBulkQty", msg: string) => {
-    if (confirm(msg)) run({ action });
+  const removeScope = (payload: Record<string, unknown>, msg: string) => {
+    setRemoveOpen(false);
+    if (confirm(msg)) run({ action: "removeDiscount", label: "İndirim kaldırma", ...payload });
   };
 
   const input = "p-2 rounded-lg border border-neutral-300 bg-white text-xs focus:outline-none focus:border-amber-600";
@@ -138,26 +147,15 @@ export default function AdminBulkBar({ ids, extraCategories, onDone }: Props) {
 
         {tab === "discount" && (
           <>
-            <select aria-label="İndirim türü" value={discMode} onChange={(e) => setDiscMode(e.target.value as DiscountMode)} className={input}>
-              <option value="PERCENT">Yüzde indirim (%)</option>
-              <option value="FIXED">Sabit tutar indirimi (₺)</option>
-              <option value="QTY_PERCENT">Adet bazlı: yüzde (%)</option>
-              <option value="QTY_FIXED">Adet bazlı: adet başı ₺</option>
+            <select aria-label="İndirim türü" value={discMode} onChange={(e) => setDiscMode(e.target.value as "PERCENT" | "FIXED")} className={input}>
+              <option value="PERCENT">Yüzde (%)</option>
+              <option value="FIXED">Tutar (₺)</option>
             </select>
-            {(discMode === "QTY_PERCENT" || discMode === "QTY_FIXED") && (
-              <label className="flex items-center gap-1.5 text-neutral-600">
-                En az
-                <input aria-label="En az adet" type="number" min={2} value={minQty} onChange={(e) => setMinQty(e.target.value)} className={`${input} w-16`} />
-                adet
-              </label>
-            )}
+            <label className="flex items-center gap-1.5 text-neutral-600">
+              Adet (En az):
+              <input aria-label="Adet (en az)" type="number" min={1} step={1} value={minQty} onChange={(e) => setMinQty(e.target.value)} className={`${input} w-16`} />
+            </label>
             <input aria-label="İndirim değeri" type="number" min={1} step="any" required value={discValue} onChange={(e) => setDiscValue(e.target.value)} className={`${input} w-24`} />
-            <button type="button" disabled={busy} onClick={() => removeAll("removeDiscount", "Seçili ürünlerde indirim kaldırılsın mı? Eski fiyat geri yüklenir; üstü çizili fiyat ve adet indirimi silinir.")} className="px-3 py-2 rounded-lg border border-red-300 text-red-700 font-semibold hover:bg-red-50 disabled:opacity-60">
-              İndirimi Kaldır
-            </button>
-            <button type="button" disabled={busy} onClick={() => removeAll("removeBulkQty", "Seçili ürünlerde adet indirimi kaldırılsın mı?")} className="px-3 py-2 rounded-lg border border-red-300 text-red-700 font-semibold hover:bg-red-50 disabled:opacity-60">
-              Adet İndirimini Kaldır
-            </button>
           </>
         )}
 
@@ -209,6 +207,34 @@ export default function AdminBulkBar({ ids, extraCategories, onDone }: Props) {
         >
           {busy ? "Uygulanıyor..." : `${ids.length} ürüne uygula`}
         </button>
+        {tab === "discount" && (
+          <div className="relative">
+            <button
+              type="button"
+              disabled={busy}
+              aria-expanded={removeOpen}
+              onClick={() => setRemoveOpen((o) => !o)}
+              className="px-3 py-2 rounded-lg border border-red-300 text-red-700 font-semibold hover:bg-red-50 disabled:opacity-60"
+            >
+              İndirim Kaldır ▾
+            </button>
+            {removeOpen && (
+              <div className="absolute left-0 top-full mt-1 z-20 w-72 rounded-xl border border-neutral-200 bg-white shadow-xl p-1.5 space-y-0.5">
+                <button type="button" disabled={!scopes.normal} onClick={() => removeScope({ scope: "normal" }, "Seçili ürünlerde normal (1 adet) indirim kaldırılsın mı? Eski fiyat geri yüklenir.")} className="w-full text-left px-3 py-2 rounded-lg hover:bg-red-50 disabled:opacity-40 disabled:hover:bg-transparent">
+                  Sadece Normal (1 Adet) İndirimini Kaldır
+                </button>
+                {scopes.tiers.map((q) => (
+                  <button key={q} type="button" onClick={() => removeScope({ scope: "tier", minQty: q }, `Seçili ürünlerde ${q}+ adet indirimi kaldırılsın mı?`)} className="w-full text-left px-3 py-2 rounded-lg hover:bg-red-50">
+                    {q}+ Adet İndirimini Kaldır
+                  </button>
+                ))}
+                <button type="button" onClick={() => removeScope({ scope: "all" }, "Seçili ürünlerdeki TÜM indirimler (normal ve adet kademeleri) kaldırılsın mı?")} className="w-full text-left px-3 py-2 rounded-lg font-semibold text-red-700 hover:bg-red-50 border-t border-neutral-100">
+                  Tüm İndirimleri Kaldır
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </form>
     </div>
   );

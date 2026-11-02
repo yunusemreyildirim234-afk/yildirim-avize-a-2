@@ -5,7 +5,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Loader2, Search, X } from "lucide-react";
 import RecentSearches from "@/components/RecentSearches";
-import { clearRecentSearches, getRecentSearches, removeRecentSearch, saveRecentSearch } from "@/lib/recent-searches";
+import { toast } from "sonner";
+import { clearRecentSearches, getRecentSearches, removeRecentSearch, restoreRecentSearches, saveRecentSearch } from "@/lib/recent-searches";
 import { track } from "@/lib/track";
 
 interface Result {
@@ -104,12 +105,19 @@ export default function NavSearch() {
     (window.innerWidth >= 768 ? desktopInput : mobileInput).current?.focus();
   };
 
+  // Son aramaları değiştirir; 6 saniye içinde geri alınabilir
+  const undoable = (change: () => string[], message: string) => {
+    const before = recent;
+    setRecent(change());
+    toast(message, { duration: 6000, action: { label: "↩ Geri Al", onClick: () => setRecent(restoreRecentSearches(before)) } });
+  };
+
   const recentList = (
     <RecentSearches
       items={recent}
       onPick={pickRecent}
-      onRemove={(t) => setRecent(removeRecentSearch(t))}
-      onClear={() => setRecent(clearRecentSearches())}
+      onRemove={(t) => undoable(() => removeRecentSearch(t), "Arama kaldırıldı")}
+      onClear={() => undoable(clearRecentSearches, "Son aramalar temizlendi")}
     />
   );
 

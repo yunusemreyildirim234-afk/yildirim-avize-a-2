@@ -32,7 +32,7 @@ async function api(method: string, url: string, body: Record<string, unknown>) {
 const field = "p-2 rounded-lg border border-neutral-300 bg-white text-xs focus:outline-none focus:border-amber-600";
 
 // Tekil ürün düzenleme: başlık, fiyat, model kodu, renk/stok ve görseller
-export default function AdminProductEditor({ product }: { product: EditorProduct }) {
+export default function AdminProductEditor({ product, onSaved }: { product: EditorProduct; onSaved?: (snapshot: unknown) => void }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
 
@@ -65,21 +65,20 @@ export default function AdminProductEditor({ product }: { product: EditorProduct
   };
 
   const saveInfo = () =>
-    run(
-      () => api("PATCH", "/api/admin/product", { productId: product.id, title, basePrice: Number(basePrice), modelCode, images, isFeatured, isBestSeller }),
-      "✓ Ürün bilgileri kaydedildi."
-    );
+    run(async () => {
+      const data = await api("PATCH", "/api/admin/product", { productId: product.id, title, basePrice: Number(basePrice), modelCode, images, isFeatured, isBestSeller });
+      onSaved?.(data.snapshot);
+    }, "✓ Ürün bilgileri kaydedildi. Alttaki çubuktan geri alabilirsiniz.");
 
   const saveVariation = (v: EditorVariation) =>
-    run(
-      () =>
-        api("PATCH", "/api/admin/product", {
-          variationId: v.id,
-          stock: Number(varEdits[v.id].stock),
-          extraPrice: Number(varEdits[v.id].extraPrice),
-        }),
-      "✓ Varyasyon kaydedildi."
-    );
+    run(async () => {
+      const data = await api("PATCH", "/api/admin/product", {
+        variationId: v.id,
+        stock: Number(varEdits[v.id].stock),
+        extraPrice: Number(varEdits[v.id].extraPrice),
+      });
+      onSaved?.(data.snapshot);
+    }, "✓ Varyasyon kaydedildi. Alttaki çubuktan geri alabilirsiniz.");
 
   const deleteVariation = (v: EditorVariation) => {
     if (!confirm(`"${v.variationValue}" rengi silinsin mi?`)) return;

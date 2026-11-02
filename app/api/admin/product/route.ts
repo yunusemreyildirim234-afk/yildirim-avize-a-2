@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { adminGuard } from "@/lib/admin-guard";
 import { prisma } from "@/lib/db";
+import { snapshotForDelete, snapshotProducts } from "@/lib/admin-undo";
 
 // 1. Yeni Avize Ekleme (POST)
 export async function POST(req: Request) {
@@ -87,8 +88,9 @@ export async function PATCH(req: Request) {
         }
         data.modelCode = modelCode || null;
       }
+      const snapshot = await snapshotProducts([body.productId]);
       const product = await prisma.product.update({ where: { id: body.productId }, data });
-      return NextResponse.json({ success: true, product });
+      return NextResponse.json({ success: true, product, snapshot });
     }
 
     // Eski kısa yol: yalnızca model kodu
@@ -106,6 +108,8 @@ export async function PATCH(req: Request) {
 
     const { variationId, stock } = body;
 
+    const owner = await prisma.productVariation.findUnique({ where: { id: variationId }, select: { productId: true } });
+    const snapshot = owner ? await snapshotProducts([owner.productId]) : undefined;
     const updated = await prisma.productVariation.update({
       where: { id: variationId },
       data: {
@@ -114,7 +118,7 @@ export async function PATCH(req: Request) {
       },
     });
 
-    return NextResponse.json({ success: true, variation: updated });
+    return NextResponse.json({ success: true, variation: updated, snapshot });
   } catch (error) {
     return NextResponse.json({ error: (error as Error).message }, { status: 500 });
   }
@@ -130,13 +134,15 @@ export async function DELETE(req: Request) {
     if (typeof productId !== "string") return NextResponse.json({ error: "productId zorunlu" }, { status: 400 });
 
     // Geçmiş siparişi olan ürün silinmez: pasife alınır ve stokları sıfırlanır (sipariş geçmişi korunur)
+    const snapshot = await snapshotProducts([productId]);
+    const fullCopy = await snapshotForDelete(productId);
     const hasOrders = await prisma.orderItem.findFirst({ where: { variation: { productId } }, select: { id: true } });
     if (hasOrders) {
       await prisma.$transaction([
         prisma.product.update({ where: { id: productId }, data: { active: false } }),
         prisma.productVariation.updateMany({ where: { productId }, data: { stock: 0 } }),
       ]);
-      return NextResponse.json({ success: true, deactivated: true, message: "Ürünün geçmiş siparişleri olduğu için silinmedi; pasife alındı." });
+      return NextResponse.json({ success: true, snapshot, deactivated: true, message: "Ürünün geçmiş siparişleri olduğu için silinmedi; pasife alındı." });
     }
 
     await prisma.productVariation.deleteMany({
@@ -148,7 +154,7 @@ export async function DELETE(req: Request) {
       where: { id: productId },
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, snapshot: fullCopy });
   } catch (error) {
     return NextResponse.json({ error: (error as Error).message }, { status: 500 });
   }

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { ActivityRow } from "@/lib/activity";
+import AdminDeleteButton from "@/components/AdminDeleteButton";
 
 const fmt = (iso: string | null) => (iso ? new Date(iso).toLocaleString("tr-TR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "—");
 const dur = (m: number) => (m < 1 ? "1 dakikadan az" : m < 60 ? `${m} dk` : `${Math.floor(m / 60)} sa ${m % 60} dk`);
@@ -14,6 +15,14 @@ function Row({ r, guest }: { r: ActivityRow; guest: boolean }) {
         <strong className="text-neutral-900">{r.name ?? (guest ? "Misafir" : "Müşteri")}</strong>
         <span className="text-neutral-600 break-all">{r.email ?? "E-posta bilinmiyor (anonim oturum)"}</span>
         {r.errors.length > 0 && <span className="bg-red-100 text-red-800 font-bold text-[10px] px-2 py-0.5 rounded-full">{r.errors.length} hata</span>}
+        <AdminDeleteButton
+          endpoint="/api/admin/activity"
+          payload={{ keys: [r.key] }}
+          label="Kaydı Sil"
+          confirmText={guest ? "Bu misafirin 3 günlük hareket kayıtları silinecek." : "Bu üyenin 3 günlük hareket kayıtları silinecek (üye hesabı silinmez)."}
+          disabled={quiet}
+          className="ml-auto"
+        />
       </div>
       <p className="text-neutral-500">
         {r.registeredAt && <>Kayıt: {fmt(r.registeredAt)} • </>}
@@ -59,6 +68,15 @@ export default function AdminActivity({ registered, guests, ok }: { registered: 
         <button type="button" aria-pressed={tab === "guest"} onClick={() => setTab("guest")} className={`${chip} ${tab === "guest" ? on : off}`}>
           Misafir Müşteriler <span className="opacity-70">({guests.length})</span>
         </button>
+      </div>
+      <div className="flex justify-end px-6 pt-3">
+        <AdminDeleteButton
+          endpoint="/api/admin/activity"
+          payload={{ scope: tab === "reg" ? "registered" : "guests" }}
+          label="Bu Sekmedeki Tüm Hareket Kayıtlarını Temizle"
+          confirmText={tab === "reg" ? "Kayıtlı müşterilerin tüm hareket kayıtları silinecek (hesaplar silinmez)." : "Tüm misafir hareket kayıtları silinecek."}
+          disabled={list.every((r) => !r.lastAt)}
+        />
       </div>
       {!ok ? (
         <p className="p-10 text-center text-xs text-neutral-400">Hareket kayıtları şu an okunamadı.</p>

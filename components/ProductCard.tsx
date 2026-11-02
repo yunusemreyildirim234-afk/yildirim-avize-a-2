@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { ProductWithVariations } from "@/lib/products";
-import { bulkRuleOf, bulkShortLabel } from "@/lib/bulk-pricing";
+import { bulkTiersOf } from "@/lib/bulk-pricing";
 import { CartStepper, FavoriteButton } from "@/components/ProductQuickActions";
 
 export default function ProductCard({
@@ -20,7 +20,7 @@ export default function ProductCard({
       ? Math.round((1 - product.basePrice / product.listPrice) * 100)
       : 0;
 
-  const bulk = bulkRuleOf(product);
+  const bulk = bulkTiersOf(product);
 
   // İstemci bileşenlerine yalnızca gereken alanlar geçirilir
   const quick = {
@@ -65,9 +65,9 @@ export default function ProductCard({
               %{discount} İndirim
             </span>
           )}
-          {bulk && (
+          {bulk.length > 0 && (
             <span className={`absolute left-3 bg-amber-100 text-amber-950 text-[11px] font-semibold px-2 py-1 rounded-md ${discount > 0 ? "top-11" : "top-3"}`}>
-              {bulkShortLabel(bulk)}
+              {bulk[0].minQty}+ Adet İndirimi
             </span>
           )}
           {totalStock === 0 && (

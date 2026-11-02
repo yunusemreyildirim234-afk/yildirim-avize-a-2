@@ -6,7 +6,7 @@ import { CartStepper, type QuickProduct } from "@/components/ProductQuickActions
 import { useWishlist } from "@/context/WishlistContext";
 
 export default function FavorilerimPage() {
-  const { favorites, toggleFavorite } = useWishlist();
+  const { favorites, removeFavoriteUndoable, clearFavorites } = useWishlist();
   const [quick, setQuick] = useState<Record<string, QuickProduct>>({});
 
   // Sepete ekleme için güncel varyasyon/stok bilgisi
@@ -53,9 +53,14 @@ export default function FavorilerimPage() {
               Favorilerim
             </h1>
           </div>
-          <span className="text-xs font-medium text-neutral-500">
-            Toplam {favorites.length} avize kaydedildi
-          </span>
+          <div className="flex items-center gap-4">
+            <span className="text-xs font-medium text-neutral-500">
+              Toplam {favorites.length} avize kaydedildi
+            </span>
+            <button type="button" onClick={clearFavorites} className="text-xs font-semibold text-neutral-500 hover:text-red-600 underline underline-offset-2">
+              Tümünü Temizle
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -86,7 +91,7 @@ export default function FavorilerimPage() {
                 {/* Favoriden Kaldır Butonu */}
                 <button
                   type="button"
-                  onClick={() => toggleFavorite(product)}
+                  onClick={() => removeFavoriteUndoable(product)}
                   className="absolute top-3 right-3 bg-white/90 hover:bg-white text-red-500 w-8 h-8 rounded-full flex items-center justify-center shadow-md transition-transform active:scale-90"
                   title="Favorilerden Kaldır"
                   aria-label="Favorilerden kaldır"

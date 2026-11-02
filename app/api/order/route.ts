@@ -6,7 +6,7 @@ import { getPaytrToken } from "@/lib/paytr";
 import { computeTotals, couponDiscountFor, SHIPPING_LABELS } from "@/lib/pricing";
 import { getSessionUserId } from "@/lib/account";
 import { invoiceError } from "@/lib/validation";
-import { bulkRuleOf, unitPriceFor } from "@/lib/bulk-pricing";
+import { bulkTiersOf, unitPriceFor } from "@/lib/bulk-pricing";
 import { releaseCoupon, reserveCoupon, validateCoupon } from "@/lib/coupons";
 
 interface CartLine {
@@ -65,7 +65,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: `"${variation.product.title}" için yeterli stok yok.` }, { status: 400 });
       }
       // Adet indirimi: kural ürüne tanımlıysa ve adet yeterliyse birim fiyat sunucuda düşürülür
-      const unitPrice = unitPriceFor(variation.product.basePrice + variation.extraPrice, quantity, bulkRuleOf(variation.product));
+      const unitPrice = unitPriceFor(variation.product.basePrice + variation.extraPrice, quantity, bulkTiersOf(variation.product));
       orderLines.push({ variation, quantity, unitPrice });
     }
 

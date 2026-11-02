@@ -6,7 +6,7 @@ import { HoverMagnifier, ImageLightbox } from "@/components/ImageZoom";
 import { useCart } from "@/context/CartContext";
 import { BANK_TRANSFER_DISCOUNT, FREE_SHIPPING_THRESHOLD, PICKUP_DISCOUNT } from "@/lib/pricing";
 import { SITE_URL, WHATSAPP_NUMBER } from "@/lib/site";
-import { bulkLabel, bulkRuleOf, lineTotalFor, unitPriceFor } from "@/lib/bulk-pricing";
+import { activeTier, bulkLabel, bulkTiersOf, lineTotalFor, unitPriceFor } from "@/lib/bulk-pricing";
 
 interface Variation {
   id: string;
@@ -26,9 +26,7 @@ interface Product {
   modelCode?: string | null;
   images?: string[];
   listPrice?: number | null;
-  bulkMinQty?: number | null;
-  bulkDiscountType?: string | null;
-  bulkDiscountValue?: number | null;
+  bulkTiers?: unknown;
   variations: Variation[];
 }
 
@@ -47,7 +45,7 @@ export default function ProductDetailClient({ product }: { product: Product }) {
 
   const currentPrice = product.basePrice + (selectedVariation?.extraPrice || 0);
   const listShown = product.listPrice && product.listPrice > product.basePrice ? product.listPrice + (selectedVariation?.extraPrice || 0) : null;
-  const bulk = bulkRuleOf(product);
+  const bulk = bulkTiersOf(product);
   const unitNow = unitPriceFor(currentPrice, quantity, bulk);
   const maxQty = selectedVariation ? Math.max(0, selectedVariation.stock) : 0;
   const outOfStock = !selectedVariation || maxQty <= 0;
@@ -168,11 +166,15 @@ export default function ProductDetailClient({ product }: { product: Product }) {
             <span className="text-3xl font-bold tabular-nums text-neutral-900">
               {lineTotalFor(currentPrice, quantity, bulk).toLocaleString("tr-TR")} ₺
             </span>
-            {bulk && (
-              <p className="mt-2 text-xs font-semibold text-amber-950 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5 w-fit">
-                {unitNow < currentPrice ? "✓ " : ""}
-                {bulkLabel(bulk)}
-              </p>
+            {bulk.length > 0 && (
+              <ul className="mt-2 space-y-1">
+                {bulk.map((t) => (
+                  <li key={t.minQty} className="text-xs font-semibold text-amber-950 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5 w-fit">
+                    {activeTier(bulk, quantity)?.minQty === t.minQty ? "✓ " : ""}
+                    {bulkLabel(t)}
+                  </li>
+                ))}
+              </ul>
             )}
             <p className="mt-2 text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-1.5 w-fit">
               Havale/EFT ile %{Math.round(BANK_TRANSFER_DISCOUNT * 100)} İndirimli: <strong>{Math.round(lineTotalFor(currentPrice, quantity, bulk) * (1 - BANK_TRANSFER_DISCOUNT)).toLocaleString("tr-TR")} ₺</strong>

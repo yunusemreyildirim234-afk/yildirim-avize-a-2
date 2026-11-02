@@ -13,7 +13,7 @@ import ContractModal from "@/components/ContractModal";
 import { invoiceError } from "@/lib/validation";
 import { ADDRESS_LINE } from "@/lib/site";
 import { rememberEmail, track } from "@/lib/track";
-import { bulkLabel, lineTotalFor, unitPriceFor } from "@/lib/bulk-pricing";
+import { activeTier, bulkLabel, lineTotalFor, unitPriceFor } from "@/lib/bulk-pricing";
 
 interface LocationItem {
   id: number;
@@ -22,7 +22,7 @@ interface LocationItem {
 
 export default function CartPage() {
   const router = useRouter();
-  const { cart, removeFromCart, updateQuantity, clearCart, totalPrice } = useCart();
+  const { cart, removeFromCart, emptyCart, updateQuantity, clearCart, totalPrice } = useCart();
 
   // Eski sepet kayıtlarında görsel yoksa ürün görselleri veritabanından tamamlanır
   const [images, setImages] = useState<Record<string, string>>({});
@@ -323,6 +323,11 @@ export default function CartPage() {
           <div className="lg:col-span-2 space-y-6">
             {/* Ürün Listesi */}
             <div className="space-y-4">
+              <div className="flex justify-end">
+                <button type="button" onClick={emptyCart} className="text-xs font-semibold text-neutral-500 hover:text-red-600 underline underline-offset-2">
+                  Sepeti Boşalt
+                </button>
+              </div>
               {cart.map((item) => (
                 <div
                   key={item.variationId}
@@ -359,12 +364,12 @@ export default function CartPage() {
                         <span className="ml-2 text-xs font-medium text-neutral-400 line-through">{item.price.toLocaleString("tr-TR")} ₺</span>
                       )}
                     </div>
-                    {item.bulk && (
-                      <p className="text-[11px] text-emerald-800 mt-1">
-                        {item.quantity >= item.bulk.minQty ? "✓ " : ""}
-                        {bulkLabel(item.bulk)}
+                    {item.bulk?.map((t) => (
+                      <p key={t.minQty} className="text-[11px] text-emerald-800 mt-1">
+                        {activeTier(item.bulk, item.quantity)?.minQty === t.minQty ? "✓ " : ""}
+                        {bulkLabel(t)}
                       </p>
-                    )}
+                    ))}
                     </div>
                   </div>
 

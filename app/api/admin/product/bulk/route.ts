@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { adminGuard } from "@/lib/admin-guard";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { snapshotProducts } from "@/lib/admin-undo";
+import { bulkTiersOf, upsertTier } from "@/lib/bulk-pricing";
 
 // Seçili ürünlerde toplu işlem: stok, isim, renk ekleme, koleksiyon (proxy yalnızca yöneticiye açar)
 export async function POST(req: Request) {
@@ -12,6 +15,9 @@ export async function POST(req: Request) {
     : [];
   if (ids.length === 0) return NextResponse.json({ error: "Ürün seçilmedi." }, { status: 400 });
 
+  // Geri Al için işlem öncesi durum
+  const snapshot = await snapshotProducts(ids);
+
   switch (body.action) {
     case "stock": {
       const value = Math.floor(Number(body.value));
@@ -19,11 +25,11 @@ export async function POST(req: Request) {
       if (body.mode === "set") {
         if (value < 0) return NextResponse.json({ error: "Stok negatif olamaz." }, { status: 400 });
         const res = await prisma.productVariation.updateMany({ where: { productId: { in: ids } }, data: { stock: value } });
-        return NextResponse.json({ success: true, updated: res.count });
+        return NextResponse.json({ snapshot, success: true, updated: res.count });
       }
       // Artırma/azaltma: 0'ın altına inmez
       const res = await prisma.$executeRaw`UPDATE "ProductVariation" SET "stock" = GREATEST(0, "stock" + ${value}) WHERE "productId" = ANY(${ids})`;
-      return NextResponse.json({ success: true, updated: res });
+      return NextResponse.json({ snapshot, success: true, updated: res });
     }
 
     case "rename": {
@@ -36,7 +42,7 @@ export async function POST(req: Request) {
           prisma.product.update({ where: { id: p.id }, data: { title: `${prefix}${p.title}${suffix}`.replace(/\s+/g, " ").trim().slice(0, 300) } })
         )
       );
-      return NextResponse.json({ success: true, updated: products.length });
+      return NextResponse.json({ snapshot, success: true, updated: products.length });
     }
 
     case "addVariation": {
@@ -59,14 +65,16 @@ export async function POST(req: Request) {
       const res = await prisma.productVariation.createMany({
         data: targets.map((productId) => ({ productId, variationType: "Renk", variationValue: value, stock, extraPrice })),
       });
-      return NextResponse.json({ success: true, updated: res.count, skipped: ids.length - targets.length });
+      const created = await prisma.productVariation.findMany({ where: { productId: { in: targets }, variationType: "Renk", variationValue: value }, select: { id: true } });
+      snapshot.deleteVariationIds = created.map((v) => v.id);
+      return NextResponse.json({ snapshot, success: true, updated: res.count, skipped: ids.length - targets.length });
     }
 
     case "category": {
       const category = typeof body.category === "string" ? body.category.trim().slice(0, 80) : "";
       if (!category) return NextResponse.json({ error: "Koleksiyon adı zorunludur." }, { status: 400 });
       const res = await prisma.product.updateMany({ where: { id: { in: ids } }, data: { category } });
-      return NextResponse.json({ success: true, updated: res.count });
+      return NextResponse.json({ snapshot, success: true, updated: res.count });
     }
 
     // Toplu indirim: orijinal (yüksek) fiyat listPrice'ta saklanır; tekrar uygulamak indirimi üst üste bindirmez
@@ -85,42 +93,43 @@ export async function POST(req: Request) {
         ops.push(prisma.product.update({ where: { id: p.id }, data: { basePrice: next, listPrice: original } }));
       }
       await prisma.$transaction(ops);
-      return NextResponse.json({ success: true, updated: ops.length, skipped: products.length - ops.length });
+      return NextResponse.json({ snapshot, success: true, updated: ops.length, skipped: products.length - ops.length });
     }
 
-    // İndirimi kaldır: eski fiyat geri yüklenir, üstü çizili fiyat ve adet indirimi temizlenir
-    case "removeDiscount": {
-      const products = await prisma.product.findMany({ where: { id: { in: ids } }, select: { id: true, basePrice: true, listPrice: true } });
-      await prisma.$transaction(
-        products.map((p) =>
-          prisma.product.update({
-            where: { id: p.id },
-            data: {
-              basePrice: p.listPrice && p.listPrice > p.basePrice ? p.listPrice : p.basePrice,
-              listPrice: null,
-              bulkMinQty: null,
-              bulkDiscountType: null,
-              bulkDiscountValue: null,
-            },
-          })
-        )
-      );
-      return NextResponse.json({ success: true, updated: products.length });
-    }
-
-    case "bulkQty": {
+    // Adet kademesi ekle (aynı minQty varsa üstüne yazar); normal indirime ve diğer kademelere dokunmaz
+    case "tier": {
       const minQty = Math.floor(Number(body.minQty));
       const value = Number(body.value);
       const type = body.type === "FIXED" ? "FIXED" : body.type === "PERCENT" ? "PERCENT" : null;
       if (!type || !(minQty >= 2) || !(value > 0)) return NextResponse.json({ error: "En az 2 adet ve geçerli bir indirim değeri giriniz." }, { status: 400 });
-      if (type === "PERCENT" && value >= 100) return NextResponse.json({ error: "Yüzde 100'ün altında olmalıdır." }, { status: 400 });
-      const res = await prisma.product.updateMany({ where: { id: { in: ids } }, data: { bulkMinQty: minQty, bulkDiscountType: type, bulkDiscountValue: value } });
-      return NextResponse.json({ success: true, updated: res.count });
+      if (type === "PERCENT" && value >= 100) return NextResponse.json({ error: "Yüzde 100 altında olmalıdır." }, { status: 400 });
+      const products = await prisma.product.findMany({ where: { id: { in: ids } }, select: { id: true, bulkTiers: true } });
+      await prisma.$transaction(
+        products.map((p) => prisma.product.update({ where: { id: p.id }, data: { bulkTiers: upsertTier(bulkTiersOf(p.bulkTiers), { minQty, type, value }) } }))
+      );
+      return NextResponse.json({ snapshot, success: true, updated: products.length });
     }
 
-    case "removeBulkQty": {
-      const res = await prisma.product.updateMany({ where: { id: { in: ids } }, data: { bulkMinQty: null, bulkDiscountType: null, bulkDiscountValue: null } });
-      return NextResponse.json({ success: true, updated: res.count });
+    // Seçici kaldırma: scope = "normal" (1 adet indirimi) | "tier" (yalnızca minQty kademesi) | "all"
+    case "removeDiscount": {
+      const scope = body.scope === "normal" || body.scope === "tier" ? body.scope : "all";
+      const tierQty = Math.floor(Number(body.minQty));
+      if (scope === "tier" && !(tierQty >= 2)) return NextResponse.json({ error: "Geçerli bir adet kademesi seçin." }, { status: 400 });
+      const products = await prisma.product.findMany({ where: { id: { in: ids } }, select: { id: true, basePrice: true, listPrice: true, bulkTiers: true } });
+      await prisma.$transaction(
+        products.map((p) => {
+          const restore = p.listPrice && p.listPrice > p.basePrice ? p.listPrice : p.basePrice;
+          const tiers = bulkTiersOf(p.bulkTiers);
+          const data: Prisma.ProductUpdateInput =
+            scope === "normal"
+              ? { basePrice: restore, listPrice: null }
+              : scope === "tier"
+                ? { bulkTiers: tiers.filter((t) => t.minQty !== tierQty) }
+                : { basePrice: restore, listPrice: null, bulkTiers: [], bulkMinQty: null, bulkDiscountType: null, bulkDiscountValue: null };
+          return prisma.product.update({ where: { id: p.id }, data });
+        })
+      );
+      return NextResponse.json({ snapshot, success: true, updated: products.length });
     }
 
     // Vitrin: Öne Çıkanlar / Çok Satanlar ekle-çıkar
@@ -128,7 +137,7 @@ export async function POST(req: Request) {
       const field = body.field === "isFeatured" || body.field === "isBestSeller" ? body.field : null;
       if (!field || typeof body.value !== "boolean") return NextResponse.json({ error: "Geçersiz vitrin işlemi." }, { status: 400 });
       const res = await prisma.product.updateMany({ where: { id: { in: ids } }, data: { [field]: body.value } });
-      return NextResponse.json({ success: true, updated: res.count });
+      return NextResponse.json({ snapshot, success: true, updated: res.count });
     }
 
     default:
