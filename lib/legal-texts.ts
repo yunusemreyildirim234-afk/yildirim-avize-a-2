@@ -1,12 +1,14 @@
 // Cayma/iade metinleri tek yerde tutulur: sepetteki ön bilgilendirme formu, mesafeli satış sözleşmesi
 // ve /iptal-iade-cayma sayfası aynı cümleleri kullanır (metinler birbiriyle çelişmesin).
 
+import { LEGAL_CONTACT_EMAIL, PHONE_DISPLAY } from "@/lib/site";
+
 export const LEGAL_UPDATED = "2 Kasım 2026";
 
 export const CAYMA = {
   hak: "ALICI, malı teslim aldığı tarihten itibaren 14 gün içinde herhangi bir gerekçe göstermeksizin ve cezai şart ödemeksizin sözleşmeden cayma hakkına sahiptir.",
   bildirim:
-    "Cayma bildirimi yazılı olarak (posta veya e-posta), SATICI'nın KEP adresi üzerinden ya da sitedeki cayma formu (/iptal-iade-cayma sayfasındaki örnek form) aracılığıyla SATICI'ya yapılır.",
+    `Cayma bildirimi yazılı olarak; SATICI'nın KEP adresi üzerinden, ${LEGAL_CONTACT_EMAIL} e-posta adresine gönderilecek e-postayla, posta yoluyla ya da sitedeki cayma formu (/iptal-iade-cayma sayfasındaki örnek form) aracılığıyla yapılır.`,
   alici:
     "ALICI, cayma bildirimini yaptığı tarihten itibaren 14 gün içinde ürünü, SATICI'nın bildireceği taşıyıcıya teslim ederek iade eder. Ürünün hasarsız taşınması için orijinal ambalajıyla iade edilmesi mümkünse tavsiye edilir; şart değildir.",
   satici:
@@ -26,3 +28,6 @@ export const TESLIMAT_SURESI =
 
 export const MONTAJ_NOTU =
   "Ürünler birleştirilmiş (montajlı) olarak gönderilir; evin tavanına montaj hizmeti verilmemektedir.";
+
+/** İade talebi onaylandığında müşteriye gönderilen standart iade talimatı (e-posta ve /iptal-iade-cayma aynı metni kullanır). */
+export const IADE_TALIMATI = `Ürünü hasarsız ve eksiksiz, mümkünse orijinal ambalajıyla, size iletilecek iade kargo kodu/etiketi ile Aras Kargo'ya teslim ediniz. İade kargo bedeli tarafımıza aittir. İade kargo kodu için bu e-postayı yanıtlayabilir veya WhatsApp destek hattımızdan (${PHONE_DISPLAY}) bize ulaşabilirsiniz. Ürün tarafımıza ulaştıktan sonra bedeliniz, ödeme yönteminize uygun olarak yasal süre içinde iade edilir.`;

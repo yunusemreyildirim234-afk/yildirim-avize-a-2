@@ -1,5 +1,6 @@
 import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/db";
+import { LEGAL_CONTACT_EMAIL } from "@/lib/site";
 
 export const COMPANY_DEFAULTS = {
   companyTitle: "Ömer Yıldırım - Yıldırım Avize",
@@ -68,4 +69,10 @@ export function companyLine(p: PublicCompany, extra: string[] = []): string {
   ]
     .filter(Boolean)
     .join(" — ");
+}
+
+/** Cayma ve KVKK başvuruları için iki kanal: KEP (SiteConfig'ten; yoksa yönlendirme metni) ve e-posta. */
+export function legalChannels(p: PublicCompany): string {
+  const kep = p.kep ? `KEP: ${p.kep}` : "KEP: adres bilgisi sayfa altındaki \"Kurumsal & Yasal Bilgiler\" bölümünde yer almaktadır";
+  return `${kep} — E-posta: ${LEGAL_CONTACT_EMAIL}`;
 }

@@ -20,6 +20,7 @@ interface EmailOrderData {
 }
 
 import { ADMIN_EMAILS, BANK_INFO, PHONE_DISPLAY, SITE_URL } from "@/lib/site";
+import { IADE_TALIMATI } from "@/lib/legal-texts";
 
 const DEFAULT_FROM = "Yıldırım Avize <siparis@yildirimavize.com.tr>";
 const ONBOARDING_FROM = "Yıldırım Avize <onboarding@resend.dev>";
@@ -409,6 +410,11 @@ export async function sendRequestDecisionEmail(data: { to: string; name: string;
       <p style="font-size: 15px; font-weight: bold; color: ${data.approved ? "#059669" : "#b91c1c"};">${result}.</p>
       <p style="font-size: 13px; color: #525252;">Sipariş: ${data.orderId}</p>
       ${data.note ? `<p style="font-size: 14px;">${multiline(data.note)}</p>` : ""}
+      ${
+        data.approved && data.type === "RETURN"
+          ? `<div style="margin: 16px 0; padding: 14px 16px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; font-size: 14px; line-height: 1.6;"><strong>İade talimatı:</strong> ${esc(IADE_TALIMATI)}</div>`
+          : ""
+      }
       <p style="font-size: 12px; color: #737373; margin-top: 24px;">Yıldırım Avize | Tel: ${PHONE_DISPLAY}</p>
     </div>`,
   });

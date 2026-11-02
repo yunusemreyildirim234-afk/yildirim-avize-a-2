@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import LegalPage from "@/components/LegalPage";
-import { PHONE_DISPLAY } from "@/lib/site";
+import { LEGAL_CONTACT_EMAIL, PHONE_DISPLAY } from "@/lib/site";
 import { companyLine, getCompanyInfo, toPublicCompany } from "@/lib/company";
 import { AYIPLI_MAL, CAYMA, MONTAJ_NOTU, ODEME, TESLIMAT_SURESI } from "@/lib/legal-texts";
 
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 
 export default async function Page() {
   const c = await getCompanyInfo();
-  const sellerLine = companyLine(toPublicCompany(c), [`Tel: ${PHONE_DISPLAY}`]);
+  const sellerLine = companyLine(toPublicCompany(c), [`Tel: ${PHONE_DISPLAY}`, `E-posta: ${LEGAL_CONTACT_EMAIL}`]);
   return (
     <LegalPage
       path="/mesafeli-satis-sozlesmesi"

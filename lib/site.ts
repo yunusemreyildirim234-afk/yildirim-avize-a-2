@@ -3,6 +3,8 @@ export const SITE_NAME = "Yıldırım Avize";
 export const PHONE_DISPLAY = "0537 211 42 23";
 export const PHONE_TEL = "+905372114223";
 export const WHATSAPP_NUMBER = "905372114223";
+// Cayma bildirimi ve KVKK başvurularında kullanılan e-posta kanalı (KEP ile birlikte iki kanal sunulur)
+export const LEGAL_CONTACT_EMAIL = "omeryildirim_3@hotmail.com";
 export const ADDRESS_LINE =
   "Emekyemez Mah. İskender Cad, Nazlı Hanım Sk. No:6 D:11, Şişhane Beyoğlu / İstanbul";
 

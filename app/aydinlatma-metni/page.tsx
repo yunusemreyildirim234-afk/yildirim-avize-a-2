@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import LegalPage from "@/components/LegalPage";
-import { PHONE_DISPLAY } from "@/lib/site";
-import { companyLine, getCompanyInfo, toPublicCompany } from "@/lib/company";
+import { LEGAL_CONTACT_EMAIL, PHONE_DISPLAY } from "@/lib/site";
+import { companyLine, getCompanyInfo, legalChannels, toPublicCompany } from "@/lib/company";
 
 export const metadata: Metadata = {
   title: "KVKK Aydınlatma Metni",
@@ -20,7 +20,7 @@ export default async function Page() {
         {
           title: "Veri Sorumlusu",
           body: [
-            `${companyLine(p, [`Tel: ${PHONE_DISPLAY}`])}.`,
+            `${companyLine(p, [`Tel: ${PHONE_DISPLAY}`, `E-posta: ${LEGAL_CONTACT_EMAIL}`])}.`,
             'Bu metinde "Yıldırım Avize" veya "biz" ifadesiyle yukarıdaki veri sorumlusu kastedilmektedir.',
           ],
         },
@@ -94,7 +94,7 @@ export default async function Page() {
         {
           title: "Başvuru Yolları",
           body: [
-            `Taleplerinizi; kimliğinizi tespit edici bilgileri ve talebinizin konusunu içeren yazılı bir dilekçeyle yukarıdaki adrese elden veya posta yoluyla, ${p.kep ? `KEP adresimiz (${p.kep}) üzerinden` : "KEP üzerinden"}, ya da sitedeki iletişim sayfası ve sipariş sırasında bildirdiğiniz e-posta adresiniz aracılığıyla e-posta ile iletebilirsiniz. Başvurunuz, niteliğine göre en geç 30 gün içinde sonuçlandırılır. Başvurunun reddedilmesi, cevabın yetersiz bulunması veya süresinde cevap verilmemesi halinde Kişisel Verileri Koruma Kurulu'na şikâyet hakkınız saklıdır.`,
+            `Taleplerinizi; kimliğinizi tespit edici bilgileri ve talebinizin konusunu içeren yazılı bir dilekçeyle yukarıdaki adrese elden veya posta yoluyla, ${p.kep ? `KEP adresimiz (${p.kep}) üzerinden` : "KEP üzerinden"}, ya da ${LEGAL_CONTACT_EMAIL} adresine e-posta ile iletebilirsiniz (iletişim kanalları: ${legalChannels(p)}). Başvurunuz, niteliğine göre en geç 30 gün içinde sonuçlandırılır. Başvurunun reddedilmesi, cevabın yetersiz bulunması veya süresinde cevap verilmemesi halinde Kişisel Verileri Koruma Kurulu'na şikâyet hakkınız saklıdır.`,
           ],
         },
       ]}

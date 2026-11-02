@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
-import { ADDRESS_LINE, PHONE_DISPLAY } from "@/lib/site";
+import { ADDRESS_LINE, LEGAL_CONTACT_EMAIL, PHONE_DISPLAY } from "@/lib/site";
 import type { PublicCompany } from "@/lib/company";
 import { AYIPLI_MAL, CAYMA, MONTAJ_NOTU, ODEME, TESLIMAT_SURESI } from "@/lib/legal-texts";
 
@@ -76,7 +76,7 @@ export default function ContractModal({ kind, data, onClose }: { kind: "pre" | "
             ) : (
               <>Yıldırım Avize<br />Adres: {ADDRESS_LINE}</>
             )}
-            <br />Tel: {PHONE_DISPLAY}
+            <br />Tel: {PHONE_DISPLAY} • E-posta: {LEGAL_CONTACT_EMAIL}
           </p>
 
           <h3 className={h}>2. ALICI</h3>

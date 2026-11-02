@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import LegalPage from "@/components/LegalPage";
-import { ADDRESS_LINE, PHONE_DISPLAY } from "@/lib/site";
+import { ADDRESS_LINE, LEGAL_CONTACT_EMAIL, PHONE_DISPLAY } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Gizlilik Politikası",
@@ -17,7 +17,7 @@ export default function Page() {
       sections={[
         {
           title: "Veri Sorumlusu",
-          body: [`Veri sorumlusu Yıldırım Avize Aydınlatma'dır. Adres: ${ADDRESS_LINE}. Telefon: ${PHONE_DISPLAY}. Unvan ve vergi bilgileri sayfa altındaki "Kurumsal & Yasal Bilgiler" bölümünde ve Aydınlatma Metni'nde yer alır.`],
+          body: [`Veri sorumlusu Yıldırım Avize Aydınlatma'dır. Adres: ${ADDRESS_LINE}. Telefon: ${PHONE_DISPLAY}. E-posta: ${LEGAL_CONTACT_EMAIL}. Unvan ve vergi bilgileri sayfa altındaki "Kurumsal & Yasal Bilgiler" bölümünde ve Aydınlatma Metni'nde yer alır.`],
         },
         {
           title: "Genel İlkeler",
@@ -32,7 +32,7 @@ export default function Page() {
         },
         {
           title: "Başvuru",
-          body: ["Kişisel verilerinize ilişkin taleplerinizi Aydınlatma Metni'nde belirtilen yazılı, KEP veya e-posta yollarıyla bize iletebilirsiniz."],
+          body: [`Kişisel verilerinize ilişkin taleplerinizi Aydınlatma Metni'nde belirtilen yazılı, KEP veya ${LEGAL_CONTACT_EMAIL} e-posta adresi yoluyla bize iletebilirsiniz.`],
         },
       ]}
     />
