@@ -6,9 +6,12 @@ import { reviewEligibility, REVIEW_STATUS } from "@/lib/reviews";
 import { IMAGE_MIMES, validateUpload } from "@/lib/uploads";
 import { notifyAdmins, notifyCustomer } from "@/lib/notifications";
 import { sendReviewAdminEmail } from "@/lib/email";
+import { rateLimit, tooMany } from "@/lib/rate-limit";
 
 // Yorum yalnızca giriş yapmış ve ürünü satın almış müşteriye açıktır; ürün başına tek yorum yazılabilir.
 export async function POST(req: Request) {
+  const rl = rateLimit(req, "review", 10, 10 * 60_000);
+  if (rl.limited) return tooMany(rl.retryAfter);
   const session = await verifySession<{ uid: string }>((await cookies()).get(USER_COOKIE)?.value);
   if (!session) {
     return NextResponse.json({ error: "Yorum yazmak için giriş yapmalısınız." }, { status: 401 });

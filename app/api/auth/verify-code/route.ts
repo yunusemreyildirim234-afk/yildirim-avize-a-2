@@ -3,11 +3,14 @@ import { prisma } from "@/lib/db";
 import { getSessionUserId } from "@/lib/account";
 import { getCustomerWithOrders } from "@/lib/customer";
 import { USER_COOKIE, cookieOptions, signSession } from "@/lib/session";
+import { rateLimit, tooMany } from "@/lib/rate-limit";
 import { consumeCode, issueProof, readProof, type CodeType } from "@/lib/verification";
 
 const BAD = () => NextResponse.json({ error: "Doğrulama kodu hatalı veya süresi dolmuş." }, { status: 400 });
 
 export async function POST(req: Request) {
+  const rl = rateLimit(req, "verify-code", 30, 10 * 60_000);
+  if (rl.limited) return tooMany(rl.retryAfter);
   const body = await req.json().catch(() => ({}));
   const type = body.type as CodeType;
   const code = typeof body.code === "string" ? body.code.replace(/\s/g, "") : "";

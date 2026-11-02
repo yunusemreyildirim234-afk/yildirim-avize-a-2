@@ -3,10 +3,13 @@ import { prisma } from "@/lib/db";
 import { getSessionUserId } from "@/lib/account";
 import { sendRequestAdminEmail } from "@/lib/email";
 import { requestTypeFor } from "@/lib/orderStatus";
+import { rateLimit, tooMany } from "@/lib/rate-limit";
 
 // Teslim edilmemiş siparişte iptal, teslim edilmiş siparişte iade talebi
 
 export async function POST(req: Request) {
+  const rl = rateLimit(req, "order-request", 10, 10 * 60_000);
+  if (rl.limited) return tooMany(rl.retryAfter);
   const userId = await getSessionUserId();
   if (!userId) return NextResponse.json({ error: "Lütfen giriş yapın." }, { status: 401 });
 
