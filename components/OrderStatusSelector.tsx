@@ -15,7 +15,7 @@ export default function OrderStatusSelector({ orderId, initialStatus, shippingTy
   const [status, setStatus] = useState(initialStatus);
   const [loading, setLoading] = useState(false);
 
-  const handleStatusChange = async (newStatus: string, undo = false) => {
+  const handleStatusChange = async (newStatus: string) => {
     const previous = status;
     setStatus(newStatus);
     setLoading(true);
@@ -24,13 +24,16 @@ export default function OrderStatusSelector({ orderId, initialStatus, shippingTy
       const res = await fetch("/api/admin/order-status", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId, status: newStatus, undo }),
+        body: JSON.stringify({ orderId, status: newStatus }),
       });
 
       const data = await res.json();
       if (data.success) {
-        if (!undo && previous !== newStatus) {
-          toast.success("Sipariş durumu güncellendi", { duration: 8000, action: { label: "↩ Geri Al", onClick: () => handleStatusChange(previous, true) } });
+        if (data.undoToken) {
+          toast.success("Sipariş durumu güncellendi", {
+            duration: 10000,
+            action: { label: "↩ Geri Al", onClick: () => undoChange(data.undoToken, previous, Boolean(data.notified), newStatus) },
+          });
         }
         router.refresh();
       } else {
@@ -38,6 +41,28 @@ export default function OrderStatusSelector({ orderId, initialStatus, shippingTy
       }
     } catch {
       toast.error("Bağlantı hatası oluştu.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Geri Al: sunucu stok/kupon/durumu tek işlemde geri çevirir; reddederse nedeni gösterilir
+  const undoChange = async (undoToken: string, previous: string, notified: boolean, changedTo: string) => {
+    const notes = [
+      notified ? "Müşteriye bildirim gitti; geri alma e-posta/bildirim göndermez." : "",
+      ["CANCELLED", "RETURNED"].includes(changedTo) ? "İptal/iade geri alınırsa stok yeniden düşülür ve kupon hakkı yeniden kullanılmış sayılır." : "",
+    ].filter(Boolean);
+    if (!confirm("Sipariş durumu eski haline döndürülsün mü?" + (notes.length ? "\n\n" + notes.join("\n") : ""))) return;
+    setLoading(true);
+    try {
+      const res = await fetch("/api/admin/order-status/undo", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ undoToken }) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Geri alınamadı.");
+      setStatus(previous);
+      toast.success("Sipariş durumu geri alındı");
+      router.refresh();
+    } catch (e) {
+      toast.error("Geri alınamadı", { description: (e as Error).message });
     } finally {
       setLoading(false);
     }
