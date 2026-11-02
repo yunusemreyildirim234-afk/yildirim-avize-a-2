@@ -117,6 +117,15 @@ export default function Footer() {
           <Link href="/mesafeli-satis-sozlesmesi" className="inline-block py-1 hover:text-neutral-200">
             Mesafeli Satış Sözleşmesi
           </Link>
+          <Link href="/iptal-iade-cayma" className="inline-block py-1 hover:text-neutral-200">
+            İptal, İade ve Cayma
+          </Link>
+          <Link href="/aydinlatma-metni" className="inline-block py-1 hover:text-neutral-200">
+            KVKK Aydınlatma Metni
+          </Link>
+          <Link href="/cerez-politikasi" className="inline-block py-1 hover:text-neutral-200">
+            Çerez Politikası
+          </Link>
         </nav>
       </div>
     </footer>

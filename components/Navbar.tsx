@@ -58,6 +58,9 @@ const CORPORATE_LINKS = [
   { href: "/gizlilik-politikasi", label: "Gizlilik Politikası" },
   { href: "/kullanim-sartlari", label: "Kullanım Şartları" },
   { href: "/mesafeli-satis-sozlesmesi", label: "Mesafeli Satış Sözleşmesi" },
+  { href: "/iptal-iade-cayma", label: "İptal, İade ve Cayma" },
+  { href: "/aydinlatma-metni", label: "KVKK Aydınlatma Metni" },
+  { href: "/cerez-politikasi", label: "Çerez Politikası" },
 ];
 
 const itemClass =

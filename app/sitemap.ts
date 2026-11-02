@@ -4,7 +4,7 @@ import { CATEGORIES, COLLECTIONS, SITE_URL } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
-const STATIC_PAGES = ["/musterilerimizden-gelenler", "/kargo-takip", "/iletisim", "/gizlilik-politikasi", "/kullanim-sartlari", "/mesafeli-satis-sozlesmesi"];
+const STATIC_PAGES = ["/musterilerimizden-gelenler", "/kargo-takip", "/iletisim", "/gizlilik-politikasi", "/kullanim-sartlari", "/mesafeli-satis-sozlesmesi", "/iptal-iade-cayma", "/aydinlatma-metni", "/cerez-politikasi"];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const products = await prisma.product
