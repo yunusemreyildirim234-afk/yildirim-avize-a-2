@@ -116,12 +116,20 @@ export default function AdminProductList({ products }: { products: Product[] }) 
   const [undo, setUndo] = useState<{ snapshot: unknown; label: string } | null>(null);
   const [undoing, setUndoing] = useState(false);
 
-  const doUndo = async () => {
+  const doUndo = async (force = false) => {
     if (!undo) return;
     setUndoing(true);
     try {
-      const res = await fetch("/api/admin/undo", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ snapshot: undo.snapshot }) });
+      const res = await fetch("/api/admin/undo", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ snapshot: undo.snapshot, force }) });
       const data = await res.json().catch(() => ({}));
+      // Ürün işlemden sonra başka yerde değiştiyse: kullanıcıya sorulur, onaylarsa zorla geri alınır
+      if (res.status === 409 && data.conflict && !force) {
+        setUndoing(false);
+        if (confirm(`${data.error}
+
+Yine de geri alınsın mı?`)) await doUndo(true);
+        return;
+      }
       if (!res.ok) throw new Error(data.error || "Geri alınamadı.");
       setUndo(null);
       router.refresh();
@@ -139,7 +147,7 @@ export default function AdminProductList({ products }: { products: Product[] }) 
       const res = await fetch("/api/admin/product/bulk", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids: [productId], action: "removeDiscount", ...payload }) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "İşlem başarısız.");
-      setUndo({ snapshot: data.snapshot, label });
+      if (data.snapshot) setUndo({ snapshot: data.snapshot, label });
       router.refresh();
     } catch (e) {
       alert((e as Error).message);
@@ -465,7 +473,7 @@ export default function AdminProductList({ products }: { products: Product[] }) 
       {undo && (
         <div role="status" className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-full bg-neutral-900 text-white text-xs pl-5 pr-2 py-2 shadow-2xl">
           <span>{undo.label} uygulandı.</span>
-          <button type="button" disabled={undoing} onClick={doUndo} className="rounded-full bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold px-3 py-1.5 disabled:opacity-60">
+          <button type="button" disabled={undoing} onClick={() => doUndo()} className="rounded-full bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold px-3 py-1.5 disabled:opacity-60">
             {undoing ? "Geri alınıyor..." : "↩ Son İşlemi Geri Al"}
           </button>
           <button type="button" aria-label="Kapat" onClick={() => setUndo(null)} className="px-2 text-neutral-400 hover:text-white">

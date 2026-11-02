@@ -1,17 +1,18 @@
 import { NextResponse } from "next/server";
 import { adminGuard } from "@/lib/admin-guard";
-import { restoreSnapshot, type UndoSnapshot } from "@/lib/admin-undo";
+import { UndoError, restoreFromToken } from "@/lib/admin-undo";
 
-// Son ürün işlemini önceki durumuna döndürür
+// Son ürün işlemini geri alır. Gövde: { snapshot: <sunucunun imzaladığı belirteç>, force?: boolean }
 export async function POST(req: Request) {
   const denied = await adminGuard();
   if (denied) return denied;
   const body = await req.json().catch(() => ({}));
-  if (!body.snapshot || typeof body.snapshot !== "object") return NextResponse.json({ error: "Geri alınacak kayıt yok." }, { status: 400 });
   try {
-    const restored = await restoreSnapshot(body.snapshot as UndoSnapshot);
+    const restored = await restoreFromToken(body.snapshot, body.force === true);
     return NextResponse.json({ success: true, restored });
   } catch (e) {
-    return NextResponse.json({ error: `Geri alınamadı: ${(e as Error).message}` }, { status: 500 });
+    if (e instanceof UndoError) return NextResponse.json({ error: e.message, conflict: e.conflict }, { status: e.status });
+    console.error("[undo] beklenmeyen hata:", (e as Error).message);
+    return NextResponse.json({ error: "Geri alınamadı. Lütfen sayfayı yenileyip kontrol edin." }, { status: 500 });
   }
 }

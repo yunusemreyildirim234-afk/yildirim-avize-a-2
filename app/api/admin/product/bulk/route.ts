@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { adminGuard } from "@/lib/admin-guard";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import { snapshotProducts } from "@/lib/admin-undo";
+import { buildUndoToken, snapshotProducts, type UndoExtra } from "@/lib/admin-undo";
 import { bulkTiersOf, upsertTier } from "@/lib/bulk-pricing";
 
 // Seçili ürünlerde toplu işlem: stok, isim, renk ekleme, koleksiyon (proxy yalnızca yöneticiye açar)
@@ -16,7 +16,9 @@ export async function POST(req: Request) {
   if (ids.length === 0) return NextResponse.json({ error: "Ürün seçilmedi." }, { status: 400 });
 
   // Geri Al için işlem öncesi durum
-  const snapshot = await snapshotProducts(ids);
+  const before = await snapshotProducts(ids);
+  const extra: UndoExtra = {};
+  const done = () => buildUndoToken(before, extra);
 
   switch (body.action) {
     case "stock": {
@@ -25,11 +27,11 @@ export async function POST(req: Request) {
       if (body.mode === "set") {
         if (value < 0) return NextResponse.json({ error: "Stok negatif olamaz." }, { status: 400 });
         const res = await prisma.productVariation.updateMany({ where: { productId: { in: ids } }, data: { stock: value } });
-        return NextResponse.json({ snapshot, success: true, updated: res.count });
+        return NextResponse.json({ snapshot: await done(), success: true, updated: res.count });
       }
       // Artırma/azaltma: 0'ın altına inmez
       const res = await prisma.$executeRaw`UPDATE "ProductVariation" SET "stock" = GREATEST(0, "stock" + ${value}) WHERE "productId" = ANY(${ids})`;
-      return NextResponse.json({ snapshot, success: true, updated: res });
+      return NextResponse.json({ snapshot: await done(), success: true, updated: res });
     }
 
     case "rename": {
@@ -42,7 +44,7 @@ export async function POST(req: Request) {
           prisma.product.update({ where: { id: p.id }, data: { title: `${prefix}${p.title}${suffix}`.replace(/\s+/g, " ").trim().slice(0, 300) } })
         )
       );
-      return NextResponse.json({ snapshot, success: true, updated: products.length });
+      return NextResponse.json({ snapshot: await done(), success: true, updated: products.length });
     }
 
     case "addVariation": {
@@ -66,15 +68,15 @@ export async function POST(req: Request) {
         data: targets.map((productId) => ({ productId, variationType: "Renk", variationValue: value, stock, extraPrice })),
       });
       const created = await prisma.productVariation.findMany({ where: { productId: { in: targets }, variationType: "Renk", variationValue: value }, select: { id: true } });
-      snapshot.deleteVariationIds = created.map((v) => v.id);
-      return NextResponse.json({ snapshot, success: true, updated: res.count, skipped: ids.length - targets.length });
+      extra.deleteVariationIds = created.map((v) => v.id);
+      return NextResponse.json({ snapshot: await done(), success: true, updated: res.count, skipped: ids.length - targets.length });
     }
 
     case "category": {
       const category = typeof body.category === "string" ? body.category.trim().slice(0, 80) : "";
       if (!category) return NextResponse.json({ error: "Koleksiyon adı zorunludur." }, { status: 400 });
       const res = await prisma.product.updateMany({ where: { id: { in: ids } }, data: { category } });
-      return NextResponse.json({ snapshot, success: true, updated: res.count });
+      return NextResponse.json({ snapshot: await done(), success: true, updated: res.count });
     }
 
     // Toplu indirim: orijinal (yüksek) fiyat listPrice'ta saklanır; tekrar uygulamak indirimi üst üste bindirmez
@@ -93,7 +95,7 @@ export async function POST(req: Request) {
         ops.push(prisma.product.update({ where: { id: p.id }, data: { basePrice: next, listPrice: original } }));
       }
       await prisma.$transaction(ops);
-      return NextResponse.json({ snapshot, success: true, updated: ops.length, skipped: products.length - ops.length });
+      return NextResponse.json({ snapshot: await done(), success: true, updated: ops.length, skipped: products.length - ops.length });
     }
 
     // Adet kademesi ekle (aynı minQty varsa üstüne yazar); normal indirime ve diğer kademelere dokunmaz
@@ -107,7 +109,7 @@ export async function POST(req: Request) {
       await prisma.$transaction(
         products.map((p) => prisma.product.update({ where: { id: p.id }, data: { bulkTiers: upsertTier(bulkTiersOf(p.bulkTiers), { minQty, type, value }) } }))
       );
-      return NextResponse.json({ snapshot, success: true, updated: products.length });
+      return NextResponse.json({ snapshot: await done(), success: true, updated: products.length });
     }
 
     // Seçici kaldırma: scope = "normal" (1 adet indirimi) | "tier" (yalnızca minQty kademesi) | "all"
@@ -129,7 +131,7 @@ export async function POST(req: Request) {
           return prisma.product.update({ where: { id: p.id }, data });
         })
       );
-      return NextResponse.json({ snapshot, success: true, updated: products.length });
+      return NextResponse.json({ snapshot: await done(), success: true, updated: products.length });
     }
 
     // Vitrin: Öne Çıkanlar / Çok Satanlar ekle-çıkar
@@ -137,7 +139,7 @@ export async function POST(req: Request) {
       const field = body.field === "isFeatured" || body.field === "isBestSeller" ? body.field : null;
       if (!field || typeof body.value !== "boolean") return NextResponse.json({ error: "Geçersiz vitrin işlemi." }, { status: 400 });
       const res = await prisma.product.updateMany({ where: { id: { in: ids } }, data: { [field]: body.value } });
-      return NextResponse.json({ snapshot, success: true, updated: res.count });
+      return NextResponse.json({ snapshot: await done(), success: true, updated: res.count });
     }
 
     default:
