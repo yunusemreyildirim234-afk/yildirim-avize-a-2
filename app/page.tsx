@@ -6,7 +6,7 @@ import FaqSection from "@/components/FaqSection";
 import Hero from "@/components/Hero";
 import JsonLd from "@/components/JsonLd";
 import ProductCard from "@/components/ProductCard";
-import { DISCOUNTED, FEATURED, getProducts } from "@/lib/products";
+import { DISCOUNTED, getBestSellers, getFeatured, getProducts } from "@/lib/products";
 import { ADDRESS_LINE, CATEGORIES, LAT, LNG, PHONE_TEL, SITE_URL } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
@@ -48,9 +48,10 @@ const localBusiness = {
 };
 
 export default async function Home() {
-  const [featured, discounted, ...categoryCovers] = await Promise.all([
-    getProducts(FEATURED, 8),
+  const [featured, discounted, bestSellers, ...categoryCovers] = await Promise.all([
+    getFeatured(8),
     getProducts(DISCOUNTED, 4),
+    getBestSellers(8),
     ...CATEGORIES.slice(0, 4).map((c) => getProducts({ category: c.dbCategory, imageUrl: { not: null } }, 1)),
   ]);
 
@@ -149,7 +150,32 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* 4. Antrasit -> siyah: SSS */}
+      {/* 4. Antrasit: çok satanlar (İndirimlilerin hemen altında) */}
+      {bestSellers.length > 0 && (
+        <section className="keep-theme bg-zinc-800 px-4 sm:px-6 lg:px-8 pb-20 sm:pb-24">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-8 space-y-2">
+              <span className="text-xs uppercase tracking-widest text-amber-400 font-semibold">Müşterilerin Tercihi</span>
+              <h2 className="text-2xl sm:text-3xl font-serif font-bold text-white">Çok Satanlar</h2>
+            </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+              {bestSellers.map((p) => (
+                <ProductCard key={p.id} product={p} dark />
+              ))}
+            </div>
+            <div className="text-center mt-10">
+              <Link
+                href="/kategori/cok-satanlar"
+                className="inline-block text-xs font-semibold text-white border border-white/40 hover:bg-white hover:text-zinc-900 px-6 py-3 rounded-full transition-colors"
+              >
+                Tüm Çok Satanlar →
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* 5. Antrasit -> siyah: SSS */}
       <div className="keep-theme bg-gradient-to-b from-zinc-800 via-zinc-900 to-black">
         <FaqSection />
       </div>

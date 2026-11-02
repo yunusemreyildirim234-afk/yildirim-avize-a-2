@@ -36,6 +36,11 @@ model Product {
   active           Boolean            @default(true) // Trendyol: satışta + arşivde değil
   brand            String?
   listPrice        Float? // Trendyol liste (üstü çizili) fiyatı
+  isFeatured       Boolean            @default(false) // Yönetici: Öne Çıkanlar vitrini
+  isBestSeller     Boolean            @default(false) // Yönetici: Çok Satanlar vitrini
+  bulkMinQty       Int? // Adet indirimi: en az bu kadar alımda geçerli
+  bulkDiscountType String? // "PERCENT" | "FIXED" (adet başı ₺)
+  bulkDiscountValue Float?
   trendyolMainId   String?            @unique // productMainId
   modelCode        String?            @unique // Site içi model kodu (1-236, yönetici değiştirebilir)
   coupons          Coupon[]

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Heart, Minus, Plus, X } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
+import type { BulkRule } from "@/lib/bulk-pricing";
 
 export interface QuickProduct {
   id: string;
@@ -14,6 +15,7 @@ export interface QuickProduct {
   basePrice: number;
   imageUrl?: string | null;
   modelCode?: string | null;
+  bulk?: BulkRule | null;
   variations: { id: string; variationValue: string; extraPrice: number; stock: number }[];
 }
 
@@ -94,6 +96,7 @@ export function CartStepper({ product, inlineToast = false }: { product: QuickPr
         imageUrl: product.imageUrl,
         variationName: variation.variationValue,
         price: product.basePrice + variation.extraPrice,
+        bulk: product.bulk,
         quantity: 1,
       });
     if (!inCart) notify.success("Sepete eklendi", { description: product.title });

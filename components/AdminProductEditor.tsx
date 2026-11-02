@@ -17,6 +17,8 @@ export interface EditorProduct {
   modelCode?: string | null;
   imageUrl?: string | null;
   images?: string[];
+  isFeatured?: boolean;
+  isBestSeller?: boolean;
   variations: EditorVariation[];
 }
 
@@ -39,6 +41,8 @@ export default function AdminProductEditor({ product }: { product: EditorProduct
   const [modelCode, setModelCode] = useState(product.modelCode ?? "");
   const [images, setImages] = useState<string[]>(product.images?.length ? product.images : product.imageUrl ? [product.imageUrl] : []);
   const [newImage, setNewImage] = useState("");
+  const [isFeatured, setIsFeatured] = useState(Boolean(product.isFeatured));
+  const [isBestSeller, setIsBestSeller] = useState(Boolean(product.isBestSeller));
 
   const [varEdits, setVarEdits] = useState<Record<string, { stock: string; extraPrice: string }>>(
     Object.fromEntries(product.variations.map((v) => [v.id, { stock: String(v.stock), extraPrice: String(v.extraPrice) }]))
@@ -62,7 +66,7 @@ export default function AdminProductEditor({ product }: { product: EditorProduct
 
   const saveInfo = () =>
     run(
-      () => api("PATCH", "/api/admin/product", { productId: product.id, title, basePrice: Number(basePrice), modelCode, images }),
+      () => api("PATCH", "/api/admin/product", { productId: product.id, title, basePrice: Number(basePrice), modelCode, images, isFeatured, isBestSeller }),
       "✓ Ürün bilgileri kaydedildi."
     );
 
@@ -118,6 +122,19 @@ export default function AdminProductEditor({ product }: { product: EditorProduct
           <span className="font-semibold text-neutral-700">Model kodu</span>
           <input value={modelCode} onChange={(e) => setModelCode(e.target.value)} className={`${field} w-full font-mono`} />
         </label>
+      </section>
+
+      {/* Vitrin */}
+      <section className="flex flex-wrap items-center gap-x-6 gap-y-2">
+        <label className="flex items-center gap-2 font-semibold text-neutral-700 cursor-pointer">
+          <input type="checkbox" checked={isFeatured} onChange={(e) => setIsFeatured(e.target.checked)} className="w-4 h-4 accent-amber-600" />
+          Öne Çıkanlar vitrininde göster
+        </label>
+        <label className="flex items-center gap-2 font-semibold text-neutral-700 cursor-pointer">
+          <input type="checkbox" checked={isBestSeller} onChange={(e) => setIsBestSeller(e.target.checked)} className="w-4 h-4 accent-amber-600" />
+          Çok Satanlar vitrininde göster
+        </label>
+        <span className="text-neutral-400">Değişiklik &ldquo;Kaydet&rdquo; ile uygulanır.</span>
       </section>
 
       {/* Görseller */}

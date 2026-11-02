@@ -6,6 +6,7 @@ import { HoverMagnifier, ImageLightbox } from "@/components/ImageZoom";
 import { useCart } from "@/context/CartContext";
 import { BANK_TRANSFER_DISCOUNT, FREE_SHIPPING_THRESHOLD, PICKUP_DISCOUNT } from "@/lib/pricing";
 import { SITE_URL, WHATSAPP_NUMBER } from "@/lib/site";
+import { bulkLabel, bulkRuleOf, lineTotalFor, unitPriceFor } from "@/lib/bulk-pricing";
 
 interface Variation {
   id: string;
@@ -25,6 +26,9 @@ interface Product {
   modelCode?: string | null;
   images?: string[];
   listPrice?: number | null;
+  bulkMinQty?: number | null;
+  bulkDiscountType?: string | null;
+  bulkDiscountValue?: number | null;
   variations: Variation[];
 }
 
@@ -43,9 +47,10 @@ export default function ProductDetailClient({ product }: { product: Product }) {
 
   const currentPrice = product.basePrice + (selectedVariation?.extraPrice || 0);
   const listShown = product.listPrice && product.listPrice > product.basePrice ? product.listPrice + (selectedVariation?.extraPrice || 0) : null;
+  const bulk = bulkRuleOf(product);
+  const unitNow = unitPriceFor(currentPrice, quantity, bulk);
   const maxQty = selectedVariation ? Math.max(0, selectedVariation.stock) : 0;
   const outOfStock = !selectedVariation || maxQty <= 0;
-  const bankPrice = Math.round(currentPrice * (1 - BANK_TRANSFER_DISCOUNT));
   const freeShipping = currentPrice >= FREE_SHIPPING_THRESHOLD;
   const waMessage = `Merhaba, ${product.title}${product.modelCode ? ` (Model: ${product.modelCode})` : ""} avize modeli hakkında bilgi almak istiyorum: ${SITE_URL}/urun/${product.id}`;
   const waUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(waMessage)}`;
@@ -65,6 +70,7 @@ export default function ProductDetailClient({ product }: { product: Product }) {
       imageUrl: product.imageUrl,
       variationName: `${selectedVariation.variationType}: ${selectedVariation.variationValue}`,
       price: currentPrice,
+      bulk,
       quantity: quantity,
     });
 
@@ -156,11 +162,20 @@ export default function ProductDetailClient({ product }: { product: Product }) {
             {listShown && listShown > currentPrice && (
               <span className="block text-sm text-neutral-500 line-through">{(listShown * quantity).toLocaleString("tr-TR")} ₺</span>
             )}
+            {unitNow < currentPrice && (
+              <span className="block text-sm text-neutral-500 line-through">{(currentPrice * quantity).toLocaleString("tr-TR")} ₺</span>
+            )}
             <span className="text-3xl font-bold tabular-nums text-neutral-900">
-              {(currentPrice * quantity).toLocaleString("tr-TR")} ₺
+              {lineTotalFor(currentPrice, quantity, bulk).toLocaleString("tr-TR")} ₺
             </span>
+            {bulk && (
+              <p className="mt-2 text-xs font-semibold text-amber-950 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5 w-fit">
+                {unitNow < currentPrice ? "✓ " : ""}
+                {bulkLabel(bulk)}
+              </p>
+            )}
             <p className="mt-2 text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-1.5 w-fit">
-              Havale/EFT ile %{Math.round(BANK_TRANSFER_DISCOUNT * 100)} İndirimli: <strong>{(bankPrice * quantity).toLocaleString("tr-TR")} ₺</strong>
+              Havale/EFT ile %{Math.round(BANK_TRANSFER_DISCOUNT * 100)} İndirimli: <strong>{Math.round(lineTotalFor(currentPrice, quantity, bulk) * (1 - BANK_TRANSFER_DISCOUNT)).toLocaleString("tr-TR")} ₺</strong>
             </p>
             {freeShipping && (
               <p className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-emerald-600 rounded-full px-3 py-1">

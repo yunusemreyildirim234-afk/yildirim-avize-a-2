@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useAccountSync } from "@/context/useAccountSync";
+import { lineTotalFor, type BulkRule } from "@/lib/bulk-pricing";
 
 export interface CartItem {
   productId: string;
@@ -11,6 +12,7 @@ export interface CartItem {
   variationName: string;
   price: number;
   quantity: number;
+  bulk?: BulkRule | null; // adet indirimi kuralı (sunucu yeniden hesaplar)
 }
 
 interface CartContextType {
@@ -98,7 +100,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const clearCart = () => setCart([]);
 
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const totalPrice = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const totalPrice = cart.reduce((sum, item) => sum + lineTotalFor(item.price, item.quantity, item.bulk), 0);
 
   return (
     <CartContext.Provider

@@ -69,6 +69,68 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, updated: res.count });
     }
 
+    // Toplu indirim: orijinal (yüksek) fiyat listPrice'ta saklanır; tekrar uygulamak indirimi üst üste bindirmez
+    case "discount": {
+      const mode = body.mode === "FIXED" ? "FIXED" : body.mode === "PERCENT" ? "PERCENT" : null;
+      const value = Number(body.value);
+      if (!mode || !Number.isFinite(value) || value <= 0) return NextResponse.json({ error: "Geçerli bir indirim değeri giriniz." }, { status: 400 });
+      if (mode === "PERCENT" && value >= 100) return NextResponse.json({ error: "Yüzde 100'ün altında olmalıdır." }, { status: 400 });
+      const products = await prisma.product.findMany({ where: { id: { in: ids } }, select: { id: true, basePrice: true, listPrice: true } });
+      const round2 = (n: number) => Math.round(n * 100) / 100;
+      const ops = [];
+      for (const p of products) {
+        const original = p.listPrice && p.listPrice > p.basePrice ? p.listPrice : p.basePrice;
+        const next = round2(Math.max(0, mode === "PERCENT" ? original * (1 - value / 100) : original - value));
+        if (next >= original) continue;
+        ops.push(prisma.product.update({ where: { id: p.id }, data: { basePrice: next, listPrice: original } }));
+      }
+      await prisma.$transaction(ops);
+      return NextResponse.json({ success: true, updated: ops.length, skipped: products.length - ops.length });
+    }
+
+    // İndirimi kaldır: eski fiyat geri yüklenir, üstü çizili fiyat ve adet indirimi temizlenir
+    case "removeDiscount": {
+      const products = await prisma.product.findMany({ where: { id: { in: ids } }, select: { id: true, basePrice: true, listPrice: true } });
+      await prisma.$transaction(
+        products.map((p) =>
+          prisma.product.update({
+            where: { id: p.id },
+            data: {
+              basePrice: p.listPrice && p.listPrice > p.basePrice ? p.listPrice : p.basePrice,
+              listPrice: null,
+              bulkMinQty: null,
+              bulkDiscountType: null,
+              bulkDiscountValue: null,
+            },
+          })
+        )
+      );
+      return NextResponse.json({ success: true, updated: products.length });
+    }
+
+    case "bulkQty": {
+      const minQty = Math.floor(Number(body.minQty));
+      const value = Number(body.value);
+      const type = body.type === "FIXED" ? "FIXED" : body.type === "PERCENT" ? "PERCENT" : null;
+      if (!type || !(minQty >= 2) || !(value > 0)) return NextResponse.json({ error: "En az 2 adet ve geçerli bir indirim değeri giriniz." }, { status: 400 });
+      if (type === "PERCENT" && value >= 100) return NextResponse.json({ error: "Yüzde 100'ün altında olmalıdır." }, { status: 400 });
+      const res = await prisma.product.updateMany({ where: { id: { in: ids } }, data: { bulkMinQty: minQty, bulkDiscountType: type, bulkDiscountValue: value } });
+      return NextResponse.json({ success: true, updated: res.count });
+    }
+
+    case "removeBulkQty": {
+      const res = await prisma.product.updateMany({ where: { id: { in: ids } }, data: { bulkMinQty: null, bulkDiscountType: null, bulkDiscountValue: null } });
+      return NextResponse.json({ success: true, updated: res.count });
+    }
+
+    // Vitrin: Öne Çıkanlar / Çok Satanlar ekle-çıkar
+    case "showcase": {
+      const field = body.field === "isFeatured" || body.field === "isBestSeller" ? body.field : null;
+      if (!field || typeof body.value !== "boolean") return NextResponse.json({ error: "Geçersiz vitrin işlemi." }, { status: 400 });
+      const res = await prisma.product.updateMany({ where: { id: { in: ids } }, data: { [field]: body.value } });
+      return NextResponse.json({ success: true, updated: res.count });
+    }
+
     default:
       return NextResponse.json({ error: "Geçersiz işlem." }, { status: 400 });
   }

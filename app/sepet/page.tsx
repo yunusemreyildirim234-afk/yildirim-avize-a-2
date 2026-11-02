@@ -12,6 +12,7 @@ import BankTransferCard from "@/components/BankTransferCard";
 import ContractModal from "@/components/ContractModal";
 import { invoiceError } from "@/lib/validation";
 import { ADDRESS_LINE } from "@/lib/site";
+import { bulkLabel, lineTotalFor, unitPriceFor } from "@/lib/bulk-pricing";
 
 interface LocationItem {
   id: number;
@@ -132,7 +133,7 @@ export default function CartPage() {
     shippingType,
     couponDiscount: couponDiscountFor(
       appliedCoupon,
-      cart.map((i) => ({ productId: i.productId, lineTotal: i.price * i.quantity }))
+      cart.map((i) => ({ productId: i.productId, lineTotal: lineTotalFor(i.price, i.quantity, i.bulk) }))
     ),
     paymentMethod,
   });
@@ -148,7 +149,7 @@ export default function CartPage() {
         body: JSON.stringify({
           code: couponInput,
           email,
-          lines: cart.map((i) => ({ productId: i.productId, lineTotal: i.price * i.quantity })),
+          lines: cart.map((i) => ({ productId: i.productId, lineTotal: lineTotalFor(i.price, i.quantity, i.bulk) })),
         }),
       });
       const data = await res.json();
@@ -341,8 +342,17 @@ export default function CartPage() {
                       </span>
                     </span>
                     <div className="text-sm font-bold text-neutral-900 mt-2">
-                      {item.price.toLocaleString("tr-TR")} ₺
+                      {unitPriceFor(item.price, item.quantity, item.bulk).toLocaleString("tr-TR")} ₺
+                      {unitPriceFor(item.price, item.quantity, item.bulk) < item.price && (
+                        <span className="ml-2 text-xs font-medium text-neutral-400 line-through">{item.price.toLocaleString("tr-TR")} ₺</span>
+                      )}
                     </div>
+                    {item.bulk && (
+                      <p className="text-[11px] text-emerald-800 mt-1">
+                        {item.quantity >= item.bulk.minQty ? "✓ " : ""}
+                        {bulkLabel(item.bulk)}
+                      </p>
+                    )}
                     </div>
                   </div>
 
@@ -787,7 +797,7 @@ export default function CartPage() {
             address: effectiveAddress,
             isPickup,
             region: [cities.find((c) => Number(c.id) === Number(buyerCityId))?.name, states.find((st) => Number(st.id) === Number(buyerStateId))?.name].filter(Boolean).join(" / "),
-            items: cart.map((i) => ({ title: i.title, variation: i.variationName, quantity: i.quantity, price: i.price })),
+            items: cart.map((i) => ({ title: i.title, variation: i.variationName, quantity: i.quantity, price: unitPriceFor(i.price, i.quantity, i.bulk) })),
             itemsTotal: totalPrice,
             shippingLabel: SHIPPING_LABELS[shippingType] ?? shippingType,
             shippingCost,

@@ -53,7 +53,8 @@ export const CATEGORIES = [
 export const COLLECTIONS = {
   tum: { title: "Tüm Ürünler", desc: "Yıldırım Avize'nin tüm koleksiyonu." },
   "one-cikanlar": { title: "Öne Çıkan Ürünler", desc: "Stokta bulunan seçili avize modellerimiz." },
-  indirimli: { title: "İndirimli & Fırsat Ürünleri", desc: "Liste fiyatının altında satılan fırsat ürünleri." },
+  indirimli: { title: "İndirimli & Fırsat Ürünleri", desc: "Liste fiyatının altında satılan veya adet indirimi bulunan fırsat ürünleri." },
+  "cok-satanlar": { title: "Çok Satanlar", desc: "Müşterilerimizin en çok tercih ettiği avize modelleri." },
 } as const;
 
 export const ADMIN_EMAILS = ["yunusemreyildirim234@gmail.com", "omeryildirim_3@hotmail.com"];

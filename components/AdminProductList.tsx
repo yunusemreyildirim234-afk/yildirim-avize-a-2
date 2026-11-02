@@ -5,6 +5,8 @@ import { ChevronDown, ExternalLink, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import AdminBulkBar from "@/components/AdminBulkBar";
 import AdminProductEditor from "@/components/AdminProductEditor";
+import SmartFilterChips from "@/components/SmartFilterChips";
+import { bulkRuleOf, bulkShortLabel } from "@/lib/bulk-pricing";
 import { COLLECTION_OPTIONS } from "@/lib/site";
 
 interface Variation {
@@ -26,8 +28,22 @@ interface Product {
   trendyolMainId?: string | null;
   modelCode?: string | null;
   images?: string[];
+  listPrice?: number | null;
+  isFeatured?: boolean;
+  isBestSeller?: boolean;
+  bulkMinQty?: number | null;
+  bulkDiscountType?: string | null;
+  bulkDiscountValue?: number | null;
   variations: Variation[];
 }
+
+// Otomatik indirim: üstü çizili eski fiyat veya adet indirimi
+const hasDiscount = (p: Product) => Boolean(p.listPrice && p.listPrice > p.basePrice) || bulkRuleOf(p) !== null;
+const CHIP_TESTS: Record<string, (p: Product) => boolean> = {
+  discount: hasDiscount,
+  featured: (p) => Boolean(p.isFeatured),
+  bestseller: (p) => Boolean(p.isBestSeller),
+};
 
 function ModelCodeEditor({ initial, disabled, onSave }: { initial: string; disabled: boolean; onSave: (code: string) => void }) {
   const [value, setValue] = useState(initial);
@@ -55,6 +71,30 @@ function ModelCodeEditor({ initial, disabled, onSave }: { initial: string; disab
   );
 }
 
+function DiscountBadges({ product }: { product: Product }) {
+  const old = product.listPrice && product.listPrice > product.basePrice ? product.listPrice : null;
+  const rule = bulkRuleOf(product);
+  const badge = "text-[10px] font-bold px-2 py-0.5 rounded";
+  if (!old && !rule && !product.isFeatured && !product.isBestSeller) return null;
+  return (
+    <div className="flex flex-wrap items-center gap-1 mt-1">
+      {old && (
+        <>
+          <span className="text-[10px] text-neutral-400 line-through">{old.toLocaleString("tr-TR")} ₺</span>
+          <span className={`${badge} bg-red-50 text-red-700`}>%{Math.round((1 - product.basePrice / old) * 100)} (−{(old - product.basePrice).toLocaleString("tr-TR")} ₺)</span>
+        </>
+      )}
+      {rule && (
+        <span className={`${badge} bg-amber-100 text-amber-950`} title={rule.type === "PERCENT" ? `%${rule.value}` : `${rule.value} ₺ adet başı`}>
+          {bulkShortLabel(rule)} ({rule.type === "PERCENT" ? `%${rule.value}` : `${rule.value} ₺`})
+        </span>
+      )}
+      {product.isFeatured && <span className={`${badge} bg-neutral-900 text-white`}>Öne Çıkan</span>}
+      {product.isBestSeller && <span className={`${badge} bg-emerald-100 text-emerald-900`}>Çok Satan</span>}
+    </div>
+  );
+}
+
 const norm = (v?: string | null) => (v ?? "").toLocaleLowerCase("tr").trim();
 
 export default function AdminProductList({ products }: { products: Product[] }) {
@@ -64,18 +104,20 @@ export default function AdminProductList({ products }: { products: Product[] }) 
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [chips, setChips] = useState<string[]>([]);
 
   // Ürün adı, stok kodu, barkod veya Trendyol ana kodu ile anlık filtre
   const q = norm(query);
+  const chipFiltered = chips.length ? products.filter((p) => chips.some((c) => CHIP_TESTS[c](p))) : products;
   const filtered = q
-    ? products.filter(
+    ? chipFiltered.filter(
         (p) =>
           norm(p.title).includes(q) ||
           norm(p.modelCode) === q ||
           norm(p.trendyolMainId).includes(q) ||
           p.variations.some((v) => norm(v.stockCode).includes(q) || norm(v.barcode).includes(q))
       )
-    : products;
+    : chipFiltered;
 
   const defaultCollections: string[] = COLLECTION_OPTIONS.map((c) => c.value);
   const extraCategories = useMemo(
@@ -207,7 +249,20 @@ export default function AdminProductList({ products }: { products: Product[] }) 
             className="w-full text-xs pl-9 pr-3 py-2.5 rounded-xl border border-neutral-300 bg-white focus:outline-none focus:border-amber-600"
           />
         </div>
-        {q && (
+        <div className="mt-3">
+          <SmartFilterChips
+            label="Ürün vitrin ve indirim filtreleri"
+            selected={chips}
+            onChange={setChips}
+            total={products.length}
+            options={[
+              { key: "discount", label: "İndirimdekiler", count: products.filter(CHIP_TESTS.discount).length },
+              { key: "featured", label: "Öne Çıkanlar", count: products.filter(CHIP_TESTS.featured).length },
+              { key: "bestseller", label: "Çok Satanlar", count: products.filter(CHIP_TESTS.bestseller).length },
+            ]}
+          />
+        </div>
+        {(q || chips.length > 0) && (
           <p className="text-[11px] text-neutral-500 mt-2">
             {filtered.length} / {products.length} model gösteriliyor
           </p>
@@ -271,6 +326,7 @@ export default function AdminProductList({ products }: { products: Product[] }) 
                 <span className="text-xs font-semibold text-neutral-600">
                   {product.basePrice.toLocaleString("tr-TR")} ₺
                 </span>
+                <DiscountBadges product={product} />
                 <ModelCodeEditor
                   key={`${product.id}-${product.modelCode ?? ""}`}
                   initial={product.modelCode ?? ""}

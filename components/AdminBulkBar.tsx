@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { COLLECTION_OPTIONS } from "@/lib/site";
 
-type Tab = "stock" | "rename" | "color" | "collection";
+type Tab = "stock" | "rename" | "color" | "collection" | "discount" | "showcase";
+type DiscountMode = "PERCENT" | "FIXED" | "QTY_PERCENT" | "QTY_FIXED";
 
 const NEW_COLLECTION = "__new__";
 const TABS: { id: Tab; label: string }[] = [
@@ -12,6 +13,8 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "rename", label: "İsim" },
   { id: "color", label: "Renk Ekle" },
   { id: "collection", label: "Koleksiyon" },
+  { id: "discount", label: "İndirim" },
+  { id: "showcase", label: "Vitrin" },
 ];
 
 interface Props {
@@ -35,6 +38,11 @@ export default function AdminBulkBar({ ids, extraCategories, onDone }: Props) {
   const [colorExtra, setColorExtra] = useState("0");
   const [collection, setCollection] = useState<string>(COLLECTION_OPTIONS[0].value);
   const [newCollection, setNewCollection] = useState("");
+  const [discMode, setDiscMode] = useState<DiscountMode>("PERCENT");
+  const [discValue, setDiscValue] = useState("10");
+  const [minQty, setMinQty] = useState("2");
+  const [showField, setShowField] = useState<"isFeatured" | "isBestSeller">("isFeatured");
+  const [showValue, setShowValue] = useState(true);
 
   const run = async (payload: Record<string, unknown>) => {
     setBusy(true);
@@ -49,7 +57,7 @@ export default function AdminBulkBar({ ids, extraCategories, onDone }: Props) {
         alert(data.error || "İşlem başarısız.");
         return;
       }
-      const skipped = data.skipped ? ` (${data.skipped} üründe bu renk zaten vardı, atlandı)` : "";
+      const skipped = data.skipped ? ` (${data.skipped} üründe ${payload.action === "addVariation" ? "bu renk zaten vardı" : "değişiklik gerekmedi"}, atlandı)` : "";
       alert(`✓ ${ids.length} ürün seçili, işlem uygulandı${skipped}.`);
       router.refresh();
       onDone();
@@ -67,9 +75,19 @@ export default function AdminBulkBar({ ids, extraCategories, onDone }: Props) {
     if (tab === "color") {
       return run({ action: "addVariation", variationValue: colorName, stock: Number(colorStock), extraPrice: Number(colorExtra) });
     }
+    if (tab === "discount") {
+      const value = Number(discValue);
+      if (discMode === "PERCENT" || discMode === "FIXED") return run({ action: "discount", mode: discMode, value });
+      return run({ action: "bulkQty", type: discMode === "QTY_PERCENT" ? "PERCENT" : "FIXED", minQty: Number(minQty), value });
+    }
+    if (tab === "showcase") return run({ action: "showcase", field: showField, value: showValue });
     const category = collection === NEW_COLLECTION ? newCollection.trim() : collection;
     if (!category) return alert("Yeni koleksiyon adını yazın.");
     return run({ action: "category", category });
+  };
+
+  const removeAll = (action: "removeDiscount" | "removeBulkQty", msg: string) => {
+    if (confirm(msg)) run({ action });
   };
 
   const input = "p-2 rounded-lg border border-neutral-300 bg-white text-xs focus:outline-none focus:border-amber-600";
@@ -115,6 +133,44 @@ export default function AdminBulkBar({ ids, extraCategories, onDone }: Props) {
             <input aria-label="Renk adı" required value={colorName} onChange={(e) => setColorName(e.target.value)} placeholder="Renk (örn: Krom)" className={`${input} w-40`} />
             <input aria-label="Stok" type="number" min={0} value={colorStock} onChange={(e) => setColorStock(e.target.value)} className={`${input} w-20`} title="Stok" />
             <input aria-label="Ek fiyat" type="number" min={0} value={colorExtra} onChange={(e) => setColorExtra(e.target.value)} className={`${input} w-24`} title="Ek fiyat (₺)" />
+          </>
+        )}
+
+        {tab === "discount" && (
+          <>
+            <select aria-label="İndirim türü" value={discMode} onChange={(e) => setDiscMode(e.target.value as DiscountMode)} className={input}>
+              <option value="PERCENT">Yüzde indirim (%)</option>
+              <option value="FIXED">Sabit tutar indirimi (₺)</option>
+              <option value="QTY_PERCENT">Adet bazlı: yüzde (%)</option>
+              <option value="QTY_FIXED">Adet bazlı: adet başı ₺</option>
+            </select>
+            {(discMode === "QTY_PERCENT" || discMode === "QTY_FIXED") && (
+              <label className="flex items-center gap-1.5 text-neutral-600">
+                En az
+                <input aria-label="En az adet" type="number" min={2} value={minQty} onChange={(e) => setMinQty(e.target.value)} className={`${input} w-16`} />
+                adet
+              </label>
+            )}
+            <input aria-label="İndirim değeri" type="number" min={1} step="any" required value={discValue} onChange={(e) => setDiscValue(e.target.value)} className={`${input} w-24`} />
+            <button type="button" disabled={busy} onClick={() => removeAll("removeDiscount", "Seçili ürünlerde indirim kaldırılsın mı? Eski fiyat geri yüklenir; üstü çizili fiyat ve adet indirimi silinir.")} className="px-3 py-2 rounded-lg border border-red-300 text-red-700 font-semibold hover:bg-red-50 disabled:opacity-60">
+              İndirimi Kaldır
+            </button>
+            <button type="button" disabled={busy} onClick={() => removeAll("removeBulkQty", "Seçili ürünlerde adet indirimi kaldırılsın mı?")} className="px-3 py-2 rounded-lg border border-red-300 text-red-700 font-semibold hover:bg-red-50 disabled:opacity-60">
+              Adet İndirimini Kaldır
+            </button>
+          </>
+        )}
+
+        {tab === "showcase" && (
+          <>
+            <select aria-label="Vitrin" value={showField} onChange={(e) => setShowField(e.target.value as "isFeatured" | "isBestSeller")} className={input}>
+              <option value="isFeatured">Öne Çıkanlar</option>
+              <option value="isBestSeller">Çok Satanlar</option>
+            </select>
+            <select aria-label="İşlem" value={showValue ? "add" : "remove"} onChange={(e) => setShowValue(e.target.value === "add")} className={input}>
+              <option value="add">Vitrine ekle</option>
+              <option value="remove">Vitrinden çıkar</option>
+            </select>
           </>
         )}
 

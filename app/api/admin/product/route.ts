@@ -54,8 +54,8 @@ export async function PATCH(req: Request) {
     const body = await req.json();
 
     // Tekil ürün düzenleme: başlık, fiyat, görseller (varsa model kodu ile birlikte)
-    if (typeof body.productId === "string" && ("title" in body || "basePrice" in body || "images" in body || "modelCode" in body)) {
-      const data: { title?: string; basePrice?: number; images?: string[]; imageUrl?: string | null; modelCode?: string | null } = {};
+    if (typeof body.productId === "string" && ("title" in body || "basePrice" in body || "images" in body || "modelCode" in body || "isFeatured" in body || "isBestSeller" in body)) {
+      const data: { title?: string; basePrice?: number; images?: string[]; imageUrl?: string | null; modelCode?: string | null; isFeatured?: boolean; isBestSeller?: boolean } = {};
       if (typeof body.title === "string") {
         const title = body.title.trim().slice(0, 300);
         if (!title) return NextResponse.json({ error: "Ürün başlığı boş olamaz." }, { status: 400 });
@@ -66,6 +66,8 @@ export async function PATCH(req: Request) {
         if (!(price >= 0)) return NextResponse.json({ error: "Geçerli bir fiyat giriniz." }, { status: 400 });
         data.basePrice = price;
       }
+      if (typeof body.isFeatured === "boolean") data.isFeatured = body.isFeatured;
+      if (typeof body.isBestSeller === "boolean") data.isBestSeller = body.isBestSeller;
       if (Array.isArray(body.images)) {
         const images: string[] = body.images
           .filter((u: unknown): u is string => typeof u === "string")

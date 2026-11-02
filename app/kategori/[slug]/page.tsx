@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import ProductCard from "@/components/ProductCard";
 import { prisma } from "@/lib/db";
-import { DISCOUNTED, FEATURED, getProducts } from "@/lib/products";
+import { DISCOUNTED, FEATURED, getBestSellers, getProducts } from "@/lib/products";
 import { CATEGORIES, COLLECTIONS } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
@@ -29,7 +29,12 @@ async function resolve(slug: string) {
   const category = CATEGORIES.find((c) => c.slug === slug);
   if (category) return { title: category.title, desc: category.desc, where: { category: category.dbCategory } };
   if (slug === "tum") return { ...COLLECTIONS.tum, where: {} };
-  if (slug === "one-cikanlar") return { ...COLLECTIONS["one-cikanlar"], where: FEATURED };
+  if (slug === "one-cikanlar") {
+    // Yönetici işaretlileri varsa yalnızca onlar; yoksa otomatik seçim
+    const flagged = await prisma.product.count({ where: { active: true, isFeatured: true } });
+    return { ...COLLECTIONS["one-cikanlar"], where: flagged > 0 ? { isFeatured: true } : FEATURED };
+  }
+  if (slug === "cok-satanlar") return { ...COLLECTIONS["cok-satanlar"], where: null };
   if (slug === "indirimli") return { ...COLLECTIONS.indirimli, where: DISCOUNTED };
 
   // Yönetim panelinden eklenen yeni koleksiyonlar
@@ -56,7 +61,7 @@ export default async function CategoryPage({ params }: Props) {
   const current = await resolve(slug);
   if (!current) notFound();
 
-  const products = await getProducts(current.where);
+  const products = current.where ? await getProducts(current.where) : await getBestSellers(48);
 
   return (
     <main className="min-h-screen bg-white pb-20">
