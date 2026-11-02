@@ -9,7 +9,6 @@ export const COMPANY_DEFAULTS = {
   kepAddress: "ornek@hs01.kep.tr",
   headquartersAddress: "Emekyemez Mah. İskender Cad, Nazlı Hanım Sk. No:6 D:11, Şişhane Beyoğlu / İstanbul",
   etbisUrl: "https://www.eticaret.gov.tr" as string | null,
-  etbisQrImage: null as string | null,
 };
 
 export type CompanyInfo = typeof COMPANY_DEFAULTS;
@@ -28,7 +27,6 @@ export const getCompanyInfo = unstable_cache(
       kepAddress: row.kepAddress,
       headquartersAddress: row.headquartersAddress,
       etbisUrl: row.etbisUrl,
-      etbisQrImage: row.etbisQrImage,
     };
   },
   ["site-config"],

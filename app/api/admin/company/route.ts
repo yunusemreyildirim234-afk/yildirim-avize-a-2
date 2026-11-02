@@ -4,7 +4,6 @@ import { prisma } from "@/lib/db";
 import { COMPANY_TAG } from "@/lib/company";
 
 const TEXT_FIELDS = ["companyTitle", "taxOffice", "taxNumber", "mersisNo", "kepAddress", "headquartersAddress"] as const;
-const MAX_QR_CHARS = 1_400_000; // ~1 MB görsel (base64)
 
 // Kurumsal & yasal bilgiler (yalnızca yönetici — proxy.ts /api/admin altını korur)
 export async function PUT(req: Request) {
@@ -23,14 +22,6 @@ export async function PUT(req: Request) {
     return NextResponse.json({ error: "ETBİS bağlantısı http(s):// ile başlamalıdır." }, { status: 400 });
   }
   data.etbisUrl = url || null;
-
-  const qr = typeof body.etbisQrImage === "string" ? body.etbisQrImage.trim() : "";
-  if (qr) {
-    const ok = /^https?:\/\//i.test(qr) || /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(qr);
-    if (!ok) return NextResponse.json({ error: "Karekod görseli PNG/JPEG/WebP olmalı veya geçerli bir bağlantı olmalıdır." }, { status: 400 });
-    if (qr.length > MAX_QR_CHARS) return NextResponse.json({ error: "Karekod görseli en fazla 1 MB olabilir." }, { status: 400 });
-  }
-  data.etbisQrImage = qr || null;
 
   await prisma.siteConfig.upsert({ where: { id: 1 }, create: { id: 1, ...data }, update: data });
   revalidateTag(COMPANY_TAG, "max");

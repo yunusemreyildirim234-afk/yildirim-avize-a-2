@@ -1,25 +1,24 @@
-import { getCompanyInfo } from "@/lib/company";
+import { ShieldCheck } from "lucide-react";
+import { COMPANY_DEFAULTS, getCompanyInfo } from "@/lib/company";
 
 /** Kurumsal & yasal bilgiler. `dark`: koyu zeminli footer, `light`: iletişim sayfası kartı. */
 export default async function CompanyInfo({ variant }: { variant: "dark" | "light" }) {
   const c = await getCompanyInfo();
   const dark = variant === "dark";
 
-  // Yönetici gerçek veriyi girene kadar örnek/boş MERSİS ve KEP satırları müşteriye gösterilmez
-  const isPlaceholder = (v: string) => !v.trim() || /örnek|ornek/i.test(v);
+  // Yalnızca boş değerler gizlenir; yöneticinin girdiği gerçek veri hiçbir kelime filtresine takılmaz.
+  // Fabrika varsayılanındaki yer tutucular (COMPANY_DEFAULTS) ise açıkça tanınıp gizlenir.
+  const hidden = (v: string, placeholder: string) => !v.trim() || v.trim() === placeholder;
 
   const rows: [string, string][] = [
     ["Unvan", c.companyTitle],
     ["Vergi Dairesi / No", `${c.taxOffice} / ${c.taxNumber}`],
-    ...(isPlaceholder(c.mersisNo) ? [] : [["MERSİS No", c.mersisNo] as [string, string]]),
-    ...(isPlaceholder(c.kepAddress) ? [] : [["KEP Adresi", c.kepAddress] as [string, string]]),
+    ...(hidden(c.mersisNo, COMPANY_DEFAULTS.mersisNo) ? [] : [["MERSİS No", c.mersisNo] as [string, string]]),
+    ...(hidden(c.kepAddress, COMPANY_DEFAULTS.kepAddress) ? [] : [["KEP Adresi", c.kepAddress] as [string, string]]),
     ["Merkez Adresi", c.headquartersAddress],
   ];
 
-  const qr = c.etbisQrImage ? (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src={c.etbisQrImage} alt="ETBİS karekodu" loading="lazy" className="h-24 w-24 rounded-lg bg-white object-contain p-1" />
-  ) : null;
+  const etbisUrl = c.etbisUrl?.trim() || null;
 
   return (
     <section
@@ -45,27 +44,21 @@ export default async function CompanyInfo({ variant }: { variant: "dark" | "ligh
           </dl>
         </div>
 
-        {(qr || c.etbisUrl) && (
-          <div className="shrink-0 flex flex-col items-start sm:items-center gap-2">
-            <span className={`text-[11px] font-semibold ${dark ? "text-neutral-300" : "text-neutral-900"}`}>ETBİS</span>
-            {qr && c.etbisUrl ? (
-              <a href={c.etbisUrl} target="_blank" rel="noopener noreferrer nofollow" aria-label="ETBİS kaydını görüntüle">
-                {qr}
-              </a>
-            ) : (
-              qr
-            )}
-            {c.etbisUrl && (
-              <a
-                href={c.etbisUrl}
-                target="_blank"
-                rel="noopener noreferrer nofollow"
-                className={`text-[11px] underline underline-offset-2 ${dark ? "text-amber-400 hover:text-amber-300" : "text-amber-700 hover:text-amber-800"}`}
-              >
-                Kayıt doğrulama
-              </a>
-            )}
-          </div>
+        {etbisUrl && (
+          <a
+            href={etbisUrl}
+            target="_blank"
+            rel="noopener noreferrer nofollow"
+            aria-label="ETBİS kaydını yeni sekmede doğrula"
+            className={`shrink-0 inline-flex items-center gap-2 self-start rounded-xl border px-4 py-2.5 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600 ${
+              dark
+                ? "border-zinc-700 text-neutral-200 hover:border-amber-500 hover:text-amber-400"
+                : "border-neutral-300 text-neutral-800 hover:border-amber-600 hover:text-amber-700"
+            }`}
+          >
+            <ShieldCheck aria-hidden="true" className="h-4 w-4 text-amber-600" />
+            ETBİS Kayıt Doğrulama
+          </a>
         )}
       </div>
     </section>
