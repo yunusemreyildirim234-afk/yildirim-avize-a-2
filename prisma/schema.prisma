@@ -306,3 +306,18 @@ model MarketingConsent {
   unsubscribedAt DateTime?
   createdAt      DateTime  @default(now())
 }
+
+// Hafif müşteri olay/hata kaydı (yalnızca kritik olaylar; 3 günden eski kayıtlar otomatik silinir)
+model ClientEvent {
+  id        String   @id @default(cuid())
+  type      String // SEARCH | CART_ADD | CHECKOUT_START | ERROR
+  sessionId String // Tarayıcıda üretilen anonim oturum kimliği
+  email     String? // Oturumdaki veya sepet formuna yazılan e-posta
+  detail    String? // Aranan kelime, ürün, hata mesajı
+  page      String? // Olayın yakalandığı sayfa/aksiyon
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([sessionId, createdAt])
+  @@index([email])
+}

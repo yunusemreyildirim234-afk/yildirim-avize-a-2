@@ -18,6 +18,9 @@ import AdminCompany from "@/components/AdminCompany";
 import AdminOrderFilters from "@/components/AdminOrderFilters";
 import AdminInvoice from "@/components/AdminInvoice";
 import AdminShipmentSync from "@/components/AdminShipmentSync";
+import AdminDeleteButton from "@/components/AdminDeleteButton";
+import AdminActivity from "@/components/AdminActivity";
+import { getActivity } from "@/lib/activity";
 import { getCompanyInfo } from "@/lib/company";
 import { ORDER_GROUPS, isCountedOrder, matchesGroups, parseGroupParam, type OrderGroupKey } from "@/lib/orderStatus";
 import { getInvoiceMeta } from "@/lib/invoice";
@@ -73,6 +76,7 @@ async function getAdminData() {
 export default async function AdminPage({ searchParams }: { searchParams: Promise<{ durum?: string }> }) {
   const selectedGroups = parseGroupParam((await searchParams).durum);
   const { orders, products, messages, coupons, customers, reviews, company } = await getAdminData();
+  const activity = await getActivity();
   const pendingReviews = reviews.filter((r) => r.status === "PENDING").length;
   const sortedReviews = [...reviews].sort(
     (a, b) => Number(b.status === "PENDING") - Number(a.status === "PENDING") || b.createdAt.getTime() - a.createdAt.getTime()
@@ -214,7 +218,15 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           ]}
         >
           <AdminOrderFilters selected={selectedGroups} counts={groupCounts} total={orders.length} />
-          <div className="flex justify-end px-6 pt-4">
+          <div className="flex flex-wrap items-center justify-end gap-3 px-6 pt-4">
+            {visibleOrders.length > 0 && (
+              <AdminDeleteButton
+                endpoint="/api/admin/orders"
+                ids={visibleOrders.map((o) => o.id)}
+                label={`Listelenen ${visibleOrders.length} siparişi sil`}
+                confirmText={`Listelenen ${visibleOrders.length} sipariş ve bağlı fatura/dekont kayıtları silinecek.`}
+              />
+            )}
             <AdminShipmentSync />
           </div>
           {orders.length === 0 ? (
@@ -322,6 +334,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                         {order.status === "DELIVERED" && (
                           <AdminInvoice orderId={order.id} state={invoices.state} meta={invoices.byOrder[order.id] ?? null} />
                         )}
+                        <AdminDeleteButton endpoint="/api/admin/orders" ids={[order.id]} label="Siparişi Sil" confirmText="Bu sipariş ve bağlı fatura/dekont kayıtları silinecek." className="mt-2" />
                         <AdminOrderRequest
                           orderId={order.id}
                           type={order.cancelReturnType}
@@ -391,6 +404,21 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           description="Footer ve İletişim sayfasında görünen unvan, vergi, MERSİS, KEP, adres ve ETBİS karekodu."
         >
           <AdminCompany initial={company} />
+        </AdminSection>
+
+        {/* 8. Müşteriler & Son 3 Gün Hareket/Hata Kaydı */}
+        <AdminSection
+          id="musteri-hareketleri"
+          title="Müşteriler & Son 3 Gün Hareket / Hata Kaydı"
+          description="Arama, sepete ekleme, ödeme adımı ve karşılaşılan hatalar. Kayıtlar 3 gün sonra otomatik silinir."
+          badges={[
+            {
+              label: `${[...activity.registered, ...activity.guests].reduce((n, r) => n + r.errors.length, 0)} hata`,
+              tone: [...activity.registered, ...activity.guests].some((r) => r.errors.length > 0) ? "red" : "neutral",
+            },
+          ]}
+        >
+          <AdminActivity registered={activity.registered} guests={activity.guests} ok={activity.ok} />
         </AdminSection>
       </div>
     </main>

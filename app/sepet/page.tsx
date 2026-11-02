@@ -12,6 +12,7 @@ import BankTransferCard from "@/components/BankTransferCard";
 import ContractModal from "@/components/ContractModal";
 import { invoiceError } from "@/lib/validation";
 import { ADDRESS_LINE } from "@/lib/site";
+import { rememberEmail, track } from "@/lib/track";
 import { bulkLabel, lineTotalFor, unitPriceFor } from "@/lib/bulk-pricing";
 
 interface LocationItem {
@@ -58,6 +59,8 @@ export default function CartPage() {
   // 6. Müşteri İletişim & Kargonomi Şehir/İlçe Bilgileri
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  // Geçerli e-posta, olay kayıtlarını bu müşteriyle ilişkilendirmek için saklanır
+  useEffect(() => rememberEmail(email), [email]);
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [states, setStates] = useState<LocationItem[]>([]);
@@ -154,9 +157,13 @@ export default function CartPage() {
       });
       const data = await res.json();
       if (res.ok && data.rule) setAppliedCoupon(data.rule as CouponRule);
-      else setCouponError(data.error || "Geçersiz veya süresi dolmuş kupon kodu.");
+      else {
+        setCouponError(data.error || "Geçersiz veya süresi dolmuş kupon kodu.");
+        track("ERROR", data.error || "Geçersiz veya süresi dolmuş kupon kodu.", "sepet/kupon");
+      }
     } catch {
       setCouponError("Bağlantı hatası oluştu.");
+      track("ERROR", "Kupon: bağlantı hatası", "sepet/kupon");
     } finally {
       setCouponLoading(false);
     }
@@ -175,10 +182,12 @@ export default function CartPage() {
     const invErr = invoiceError({ invoiceType, taxNumber, taxOffice, companyTitle });
     if (invErr) {
       toast.error(invErr);
+      track("ERROR", invErr, "sepet/fatura-formu");
       return;
     }
     if (!agreePre || !agreeSales) {
       toast.error("Devam etmek için iki sözleşmeyi de onaylamalısınız.");
+      track("ERROR", "Sözleşmeler onaylanmadan devam edilmek istendi", "sepet/onay");
       return;
     }
 
@@ -195,6 +204,7 @@ export default function CartPage() {
     const selectedStateObj = states.find((s) => Number(s.id) === Number(buyerStateId));
     const selectedCityObj = cities.find((c) => Number(c.id) === Number(buyerCityId));
 
+    track("CHECKOUT_START", `${cart.length} kalem • ${paymentMethod === "BANK_TRANSFER" ? "Havale/EFT" : "Kart"}`, "sepet/odeme");
     setLoading(true);
     try {
       const res = await fetch("/api/order", {
@@ -232,9 +242,11 @@ export default function CartPage() {
         router.push(`/siparis-onay/${data.orderId}`);
       } else {
         toast.error("Sipariş oluşturulamadı", { description: data.error });
+        track("ERROR", `Sipariş oluşturulamadı: ${data.error ?? "bilinmeyen hata"}`, "sepet/siparis");
       }
     } catch {
       toast.error("Bir bağlantı hatası oluştu.");
+      track("ERROR", "Sipariş: bağlantı hatası", "sepet/siparis");
     } finally {
       setLoading(false);
     }

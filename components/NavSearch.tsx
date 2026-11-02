@@ -4,6 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Loader2, Search, X } from "lucide-react";
+import RecentSearches from "@/components/RecentSearches";
+import { clearRecentSearches, getRecentSearches, removeRecentSearch, saveRecentSearch } from "@/lib/recent-searches";
+import { track } from "@/lib/track";
 
 interface Result {
   id: string;
@@ -78,9 +81,37 @@ export default function NavSearch() {
   const [results, setResults] = useState<Result[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [recent, setRecent] = useState<string[]>([]);
   const desktopRef = useRef<HTMLDivElement>(null);
   const desktopInput = useRef<HTMLInputElement>(null);
   const mobileInput = useRef<HTMLInputElement>(null);
+
+  // Arama terimini (en az 2 karakter) son aramalara ekler ve olay olarak kaydeder
+  const remember = (term: string) => {
+    if (term.trim().length < 2) return;
+    setRecent(saveRecentSearch(term));
+    track("SEARCH", term.trim());
+  };
+
+  const openPanel = () => {
+    setRecent(getRecentSearches());
+    setOpen(true);
+  };
+
+  const pickRecent = (term: string) => {
+    onChange(term);
+    remember(term);
+    (window.innerWidth >= 768 ? desktopInput : mobileInput).current?.focus();
+  };
+
+  const recentList = (
+    <RecentSearches
+      items={recent}
+      onPick={pickRecent}
+      onRemove={(t) => setRecent(removeRecentSearch(t))}
+      onClear={() => setRecent(clearRecentSearches())}
+    />
+  );
 
   const reset = () => {
     setOpen(false);
@@ -157,6 +188,7 @@ export default function NavSearch() {
   // Enter: tek/ilk sonuca git
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    remember(query);
     if (results[0]) {
       router.push(`/urun/${results[0].id}`);
       reset();
@@ -164,6 +196,11 @@ export default function NavSearch() {
   };
 
   const showPanel = open && query.trim().length > 0;
+  const showRecent = open && !query.trim() && recent.length > 0;
+  const pickResult = () => {
+    remember(query);
+    reset();
+  };
 
   const field = (ref: React.RefObject<HTMLInputElement | null>, className: string) => (
     <input
@@ -172,7 +209,7 @@ export default function NavSearch() {
       aria-label="Ürün adı, model kodu veya stok kodu ile ara"
       placeholder="Ürün adı, model kodu (1-236), stok kodu..."
       value={query}
-      onFocus={() => setOpen(true)}
+      onFocus={openPanel}
       onChange={(e) => onChange(e.target.value)}
       className={className}
     />
@@ -208,9 +245,10 @@ export default function NavSearch() {
         </form>
         {showPanel && (
           <div className="absolute right-0 top-full mt-2 w-[26rem] bg-white rounded-2xl border border-zinc-200 shadow-xl overflow-hidden">
-            <Results query={query.trim()} results={results} loading={loading} searched={searched} onPick={reset} />
+            <Results query={query.trim()} results={results} loading={loading} searched={searched} onPick={pickResult} />
           </div>
         )}
+        {showRecent && <div className="absolute right-0 top-full mt-2 w-[26rem] bg-white rounded-2xl border border-zinc-200 shadow-xl overflow-hidden">{recentList}</div>}
       </div>
 
       {/* Mobil: büyüteç ikonu */}
@@ -218,7 +256,7 @@ export default function NavSearch() {
         type="button"
         aria-label="Ürün ara"
         onClick={() => {
-          setOpen(true);
+          openPanel();
           setTimeout(() => mobileInput.current?.focus(), 50);
         }}
         className="md:hidden rounded-full p-2.5 hover:bg-zinc-100 transition-colors"
@@ -243,7 +281,9 @@ export default function NavSearch() {
           </form>
           <div className="flex-1 overflow-y-auto">
             {query.trim() ? (
-              <Results query={query.trim()} results={results} loading={loading} searched={searched} onPick={reset} />
+              <Results query={query.trim()} results={results} loading={loading} searched={searched} onPick={pickResult} />
+            ) : recent.length > 0 ? (
+              recentList
             ) : (
               <p className="p-6 text-center text-xs text-zinc-400">Ürün adı, model kodu veya stok kodu yazın.</p>
             )}

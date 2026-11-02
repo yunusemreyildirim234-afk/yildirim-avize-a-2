@@ -2,6 +2,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import RecentSearches from "@/components/RecentSearches";
+import { clearRecentSearches, getRecentSearches, removeRecentSearch, saveRecentSearch } from "@/lib/recent-searches";
+import { track } from "@/lib/track";
 import { CartStepper, FavoriteButton, type QuickProduct } from "@/components/ProductQuickActions";
 
 type Product = QuickProduct;
@@ -11,6 +14,8 @@ export default function SearchBar() {
   const [results, setResults] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [recent, setRecent] = useState<string[]>([]);
+  const [showRecent, setShowRecent] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
   // Müşteri yazdıkça arama yap
@@ -51,11 +56,18 @@ export default function SearchBar() {
     function handleClickOutside(event: MouseEvent) {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
         setIsOpen(false);
+        setShowRecent(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  const remember = (term: string) => {
+    if (term.trim().length < 2) return;
+    setRecent(saveRecentSearch(term));
+    track("SEARCH", term.trim());
+  };
 
   return (
     <div ref={searchRef} className="relative w-full">
@@ -65,8 +77,18 @@ export default function SearchBar() {
           aria-label="Avize ara"
           placeholder="Avize modeli, kristal veya koleksiyon ara..."
           value={query}
-          onFocus={() => query.trim() && setIsOpen(true)}
-          onChange={(e) => setQuery(e.target.value)}
+          onFocus={() => {
+            if (query.trim()) setIsOpen(true);
+            else {
+              setRecent(getRecentSearches());
+              setShowRecent(true);
+            }
+          }}
+          onKeyDown={(e) => e.key === "Enter" && remember(query)}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setShowRecent(!e.target.value.trim());
+          }}
           className="w-full text-neutral-800 placeholder-neutral-400 rounded-full focus:outline-none focus:ring-2 focus:ring-amber-500/30 border transition-all bg-white text-base pl-12 pr-12 py-4 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.25)] border-zinc-200 focus:border-amber-400"
         />
         {/* Arama İkonu */}
@@ -90,6 +112,21 @@ export default function SearchBar() {
         )}
       </div>
 
+      {showRecent && !query.trim() && recent.length > 0 && (
+        <div className="absolute top-16 text-left left-0 right-0 bg-white rounded-2xl border border-neutral-200 shadow-xl overflow-hidden z-50">
+          <RecentSearches
+            items={recent}
+            onPick={(t) => {
+              setQuery(t);
+              setShowRecent(false);
+              remember(t);
+            }}
+            onRemove={(t) => setRecent(removeRecentSearch(t))}
+            onClear={() => setRecent(clearRecentSearches())}
+          />
+        </div>
+      )}
+
       {/* Açılır Canlı Sonuç Kutusu */}
       {isOpen && (
         <div className={`absolute top-16 text-left left-0 right-0 bg-white rounded-2xl border border-neutral-200 shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-150`}>
@@ -104,7 +141,7 @@ export default function SearchBar() {
               </div>
               {results.map((product) => (
                 <div key={product.id} className="p-3 flex items-start gap-2 hover:bg-amber-50/50 transition-colors">
-                  <Link href={`/urun/${product.id}`} onClick={() => setIsOpen(false)} className="flex-1 min-w-0 flex items-start gap-2.5">
+                  <Link href={`/urun/${product.id}`} onClick={() => { remember(query); setIsOpen(false); }} className="flex-1 min-w-0 flex items-start gap-2.5">
                     <span className="w-12 h-12 rounded-lg bg-neutral-900 overflow-hidden shrink-0 border border-neutral-200">
                       {product.imageUrl && (
                         // eslint-disable-next-line @next/next/no-img-element

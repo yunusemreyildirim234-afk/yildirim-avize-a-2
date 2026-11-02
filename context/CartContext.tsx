@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useAccountSync } from "@/context/useAccountSync";
+import { track } from "@/lib/track";
 import { lineTotalFor, type BulkRule } from "@/lib/bulk-pricing";
 
 export interface CartItem {
@@ -68,6 +69,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   useAccountSync({ endpoint: "/api/cart", list: cart, setList: setCart, merge: mergeCarts, serialize: serializeCart, ready: isLoaded });
 
   const addToCart = (newItem: CartItem) => {
+    track("CART_ADD", `${newItem.title} (${newItem.variationName}) x${newItem.quantity}`);
     setCart((prev) => {
       const existing = prev.find((item) => item.variationId === newItem.variationId);
       if (existing) {

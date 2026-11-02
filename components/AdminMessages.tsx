@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import SmartFilterChips from "@/components/SmartFilterChips";
+import AdminDeleteButton from "@/components/AdminDeleteButton";
 
 export interface AdminMessage {
   id: string;
@@ -71,6 +72,13 @@ export default function AdminMessages({ messages }: { messages: AdminMessage[] }
             total={messages.length}
             onChange={setSelected}
           />
+          <AdminDeleteButton
+            endpoint="/api/admin/messages"
+            ids={visible.map((m) => m.id)}
+            label={`Listelenen ${visible.length} kaydı sil`}
+            confirmText={`Listelenen ${visible.length} mesaj/soru silinecek.`}
+            className="mt-3"
+          />
         </div>
       )}
       {messages.length === 0 ? (
@@ -137,6 +145,7 @@ export default function AdminMessages({ messages }: { messages: AdminMessage[] }
                       <span className="text-neutral-400">Son yanıt: {new Date(m.repliedAt).toLocaleString("tr-TR")}</span>
                     )}
                     {notice[m.id] && <span className="text-neutral-600">{notice[m.id]}</span>}
+                    <AdminDeleteButton endpoint="/api/admin/messages" ids={[m.id]} label="Sil" confirmText="Bu mesaj/soru silinecek." className="ml-auto" />
                   </div>
                 </div>
               </li>

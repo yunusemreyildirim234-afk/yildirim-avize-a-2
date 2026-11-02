@@ -4,6 +4,17 @@ import { prisma } from "@/lib/db";
 import { sendReplyEmail } from "@/lib/email";
 import { notifyCustomer } from "@/lib/notifications";
 
+// Seçili mesaj/soruları kalıcı siler
+export async function DELETE(req: Request) {
+  const denied = await adminGuard();
+  if (denied) return denied;
+  const body = await req.json().catch(() => ({}));
+  const ids: string[] = Array.isArray(body.ids) ? [...new Set<string>(body.ids.filter((i: unknown): i is string => typeof i === "string"))].slice(0, 500) : [];
+  if (ids.length === 0) return NextResponse.json({ error: "Mesaj seçilmedi." }, { status: 400 });
+  const res = await prisma.contactMessage.deleteMany({ where: { id: { in: ids } } });
+  return NextResponse.json({ success: true, deleted: res.count });
+}
+
 // Yönetici yanıtı: kaydeder ve müşterinin e-posta adresine gönderir (proxy yalnızca yöneticiye açar)
 export async function POST(req: Request) {
   const denied = await adminGuard();
