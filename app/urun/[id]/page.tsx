@@ -73,7 +73,7 @@ export default async function ProductDetailPage({ params }: Props) {
   const category = CATEGORIES.find((c) => c.dbCategory === product.category);
   const inStock = product.variations.some((v) => v.stock > 0);
   const prices = product.variations.map((v) => product.basePrice + v.extraPrice);
-  const productImages = [product.imageUrl, ...product.images].filter((u): u is string => Boolean(u));
+  const productImages = [product.imageUrl, ...product.images].filter((u): u is string => Boolean(u)).map((u) => (u.startsWith("/") ? `${SITE_URL}${u}` : u));
   const productSchema = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -101,6 +101,7 @@ export default async function ProductDetailPage({ params }: Props) {
       url: `${SITE_URL}/urun/${id}`,
       priceCurrency: "TRY",
       price: Math.min(product.basePrice, ...prices),
+      seller: { "@type": "Organization", name: "Yıldırım Avize" },
       availability: inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
       itemCondition: "https://schema.org/NewCondition",
     },

@@ -77,7 +77,7 @@ export default function ProductDetailClient({ product }: { product: Product }) {
     <div className="bg-white rounded-3xl border border-neutral-200 overflow-hidden shadow-sm grid grid-cols-1 lg:grid-cols-2">
       {/* Sol: Büyük Boy Gerçek Avize Fotoğraf Alanı */}
       <div className="flex flex-col bg-neutral-900">
-      <div className="relative min-h-[440px] flex-1 overflow-hidden flex items-center justify-center">
+      <div className="relative min-h-[320px] sm:min-h-[440px] flex-1 overflow-hidden flex items-center justify-center">
         {mainImage ? (
           <HoverMagnifier key={mainImage} src={mainImage} alt={product.title} onZoom={() => setZoomed(true)} />
         ) : (
@@ -90,8 +90,8 @@ export default function ProductDetailClient({ product }: { product: Product }) {
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
 
         {/* Beyoğlu Mağaza Rozeti */}
-        <div className="absolute bottom-6 left-6 pointer-events-none bg-neutral-900/90 backdrop-blur-sm border border-neutral-700 text-neutral-200 text-xs px-4 py-2 rounded-full flex items-center gap-2 shadow-lg">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+        <div className="absolute bottom-4 left-4 right-4 sm:right-auto sm:bottom-6 sm:left-6 pointer-events-none bg-neutral-900/90 border border-neutral-700 text-neutral-200 text-xs px-4 py-2 rounded-full flex items-center gap-2 shadow-lg">
+          <span aria-hidden="true" className="w-2 h-2 rounded-full bg-emerald-400" />
           <span>Beyoğlu Mağazamızda Sergileniyor</span>
         </div>
       </div>
@@ -105,12 +105,12 @@ export default function ProductDetailClient({ product }: { product: Product }) {
               aria-selected={i === activeImage}
               aria-label={`${i + 1}. fotoğraf`}
               onClick={() => setActiveImage(i)}
-              className={`shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${
+              className={`shrink-0 w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-lg overflow-hidden border-2 transition-colors ${
                 i === activeImage ? "border-amber-500" : "border-transparent opacity-70 hover:opacity-100"
               }`}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={src} alt="" loading="lazy" className="w-full h-full object-cover" />
+              <img src={src} alt="" width={72} height={72} loading="lazy" decoding="async" className="w-full h-full object-cover" />
             </button>
           ))}
         </div>
@@ -118,7 +118,7 @@ export default function ProductDetailClient({ product }: { product: Product }) {
       </div>
 
       {/* Sağ: Ürün Bilgileri ve Seçenekler */}
-      <div className="p-8 sm:p-12 flex flex-col justify-between space-y-8">
+      <div className="p-5 sm:p-8 lg:p-12 flex flex-col justify-between space-y-8">
         <div className="space-y-4">
           <span className="text-xs font-semibold text-amber-600 uppercase tracking-wider">
             {product.category} Serisi
@@ -128,10 +128,10 @@ export default function ProductDetailClient({ product }: { product: Product }) {
               Model Kodu: #{product.modelCode}
             </span>
           )}
-          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-neutral-900">
+          <h1 className="text-2xl sm:text-3xl font-serif font-bold leading-tight tracking-tight text-neutral-900">
             {product.title}
           </h1>
-          <p className="text-sm text-neutral-600 leading-relaxed whitespace-pre-line">
+          <p className="text-sm text-neutral-700 leading-7 whitespace-pre-line">
             {product.description}
           </p>
 
@@ -152,11 +152,11 @@ export default function ProductDetailClient({ product }: { product: Product }) {
           </ul>
 
           <div className="pt-4">
-            <span className="text-xs text-neutral-400 block mb-1">Toplam Tutar</span>
+            <span className="text-xs text-neutral-500 block mb-1">Toplam Tutar</span>
             {listShown && listShown > currentPrice && (
-              <span className="block text-sm text-neutral-400 line-through">{(listShown * quantity).toLocaleString("tr-TR")} ₺</span>
+              <span className="block text-sm text-neutral-500 line-through">{(listShown * quantity).toLocaleString("tr-TR")} ₺</span>
             )}
-            <span className="text-3xl font-bold text-neutral-900">
+            <span className="text-3xl font-bold tabular-nums text-neutral-900">
               {(currentPrice * quantity).toLocaleString("tr-TR")} ₺
             </span>
             <p className="mt-2 text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-1.5 w-fit">
@@ -173,22 +173,24 @@ export default function ProductDetailClient({ product }: { product: Product }) {
         {/* Varyasyon Seçimi */}
         {product.variations.length > 0 && (
           <div className="space-y-3 pt-6 border-t border-neutral-100">
-            <label className="text-xs font-bold text-neutral-700 uppercase tracking-wider block">
+            <span id="varyasyon-etiketi" className="text-xs font-bold text-neutral-700 uppercase tracking-wider block">
               Seçenek Belirleyin:
-            </label>
-            <div className="grid grid-cols-2 gap-3">
+            </span>
+            <div role="radiogroup" aria-labelledby="varyasyon-etiketi" className="grid grid-cols-1 min-[420px]:grid-cols-2 gap-3">
               {product.variations.map((v) => {
                 const isSelected = selectedVariation?.id === v.id;
                 return (
                   <button
                     key={v.id}
                     type="button"
+                    role="radio"
+                    aria-checked={isSelected}
                     disabled={v.stock <= 0}
                     onClick={() => {
                       setSelectedVariation(v);
                       setQuantity((q) => Math.max(1, Math.min(q, v.stock)));
                     }}
-                    className={`p-3 rounded-xl border text-left transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+                    className={`min-h-[56px] p-3 rounded-xl border text-left transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
                       isSelected
                         ? "border-amber-600 bg-amber-50/50 ring-2 ring-amber-600/20"
                         : "border-neutral-200 hover:border-neutral-300 bg-white"
@@ -200,7 +202,7 @@ export default function ProductDetailClient({ product }: { product: Product }) {
                     <div className="text-[11px] text-neutral-500 mt-0.5">
                       {v.extraPrice > 0 ? `+${v.extraPrice} ₺` : "Fark Yok"}
                     </div>
-                    <div className={`text-[10px] mt-1 font-medium ${v.stock > 0 ? "text-emerald-600" : "text-red-600"}`}>
+                    <div className={`text-[11px] mt-1 font-medium ${v.stock > 0 ? "text-emerald-700" : "text-red-700"}`}>
                       {v.stock > 0 ? `Stok: ${v.stock} adet` : "Tükendi"}
                     </div>
                   </button>
@@ -218,11 +220,11 @@ export default function ProductDetailClient({ product }: { product: Product }) {
                 type="button"
                 onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                 aria-label="Adedi azalt"
-                className="px-3.5 py-2.5 hover:bg-neutral-200 text-sm font-semibold transition-colors"
+                className="min-w-11 min-h-11 px-3.5 hover:bg-neutral-200 text-sm font-semibold transition-colors"
               >
                 -
               </button>
-              <span className="px-4 py-2 text-sm font-bold text-neutral-800">
+              <span aria-live="polite" className="min-w-8 text-center text-sm font-bold text-neutral-800">
                 {quantity}
               </span>
               <button
@@ -230,7 +232,7 @@ export default function ProductDetailClient({ product }: { product: Product }) {
                 onClick={() => setQuantity((q) => Math.min(maxQty, q + 1))}
                 disabled={quantity >= maxQty}
                 aria-label="Adedi artır"
-                className="px-3.5 py-2.5 hover:bg-neutral-200 text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="min-w-11 min-h-11 px-3.5 hover:bg-neutral-200 text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 +
               </button>
@@ -240,7 +242,7 @@ export default function ProductDetailClient({ product }: { product: Product }) {
               type="button"
               onClick={handleAddToCart}
               disabled={outOfStock}
-              className="flex-1 bg-neutral-900 hover:bg-amber-600 text-white font-medium py-3 px-6 rounded-xl transition-colors shadow-sm text-sm disabled:opacity-50 disabled:hover:bg-neutral-900 disabled:cursor-not-allowed"
+              className="flex-1 min-h-11 bg-neutral-900 hover:bg-amber-600 text-white font-medium py-3 px-4 sm:px-6 rounded-xl transition-colors shadow-sm text-sm disabled:opacity-50 disabled:hover:bg-neutral-900 disabled:cursor-not-allowed"
             >
               {outOfStock ? "Stokta Yok" : addedToCart ? "✓ Sepete Eklendi!" : "Sepete Ekle"}
             </button>
@@ -256,7 +258,7 @@ export default function ProductDetailClient({ product }: { product: Product }) {
           </a>
 
           <div className="bg-amber-50/60 border border-amber-200/60 rounded-xl p-3.5 text-xs text-amber-950 flex items-start gap-2.5">
-            <span className="text-base">📍</span>
+            <span aria-hidden="true" className="text-base">📍</span>
             <div>
               <strong className="font-semibold">Beyoğlu Mağazasından Teslim Alabilirsiniz</strong>
               <p className="mt-1 text-amber-900/80">Mağazadan teslim seçeneğinde sepette %{Math.round(PICKUP_DISCOUNT * 100)} ek indirim uygulanır</p>

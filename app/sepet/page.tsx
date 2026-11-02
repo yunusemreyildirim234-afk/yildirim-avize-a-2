@@ -2,6 +2,7 @@
 
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
+import { ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
@@ -262,12 +263,12 @@ export default function CartPage() {
     return (
       <main className="min-h-screen bg-neutral-50 py-20 px-4 text-center">
         <div className="max-w-md mx-auto space-y-4">
-          <span className="text-5xl block">🛍️</span>
+          <span aria-hidden="true" className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-500"><ShoppingBag className="h-7 w-7" /></span>
           <h2 className="text-2xl font-serif font-bold text-neutral-900">
             Sepetiniz Henüz Boş
           </h2>
           <p className="text-sm text-neutral-500">
-            Beyoğlu koleksiyonumuzun kristal ve modern avizelerini keşfedin.
+            Beyoğlu koleksiyonumuzun kristal ve modern avizelerini keşfedin; ilk parçanız sizi bekliyor.
           </p>
           <Link
             href="/"

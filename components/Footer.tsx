@@ -14,7 +14,7 @@ const CHANNELS = [
 
 export default function Footer() {
   return (
-    <footer className="keep-theme bg-black text-white pt-16 pb-10">
+    <footer className="keep-theme bg-zinc-950 text-white pt-16 pb-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-10 pb-12 border-b border-zinc-800">
         <div className="space-y-4 md:col-span-2">
           <span className="text-2xl font-serif font-bold tracking-wider text-neutral-100">
@@ -28,11 +28,11 @@ export default function Footer() {
             <p className="text-amber-400 font-medium">📍 {ADDRESS_LINE}</p>
             <p>
               📞{" "}
-              <a href={`tel:${PHONE_TEL}`} className="hover:text-amber-400 font-mono">
+              <a href={`tel:${PHONE_TEL}`} className="inline-block py-1 hover:text-amber-400 font-mono">
                 {PHONE_DISPLAY}
               </a>
             </p>
-            <p className="text-[11px] text-neutral-500 pt-1">
+            <p className="text-[11px] text-neutral-400 pt-1">
               🕒 Hafta İçi (Pzt - Cuma): 09:00 - 18:00 | Hafta Sonu: Kapalı
             </p>
           </address>
@@ -54,11 +54,11 @@ export default function Footer() {
         </div>
 
         <div className="space-y-3">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-neutral-200">Koleksiyonlar</h2>
-          <ul className="text-xs text-neutral-400 space-y-2">
+          <h2 className="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-100 mb-1">Koleksiyonlar</h2>
+          <ul className="text-xs text-neutral-400 space-y-1">
             {CATEGORIES.map((c) => (
               <li key={c.slug}>
-                <Link href={`/kategori/${c.slug}`} className="hover:text-amber-400">
+                <Link href={`/kategori/${c.slug}`} className="inline-block py-1.5 hover:text-amber-400">
                   {c.title}
                 </Link>
               </li>
@@ -67,15 +67,15 @@ export default function Footer() {
         </div>
 
         <div className="space-y-3">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-neutral-200">Resmi Kanallarımız</h2>
-          <ul className="text-xs text-neutral-400 space-y-2.5">
+          <h2 className="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-100 mb-1">Resmi Kanallarımız</h2>
+          <ul className="text-xs text-neutral-400 space-y-1">
             {CHANNELS.map((c) => (
               <li key={c.href}>
                 <a
                   href={c.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={`transition-colors flex items-center gap-1.5 ${
+                  className={`transition-colors flex items-center gap-1.5 py-1.5 ${
                     c.highlight ? "text-amber-400 hover:text-amber-300 font-semibold" : "hover:text-amber-400"
                   }`}
                 >
@@ -85,17 +85,17 @@ export default function Footer() {
               </li>
             ))}
             <li className="pt-2 border-t border-zinc-800">
-              <Link href="/iletisim" className="hover:text-amber-400 transition-colors block">
+              <Link href="/iletisim" className="block py-1.5 hover:text-amber-400 transition-colors">
                 Mağaza Yol Tarifi & İletişim
               </Link>
             </li>
             <li>
-              <Link href="/musterilerimizden-gelenler" className="hover:text-amber-400 transition-colors block">
+              <Link href="/musterilerimizden-gelenler" className="block py-1.5 hover:text-amber-400 transition-colors">
                 Müşterilerimizden Gelenler
               </Link>
             </li>
             <li>
-              <Link href="/kargo-takip" className="hover:text-amber-400 transition-colors block">
+              <Link href="/kargo-takip" className="block py-1.5 hover:text-amber-400 transition-colors">
                 Kargo & Sipariş Takibi
               </Link>
             </li>
@@ -105,16 +105,16 @@ export default function Footer() {
 
       <CompanyInfo variant="dark" />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 flex flex-col md:flex-row items-center justify-between text-[11px] text-neutral-500 gap-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 flex flex-col md:flex-row items-center justify-between text-[11px] text-neutral-400 gap-4">
         <p>© 2026 Yıldırım Avize. Tüm hakları saklıdır.</p>
         <nav aria-label="Yasal bağlantılar" className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
-          <Link href="/gizlilik-politikasi" className="hover:text-neutral-300">
+          <Link href="/gizlilik-politikasi" className="inline-block py-1 hover:text-neutral-200">
             Gizlilik Politikası
           </Link>
-          <Link href="/kullanim-sartlari" className="hover:text-neutral-300">
+          <Link href="/kullanim-sartlari" className="inline-block py-1 hover:text-neutral-200">
             Kullanım Şartları
           </Link>
-          <Link href="/mesafeli-satis-sozlesmesi" className="hover:text-neutral-300">
+          <Link href="/mesafeli-satis-sozlesmesi" className="inline-block py-1 hover:text-neutral-200">
             Mesafeli Satış Sözleşmesi
           </Link>
         </nav>

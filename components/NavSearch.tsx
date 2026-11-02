@@ -36,7 +36,12 @@ function Results({
   }
   if (!searched) return null;
   if (results.length === 0) {
-    return <p className="p-4 text-center text-xs text-zinc-500">&ldquo;{query}&rdquo; ile eşleşen ürün bulunamadı.</p>;
+    return (
+      <div className="p-5 text-center text-xs text-zinc-600 space-y-2">
+        <p>&ldquo;{query}&rdquo; ile eşleşen ürün bulunamadı.</p>
+        <a href="/kategori/tum" className="inline-block font-semibold text-amber-800 underline underline-offset-2">Tüm koleksiyona göz atın →</a>
+      </div>
+    );
   }
   return (
     <ul role="listbox" aria-label="Arama sonuçları" className="divide-y divide-zinc-100 max-h-[70vh] overflow-y-auto">

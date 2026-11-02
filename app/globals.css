@@ -258,3 +258,15 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .ya-pulse-ring, .ya-shimmer { animation: none; }
 }
+
+/* Klavye gezinmesi: tüm etkileşimli öğelerde görünür odak halkası */
+@layer base {
+  :focus-visible {
+    outline: 2px solid #b45309;
+    outline-offset: 2px;
+  }
+  html,
+  body {
+    overflow-x: clip;
+  }
+}

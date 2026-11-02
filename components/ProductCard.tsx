@@ -6,9 +6,12 @@ import { CartStepper, FavoriteButton } from "@/components/ProductQuickActions";
 export default function ProductCard({
   product,
   dark = false,
+  priority = false,
 }: {
   product: ProductWithVariations;
   dark?: boolean;
+  /** Sayfa üstündeki (LCP) kartlar için görseli öncelikli yükler */
+  priority?: boolean;
 }) {
   const totalStock = product.variations.reduce((sum, v) => sum + v.stock, 0);
   const discount =
@@ -33,8 +36,8 @@ export default function ProductCard({
 
   return (
     <div
-      className={`group relative flex flex-col rounded-2xl border transition-all hover:-translate-y-0.5 hover:shadow-lg ${
-        dark ? "bg-zinc-900 border-zinc-700 text-zinc-100" : "bg-white border-zinc-200 text-zinc-900 shadow-sm"
+      className={`group relative flex flex-col rounded-2xl border transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_-12px_rgba(24,24,27,0.35)] focus-within:shadow-[0_8px_24px_-12px_rgba(24,24,27,0.35)] ${
+        dark ? "bg-zinc-900 border-zinc-700 text-zinc-100" : "bg-white border-zinc-200/80 text-zinc-900 shadow-[0_1px_2px_rgba(24,24,27,0.05)]"
       }`}
     >
       <Link href={`/urun/${product.id}`} className="flex flex-col flex-1">
@@ -44,6 +47,7 @@ export default function ProductCard({
               src={product.imageUrl}
               alt={product.title}
               fill
+              priority={priority}
               sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
               className="object-cover transition-transform duration-500 group-hover:scale-105"
             />
@@ -64,17 +68,17 @@ export default function ProductCard({
           )}
         </div>
 
-        <div className="p-4 pb-3 flex-1 flex flex-col justify-between gap-3">
+        <div className="p-4 pb-3 sm:p-5 sm:pb-3 flex-1 flex flex-col justify-between gap-3">
           <div>
-            <span className={`text-[11px] font-medium ${dark ? "text-amber-400" : "text-amber-700"}`}>
+            <span className={`text-[11px] font-semibold uppercase tracking-[0.08em] ${dark ? "text-amber-400" : "text-amber-800"}`}>
               {product.category}
             </span>
-            <h3 className="text-sm font-semibold leading-snug line-clamp-2 mt-0.5">{product.title}</h3>
+            <h3 className="font-serif text-[15px] font-semibold leading-snug tracking-tight line-clamp-2 mt-1 min-h-[2.6em]">{product.title}</h3>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-lg font-bold">{product.basePrice.toLocaleString("tr-TR")} ₺</span>
+            <span className="text-lg font-bold tabular-nums">{product.basePrice.toLocaleString("tr-TR")} ₺</span>
             {discount > 0 && product.listPrice && (
-              <span className="text-xs line-through text-zinc-400">{product.listPrice.toLocaleString("tr-TR")} ₺</span>
+              <span className="text-xs line-through text-zinc-500">{product.listPrice.toLocaleString("tr-TR")} ₺</span>
             )}
           </div>
         </div>
@@ -82,7 +86,7 @@ export default function ProductCard({
 
       {/* Link dışında: hızlı aksiyonlar kartın bağlantısını tetiklemez */}
       <FavoriteButton product={quick} className="absolute top-3 right-3 z-10" />
-      <div className="px-4 pb-4">
+      <div className="px-4 pb-4 sm:px-5 sm:pb-5">
         <CartStepper product={quick} />
       </div>
     </div>
