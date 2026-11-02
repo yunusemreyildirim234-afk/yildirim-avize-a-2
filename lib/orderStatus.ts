@@ -47,3 +47,48 @@ export function trackState(o: TrackInput): TrackState {
   else if (o.status === "DELIVERED") current = 4;
   return { kind: "steps", current, labels };
 }
+
+
+// ---- Sipariş durum grupları (yönetim paneli listesi, sayaçlar ve filtre çipleri bu tek tanımdan beslenir) ----
+
+/** Ciro ve "geçerli sipariş" sayaçlarına girmeyen durumlar: ödemesi tamamlanmamış, iptal ve iade edilmiş siparişler. */
+export const UNCOUNTED_STATUSES = ["AWAITING_PAYMENT", "PAYMENT_FAILED", "PENDING_NEW", "CANCELLED", "RETURNED"];
+
+/** Ödemesi alınmış, iptal/iade edilmemiş sipariş mi? */
+export const isCountedOrder = (status: string) => !UNCOUNTED_STATUSES.includes(status);
+
+export interface GroupInput {
+  status: string;
+  cancelReturnStatus?: string | null;
+}
+
+export const ORDER_GROUPS = [
+  // PENDING: ödemesi alınmış, hazırlanıyor; PENDING_NEW: havale onayı bekliyor (yönetici işlemi gerektirdiği için burada)
+  { key: "yeni", label: "Yeni gelen", test: (o: GroupInput) => o.status === "PENDING" || o.status === "PENDING_NEW" },
+  { key: "hazir", label: "Teslime hazır", test: (o: GroupInput) => o.status === "READY_FOR_PICKUP" },
+  { key: "kargoda", label: "Kargo sürecinde", test: (o: GroupInput) => o.status === "SHIPPED" },
+  { key: "teslim", label: "Teslim edilen", test: (o: GroupInput) => o.status === "DELIVERED" },
+  { key: "iptal", label: "İptal", test: (o: GroupInput) => o.status === "CANCELLED" },
+  // Not: iade onayında sipariş, ürün henüz gelmeden RETURNED yapılır; "iade edilen" bu yüzden ürünün geri geldiğini garanti etmez.
+  { key: "iade", label: "İade edilen", test: (o: GroupInput) => o.status === "RETURNED" },
+  // Müşteri iptal/iade talebi var ve henüz karara bağlanmamış (diğer gruplarla çakışabilir)
+  { key: "talep", label: "Talep bekleyen", test: (o: GroupInput) => o.cancelReturnStatus === "PENDING" },
+  { key: "odeme", label: "Ödeme bekliyor / başarısız", test: (o: GroupInput) => o.status === "AWAITING_PAYMENT" || o.status === "PAYMENT_FAILED" },
+] as const;
+
+export type OrderGroupKey = (typeof ORDER_GROUPS)[number]["key"];
+export const ALL_GROUP_KEYS: OrderGroupKey[] = ORDER_GROUPS.map((g) => g.key);
+export const DEFAULT_GROUP_KEYS: OrderGroupKey[] = ["yeni", "hazir", "kargoda", "talep"];
+
+/** ?durum= değerini grup anahtarlarına çevirir. Parametre yoksa varsayılan; "tumu" hepsi; boş değer hiçbiri. */
+export function parseGroupParam(param: string | undefined): OrderGroupKey[] {
+  if (param === undefined) return DEFAULT_GROUP_KEYS;
+  if (param === "tumu") return ALL_GROUP_KEYS;
+  const wanted = param.split(",").map((k) => k.trim());
+  return ALL_GROUP_KEYS.filter((k) => wanted.includes(k));
+}
+
+/** Seçili gruplardan en az birine giren sipariş mi? */
+export function matchesGroups(o: GroupInput, keys: readonly OrderGroupKey[]): boolean {
+  return ORDER_GROUPS.some((g) => keys.includes(g.key) && g.test(o));
+}

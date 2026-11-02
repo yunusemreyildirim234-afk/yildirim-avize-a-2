@@ -15,7 +15,12 @@ import AdminReceiptActions from "@/components/AdminReceiptActions";
 import AdminOrderRequest from "@/components/AdminOrderRequest";
 import AdminReviews from "@/components/AdminReviews";
 import AdminCompany from "@/components/AdminCompany";
+import AdminOrderFilters from "@/components/AdminOrderFilters";
+import AdminInvoice from "@/components/AdminInvoice";
+import AdminShipmentSync from "@/components/AdminShipmentSync";
 import { getCompanyInfo } from "@/lib/company";
+import { ORDER_GROUPS, isCountedOrder, matchesGroups, parseGroupParam, type OrderGroupKey } from "@/lib/orderStatus";
+import { getInvoiceMeta } from "@/lib/invoice";
 
 export const dynamic = "force-dynamic";
 
@@ -65,7 +70,8 @@ async function getAdminData() {
   return { orders, products, messages, coupons, customers, reviews, company };
 }
 
-export default async function AdminPage() {
+export default async function AdminPage({ searchParams }: { searchParams: Promise<{ durum?: string }> }) {
+  const selectedGroups = parseGroupParam((await searchParams).durum);
   const { orders, products, messages, coupons, customers, reviews, company } = await getAdminData();
   const pendingReviews = reviews.filter((r) => r.status === "PENDING").length;
   const sortedReviews = [...reviews].sort(
@@ -76,13 +82,23 @@ export default async function AdminPage() {
     (a, b) => Number(b.status === "PENDING") - Number(a.status === "PENDING") || b.createdAt.getTime() - a.createdAt.getTime()
   );
 
-  // Ödeme adımında terk edilen denemeler gelir/sayaçlara dahil edilmez
+  // Sayaçlar: yalnızca ödemesi alınmış, iptal/iade edilmemiş siparişler "geçerli" sayılır (lib/orderStatus.ts)
+  const countedOrders = orders.filter((o) => isCountedOrder(o.status));
   const attempts = orders.filter((o) => o.status === "AWAITING_PAYMENT");
-  const pendingOrders = orders.filter((o) => o.status === "PENDING" || o.status === "PENDING_NEW").length;
+  const groupCounts = Object.fromEntries(ORDER_GROUPS.map((g) => [g.key, orders.filter((o) => g.test(o)).length])) as Record<OrderGroupKey, number>;
   const pendingMessages = messages.filter((m) => m.status === "PENDING").length;
-  const totalRevenue = orders.filter((o) => !["AWAITING_PAYMENT", "PAYMENT_FAILED", "PENDING_NEW", "CANCELLED", "RETURNED"].includes(o.status)).reduce((sum, o) => sum + o.totalAmount, 0);
-  const beyogluOrdersCount = orders.filter((o) => o.shippingType === "BEYOGLU_MAGAZA_TESLIM").length;
-  const kargonomiOrdersCount = orders.filter((o) => Boolean(o.kargonomiShipmentId)).length;
+  const totalRevenue = countedOrders.reduce((sum, o) => sum + o.totalAmount, 0);
+  const beyogluOrders = countedOrders.filter((o) => o.shippingType === "BEYOGLU_MAGAZA_TESLIM");
+  const beyogluDelivered = beyogluOrders.filter((o) => o.status === "DELIVERED").length;
+  // Açık Kargonomi gönderisi: gönderisi oluşturulmuş ve henüz teslim edilmemiş/iptal edilmemiş sipariş
+  const openShipmentCount = orders.filter((o) => Boolean(o.kargonomiShipmentId) && ["PENDING", "SHIPPED"].includes(o.status)).length;
+
+  // Liste: seçili durum gruplarına göre süzülür
+  const visibleOrders = orders.filter((o) => matchesGroups(o, selectedGroups));
+
+  // Fatura bilgileri ana sipariş sorgusundan ayrı okunur; tablo yoksa panelin geri kalanı çalışır
+  const deliveredIds = visibleOrders.filter((o) => o.status === "DELIVERED").map((o) => o.id);
+  const invoices = await getInvoiceMeta(deliveredIds);
 
   return (
     <main className="min-h-screen bg-neutral-100 py-10 px-4 sm:px-6 lg:px-8">
@@ -130,27 +146,34 @@ export default async function AdminPage() {
           </div>
 
           <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm">
-            <span className="text-xs text-neutral-500 font-medium block">Toplam Sipariş</span>
+            <span className="text-xs text-neutral-500 font-medium block">Geçerli Sipariş</span>
             <span className="text-2xl font-bold text-neutral-900 mt-1 block">
-              {orders.length} adet
+              {countedOrders.length} adet
+            </span>
+            <span className="text-[11px] text-neutral-400 mt-1 block">
+              Toplam kayıt: {orders.length} (iptal, iade ve ödemesi tamamlanmayanlar hariç)
             </span>
           </div>
 
           <div className="bg-white p-5 rounded-2xl border border-emerald-200 bg-emerald-50/40 shadow-sm">
             <span className="text-xs text-emerald-800 font-medium block">
-              Kargonomi Gönderileri
+              Açık Kargonomi Gönderileri
             </span>
             <span className="text-2xl font-bold text-emerald-900 mt-1 block">
-              {kargonomiOrdersCount} aktif kargo
+              {openShipmentCount} gönderi
             </span>
+            <span className="text-[11px] text-emerald-800/70 mt-1 block">Teslim edilmemiş, iptal/iade olmayan</span>
           </div>
 
           <div className="bg-white p-5 rounded-2xl border border-amber-200 bg-amber-50/40 shadow-sm">
             <span className="text-xs text-amber-800 font-medium block">
-              Beyoğlu Teslim / Katalog
+              Beyoğlu Mağaza Siparişleri
             </span>
             <span className="text-2xl font-bold text-amber-900 mt-1 block">
-              {beyogluOrdersCount} teslim • {products.length} model
+              {beyogluOrders.length} sipariş • {beyogluDelivered} teslim edilen
+            </span>
+            <span className="text-[11px] text-amber-800/70 mt-1 block">
+              İptal, iade ve ödemesi tamamlanmayanlar hariç • Katalog: {products.length} model
             </span>
           </div>
         </div>
@@ -185,13 +208,22 @@ export default async function AdminPage() {
           title="Gelen Siparişler, Durum & Kargonomi Yönetimi"
           description="Kargonomi gönderisi oluşturabilir, fiyat tekliflerini onaylayabilir ve PDF barkod çıktısı alabilirsiniz."
           badges={[
-            { label: `${pendingOrders} bekleyen sipariş`, tone: pendingOrders > 0 ? "amber" : "neutral" },
+            { label: `${groupCounts.yeni} yeni gelen`, tone: groupCounts.yeni > 0 ? "amber" : "neutral" },
+            ...(groupCounts.talep > 0 ? [{ label: `${groupCounts.talep} talep bekliyor`, tone: "red" as const }] : []),
             ...(attempts.length > 0 ? [{ label: `${attempts.length} deneme`, tone: "neutral" as const }] : []),
           ]}
         >
+          <AdminOrderFilters selected={selectedGroups} counts={groupCounts} total={orders.length} />
+          <div className="flex justify-end px-6 pt-4">
+            <AdminShipmentSync />
+          </div>
           {orders.length === 0 ? (
             <div className="p-12 text-center text-neutral-400 text-xs">
               Henüz verilmiş bir sipariş bulunmuyor.
+            </div>
+          ) : visibleOrders.length === 0 ? (
+            <div className="p-12 text-center text-neutral-400 text-xs">
+              Seçili durum filtrelerine uyan sipariş yok. Yukarıdan başka bir filtre seçebilir veya &quot;Tümü&quot;nü açabilirsiniz.
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -207,7 +239,7 @@ export default async function AdminPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100 font-medium align-top">
-                  {orders.map((order) => (
+                  {visibleOrders.map((order) => (
                     <tr key={order.id} className="hover:bg-neutral-50/80 transition-colors">
                       <td className="p-4 font-mono text-[11px] text-neutral-500">
                         {order.id.slice(0, 8)}...
@@ -287,6 +319,9 @@ export default async function AdminPage() {
                           initialStatus={order.status}
                           shippingType={order.shippingType}
                         />
+                        {order.status === "DELIVERED" && (
+                          <AdminInvoice orderId={order.id} state={invoices.state} meta={invoices.byOrder[order.id] ?? null} />
+                        )}
                         <AdminOrderRequest
                           orderId={order.id}
                           type={order.cancelReturnType}
