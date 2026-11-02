@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Star } from "lucide-react";
 import type { ReviewEligibility } from "@/lib/reviews";
+import { compressImageToWebP, MAX_RAW_BYTES, MAX_UPLOAD_BYTES } from "@/lib/client-image";
 
 export interface ReviewItem {
   id: string;
@@ -43,6 +44,7 @@ export default function ProductReviews({
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
   const [photo, setPhoto] = useState<File | null>(null);
+  const [optimizing, setOptimizing] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -173,24 +175,35 @@ export default function ProductReviews({
               className="w-full p-3 rounded-xl border border-neutral-300 text-sm focus:outline-none focus:border-amber-600"
             />
             <div className="text-xs">
-              <label className="font-semibold text-neutral-700 block mb-1">Avize fotoğrafı (isteğe bağlı — JPG, PNG, WEBP, en çok 5 MB)</label>
+              <label className="font-semibold text-neutral-700 block mb-1">Avize fotoğrafı (isteğe bağlı — JPG, PNG, WEBP, en çok 20 MB, otomatik küçültülür)</label>
               <input
                 ref={fileRef}
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
-                onChange={(e) => {
-                  const f = e.target.files?.[0] ?? null;
-                  if (f && f.size > 5 * 1024 * 1024) {
-                    setError("Fotoğraf en fazla 5 MB olabilir.");
-                    e.target.value = "";
-                    setPhoto(null);
+                onChange={async (e) => {
+                  const input = e.target;
+                  const f = input.files?.[0] ?? null;
+                  setPhoto(null);
+                  setError("");
+                  if (!f) return;
+                  if (f.size > MAX_RAW_BYTES) {
+                    setError("Fotoğraf en fazla 20 MB olabilir.");
+                    input.value = "";
                     return;
                   }
-                  setError("");
-                  setPhoto(f);
+                  setOptimizing(true);
+                  const out = await compressImageToWebP(f, { maxWidth: 1600, quality: 0.82 });
+                  setOptimizing(false);
+                  if (out.size > MAX_UPLOAD_BYTES) {
+                    setError("Fotoğraf küçültülemedi veya hâlâ 4,5 MB'dan büyük. Lütfen farklı bir fotoğraf seçin.");
+                    input.value = "";
+                    return;
+                  }
+                  setPhoto(out);
                 }}
                 className="block w-full text-xs text-neutral-600 file:mr-3 file:rounded-lg file:border-0 file:bg-neutral-100 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-neutral-800 hover:file:bg-neutral-200"
               />
+              {optimizing && <p className="mt-1 text-[11px] text-amber-700">Görsel optimize ediliyor...</p>}
             </div>
             <p className="text-[11px] text-neutral-500">Yorumunuz ve fotoğrafınız yönetici onayından sonra yayınlanır.</p>
             {error && (
@@ -200,10 +213,10 @@ export default function ProductReviews({
             )}
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || optimizing}
               className="bg-neutral-900 hover:bg-amber-600 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition-colors disabled:opacity-50"
             >
-              {loading ? "Gönderiliyor..." : "Yorumu Gönder"}
+              {optimizing ? "Görsel optimize ediliyor..." : loading ? "Gönderiliyor..." : "Yorumu Gönder"}
             </button>
           </form>
         ) : (

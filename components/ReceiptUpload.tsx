@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { CheckCircle2, Upload } from "lucide-react";
 import { toast } from "sonner";
+import { compressImageToWebP, MAX_RAW_BYTES, MAX_UPLOAD_BYTES } from "@/lib/client-image";
 
 /** Havale siparişi için "Havale Bildirimi Yap / Dekont Yükle" butonu ve formu. */
 export default function ReceiptUpload({
@@ -21,6 +22,7 @@ export default function ReceiptUpload({
   const [sender, setSender] = useState(defaultSender);
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
+  const [optimizing, setOptimizing] = useState(false);
 
   if (done && !open) {
     return (
@@ -86,18 +88,38 @@ export default function ReceiptUpload({
         />
       </div>
       <div>
-        <label className="font-semibold text-neutral-700 block mb-1">Dekont Dosyası (Görsel veya PDF, en çok 5 MB)</label>
+        <label className="font-semibold text-neutral-700 block mb-1">Dekont Dosyası (Görsel veya PDF, en çok 20 MB, otomatik küçültülür)</label>
         <input
           required
           type="file"
           accept="image/jpeg,image/png,image/webp,application/pdf"
-          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+          onChange={async (e) => {
+            const input = e.target;
+            const picked = input.files?.[0] ?? null;
+            setFile(null);
+            if (!picked) return;
+            if (picked.size > MAX_RAW_BYTES) {
+              toast.error("Dosya en fazla 20 MB olabilir.");
+              input.value = "";
+              return;
+            }
+            setOptimizing(true);
+            const out = await compressImageToWebP(picked, { maxWidth: 1600, quality: 0.85 });
+            setOptimizing(false);
+            if (out.size > MAX_UPLOAD_BYTES) {
+              toast.error("Dosya küçültülemedi veya hâlâ 4,5 MB'dan büyük. Lütfen daha küçük bir görsel seçin.");
+              input.value = "";
+              return;
+            }
+            setFile(out);
+          }}
           className="w-full text-xs file:mr-3 file:rounded-lg file:border-0 file:bg-neutral-900 file:text-white file:px-3 file:py-2 file:font-semibold"
         />
+        {optimizing && <p className="mt-1 text-[11px] text-amber-700">Görsel optimize ediliyor...</p>}
       </div>
       <div className="flex gap-2">
-        <button type="submit" disabled={busy || !file} className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-bold px-5 py-2.5 rounded-xl">
-          {busy ? "Yükleniyor..." : "Gönder"}
+        <button type="submit" disabled={busy || optimizing || !file} className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-bold px-5 py-2.5 rounded-xl">
+          {optimizing ? "Görsel optimize ediliyor..." : busy ? "Yükleniyor..." : "Gönder"}
         </button>
         <button type="button" onClick={() => setOpen(false)} className="text-neutral-500 font-semibold px-3 py-2.5">
           Vazgeç
