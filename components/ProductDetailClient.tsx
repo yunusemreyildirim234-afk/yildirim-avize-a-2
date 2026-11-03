@@ -211,7 +211,7 @@ export default function ProductDetailClient({ product, ladderCtx }: { product: P
             )}
             {freeShipping && (
               <p className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-emerald-600 rounded-full px-3 py-1">
-                <span aria-hidden="true">🚚</span> Ücretsiz &amp; Sigortalı Kargo
+                <span aria-hidden="true">🚚</span> Ücretsiz Kargo &amp; Hızlı Teslimat
               </p>
             )}
           </div>

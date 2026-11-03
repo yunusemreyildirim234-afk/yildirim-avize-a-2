@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: { absolute: "Yıldırım Avize | Beyoğlu Şişhane Kristal, Modern & Klasik Avize" },
   description:
-    "Beyoğlu Şişhane'deki merkezimizden kristal, modern ve klasik avizeler. Üst düzey korumalı koliyle sigortalı kargo veya mağazadan teslim.",
+    "Beyoğlu Şişhane'deki merkezimizden kristal, modern ve klasik avizeler. Üst düzey korumalı koliyle kargo veya mağazadan teslim.",
   alternates: { canonical: "/" },
 };
 

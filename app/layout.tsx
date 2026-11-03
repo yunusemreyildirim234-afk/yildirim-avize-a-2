@@ -13,7 +13,7 @@ import { SITE_NAME, SITE_URL } from "@/lib/site";
 const inter = Inter({ subsets: ["latin"] });
 
 const DESCRIPTION =
-  "Beyoğlu Şişhane'den kristal, modern ve klasik avize modelleri. Üst düzey korumalı koliyle sigortalı kargo veya mağazadan teslim.";
+  "Beyoğlu Şişhane'den kristal, modern ve klasik avize modelleri. Üst düzey korumalı koliyle kargo veya mağazadan teslim.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

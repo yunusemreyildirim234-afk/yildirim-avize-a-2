@@ -1,6 +1,6 @@
 # Yıldırım Avize
 
-> Yıldırım Avize, İstanbul Beyoğlu Şişhane'de faaliyet gösteren avize ve aydınlatma mağazasıdır. Bohem el kesimi kristal, modern LED sarkıt, klasik pirinç avize ve aplik modelleri satar; siparişler mağazadan teslim alınabilir veya üst düzey korumalı koliyle sigortalı kargoyla gönderilir.
+> Yıldırım Avize, İstanbul Beyoğlu Şişhane'de faaliyet gösteren avize ve aydınlatma mağazasıdır. Bohem el kesimi kristal, modern LED sarkıt, klasik pirinç avize ve aplik modelleri satar; siparişler mağazadan teslim alınabilir veya üst düzey korumalı koliyle kargoyla gönderilir.
 
 ## Mağaza
 - Web sitesi: https://www.yildirimavize.com.tr
