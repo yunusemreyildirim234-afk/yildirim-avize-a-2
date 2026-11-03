@@ -22,7 +22,7 @@ export async function POST(req: Request) {
   const wanted = new Map<string, number>();
   for (const r of raw) {
     if (typeof r.variationId !== "string") continue;
-    wanted.set(r.variationId, (wanted.get(r.variationId) ?? 0) + Math.min(99, Math.max(1, Math.floor(Number(r.qty) || 1))));
+    wanted.set(r.variationId, (wanted.get(r.variationId) ?? 0) + Math.min(100, Math.max(1, Math.floor(Number(r.qty) || 1))));
   }
   const shippingType = typeof body.deliveryMethod === "string" && body.deliveryMethod in SHIPPING_LABELS ? body.deliveryMethod : "STANDART_KARGO";
   const paymentMethod: "CREDIT_CARD" | "BANK_TRANSFER" = body.paymentMethod === "BANK_TRANSFER" ? "BANK_TRANSFER" : "CREDIT_CARD";
