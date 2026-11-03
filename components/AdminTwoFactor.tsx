@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ShieldCheck, X } from "lucide-react";
 import { toast } from "sonner";
 import CodeStep from "@/components/CodeStep";
 import PasswordInput from "@/components/PasswordInput";
+import { twoFactorButton } from "@/lib/admin-password";
 
 const DISMISS_KEY = "ya-admin-2fa-banner";
 const DISMISS_MS = 7 * 24 * 3600_000;
@@ -56,13 +58,31 @@ async function post(body: object) {
   return { ok: res.ok, data: await res.json().catch(() => ({})) };
 }
 
-/** Yönetici 2FA açma/kapatma: e-posta + şifre ile hesap doğrulanır, e-postaya kod gider (müşterilerdeki akışın aynısı). Kapatma da kod ister. */
-export default function AdminTwoFactor() {
+export interface AdminRow {
+  id: string;
+  maskedEmail: string; // tam adres istemciye gönderilmez
+  twoFactorEnabled: boolean;
+}
+
+/**
+ * Yönetici 2FA: her yönetici hesabı için durum rozeti ve "Aç"/"Kapat" düğmesi. Düğme mevcut doğrulama akışını başlatır:
+ * yönetici e-postası + şifre → e-postaya kod → doğrulama (kapatma da kod ister). Başarıdan sonra liste ve uyarı bandı yenilenir.
+ */
+export default function AdminTwoFactor({ admins }: { admins: AdminRow[] }) {
+  const router = useRouter();
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [step, setStep] = useState<"form" | "code">("form");
   const [action, setAction] = useState<"ENABLE" | "DISABLE">("ENABLE");
   const [busy, setBusy] = useState(false);
+
+  const reset = () => {
+    setActiveId(null);
+    setStep("form");
+    setPassword("");
+    setEmail("");
+  };
 
   const send = async (): Promise<number | null> => {
     setBusy(true);
@@ -92,8 +112,8 @@ export default function AdminTwoFactor() {
         return;
       }
       toast.success(data.enabled ? "İki aşamalı doğrulama etkinleştirildi" : "İki aşamalı doğrulama kapatıldı");
-      setStep("form");
-      setPassword("");
+      reset();
+      router.refresh(); // liste rozetleri ve uyarı bandı sunucudan yeniden okunur
     } catch {
       toast.error("Bağlantı hatası oluştu.");
     } finally {
@@ -105,43 +125,76 @@ export default function AdminTwoFactor() {
     <div id="guvenlik" className="bg-white border border-neutral-200 rounded-2xl p-5 space-y-4 scroll-mt-24">
       <div>
         <h3 className="font-bold text-neutral-900 text-sm flex items-center gap-2">
-          <ShieldCheck aria-hidden="true" className="w-4 h-4 text-amber-600" /> İki Aşamalı Doğrulama (Yönetici Hesabı)
+          <ShieldCheck aria-hidden="true" className="w-4 h-4 text-amber-600" /> İki Aşamalı Doğrulama (Yönetici Hesapları)
         </h3>
         <p className="text-xs text-neutral-500 mt-0.5">
-          Hesabınızın e-posta adresi ve şifrenizi girin. Hesabınızda kapalıysa açma, açıksa kapatma kodu e-postanıza gönderilir. Açıkken girişte şifreye ek olarak e-posta kodu istenir.
+          Açıkken girişte şifreye ek olarak e-postaya gelen 6 haneli kod istenir. Açma ve kapatma için hesabın e-postası, şifresi ve e-postaya gelen kod gerekir.
         </p>
       </div>
-      {step === "form" ? (
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            void send();
-          }}
-          className="grid sm:grid-cols-[1fr_1fr_auto] gap-3 items-end text-xs"
-        >
-          <div>
-            <label htmlFor="a2fa-mail" className="font-semibold text-neutral-700 block mb-1">Yönetici e-postası</label>
-            <input id="a2fa-mail" type="email" required autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600" />
-          </div>
-          <div>
-            <label htmlFor="a2fa-pass" className="font-semibold text-neutral-700 block mb-1">Şifre</label>
-            <PasswordInput id="a2fa-pass" required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600" />
-          </div>
-          <button type="submit" disabled={busy} className="bg-neutral-900 hover:bg-amber-600 disabled:opacity-60 text-white font-semibold px-5 py-3 rounded-xl transition-colors">
-            {busy ? "Gönderiliyor..." : "Kod Gönder"}
-          </button>
-        </form>
-      ) : (
-        <div className="max-w-sm space-y-3">
-          <p className="text-xs font-semibold text-neutral-800">
-            {action === "ENABLE" ? "2FA'yı açmak için e-postanıza gelen kodu girin." : "2FA'yı kapatmak için e-postanıza gelen kodu girin."}
-          </p>
-          <CodeStep email={email.trim().toLowerCase()} busy={busy} onSubmit={verify} onResend={send} submitLabel={action === "ENABLE" ? "Etkinleştir" : "Kapat"} />
-          <button type="button" onClick={() => setStep("form")} className="text-xs text-neutral-500 hover:text-amber-700 font-semibold">
-            ← Vazgeç
-          </button>
-        </div>
-      )}
+
+      {admins.length === 0 && <p className="text-xs text-neutral-500">Veritabanında yönetici hesabı bulunamadı.</p>}
+      <ul className="divide-y divide-neutral-100 border border-neutral-200 rounded-xl">
+        {admins.map((a) => {
+          const btn = twoFactorButton(a.twoFactorEnabled);
+          const open = activeId === a.id;
+          return (
+            <li key={a.id} className="p-3 text-xs">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <span className="font-mono text-neutral-800">{a.maskedEmail}</span>
+                  <span
+                    className={`px-2.5 py-1 rounded-full font-bold text-[11px] ${a.twoFactorEnabled ? "bg-emerald-100 text-emerald-900" : "bg-amber-100 text-amber-900"}`}
+                  >
+                    {btn.badge}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  disabled={busy}
+                  aria-expanded={open}
+                  onClick={() => (open ? reset() : (reset(), setActiveId(a.id)))}
+                  className={`min-h-11 px-5 rounded-xl font-semibold text-white transition-colors disabled:opacity-60 ${a.twoFactorEnabled ? "bg-neutral-900 hover:bg-red-700" : "bg-neutral-900 hover:bg-amber-600"}`}
+                >
+                  {open ? "Vazgeç" : btn.label}
+                </button>
+              </div>
+
+              {open && step === "form" && (
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    void send();
+                  }}
+                  className="grid sm:grid-cols-[1fr_1fr_auto] gap-3 items-end mt-3"
+                >
+                  <div>
+                    <label htmlFor={`a2fa-mail-${a.id}`} className="font-semibold text-neutral-700 block mb-1">
+                      Bu hesabın e-posta adresi ({a.maskedEmail})
+                    </label>
+                    <input id={`a2fa-mail-${a.id}`} type="email" required autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600" />
+                  </div>
+                  <div>
+                    <label htmlFor={`a2fa-pass-${a.id}`} className="font-semibold text-neutral-700 block mb-1">Şifre</label>
+                    <PasswordInput id={`a2fa-pass-${a.id}`} required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600" />
+                  </div>
+                  <button type="submit" disabled={busy} className="min-h-11 bg-neutral-900 hover:bg-amber-600 disabled:opacity-60 text-white font-semibold px-5 rounded-xl transition-colors">
+                    {busy ? "Gönderiliyor..." : "Kod Gönder"}
+                  </button>
+                </form>
+              )}
+
+              {open && step === "code" && (
+                <div className="max-w-sm space-y-3 mt-3">
+                  <p className="font-semibold text-neutral-800">
+                    {action === "ENABLE" ? "2FA'yı açmak için e-postanıza gelen kodu girin." : "2FA'yı kapatmak için e-postanıza gelen kodu girin."}
+                  </p>
+                  <CodeStep email={email.trim().toLowerCase()} busy={busy} onSubmit={verify} onResend={send} submitLabel={action === "ENABLE" ? "Etkinleştir" : "Kapat"} />
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }

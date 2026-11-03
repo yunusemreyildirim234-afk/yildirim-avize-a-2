@@ -1,4 +1,5 @@
 import { cleanGuestEmail } from "@/lib/guest-email";
+import { maskEmail } from "@/lib/admin-password";
 import Link from "next/link";
 import nextDynamic from "next/dynamic";
 import { prisma } from "@/lib/db";
@@ -97,7 +98,9 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const discountCap = (await prisma.siteConfig.findUnique({ where: { id: 1 }, select: { maxTotalDiscountPct: true } }))?.maxTotalDiscountPct ?? null;
   const activity = await getActivity();
   // 2FA kapalı yönetici hesabı sayısı (uyarı bandı için); okunamazsa band gösterilmez
-  const adminsWithout2fa = await prisma.user.count({ where: { role: "ADMIN", twoFactorEnabled: false } }).catch(() => 0);
+  const adminUsers = await prisma.user.findMany({ where: { role: "ADMIN" }, select: { id: true, email: true, twoFactorEnabled: true }, orderBy: { createdAt: "asc" } }).catch(() => []);
+  const adminsWithout2fa = adminUsers.filter((a) => !a.twoFactorEnabled).length;
+  const adminRows = adminUsers.map((a) => ({ id: a.id, maskedEmail: maskEmail(a.email), twoFactorEnabled: a.twoFactorEnabled })); // tam e-posta istemciye gitmez
   const pendingReviews = reviews.filter((r) => r.status === "PENDING").length;
   const sortedReviews = [...reviews].sort(
     (a, b) => Number(b.status === "PENDING") - Number(a.status === "PENDING") || b.createdAt.getTime() - a.createdAt.getTime()
@@ -209,7 +212,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
 
         <AdminDiscountSettings initial={discountCap} />
         <AdminSessions />
-        <AdminTwoFactor />
+        <AdminTwoFactor admins={adminRows} />
 
         <AdminHomepage
           initial={homeConfig}
