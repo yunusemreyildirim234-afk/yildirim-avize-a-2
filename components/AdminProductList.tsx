@@ -40,11 +40,11 @@ interface Product {
 
 // Otomatik indirim: üstü çizili eski fiyat veya adet indirimi
 const hasDiscount = (p: Product) => Boolean(p.listPrice && p.listPrice > p.basePrice) || bulkTiersOf(p).length > 0;
-const CHIP_TESTS: Record<string, (p: Product) => boolean> = {
-  discount: hasDiscount,
-  featured: (p) => Boolean(p.isFeatured),
-  bestseller: (p) => Boolean(p.isBestSeller),
-};
+// Vitrin çipleri, sitedeki (ana sayfa / kategori) ürün kümesiyle AYNI ürünleri kullanır: sunucu bu kümeleri hesaplayıp kimlik listesi olarak verir
+// (yönetici işaretlileri varsa onlar, yoksa otomatik seçim; Çok Satanlar: işaretliler + en çok satılanlar).
+type ChipSets = { featured: Set<string>; bestseller: Set<string> };
+const chipTest = (key: string, p: Product, sets: ChipSets): boolean =>
+  key === "discount" ? hasDiscount(p) : key === "featured" ? sets.featured.has(p.id) : key === "bestseller" ? sets.bestseller.has(p.id) : false;
 
 function ModelCodeEditor({ initial, disabled, onSave }: { initial: string; disabled: boolean; onSave: (code: string) => void }) {
   const [value, setValue] = useState(initial);
@@ -110,7 +110,8 @@ function DiscountBadges({ product, onRemove, disabled }: { product: Product; onR
 
 const norm = (v?: string | null) => (v ?? "").toLocaleLowerCase("tr").trim();
 
-export default function AdminProductList({ products, maxTotalDiscountPct }: { products: Product[]; maxTotalDiscountPct?: number | null }) {
+export default function AdminProductList({ products, maxTotalDiscountPct, showcase }: { products: Product[]; maxTotalDiscountPct?: number | null; showcase: { featured: string[]; bestSellers: string[] } }) {
+  const sets = useMemo<ChipSets>(() => ({ featured: new Set(showcase.featured), bestseller: new Set(showcase.bestSellers) }), [showcase]);
   const router = useRouter();
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
@@ -172,7 +173,7 @@ Yine de geri alınsın mı?`)) await doUndo(true);
 
   // Ürün adı, stok kodu, barkod veya Trendyol ana kodu ile anlık filtre
   const q = norm(query);
-  const chipFiltered = chips.length ? products.filter((p) => chips.some((c) => CHIP_TESTS[c](p))) : products;
+  const chipFiltered = chips.length ? products.filter((p) => chips.some((c) => chipTest(c, p, sets))) : products;
   const filtered = q
     ? chipFiltered.filter(
         (p) =>
@@ -324,9 +325,9 @@ Yine de geri alınsın mı?`)) await doUndo(true);
             onChange={(c) => { setChips(c); setShown(PAGE); }}
             total={products.length}
             options={[
-              { key: "discount", label: "İndirimdekiler", count: products.filter(CHIP_TESTS.discount).length },
-              { key: "featured", label: "Öne Çıkanlar", count: products.filter(CHIP_TESTS.featured).length },
-              { key: "bestseller", label: "Çok Satanlar", count: products.filter(CHIP_TESTS.bestseller).length },
+              { key: "discount", label: "İndirimdekiler", count: products.filter((p) => chipTest("discount", p, sets)).length },
+              { key: "featured", label: "Öne Çıkanlar", count: products.filter((p) => chipTest("featured", p, sets)).length },
+              { key: "bestseller", label: "Çok Satanlar", count: products.filter((p) => chipTest("bestseller", p, sets)).length },
             ]}
           />
         </div>
@@ -356,7 +357,7 @@ Yine de geri alınsın mı?`)) await doUndo(true);
 
       <div className="divide-y divide-neutral-100">
         {filtered.length === 0 && (
-          <p className="p-10 text-center text-xs text-neutral-400">&ldquo;{query}&rdquo; ile eşleşen ürün bulunamadı.</p>
+          <p className="p-10 text-center text-xs text-neutral-400">{q ? <>&ldquo;{query}&rdquo; ile eşleşen ürün bulunamadı.</> : "Bu filtrede ürün yok."}</p>
         )}
         {filtered.slice(0, shown).map((product) => (
           <div key={product.id}>

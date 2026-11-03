@@ -8,6 +8,7 @@ import AdminKargonomiHeader from "@/components/AdminKargonomiHeader";
 import AdminTrendyolSync from "@/components/AdminTrendyolSync";
 import AdminKargonomiOrderActions from "@/components/AdminKargonomiOrderActions";
 import AdminMessages from "@/components/AdminMessages";
+import { FEATURED, getBestSellers } from "@/lib/products";
 import AdminCoupons from "@/components/AdminCoupons";
 import AdminDiscountSettings from "@/components/AdminDiscountSettings";
 import AdminLiveAlerts from "@/components/AdminLiveAlerts";
@@ -78,6 +79,10 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const durumParam = (await searchParams).durum;
   const selectedGroups = parseGroupParam(durumParam);
   const { orders, products, messages, coupons, customers, reviews, company } = await getAdminData();
+  // Vitrin çipleri için sitedeki kümeler: Öne Çıkanlar = işaretliler (yoksa otomatik seçim), Çok Satanlar = kategori sayfasındaki liste
+  const flaggedFeatured = await prisma.product.findMany({ where: { active: true, isFeatured: true }, select: { id: true } });
+  const featuredIds = flaggedFeatured.length > 0 ? flaggedFeatured : await prisma.product.findMany({ where: { active: true, ...FEATURED }, select: { id: true } });
+  const showcase = { featured: featuredIds.map((p) => p.id), bestSellers: (await getBestSellers(48)).map((p) => p.id) };
   const discountCap = (await prisma.siteConfig.findUnique({ where: { id: 1 }, select: { maxTotalDiscountPct: true } }))?.maxTotalDiscountPct ?? null;
   const activity = await getActivity();
   const pendingReviews = reviews.filter((r) => r.status === "PENDING").length;
@@ -214,7 +219,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         />
 
         {/* 3. Canlı Avize Kataloğu & Stok Yönetimi */}
-        <AdminProductList products={products} maxTotalDiscountPct={discountCap} />
+        <AdminProductList products={products} maxTotalDiscountPct={discountCap} showcase={showcase} />
 
         {/* 4. Canlı Siparişler & Kargonomi Operasyon Tablosu */}
         <AdminSection
