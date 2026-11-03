@@ -51,6 +51,8 @@ model Product {
   coupons          Coupon[]
   trendyolCategory String?
   trendyolUrl      String?
+  syncSnapshot     Json? // Trendyol içe aktarma: son uygulanan Trendyol değerleri (elle değişiklik tespiti)
+  lastSyncedAt     DateTime?
   variations       ProductVariation[]
   reviews          Review[]
   favorites        Favorite[]
@@ -74,6 +76,8 @@ model ProductVariation {
   stockCode      String?
   salePrice      Float? // Trendyol satış fiyatı
   listPrice      Float?
+  syncSnapshot   Json? // Trendyol içe aktarma: son uygulanan değerler
+  syncStock      Int? // Trendyol'un son bildirdiği miktar (site satışlarını/elle düzeltmeyi korumak için)
   orderItems     OrderItem[]
   cartItems      CartItem[]
 }
