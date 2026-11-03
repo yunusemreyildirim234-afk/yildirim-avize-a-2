@@ -27,6 +27,9 @@ const ONBOARDING_FROM = "Yıldırım Avize <onboarding@resend.dev>";
 // Müşteri e-postayı yanıtladığında mesaj bu kutuya düşer
 const REPLY_TO = "omeryildirim_3@hotmail.com";
 
+/** Loglarda alıcı e-postası tam yazılmaz (KVKK): a***@alan.com */
+const maskTo = (to: unknown) => (Array.isArray(to) ? to : [to]).map((t) => String(t).replace(/^(.).*@/, "$1***@"));
+
 // RESEND_FROM (yoksa kurumsal varsayılan adres) ile dener; alan adı doğrulanmamışsa onboarding@resend.dev ile yeniden dener
 async function sendViaResend(apiKey: string | undefined, payload: Record<string, unknown>): Promise<boolean> {
   if (!apiKey) {
@@ -42,9 +45,9 @@ async function sendViaResend(apiKey: string | undefined, payload: Record<string,
         body: JSON.stringify({ ...payload, from, reply_to: REPLY_TO }),
       });
       if (res.ok) return true;
-      console.error("[email] Resend reddetti:", { from, to: payload.to, subject: payload.subject, status: res.status, body: await res.json().catch(() => null) });
+      console.error("[email] Resend reddetti:", { from, to: maskTo(payload.to), subject: payload.subject, status: res.status, body: await res.json().catch(() => null) });
     } catch (err) {
-      console.error("[email] Resend bağlantı hatası:", { from, to: payload.to, subject: payload.subject, err });
+      console.error("[email] Resend bağlantı hatası:", { from, to: maskTo(payload.to), subject: payload.subject, err: (err as Error)?.message });
     }
   }
   return false;
