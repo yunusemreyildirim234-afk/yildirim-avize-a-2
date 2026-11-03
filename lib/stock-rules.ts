@@ -7,11 +7,11 @@ export const ABANDON_GRACE_MINUTES = 60;
 /** Bu süreyi (dakika) geçen AWAITING_PAYMENT + kartlı siparişler PAYMENT_FAILED yapılır. Tek sabit. */
 export const ABANDONED_CARD_MINUTES = PAYTR_TIMEOUT_MINUTES + ABANDON_GRACE_MINUTES;
 
-/** Aynı variationId'li satırları toplam adede birleştirir (sıra korunur). */
+/** Aynı variationId'li satırları toplam adede birleştirir; çıktı variationId'ye göre SIRALIDIR (stok satır kilitleri hep aynı sırada alınır, deadlock olmaz). Yalnızca stok kilitleme/arama içindir; sipariş kalemleri ve fiyat bu çıktıdan üretilmez. */
 export function mergeByVariation<T extends { variationId: string; quantity: number }>(lines: T[]): { variationId: string; quantity: number }[] {
   const m = new Map<string, number>();
   for (const l of lines) m.set(l.variationId, (m.get(l.variationId) ?? 0) + l.quantity);
-  return [...m].map(([variationId, quantity]) => ({ variationId, quantity }));
+  return [...m].map(([variationId, quantity]) => ({ variationId, quantity })).sort((a, b) => (a.variationId < b.variationId ? -1 : a.variationId > b.variationId ? 1 : 0));
 }
 
 /** true = stok toplam adedi karşılamıyor. */
