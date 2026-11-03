@@ -54,8 +54,17 @@ export async function POST(req: Request) {
 export async function PATCH(req: Request) {
   const denied = await adminGuard();
   if (denied) return denied;
-  const { id, active } = await req.json().catch(() => ({}));
-  if (typeof id !== "string" || typeof active !== "boolean") return NextResponse.json({ error: "Eksik parametre" }, { status: 400 });
+  const { id, active, discountPercent } = await req.json().catch(() => ({}));
+  if (typeof id !== "string") return NextResponse.json({ error: "Eksik parametre" }, { status: 400 });
+  // Kod değişmez; yalnızca yüzde düzenlenir. Mevcut siparişler kendi kayıtlı tutarını korur.
+  if (discountPercent !== undefined) {
+    if (typeof discountPercent !== "number" || !Number.isFinite(discountPercent) || discountPercent <= 0 || discountPercent >= 100) {
+      return NextResponse.json({ error: "İndirim yüzdesi 0 ile 100 arasında olmalıdır (100 hariç)." }, { status: 400 });
+    }
+    await prisma.coupon.update({ where: { id }, data: { discountPercent } });
+    return NextResponse.json({ success: true });
+  }
+  if (typeof active !== "boolean") return NextResponse.json({ error: "Eksik parametre" }, { status: 400 });
   await prisma.coupon.update({ where: { id }, data: { active } });
   return NextResponse.json({ success: true });
 }

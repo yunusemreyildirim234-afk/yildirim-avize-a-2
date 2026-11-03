@@ -319,6 +319,20 @@ export default function AdminCoupons({ coupons, customers, products }: Props) {
                         <button
                           type="button"
                           disabled={busy}
+                          onClick={() => {
+                            const v = window.prompt(`"${c.code}" için yeni indirim yüzdesi (0-100 arası, 100 hariç). Mevcut siparişler değişmez.`, String(c.discountPercent));
+                            if (v === null) return;
+                            const n = Number(v.replace(",", "."));
+                            if (!(n > 0 && n < 100)) return alert("İndirim yüzdesi 0 ile 100 arasında olmalıdır (100 hariç).");
+                            call("PATCH", { id: c.id, discountPercent: n });
+                          }}
+                          className="font-semibold text-amber-700 hover:underline mr-3"
+                        >
+                          Düzenle
+                        </button>
+                        <button
+                          type="button"
+                          disabled={busy}
                           onClick={() => confirm(`"${c.code}" kodu silinsin mi?`) && call("DELETE", { id: c.id })}
                           className="font-semibold text-red-600 hover:underline"
                         >
