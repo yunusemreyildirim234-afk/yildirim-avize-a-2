@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CartStepper, type QuickProduct } from "@/components/ProductQuickActions";
+import PriceLadder from "@/components/PriceLadder";
 import { useWishlist } from "@/context/WishlistContext";
 
 export default function FavorilerimPage() {
@@ -121,6 +122,7 @@ export default function FavorilerimPage() {
                     İncele →
                   </Link>
                 </div>
+                {quick[product.id]?.ladder && <PriceLadder steps={quick[product.id].ladder!} />}
               </div>
             </div>
           ))}

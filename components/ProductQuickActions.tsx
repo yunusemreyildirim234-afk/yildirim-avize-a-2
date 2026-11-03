@@ -7,6 +7,7 @@ import { Heart, Minus, Plus, X } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import type { BulkRule } from "@/lib/bulk-pricing";
+import type { LadderStep } from "@/lib/price-ladder";
 
 export interface QuickProduct {
   id: string;
@@ -16,6 +17,7 @@ export interface QuickProduct {
   imageUrl?: string | null;
   modelCode?: string | null;
   bulk?: BulkRule[] | null;
+  ladder?: LadderStep[]; // fiyat merdiveni (API'den)
   variations: { id: string; variationValue: string; extraPrice: number; stock: number }[];
 }
 

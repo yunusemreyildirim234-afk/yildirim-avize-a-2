@@ -2,9 +2,12 @@ import Image from "next/image";
 import Link from "next/link";
 import type { ProductWithVariations } from "@/lib/products";
 import { bulkTiersOf } from "@/lib/bulk-pricing";
+import PriceLadder from "@/components/PriceLadder";
+import { getLadderContext } from "@/lib/showcase";
+import { priceLadder } from "@/lib/price-ladder";
 import { CartStepper, FavoriteButton } from "@/components/ProductQuickActions";
 
-export default function ProductCard({
+export default async function ProductCard({
   product,
   dark = false,
   priority = false,
@@ -14,6 +17,7 @@ export default function ProductCard({
   /** Sayfa üstündeki (LCP) kartlar için görseli öncelikli yükler */
   priority?: boolean;
 }) {
+  const ladder = priceLadder(product, await getLadderContext());
   const totalStock = product.variations.reduce((sum, v) => sum + v.stock, 0);
   const discount =
     product.listPrice && product.listPrice > product.basePrice
@@ -90,6 +94,7 @@ export default function ProductCard({
               <span className="text-xs line-through text-zinc-500">{product.listPrice.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
             )}
           </div>
+          <PriceLadder steps={ladder} size="sm" dark={dark} />
         </div>
       </Link>
 

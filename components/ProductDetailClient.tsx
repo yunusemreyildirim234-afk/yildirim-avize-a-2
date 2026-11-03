@@ -4,8 +4,10 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { HoverMagnifier, ImageLightbox } from "@/components/ImageZoom";
 import { useCart } from "@/context/CartContext";
-import { BANK_TRANSFER_DISCOUNT, FREE_SHIPPING_THRESHOLD, PICKUP_DISCOUNT, SHIPPING_TYPES } from "@/lib/pricing";
+import { FREE_SHIPPING_THRESHOLD, PICKUP_DISCOUNT, SHIPPING_TYPES } from "@/lib/pricing";
 import { priceCart, ruleNotes } from "@/lib/cart-pricing";
+import PriceLadder from "@/components/PriceLadder";
+import { priceLadder, type LadderContext } from "@/lib/price-ladder";
 import { SITE_URL, WHATSAPP_NUMBER } from "@/lib/site";
 import { activeTier, bulkLabel, bulkTiersOf, unitPriceFor } from "@/lib/bulk-pricing";
 
@@ -34,7 +36,8 @@ interface Product {
   variations: Variation[];
 }
 
-export default function ProductDetailClient({ product, maxTotalDiscountPct = null }: { product: Product; maxTotalDiscountPct?: number | null }) {
+export default function ProductDetailClient({ product, ladderCtx }: { product: Product; ladderCtx: LadderContext }) {
+  const maxTotalDiscountPct = ladderCtx.maxTotalDiscountPct;
   const { addToCart } = useCart();
 
   const [selectedVariation, setSelectedVariation] = useState<Variation | null>(
@@ -60,8 +63,6 @@ export default function ProductDetailClient({ product, maxTotalDiscountPct = nul
     maxTotalDiscountPct,
   });
   const lineNow = priced.itemsTotal;
-  const bankDiscountNow = priced.bankDiscount;
-  const bankPct = rules.transferPct ?? Math.round(BANK_TRANSFER_DISCOUNT * 100);
   const notes = ruleNotes(rules);
   const maxQty = selectedVariation ? Math.max(0, selectedVariation.stock) : 0;
   const outOfStock = !selectedVariation || maxQty <= 0;
@@ -198,11 +199,7 @@ export default function ProductDetailClient({ product, maxTotalDiscountPct = nul
                 )}
               </ul>
             )}
-            {bankPct > 0 && (
-            <p className="mt-2 text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-1.5 w-fit">
-              Havale/EFT ile %{bankPct.toLocaleString("tr-TR")} İndirimli: <strong>{(lineNow - bankDiscountNow).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</strong> <span className="text-emerald-700/80">(kupon, kargo ve mağaza indirimi hariç; diğer indirimlerle değişebilir)</span>
-            </p>
-            )}
+            <PriceLadder steps={priceLadder(product, ladderCtx, currentPrice)} />
             {notes.length > 0 && (
               <ul className="mt-2 space-y-0.5">
                 {notes.map((n) => (

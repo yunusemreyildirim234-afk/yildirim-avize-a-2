@@ -1,5 +1,7 @@
 export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://www.yildirimavize.com.tr").replace(/\/$/, "");
 export const SITE_NAME = "Yıldırım Avize";
+/** Vitrinde (kart/ürün sayfası fiyat merdiveninde) gösterilen tek kupon kodu */
+export const SHOWCASE_COUPON_CODE = "YILDIRIM5";
 export const PHONE_DISPLAY = "0537 211 42 23";
 export const PHONE_TEL = "+905372114223";
 export const WHATSAPP_NUMBER = "905372114223";

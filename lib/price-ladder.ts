@@ -1,0 +1,64 @@
+import { priceCart } from "@/lib/cart-pricing";
+import { BANK_TRANSFER_DISCOUNT, PICKUP_DISCOUNT, SHIPPING_TYPES, type CouponRule } from "@/lib/pricing";
+import { SHOWCASE_COUPON_CODE } from "@/lib/site";
+
+export interface LadderStep {
+  key: "coupon" | "bank" | "pickup";
+  label: string; // "YILDIRIM5 kuponuyla" / "+ Havale/EFT ile (%5)"
+  hint: string;
+  price: number;
+}
+
+export interface LadderContext {
+  coupon: CouponRule | null; // vitrin kuponu; geçerli değilse null
+  maxTotalDiscountPct: number | null;
+}
+
+export interface LadderProduct {
+  basePrice: number;
+  couponAllowed?: boolean | null;
+  pickupDiscountPct?: number | null;
+  transferDiscountPct?: number | null;
+}
+
+const pctText = (pct: number) => pct.toLocaleString("tr-TR", { maximumFractionDigits: 2 });
+
+/** Adet=1 için adım adım düşen fiyatlar (priceCart ile; her adım öncekini içerir, kargo hariç). Aynı kalan adımlar atlanır. */
+export function priceLadder(p: LadderProduct, ctx: LadderContext, price: number = p.basePrice): LadderStep[] {
+  const line = {
+    variationId: "ladder",
+    productId: "ladder",
+    price,
+    quantity: 1,
+    tiers: [],
+    couponAllowed: p.couponAllowed ?? true,
+    pickupPct: p.pickupDiscountPct ?? null,
+    transferPct: p.transferDiscountPct ?? null,
+  };
+  const net = (shippingType: string, paymentMethod: "CREDIT_CARD" | "BANK_TRANSFER", coupon: CouponRule | null) => {
+    const r = priceCart({ lines: [line], shippingType, paymentMethod, coupon, maxTotalDiscountPct: ctx.maxTotalDiscountPct });
+    return { r, price: r.total - r.shipping, couponOk: !r.couponError && r.couponDiscount > 0 };
+  };
+  const steps: LadderStep[] = [];
+  let prev = price;
+  let coupon: CouponRule | null = null;
+
+  if (ctx.coupon && line.couponAllowed) {
+    const c = net(SHIPPING_TYPES.HOME, "CREDIT_CARD", ctx.coupon);
+    if (c.couponOk && c.price < prev) {
+      coupon = ctx.coupon;
+      steps.push({ key: "coupon", label: `${SHOWCASE_COUPON_CODE} kuponuyla`, hint: "Sepette kodu girin", price: c.price });
+      prev = c.price;
+    }
+  }
+  const b = net(SHIPPING_TYPES.HOME, "BANK_TRANSFER", coupon);
+  if (b.price < prev) {
+    steps.push({ key: "bank", label: `+ Havale/EFT ile (%${pctText(line.transferPct ?? BANK_TRANSFER_DISCOUNT * 100)})`, hint: "Havale/EFT ödemede", price: b.price });
+    prev = b.price;
+  }
+  const m = net(SHIPPING_TYPES.PICKUP, "BANK_TRANSFER", coupon);
+  if (m.price < prev) {
+    steps.push({ key: "pickup", label: `+ Mağazadan teslimle (%${pctText(line.pickupPct ?? PICKUP_DISCOUNT * 100)})`, hint: "Beyoğlu mağazadan teslimde", price: m.price });
+  }
+  return steps;
+}

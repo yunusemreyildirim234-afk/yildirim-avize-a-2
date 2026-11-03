@@ -6,6 +6,7 @@ import RecentSearches from "@/components/RecentSearches";
 import { toast } from "sonner";
 import { clearRecentSearches, getRecentSearches, removeRecentSearch, restoreRecentSearches, saveRecentSearch } from "@/lib/recent-searches";
 import { track } from "@/lib/track";
+import PriceLadder from "@/components/PriceLadder";
 import { CartStepper, FavoriteButton, type QuickProduct } from "@/components/ProductQuickActions";
 
 type Product = QuickProduct;
@@ -167,6 +168,7 @@ export default function SearchBar() {
                     <span className="block text-xs font-bold text-neutral-800 mt-1">
                       {product.basePrice.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺
                     </span>
+                    {product.ladder && <PriceLadder steps={product.ladder} size="sm" />}
                     </span>
                   </Link>
                   <div className="w-28 shrink-0 space-y-1.5">

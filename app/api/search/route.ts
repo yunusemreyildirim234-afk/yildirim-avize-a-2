@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { getLadderContext } from "@/lib/showcase";
+import { priceLadder } from "@/lib/price-ladder";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -37,7 +39,8 @@ export async function GET(req: Request) {
     // Tam model kodu eşleşmesi her zaman en üstte
     const products = [...(byCode ? [byCode] : []), ...byText.filter((p) => p.id !== byCode?.id)].slice(0, 6);
 
-    return NextResponse.json({ products });
+    const ctx = await getLadderContext();
+    return NextResponse.json({ products: products.map((p) => ({ ...p, ladder: priceLadder(p, ctx) })) });
   } catch (error) {
     return NextResponse.json({ error: (error as Error).message }, { status: 500 });
   }

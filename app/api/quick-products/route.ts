@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { getLadderContext } from "@/lib/showcase";
+import { priceLadder } from "@/lib/price-ladder";
 
 // Sepet/favoriler gibi istemci listeleri için güncel görsel, fiyat ve stok bilgisi
 export async function GET(req: Request) {
@@ -18,8 +20,12 @@ export async function GET(req: Request) {
       category: true,
       basePrice: true,
       imageUrl: true,
+      couponAllowed: true,
+      pickupDiscountPct: true,
+      transferDiscountPct: true,
       variations: { select: { id: true, variationValue: true, extraPrice: true, stock: true }, orderBy: { id: "asc" } },
     },
   });
-  return NextResponse.json({ products });
+  const ctx = await getLadderContext();
+  return NextResponse.json({ products: products.map((p) => ({ ...p, ladder: priceLadder(p, ctx) })) });
 }
