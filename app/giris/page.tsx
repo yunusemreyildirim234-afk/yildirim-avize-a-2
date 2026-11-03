@@ -11,6 +11,7 @@ import OrderRequestBox from "@/components/OrderRequestBox";
 import OrderTracker from "@/components/OrderTracker";
 import AuthForms from "@/components/AuthForms";
 import AccountSecurity from "@/components/AccountSecurity";
+import CodeStep from "@/components/CodeStep";
 import ProfileName from "@/components/ProfileName";
 import ReceiptUpload from "@/components/ReceiptUpload";
 
@@ -403,19 +404,50 @@ function AdminLoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  // 2FA açıksa şifreden sonra e-posta kodu adımı (çerez kod doğrulanana kadar verilmez)
+  const [pending, setPending] = useState<{ token: string; email: string; wait: number } | null>(null);
+
+  const call = async (body: object) => {
+    const res = await fetch("/api/auth/admin", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    return { ok: res.ok, data: await res.json().catch(() => ({})) };
+  };
+
+  const verify = async (code: string) => {
+    if (!pending) return;
+    setLoading(true);
+    setError("");
+    try {
+      const { ok, data } = await call({ step: "verify", username: pending.email, pendingToken: pending.token, code });
+      if (!ok) throw new Error(data.error || "Kod doğrulanamadı.");
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- bilinçli tam sayfa yönlendirme (çerez)
+      window.location.assign("/admin");
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resend = async (): Promise<number | null> => {
+    if (!pending) return null;
+    const { ok, data } = await call({ step: "resend", username: pending.email, pendingToken: pending.token }).catch(() => ({ ok: false, data: {} as Record<string, string> }));
+    if (ok) return data.retryAfter ?? 60;
+    setError(data.error || "Kod gönderilemedi.");
+    return null;
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("/api/auth/admin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Giriş başarısız.");
+      const { ok, data } = await call({ username, password });
+      if (!ok) throw new Error(data.error || "Giriş başarısız.");
+      if (data.twoFactor) {
+        setPending({ token: data.pendingToken, email: data.username, wait: data.retryAfter ?? 60 });
+        setPassword("");
+        return;
+      }
       // Tam sayfa yönlendirme: yeni çerez proxy tarafından ilk istekte görülür
       // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- bilinçli tam sayfa yönlendirme (çerez)
       window.location.assign("/admin");
@@ -433,6 +465,20 @@ function AdminLoginForm() {
         <h1 className="text-2xl font-serif font-bold text-neutral-900">Yönetici Girişi</h1>
         <p className="text-xs text-neutral-500">Yalnızca yetkili mağaza yöneticileri içindir.</p>
       </div>
+      {pending ? (
+        <div className="space-y-3">
+          <p className="text-xs text-neutral-600">Yönetici hesabınızda iki aşamalı doğrulama açık.</p>
+          <CodeStep email={pending.email} initialWait={pending.wait} busy={loading} onSubmit={verify} onResend={resend} submitLabel="Yönetim Paneline Gir" />
+          {error && (
+            <p role="alert" className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-xl p-3">
+              {error}
+            </p>
+          )}
+          <button type="button" onClick={() => { setPending(null); setError(""); }} className="w-full text-xs text-neutral-500 hover:text-amber-700 font-semibold py-1">
+            ← Girişe dön
+          </button>
+        </div>
+      ) : (
       <form onSubmit={submit} className="space-y-4 text-xs">
         <div>
           <label htmlFor="admin-user" className="font-semibold text-neutral-700 block mb-1">E-posta veya Kullanıcı Adı</label>
@@ -469,6 +515,7 @@ function AdminLoginForm() {
           {loading ? "Doğrulanıyor..." : "Yönetim Paneline Gir"}
         </button>
       </form>
+      )}
     </>
   );
 }
