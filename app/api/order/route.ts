@@ -58,6 +58,12 @@ export async function POST(req: Request) {
     if (buyerStateId !== undefined && buyerStateId !== null && !Number.isInteger(buyerStateId)) {
       return NextResponse.json({ error: "Geçersiz il bilgisi." }, { status: 400 });
     }
+    if (buyerCityId !== undefined && buyerCityId !== null && !Number.isInteger(buyerCityId)) {
+      return NextResponse.json({ error: "Geçersiz ilçe bilgisi." }, { status: 400 });
+    }
+    if ([buyerStateName, buyerCityName].some((v) => v !== undefined && v !== null && (typeof v !== "string" || v.length > 80))) {
+      return NextResponse.json({ error: "Geçersiz il/ilçe adı." }, { status: 400 });
+    }
     // Yasal onaylar, fatura bilgileri ve sipariş notu
     if (body.consent !== true) {
       return NextResponse.json({ error: "Ön Bilgilendirme Koşulları ve Mesafeli Satış Sözleşmesi'ni onaylamanız gerekir." }, { status: 400 });
