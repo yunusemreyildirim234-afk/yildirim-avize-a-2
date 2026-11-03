@@ -111,7 +111,7 @@ export default function FavorilerimPage() {
 
                 <div className="pt-3 border-t border-neutral-100 flex items-center justify-between">
                   <span className="text-base font-bold text-neutral-900">
-                    {product.basePrice.toLocaleString("tr-TR")} ₺
+                    {product.basePrice.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺
                   </span>
 
                   <Link

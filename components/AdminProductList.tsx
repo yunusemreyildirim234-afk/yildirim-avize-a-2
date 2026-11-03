@@ -79,9 +79,9 @@ function DiscountBadges({ product, onRemove, disabled }: { product: Product; onR
     <div className="flex flex-wrap items-center gap-1 mt-1">
       {old && (
         <>
-          <span className="text-[10px] text-neutral-400 line-through">{old.toLocaleString("tr-TR")} ₺</span>
+          <span className="text-[10px] text-neutral-400 line-through">{old.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
           <span className={`${badge} bg-red-50 text-red-700`}>
-            Normal İndirim: %{Math.round((1 - product.basePrice / old) * 100)} (−{(old - product.basePrice).toLocaleString("tr-TR")} ₺)
+            Normal İndirim: %{Math.round((1 - product.basePrice / old) * 100)} (−{(old - product.basePrice).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺)
             <button type="button" disabled={disabled} aria-label="Normal indirimi kaldır" onClick={() => onRemove({ scope: "normal" }, "Normal indirim kaldırma")} className={x}>
               ×
             </button>
@@ -384,7 +384,7 @@ Yine de geri alınsın mı?`)) await doUndo(true);
                   </a>
                 </h3>
                 <span className="text-xs font-semibold text-neutral-600">
-                  {product.basePrice.toLocaleString("tr-TR")} ₺
+                  {product.basePrice.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺
                 </span>
                 <DiscountBadges product={product} disabled={loadingId === product.id} onRemove={(payload, label) => removeFromProduct(product.id, payload, label)} />
                 <ModelCodeEditor

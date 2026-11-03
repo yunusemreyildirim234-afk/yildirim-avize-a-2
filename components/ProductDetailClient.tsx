@@ -161,13 +161,13 @@ export default function ProductDetailClient({ product }: { product: Product }) {
           <div className="pt-4">
             <span className="text-xs text-neutral-500 block mb-1">Toplam Tutar</span>
             {listShown && listShown > currentPrice && (
-              <span className="block text-sm text-neutral-500 line-through">{(listShown * quantity).toLocaleString("tr-TR")} ₺</span>
+              <span className="block text-sm text-neutral-500 line-through">{(listShown * quantity).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
             )}
             {unitNow < currentPrice && (
-              <span className="block text-sm text-neutral-500 line-through">{(currentPrice * quantity).toLocaleString("tr-TR")} ₺</span>
+              <span className="block text-sm text-neutral-500 line-through">{(currentPrice * quantity).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
             )}
             <span className="text-3xl font-bold tabular-nums text-neutral-900">
-              {lineNow.toLocaleString("tr-TR")} ₺
+              {lineNow.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺
             </span>
             {bulk.length > 0 && (
               <ul className="mt-2 space-y-1">
@@ -180,7 +180,7 @@ export default function ProductDetailClient({ product }: { product: Product }) {
               </ul>
             )}
             <p className="mt-2 text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-1.5 w-fit">
-              Havale/EFT ile %{Math.round(BANK_TRANSFER_DISCOUNT * 100)} İndirimli: <strong>{(lineNow - bankDiscountNow).toLocaleString("tr-TR")} ₺</strong> <span className="text-emerald-700/80">(kupon, kargo ve mağaza indirimi hariç; diğer indirimlerle değişebilir)</span>
+              Havale/EFT ile %{Math.round(BANK_TRANSFER_DISCOUNT * 100)} İndirimli: <strong>{(lineNow - bankDiscountNow).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</strong> <span className="text-emerald-700/80">(kupon, kargo ve mağaza indirimi hariç; diğer indirimlerle değişebilir)</span>
             </p>
             {freeShipping && (
               <p className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-emerald-600 rounded-full px-3 py-1">
@@ -220,7 +220,7 @@ export default function ProductDetailClient({ product }: { product: Product }) {
                       {v.variationValue}
                     </div>
                     <div className="text-[11px] text-neutral-500 mt-0.5">
-                      {v.extraPrice > 0 ? `+${v.extraPrice} ₺` : "Fark Yok"}
+                      {v.extraPrice > 0 ? `+${v.extraPrice.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺` : "Fark Yok"}
                     </div>
                     <div className={`text-[11px] mt-1 font-medium ${v.stock > 0 ? "text-emerald-700" : "text-red-700"}`}>
                       {v.stock > 0 ? `Stok: ${v.stock} adet` : "Tükendi"}

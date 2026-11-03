@@ -107,7 +107,7 @@ export async function sendOrderNotificationEmails(data: EmailOrderData) {
   const itemRows = data.items
     .map(
       (i) =>
-        `<tr><td style="padding: 6px 0; color: #171717;">${i.quantity}x ${esc(i.title)}<br /><span style="font-size: 11px; color: #737373;">${esc(i.variationName)}</span></td><td style="padding: 6px 0; text-align: right; font-weight: 600; color: #171717; white-space: nowrap;">${(i.price * i.quantity).toLocaleString("tr-TR")} ₺</td></tr>`
+        `<tr><td style="padding: 6px 0; color: #171717;">${i.quantity}x ${esc(i.title)}<br /><span style="font-size: 11px; color: #737373;">${esc(i.variationName)}</span></td><td style="padding: 6px 0; text-align: right; font-weight: 600; color: #171717; white-space: nowrap;">${(i.price * i.quantity).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</td></tr>`
     )
     .join("");
   const shortId = data.orderId.slice(0, 8);
@@ -153,7 +153,7 @@ export async function sendOrderNotificationEmails(data: EmailOrderData) {
           </tr>
           <tr>
             <td style="padding: 12px 0 6px 0; border-top: 1px solid #f5f5f5; font-size: 15px; font-weight: bold; color: #171717;">Toplam Tutar:</td>
-            <td style="padding: 12px 0 6px 0; border-top: 1px solid #f5f5f5; text-align: right; font-size: 18px; font-weight: bold; color: #d97706;">${data.totalAmount.toLocaleString("tr-TR")} ₺</td>
+            <td style="padding: 12px 0 6px 0; border-top: 1px solid #f5f5f5; text-align: right; font-size: 18px; font-weight: bold; color: #d97706;">${data.totalAmount.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</td>
           </tr>
         </table>
       </div>
@@ -192,7 +192,7 @@ export async function sendOrderNotificationEmails(data: EmailOrderData) {
         <tr><td style="padding: 4px 0; color: #737373;">Teslimat</td><td style="padding: 4px 0; text-align: right;">${isBeyoglu ? "Mağazadan Teslim" : "Adrese Teslim"}</td></tr>
         <tr><td style="padding: 4px 0; color: #737373;">Ödeme</td><td style="padding: 4px 0; text-align: right;">${data.paymentMethod === "BANK_TRANSFER" ? "Havale / EFT" : "Kredi Kartı"}</td></tr>
         <tr><td style="padding: 4px 0; color: #737373;">Fatura</td><td style="padding: 4px 0; text-align: right;">${invoiceText}</td></tr>
-        <tr><td style="padding: 8px 0 4px; border-top: 1px solid #e5e5e5; font-weight: bold;">Tutar</td><td style="padding: 8px 0 4px; border-top: 1px solid #e5e5e5; text-align: right; font-size: 18px; font-weight: bold; color: #d97706;">${data.totalAmount.toLocaleString("tr-TR")} ₺</td></tr>
+        <tr><td style="padding: 8px 0 4px; border-top: 1px solid #e5e5e5; font-weight: bold;">Tutar</td><td style="padding: 8px 0 4px; border-top: 1px solid #e5e5e5; text-align: right; font-size: 18px; font-weight: bold; color: #d97706;">${data.totalAmount.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</td></tr>
       </table>
       ${adminNoteBlock}
       <h3 style="margin: 20px 0 6px; font-size: 14px;">Ürünler</h3>
@@ -411,7 +411,7 @@ export async function sendReceiptUploadedAdminEmail(data: { orderId: string; sen
     to: ADMIN_EMAILS,
     subject: `Dekont Yüklendi: #${data.orderId.slice(0, 8)} - ${data.customerName}`,
     html: `<p><strong>${esc(data.customerName)}</strong> havale dekontu yükledi.</p>
-      <p>Gönderici: <strong>${esc(data.senderName)}</strong><br />Tutar: <strong>${data.totalAmount.toLocaleString("tr-TR")} ₺</strong><br />Sipariş: <code>${data.orderId}</code></p>
+      <p>Gönderici: <strong>${esc(data.senderName)}</strong><br />Tutar: <strong>${data.totalAmount.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</strong><br />Sipariş: <code>${data.orderId}</code></p>
       <p><a href="${SITE_URL}/admin#siparisler">Yönetim panelinde incele ve ödemeyi onayla</a></p>`,
   });
 }

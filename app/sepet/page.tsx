@@ -415,8 +415,8 @@ export default function CartPage() {
         {priceNotice && (
           <div role="alert" className="mb-6 rounded-2xl border border-amber-300 bg-amber-50 text-amber-950 text-sm p-4 space-y-2">
             <p>
-              <strong>Bazı fiyatlar güncellendi.</strong> Önceki tutar {priceNotice.from.toLocaleString("tr-TR")} ₺ idi; güncel ödenecek tutar{" "}
-              <strong>{priceNotice.to.toLocaleString("tr-TR")} ₺</strong>.
+              <strong>Bazı fiyatlar güncellendi.</strong> Önceki tutar {priceNotice.from.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺ idi; güncel ödenecek tutar{" "}
+              <strong>{priceNotice.to.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</strong>.
             </p>
             {!priceAcked && (
               <button type="button" onClick={() => setPriceAcked(true)} className="bg-neutral-900 hover:bg-amber-600 text-white text-xs font-semibold px-4 py-2 rounded-xl transition-colors">
@@ -474,9 +474,9 @@ export default function CartPage() {
                       </span>
                     </span>
                     <div className="text-sm font-bold text-neutral-900 mt-2">
-                      {unitPriceFor(item.price, item.quantity, item.bulk).toLocaleString("tr-TR")} ₺
+                      {unitPriceFor(item.price, item.quantity, item.bulk).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺
                       {unitPriceFor(item.price, item.quantity, item.bulk) < item.price && (
-                        <span className="ml-2 text-xs font-medium text-neutral-400 line-through">{item.price.toLocaleString("tr-TR")} ₺</span>
+                        <span className="ml-2 text-xs font-medium text-neutral-400 line-through">{item.price.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
                       )}
                     </div>
                     {item.bulk?.map((t) => (
@@ -625,7 +625,7 @@ export default function CartPage() {
                   <div className="flex items-center justify-between text-xs font-semibold text-neutral-900">
                     <span>📦 Adrese Teslim</span>
                     <span className="text-neutral-700 font-bold">
-                      {totalPrice >= FREE_SHIPPING_THRESHOLD ? "Ücretsiz" : `${SHIPPING_COST} ₺`}
+                      {totalPrice >= FREE_SHIPPING_THRESHOLD ? "Ücretsiz" : `${SHIPPING_COST.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺`}
                     </span>
                   </div>
                   <p className="text-[11px] text-neutral-500 mt-1">
@@ -846,18 +846,18 @@ export default function CartPage() {
               <div className="space-y-2 pt-4 border-t border-neutral-100 text-xs">
                 <div className="flex justify-between text-neutral-600">
                   <span>Ürünler Toplamı</span>
-                  <span>{itemsShown.toLocaleString("tr-TR")} ₺</span>
+                  <span>{itemsShown.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
                 </div>
                 <div className="flex justify-between text-neutral-600">
                   <span>Kargo / Teslimat</span>
-                  <span>{shippingCost === 0 ? "Ücretsiz" : `${shippingCost} ₺`}</span>
+                  <span>{shippingCost === 0 ? "Ücretsiz" : `${shippingCost.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺`}</span>
                 </div>
 
                 {/* Kupon İndirimi */}
                 {couponDiscount > 0 && (
                   <div className="flex justify-between text-emerald-600 font-semibold">
                     <span>Kupon ({appliedCoupon?.code})</span>
-                    <span>-{couponDiscount.toLocaleString("tr-TR")} ₺</span>
+                    <span>-{couponDiscount.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
                   </div>
                 )}
 
@@ -865,7 +865,7 @@ export default function CartPage() {
                 {pickupDiscount > 0 && (
                   <div className="flex justify-between text-emerald-600 font-semibold">
                     <span>Mağazadan Teslim İndirimi (%3)</span>
-                    <span>-{pickupDiscount.toLocaleString("tr-TR")} ₺</span>
+                    <span>-{pickupDiscount.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
                   </div>
                 )}
 
@@ -873,13 +873,13 @@ export default function CartPage() {
                 {bankDiscount > 0 && (
                   <div className="flex justify-between text-emerald-600 font-semibold">
                     <span>Havale İndirimi (%5)</span>
-                    <span>-{bankDiscount.toLocaleString("tr-TR")} ₺</span>
+                    <span>-{bankDiscount.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
                   </div>
                 )}
 
                 <div className="flex justify-between text-sm font-bold text-neutral-900 pt-2 border-t border-neutral-200">
                   <span>Toplam Tutar</span>
-                  <span className="text-amber-600 text-base">{finalTotal.toLocaleString("tr-TR")} ₺</span>
+                  <span className="text-amber-600 text-base">{finalTotal.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
                 </div>
 
               </div>
@@ -907,8 +907,8 @@ export default function CartPage() {
                 {loading
                   ? "Hazırlanıyor..."
                   : paymentMethod === "CREDIT_CARD"
-                  ? `🔒 Ödemeye Geç (${finalTotal.toLocaleString("tr-TR")} ₺)`
-                  : `Siparişi Tamamla (${finalTotal.toLocaleString("tr-TR")} ₺)`}
+                  ? `🔒 Ödemeye Geç (${finalTotal.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺)`
+                  : `Siparişi Tamamla (${finalTotal.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺)`}
               </button>
 
               <div className="text-center pt-2 text-[10px] text-neutral-400">

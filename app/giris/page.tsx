@@ -138,7 +138,7 @@ export default function AuthPage() {
 
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-sm text-neutral-900">
-                          {order.totalAmount.toLocaleString("tr-TR")} ₺
+                          {order.totalAmount.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺
                         </span>
                         <span
                           className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${
@@ -204,7 +204,7 @@ export default function AuthPage() {
                           </span>
                           <span className="flex flex-col items-end gap-1.5 shrink-0">
                             <span className="font-medium text-neutral-900">
-                              {(item.quantity * item.unitPrice).toLocaleString("tr-TR")} ₺
+                              {(item.quantity * item.unitPrice).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺
                             </span>
                             {item.variation.product && ["PENDING", "READY_FOR_PICKUP", "SHIPPED", "DELIVERED"].includes(order.status) && (
                               <Link

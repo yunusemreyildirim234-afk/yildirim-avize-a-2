@@ -22,7 +22,7 @@ export interface ContractData {
   paymentLabel: string;
 }
 
-const tl = (n: number) => `${n.toLocaleString("tr-TR")} ₺`;
+const tl = (n: number) => `${n.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺`;
 
 /** Sipariş bilgilerini dinamik basan Ön Bilgilendirme Formu / Mesafeli Satış Sözleşmesi penceresi. */
 export default function ContractModal({ kind, data, onClose }: { kind: "pre" | "sales"; data: ContractData; onClose: () => void }) {

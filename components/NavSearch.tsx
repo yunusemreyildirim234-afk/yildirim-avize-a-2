@@ -66,7 +66,7 @@ function Results({
                 {p.modelCode && <span className="text-[10px] font-mono text-zinc-500">Model {p.modelCode}</span>}
               </span>
             </span>
-            <span className="text-xs font-bold text-zinc-800 shrink-0">{p.basePrice.toLocaleString("tr-TR")} ₺</span>
+            <span className="text-xs font-bold text-zinc-800 shrink-0">{p.basePrice.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
           </Link>
         </li>
       ))}

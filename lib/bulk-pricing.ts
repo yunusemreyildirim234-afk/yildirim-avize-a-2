@@ -52,12 +52,12 @@ export const lineTotalFor = (unit: number, quantity: number, tiers: BulkRule[] |
 
 /** "2 ve üzeri alımda %10 indirim" / "2+ alımda adet başı 500 ₺ indirim" */
 export function bulkLabel(rule: BulkRule): string {
-  const v = rule.value.toLocaleString("tr-TR");
+  const v = rule.value.toLocaleString("tr-TR", rule.type === "FIXED" ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : undefined);
   return rule.type === "PERCENT" ? `${rule.minQty} ve üzeri alımda %${v} indirim` : `${rule.minQty}+ alımda adet başı ${v} ₺ indirim`;
 }
 
 /** Kısa değer: "%5" / "100 ₺" */
-export const tierValueLabel = (r: BulkRule) => (r.type === "PERCENT" ? `%${r.value.toLocaleString("tr-TR")}` : `${r.value.toLocaleString("tr-TR")} ₺`);
+export const tierValueLabel = (r: BulkRule) => (r.type === "PERCENT" ? `%${r.value.toLocaleString("tr-TR")}` : `${r.value.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺`);
 
 /** Rozet: "2+ Adet: %5" */
 export const tierBadgeLabel = (r: BulkRule) => `${r.minQty}+ Adet: ${tierValueLabel(r)}`;

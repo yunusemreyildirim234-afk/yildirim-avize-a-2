@@ -79,7 +79,7 @@ export default async function OrderConfirmationPage({ params }: { params: Promis
           )}
           <div className="pt-3 border-t border-neutral-200">
             <span className="text-neutral-400">Toplam:</span>
-            <p className="font-bold text-neutral-900 text-sm">{order.totalAmount.toLocaleString("tr-TR")} ₺</p>
+            <p className="font-bold text-neutral-900 text-sm">{order.totalAmount.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</p>
           </div>
           <div className="pt-3 border-t border-neutral-200">
             <span className="text-neutral-400">Teslimat:</span>

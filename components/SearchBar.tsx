@@ -165,7 +165,7 @@ export default function SearchBar() {
                     </span>
                     {product.modelCode && <span className="ml-1.5 text-[10px] font-mono text-neutral-500">Model {product.modelCode}</span>}
                     <span className="block text-xs font-bold text-neutral-800 mt-1">
-                      {product.basePrice.toLocaleString("tr-TR")} ₺
+                      {product.basePrice.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺
                     </span>
                     </span>
                   </Link>

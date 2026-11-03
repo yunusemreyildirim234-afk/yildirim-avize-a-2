@@ -50,7 +50,7 @@ async function announceNewOrder(order: FullOrder) {
   );
   await notifyAdmins({
     title: `Yeni Sipariş: #${order.id.slice(0, 8)}`,
-    message: `${order.user.name} • ${order.totalAmount.toLocaleString("tr-TR")} ₺${order.paymentMethod === "BANK_TRANSFER" ? " • Havale (onay bekliyor)" : ""}`,
+    message: `${order.user.name} • ${order.totalAmount.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺${order.paymentMethod === "BANK_TRANSFER" ? " • Havale (onay bekliyor)" : ""}`,
     type: "ORDER",
     link: "/admin#siparisler",
   });

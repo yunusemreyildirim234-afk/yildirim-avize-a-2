@@ -145,7 +145,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm">
             <span className="text-xs text-neutral-500 font-medium block">Toplam Ciro</span>
             <span className="text-2xl font-bold text-neutral-900 mt-1 block">
-              {totalRevenue.toLocaleString("tr-TR")} ₺
+              {totalRevenue.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺
             </span>
           </div>
 
@@ -306,7 +306,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                           </span>
                         )}
                         <div className="font-bold text-neutral-900 text-sm pt-1">
-                          {order.totalAmount.toLocaleString("tr-TR")} ₺
+                          {order.totalAmount.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺
                         </div>
                       </td>
                       <td className="p-4">

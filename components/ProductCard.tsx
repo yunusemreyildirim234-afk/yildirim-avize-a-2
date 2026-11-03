@@ -85,9 +85,9 @@ export default function ProductCard({
             <h3 className="font-serif text-[15px] font-semibold leading-snug tracking-tight line-clamp-2 mt-1 min-h-[2.6em]">{product.title}</h3>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-lg font-bold tabular-nums">{product.basePrice.toLocaleString("tr-TR")} ₺</span>
+            <span className="text-lg font-bold tabular-nums">{product.basePrice.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
             {discount > 0 && product.listPrice && (
-              <span className="text-xs line-through text-zinc-500">{product.listPrice.toLocaleString("tr-TR")} ₺</span>
+              <span className="text-xs line-through text-zinc-500">{product.listPrice.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
             )}
           </div>
         </div>
