@@ -2,7 +2,7 @@ import { randomInt } from "node:crypto";
 import { prisma } from "@/lib/db";
 import { signSession, verifySession } from "@/lib/session";
 
-export type CodeType = "REGISTER" | "RESET_PASSWORD" | "CHANGE_PASSWORD" | "TWO_FACTOR_ENABLE" | "TWO_FACTOR_DISABLE" | "TWO_FACTOR_LOGIN";
+export type CodeType = "REGISTER" | "RESET_PASSWORD" | "CHANGE_PASSWORD" | "TWO_FACTOR_ENABLE" | "TWO_FACTOR_DISABLE" | "TWO_FACTOR_LOGIN" | "ADMIN_LOGIN";
 
 export const CODE_TTL_MS = 10 * 60 * 1000;
 export const RESEND_WAIT_SECONDS = 60;

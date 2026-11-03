@@ -310,6 +310,7 @@ const CODE_COPY: Record<string, { subject: string; lead: string }> = {
   TWO_FACTOR_ENABLE: { subject: "İki Aşamalı Doğrulama Onay Kodunuz", lead: "İki aşamalı doğrulamayı etkinleştirmek için onay kodunuz:" },
   TWO_FACTOR_DISABLE: { subject: "İki Aşamalı Doğrulamayı Kapatma Kodunuz", lead: "İki aşamalı doğrulamayı kapatmak için onay kodunuz:" },
   TWO_FACTOR_LOGIN: { subject: "Giriş Doğrulama Kodunuz", lead: "Hesabınıza giriş yapmak için doğrulama kodunuz:" },
+  ADMIN_LOGIN: { subject: "Yönetici Girişi Doğrulama Kodunuz", lead: "Yönetim paneline giriş yapmak için doğrulama kodunuz:" },
 };
 
 /** 6 haneli e-posta doğrulama kodu (kurumsal şablon). */
