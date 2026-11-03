@@ -11,6 +11,7 @@ import { bulkTiersOf } from "@/lib/bulk-pricing";
 import { isShort, mergeByVariation } from "@/lib/stock-rules";
 import { priceCart } from "@/lib/cart-pricing";
 import { releaseCoupon, reserveCoupon, validateCoupon } from "@/lib/coupons";
+import { bestEffort, createOrFindGuest } from "@/lib/best-effort";
 
 interface CartLine {
   variationId: string;
@@ -145,7 +146,14 @@ export async function POST(req: Request) {
         // ayrı bir misafir kaydı açılır. "+misafir" etiketli adres aynı gelen kutusuna ulaşır.
         const [local, domain] = normalizedEmail.split("@");
         const guestEmail = existing ? `${local}+misafir${Math.random().toString(36).slice(2, 8)}@${domain}` : normalizedEmail;
-        user = await prisma.user.create({ data: { name, email: guestEmail, password: "guest_checkout", role: "USER" } });
+        // Eşzamanlı iki istek aynı yeni e-postayı oluşturmaya çalışırsa (P2002) kayıt yeniden bulunur
+        user = await createOrFindGuest(
+          {
+            create: () => prisma.user.create({ data: { name, email: guestEmail, password: "guest_checkout", role: "USER" } }),
+            find: () => prisma.user.findFirst({ where: { email: { equals: guestEmail, mode: "insensitive" } } }),
+          },
+          "guest_checkout"
+        );
       }
     }
 
@@ -194,7 +202,8 @@ export async function POST(req: Request) {
     // 4a. Havale/EFT: sipariş hemen onaylanır
     if (paymentMethod === "BANK_TRANSFER") {
       // Stok rezerve edilir, bildirimler gider; sipariş yönetici ödemeyi onaylayana kadar PENDING_NEW kalır
-      await finalizeOrder(order.id, { awaitPayment: true });
+      // Sipariş kaydedildi: sonlandırma/bildirim adımı hata verirse müşteri 500 görüp tekrar sipariş vermesin (stok düşümü bayrakla idempotenttir, yönetici onayında yeniden denenir)
+      await bestEffort("order/finalize", () => finalizeOrder(order.id, { awaitPayment: true }));
       return NextResponse.json({ success: true, orderId: order.id });
     }
 
