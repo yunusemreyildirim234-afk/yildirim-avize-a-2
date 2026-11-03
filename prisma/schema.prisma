@@ -56,6 +56,8 @@ model Product {
   messages         ContactMessage[]
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
+
+  @@index([active, category])
 }
 
 // Avize Varyasyonları (Örn: Duy Sayısı, Renk/Kaplama)
@@ -122,6 +124,10 @@ model Order {
   items                OrderItem[]
   createdAt            DateTime     @default(now())
   updatedAt            DateTime     @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([userId])
 }
 
 // Sipariş Kalemleri
@@ -133,6 +139,9 @@ model OrderItem {
   variation   ProductVariation @relation(fields: [variationId], references: [id])
   quantity    Int
   unitPrice   Float // Sipariş anındaki birim fiyat
+
+  @@index([orderId])
+  @@index([variationId])
 }
 
 // Müşteri Yorumları (yalnızca giriş yapmış müşteriler yazabilir)
