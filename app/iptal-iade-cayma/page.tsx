@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import LegalPage from "@/components/LegalPage";
 import { LEGAL_CONTACT_EMAIL, PHONE_DISPLAY } from "@/lib/site";
 import { companyLine, getCompanyInfo, legalChannels, toPublicCompany } from "@/lib/company";
-import { AYIPLI_MAL, CAYMA, IADE_TALIMATI, MONTAJ_NOTU } from "@/lib/legal-texts";
+import { AYIPLI_MAL, CAYMA, HASAR_BILDIRIMI, IADE_TALIMATI, MONTAJ_NOTU } from "@/lib/legal-texts";
 
 export const metadata: Metadata = {
   title: "İptal, İade ve Cayma Hakkı",
@@ -46,7 +46,7 @@ export default async function Page() {
           title: "Ayıplı veya Hasarlı Ürün",
           body: [
             AYIPLI_MAL,
-            "Kargo açılışında kristal taşta çatlak veya eksik parça fark ederseniz, WhatsApp destek hattımıza fotoğraf göndermeniz yeterlidir.",
+            HASAR_BILDIRIMI,
           ],
         },
         {
