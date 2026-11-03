@@ -33,10 +33,10 @@ async function POSTHandler(req: Request) {
 
     const before = await prisma.order.findUnique({ where: { id: orderId }, select: { status: true, stockDeducted: true } });
     if (!before) return NextResponse.json({ error: "Sipariş bulunamadı." }, { status: 404 });
-    const updatedOrder = await prisma.order.update({
-      where: { id: orderId },
-      data: { status },
-    });
+    // Koşullu güncelleme: yalnızca okunan eski durum hâlâ geçerliyse (eşzamanlı PayTR/cron/yönetici işlemi aynı iadeyi iki kez yapmasın)
+    const moved = await prisma.order.updateMany({ where: { id: orderId, status: before.status }, data: { status } });
+    if (moved.count === 0) return NextResponse.json({ success: false, alreadyUpdated: true, error: "Sipariş zaten güncellendi (başka bir işlem durumu değiştirdi). Sayfayı yenileyin." }, { status: 409 });
+    const updatedOrder = await prisma.order.findUniqueOrThrow({ where: { id: orderId } });
 
     // Doğrudan iptal/iade (karar lib/order-undo.ts planStatusChange): stok bayrağı (stockDeducted) true ise stok (kartlı rezervasyon dahil), kupon henüz iade edilmediyse kupon iade edilir
     const plan = before.status !== status ? planStatusChange(before.status, status, before.stockDeducted) : { restoreStock: false, releaseCoupon: false };
