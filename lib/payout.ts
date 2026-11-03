@@ -10,6 +10,9 @@ export const PAYOUT_EXCLUDED_STATUSES = ["AWAITING_PAYMENT", "PAYMENT_FAILED", "
 /** Sorgu penceresi: yatışı bekleyenler (≤30 gün) + yeni yatanlar. */
 export const PAYOUT_WINDOW_DAYS = 35;
 
+/** Sorgu penceresinin başlangıcı (şimdi − 35 gün). */
+export const payoutWindowStart = (now: Date = new Date()) => new Date(now.getTime() - PAYOUT_WINDOW_DAYS * 24 * 3600_000);
+
 export interface PayoutOrder {
   id: string;
   createdAt: Date | string; // ödeme zamanı alanı şemada yok; sipariş oluşturma zamanı kullanılır

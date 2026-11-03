@@ -1,7 +1,7 @@
 import { cleanGuestEmail } from "@/lib/guest-email";
 import { maskEmail } from "@/lib/admin-password";
 import AdminPayoutCard from "@/components/AdminPayoutCard";
-import { PAYOUT_EXCLUDED_STATUSES, PAYOUT_WINDOW_DAYS, buildPayouts } from "@/lib/payout";
+import { PAYOUT_EXCLUDED_STATUSES, buildPayouts, payoutWindowStart } from "@/lib/payout";
 import Link from "next/link";
 import nextDynamic from "next/dynamic";
 import { prisma } from "@/lib/db";
@@ -108,7 +108,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   // Kuveyt Türk hesabı (yalnızca gösterim): son ~35 günün kartlı, ödemesi alınmış siparişleri; ayrı hafif sorgu (yalnızca gerekli alanlar)
   const payoutOrders = await prisma.order
     .findMany({
-      where: { paymentMethod: "CREDIT_CARD", status: { notIn: PAYOUT_EXCLUDED_STATUSES }, createdAt: { gte: new Date(Date.now() - PAYOUT_WINDOW_DAYS * 24 * 3600_000) } },
+      where: { paymentMethod: "CREDIT_CARD", status: { notIn: PAYOUT_EXCLUDED_STATUSES }, createdAt: { gte: payoutWindowStart() } },
       select: { id: true, createdAt: true, totalAmount: true, paymentMethod: true, status: true },
     })
     .catch(() => []);
