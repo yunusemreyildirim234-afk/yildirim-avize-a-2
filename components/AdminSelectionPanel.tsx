@@ -73,6 +73,16 @@ export default function AdminSelectionPanel({
     };
   }, [lastId, top]);
 
+  // Escape açık katmanı kapatır
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+
   const inline = visibleChips(chips, false);
   const full = visibleChips(chips, all);
   const isOpen = open && count > 0;
