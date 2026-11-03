@@ -5,6 +5,9 @@ import { bulkTiersOf } from "@/lib/bulk-pricing";
 import { priceCart } from "@/lib/cart-pricing";
 import { SHIPPING_LABELS, type CouponRule } from "@/lib/pricing";
 import { validateCoupon } from "@/lib/coupons";
+import { getSessionUserId } from "@/lib/account";
+
+const COUPON_GENERIC_ERROR = "Geçersiz veya süresi dolmuş kupon kodu.";
 
 // SALT OKUNUR fiyat teklifi: sepet kalemleri için güncel birim fiyat/kademe/kurallar/stok ve toplamları döndürür.
 // Sipariş oluşturmaz, stok düşmez, kupon hakkı rezerve etmez. Hesap /api/order ile AYNI fonksiyonla yapılır (lib/cart-pricing.ts).
@@ -56,10 +59,18 @@ export async function POST(req: Request) {
   let priced = priceCart({ lines: priceLines, maxTotalDiscountPct: cap, shippingType, paymentMethod });
   let coupon: { ok: boolean; rule?: CouponRule; error?: string } | null = null;
   const code = typeof body.coupon === "string" ? body.coupon.trim() : "";
-  if (code) {
+  // Kupon denemeleri ayrı ve sıkı sınırlanır (kod tahminini önlemek için); sınır aşılırsa teklif kuponsuz çalışır
+  const couponRl = code ? rateLimit(req, "cart-quote-coupon", 15, 10 * 60_000) : null;
+  if (couponRl?.limited) {
+    coupon = { ok: false, error: "Çok fazla deneme, lütfen sonra tekrar deneyin" };
+  } else if (code) {
+    // Oturum varsa e-posta hesaptan alınır; form e-postası yalnızca oturum yokken ve (kupon kısıtı varsa) doğrulamada kullanılır
+    const userId = await getSessionUserId();
+    const sessionEmail = userId ? (await prisma.user.findUnique({ where: { id: userId }, select: { email: true } }))?.email ?? null : null;
     const check = await validateCoupon({
       code,
-      email: typeof body.email === "string" ? body.email : null,
+      email: sessionEmail ?? (typeof body.email === "string" ? body.email : null),
+      userId,
       lines: priced.lines.map((l) => ({ productId: l.productId, lineTotal: l.lineTotal })),
     });
     if (check.ok) {
@@ -69,7 +80,7 @@ export async function POST(req: Request) {
         priced = withCoupon;
         coupon = { ok: true, rule: check.rule };
       }
-    } else coupon = { ok: false, error: check.error };
+    } else coupon = { ok: false, error: COUPON_GENERIC_ERROR }; // var/yok, kişiye özel, limit ayrımı yapılmaz
   }
 
   const lines = [
