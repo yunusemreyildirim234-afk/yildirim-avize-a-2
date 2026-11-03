@@ -75,7 +75,8 @@ async function getAdminData() {
 }
 
 export default async function AdminPage({ searchParams }: { searchParams: Promise<{ durum?: string }> }) {
-  const selectedGroups = parseGroupParam((await searchParams).durum);
+  const durumParam = (await searchParams).durum;
+  const selectedGroups = parseGroupParam(durumParam);
   const { orders, products, messages, coupons, customers, reviews, company } = await getAdminData();
   const discountCap = (await prisma.siteConfig.findUnique({ where: { id: 1 }, select: { maxTotalDiscountPct: true } }))?.maxTotalDiscountPct ?? null;
   const activity = await getActivity();
@@ -226,7 +227,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
             ...(attempts.length > 0 ? [{ label: `${attempts.length} deneme`, tone: "neutral" as const }] : []),
           ]}
         >
-          <AdminOrderFilters selected={selectedGroups} counts={groupCounts} total={orders.length} />
+          <AdminOrderFilters param={durumParam} counts={groupCounts} total={orders.length} />
           <div className="flex flex-wrap items-center justify-end gap-3 px-6 pt-4">
             {visibleOrders.length > 0 && (
               <AdminDeleteButton

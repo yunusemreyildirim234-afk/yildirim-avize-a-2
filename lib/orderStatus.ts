@@ -79,18 +79,17 @@ export const ORDER_GROUPS = [
 export type OrderGroupKey = (typeof ORDER_GROUPS)[number]["key"];
 export const ALL_GROUP_KEYS: OrderGroupKey[] = ORDER_GROUPS.map((g) => g.key);
 
+import { chipState } from "@/lib/filter-chips";
+
 /** ?durum= yokken açılışta seçili gruplar: iptal, iade, teslim edilen ve ödeme bekleyenler gizlidir. */
 export const DEFAULT_GROUP_KEYS: OrderGroupKey[] = ["yeni", "hazir", "kargoda", "talep"];
 
-/** ?durum= değerini seçili grup anahtarlarına çevirir. Parametre yoksa varsayılan gruplar; "tumu" (veya boş değer) = "Tümü" (filtre yok, boş dizi). */
+/** ?durum= değerini seçili grup anahtarlarına çevirir (parametre yok → aktif işler; "tumu" → bütün gruplar). */
 export function parseGroupParam(param: string | undefined): OrderGroupKey[] {
-  if (param === undefined) return DEFAULT_GROUP_KEYS;
-  if (!param || param === "tumu") return [];
-  const wanted = param.split(",").map((k) => k.trim());
-  return ALL_GROUP_KEYS.filter((k) => wanted.includes(k));
+  return chipState(param, ALL_GROUP_KEYS, DEFAULT_GROUP_KEYS).keys;
 }
 
-/** Seçim boşsa (Tümü) her sipariş görünür; değilse seçili gruplardan en az birine giren sipariş. */
+/** Bütün gruplar seçiliyse (Tümü) her sipariş görünür; değilse seçili gruplardan en az birine giren sipariş. */
 export function matchesGroups(o: GroupInput, keys: readonly OrderGroupKey[]): boolean {
-  return keys.length === 0 || ORDER_GROUPS.some((g) => keys.includes(g.key) && g.test(o));
+  return keys.length >= ALL_GROUP_KEYS.length || ORDER_GROUPS.some((g) => keys.includes(g.key) && g.test(o));
 }
