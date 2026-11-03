@@ -2,6 +2,7 @@
 
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
+import PasswordInput from "@/components/PasswordInput";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import MyMessages from "@/components/MyMessages";
@@ -446,10 +447,9 @@ function AdminLoginForm() {
         </div>
         <div>
           <label htmlFor="admin-pass" className="font-semibold text-neutral-700 block mb-1">Şifre</label>
-          <input
+          <PasswordInput
             id="admin-pass"
             required
-            type="password"
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}

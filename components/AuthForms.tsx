@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import CodeStep from "@/components/CodeStep";
+import PasswordInput from "@/components/PasswordInput";
 import PasswordFields, { passwordsOk } from "@/components/PasswordFields";
 
 type Mode = "login" | "register" | "forgot";
@@ -188,7 +189,7 @@ export default function AuthForms({ onAuthenticated }: { onAuthenticated: (user:
           </div>
           <div>
             <label className="font-semibold text-neutral-700 block mb-1">Şifre</label>
-            <input aria-label="Şifre" required type="password" autoComplete="current-password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className={inputCls} />
+            <PasswordInput aria-label="Şifre" required autoComplete="current-password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className={inputCls} />
             <button type="button" onClick={() => switchMode("forgot")} className="mt-2 text-amber-700 hover:underline font-semibold">
               Şifremi Unuttum?
             </button>

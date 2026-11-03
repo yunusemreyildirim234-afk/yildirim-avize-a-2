@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, X } from "lucide-react";
+import PasswordInput from "@/components/PasswordInput";
 import { PASSWORD_RULES, isStrongPassword } from "@/lib/validation";
 
 export const passwordsOk = (password: string, confirm: string) => isStrongPassword(password) && password === confirm;
@@ -25,10 +26,9 @@ export default function PasswordFields({
     <div className="space-y-3">
       <div>
         <label className="font-semibold text-neutral-700 block mb-1">{label}</label>
-        <input
+        <PasswordInput
           aria-label={label}
           required
-          type="password"
           autoComplete="new-password"
           value={password}
           onChange={(e) => onPassword(e.target.value)}
@@ -50,10 +50,9 @@ export default function PasswordFields({
 
       <div>
         <label className="font-semibold text-neutral-700 block mb-1">{label} Tekrarı</label>
-        <input
+        <PasswordInput
           aria-label={`${label} tekrarı`}
           required
-          type="password"
           autoComplete="new-password"
           value={confirm}
           onChange={(e) => onConfirm(e.target.value)}
