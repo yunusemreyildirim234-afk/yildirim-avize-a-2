@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { resultMessage } from "@/lib/bulk-plan";
 import { useRouter } from "next/navigation";
 import { COLLECTION_OPTIONS } from "@/lib/site";
 
@@ -55,22 +56,48 @@ export default function AdminBulkBar({ ids, scopes, onApplied, extraCategories, 
   const [showField, setShowField] = useState<"isFeatured" | "isBestSeller">("isFeatured");
   const [showValue, setShowValue] = useState(true);
 
-  const run = async (payload: Record<string, unknown>) => {
+  const post = async (payload: Record<string, unknown>) => {
+    const res = await fetch("/api/admin/product/bulk", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids, ...payload }),
+    });
+    return { ok: res.ok, data: await res.json() };
+  };
+
+  // Önce sunucuda "zaten bu durumda" kontrolü (dryRun), sonra onay, sonra uygulama
+  const run = async (payload: Record<string, unknown>, preface?: string) => {
     setBusy(true);
     try {
-      const res = await fetch("/api/admin/product/bulk", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids, ...payload }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
+      const dry = await post({ ...payload, dryRun: true });
+      if (!dry.ok) {
+        alert(dry.data.error || "İşlem başarısız.");
+        return;
+      }
+      const d = dry.data as { selected: number; apply: number; skipped: number; showcase: { auto: boolean; before: number; after: number; revertsToAuto: boolean } | null };
+      if (d.apply === 0) {
+        alert("Seçili ürünlerin hepsi zaten bu durumda.");
+        return;
+      }
+      let msg = `${preface ? `${preface}
+
+` : ""}${d.selected} ürün seçili: ${d.apply} ürüne uygulanacak, ${d.skipped} ürün zaten bu durumda (atlanacak).`;
+      if (d.showcase?.auto) {
+        msg += `
+
+Öne çıkanlar şu an otomatik seçiliyor (${d.showcase.before} ürün). Devam ederseniz mevcut ${d.showcase.before} ürün elle işaretlenecek ve istediğiniz değişiklik uygulanacak (sonuç: ${d.showcase.after} ürün). Bundan sonra yeni eklenen ürünler otomatik öne çıkmaz.`;
+      } else if (d.showcase?.revertsToAuto) {
+        msg += "\n\nBu işlem elle işaretli son ürünü kaldırır; öne çıkanlar otomatik seçime dönecek.";
+      }
+      if (!confirm(msg)) return;
+
+      const { ok, data } = await post(payload);
+      if (!ok) {
         alert(data.error || "İşlem başarısız.");
         return;
       }
       if (data.snapshot) onApplied(data.snapshot, String(payload.label ?? TAB_LABEL[tab]));
-      const skipped = data.skipped ? ` (${data.skipped} üründe ${payload.action === "addVariation" ? "bu renk zaten vardı" : "değişiklik gerekmedi"}, atlandı)` : "";
-      alert(`✓ ${ids.length} ürün seçili, işlem uygulandı${skipped}.`);
+      alert(`✓ ${resultMessage(data.updated ?? 0, data.skipped ?? 0)}`);
       router.refresh();
       onDone();
     } catch {
@@ -82,7 +109,6 @@ export default function AdminBulkBar({ ids, scopes, onApplied, extraCategories, 
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!confirm(`Bu işlem seçili ${ids.length} ürüne uygulanacak. Devam edilsin mi?`)) return;
     if (tab === "stock") return run({ action: "stock", mode: stockMode, value: Number(stockValue) });
     if (tab === "rename") return run({ action: "rename", prefix, suffix });
     if (tab === "color") {
@@ -92,8 +118,7 @@ export default function AdminBulkBar({ ids, scopes, onApplied, extraCategories, 
       for (const [label, v] of [["Mağazadan teslim", pickupPct], ["Havale/EFT", transferPct]] as const) {
         if (v.trim() !== "" && !(Number(v) >= 0 && Number(v) <= 100)) return alert(`${label} indirimi 0 ile 100 arasında olmalıdır.`);
       }
-      if (allProducts && !confirm("Özel indirim kuralları KATALOGDAKİ TÜM ürünlere uygulanacak. Emin misiniz?")) return;
-      return run({ action: "specialDiscount", all: allProducts, couponAllowed: couponOk, pickupPct: pickupPct.trim() === "" ? null : Number(pickupPct), transferPct: transferPct.trim() === "" ? null : Number(transferPct), label: "Özel indirim kuralı" });
+      return run({ action: "specialDiscount", all: allProducts, couponAllowed: couponOk, pickupPct: pickupPct.trim() === "" ? null : Number(pickupPct), transferPct: transferPct.trim() === "" ? null : Number(transferPct), label: "Özel indirim kuralı" }, allProducts ? "Özel indirim kuralları KATALOGDAKİ TÜM ürünlere uygulanacak." : undefined);
     }
     if (tab === "discount") {
       const value = Number(discValue);
@@ -111,9 +136,7 @@ export default function AdminBulkBar({ ids, scopes, onApplied, extraCategories, 
 
   const removeScope = (payload: Record<string, unknown>, msg: string) => {
     setRemoveOpen(false);
-    if (confirm(`${msg}
-
-Etkilenecek ürün sayısı: ${ids.length}`)) run({ action: "removeDiscount", label: "İndirim kaldırma", ...payload });
+    run({ action: "removeDiscount", label: "İndirim kaldırma", ...payload }, msg);
   };
 
   const input = "p-2 rounded-lg border border-neutral-300 bg-white text-xs focus:outline-none focus:border-amber-600";
@@ -195,8 +218,7 @@ Etkilenecek ürün sayısı: ${ids.length}`)) run({ action: "removeDiscount", la
               type="button"
               disabled={busy}
               onClick={() => {
-                if (!confirm(allProducts ? "Varsayılana dönüş KATALOGDAKİ TÜM ürünlere uygulanacak. Emin misiniz?" : `Varsayılana dönüş seçili ${ids.length} ürüne uygulanacak. Devam edilsin mi?`)) return;
-                run({ action: "specialDiscount", all: allProducts, reset: true, label: "Varsayılana dönüş" });
+                run({ action: "specialDiscount", all: allProducts, reset: true, label: "Varsayılana dönüş" }, allProducts ? "Varsayılana dönüş KATALOGDAKİ TÜM ürünlere uygulanacak." : "Özel indirimler varsayılana döndürülecek.");
               }}
               className="px-3 py-2 rounded-lg border border-neutral-300 font-semibold hover:bg-neutral-100 disabled:opacity-60"
             >
