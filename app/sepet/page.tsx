@@ -8,7 +8,8 @@ import { useRouter } from "next/navigation";
 import Script from "next/script";
 import { cartPriceLines, useCart, type ItemRules } from "@/context/CartContext";
 import { FREE_SHIPPING_THRESHOLD, SHIPPING_COST, SHIPPING_LABELS, type CouponRule } from "@/lib/pricing";
-import { capMessage, discountsApplied, priceCart, ruleNotes } from "@/lib/cart-pricing";
+import { discountsApplied, priceCart, type CapInfo } from "@/lib/cart-pricing";
+import { lineNotices } from "@/lib/cart-notices";
 import BankTransferCard from "@/components/BankTransferCard";
 import ContractModal from "@/components/ContractModal";
 import { invoiceError } from "@/lib/validation";
@@ -142,7 +143,7 @@ export default function CartPage() {
 
   // Sunucu fiyat teklifi (/api/cart/quote, salt okunur): gösterilen tutar buradan gelir
   interface Quote {
-    lines: { variationId: string; available: boolean; stockShort?: boolean; title?: string; price?: number; bulk?: BulkRule[]; rules?: ItemRules }[];
+    lines: { variationId: string; available: boolean; stockShort?: boolean; title?: string; price?: number; unitPrice?: number; bulk?: BulkRule[]; rules?: ItemRules; capInfo?: CapInfo | null }[];
     totals: { itemsTotal: number; shipping: number; couponDiscount: number; pickupDiscount: number; bankDiscount: number; total: number };
     coupon: { ok: boolean; error?: string; limited?: boolean } | null;
     maxTotalDiscountPct?: number | null;
@@ -218,6 +219,12 @@ export default function CartPage() {
   }, [quoteSig, quoteRetry]);
 
   const fresh = quote !== null && quote.sig === quoteSig && cart.length > 0;
+  // Uyarılar yalnızca sunucu teklifinden gelir (yerel/bayat sepet verisi metni belirlemez)
+  const noticesOf = (variationId: string): string[] => {
+    const q = quote?.lines.find((l) => l.variationId === variationId);
+    if (!q || !q.available || typeof q.price !== "number" || typeof q.unitPrice !== "number" || !q.rules) return [];
+    return lineNotices({ price: q.price, unitPrice: q.unitPrice, capInfo: q.capInfo ?? null, rules: q.rules }, fresh);
+  };
   const { shipping: shippingCost, couponDiscount, pickupDiscount, bankDiscount, total: finalTotal } = fresh ? quote.totals : localTotals;
   const couponUnverifiable = appliedCoupon !== null && ((fresh && quote.coupon?.limited === true) || quoteFailed);
   const itemsShown = fresh ? quote.totals.itemsTotal : totalPrice;
@@ -515,13 +522,8 @@ export default function CartPage() {
                       </p>
                     ))}
                     {item.bulk && item.bulk.length > 0 && <p className="text-[11px] text-neutral-500 mt-0.5">Aynı ürünün farklı renkleri toplam adede sayılır.</p>}
-                    {pricedOf(item.variationId)?.capInfo && (
-                      <p className="text-[11px] text-amber-900 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1 mt-1.5 leading-snug">
-                        {capMessage(pricedOf(item.variationId)!.capInfo!)}
-                      </p>
-                    )}
-                    {ruleNotes(item.rules).map((n) => (
-                      <p key={n} className="text-[11px] text-neutral-600 mt-0.5">
+                    {noticesOf(item.variationId).map((n) => (
+                      <p key={n} className="text-[11px] text-amber-900 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1 mt-1.5 leading-snug w-fit max-w-full">
                         {n}
                       </p>
                     ))}
