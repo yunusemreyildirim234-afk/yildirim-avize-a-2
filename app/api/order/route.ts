@@ -88,6 +88,7 @@ export async function POST(req: Request) {
       const check = await validateCoupon({
         code: couponCode,
         email: String(email).toLowerCase(),
+        userId: await getSessionUserId(),
         lines: priced.lines.map((l) => ({ productId: l.productId, lineTotal: l.lineTotal })),
       });
       if (!check.ok) return NextResponse.json({ error: check.error }, { status: 400 });

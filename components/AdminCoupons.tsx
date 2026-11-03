@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown, Search, Tag, Users } from "lucide-react";
 
@@ -8,6 +8,10 @@ export interface CouponRow {
   id: string;
   code: string;
   discountPercent: number;
+  discountType: string; // PERCENT | FIXED
+  discountAmount: number | null;
+  minCartTotal: number | null;
+  perUserLimit: number | null;
   maxUses: number;
   usedCount: number;
   userEmail: string | null;
@@ -25,6 +29,8 @@ interface Props {
 
 const norm = (v?: string | null) => (v ?? "").toLocaleLowerCase("tr").trim();
 
+const tl = (n: number) => `${n.toLocaleString("tr-TR", { minimumFractionDigits: 0, maximumFractionDigits: 2 })} ₺`;
+
 export default function AdminCoupons({ coupons, customers, products }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -32,6 +38,15 @@ export default function AdminCoupons({ coupons, customers, products }: Props) {
 
   const [code, setCode] = useState("");
   const [percent, setPercent] = useState("10");
+  const [dType, setDType] = useState<"PERCENT" | "FIXED">("PERCENT");
+  const [minCart, setMinCart] = useState("");
+  const [perUserOnce, setPerUserOnce] = useState(false);
+  // Düzenleme paneli (kod değişmez; yalnızca yeni siparişleri etkiler)
+  const [editId, setEditId] = useState<string | null>(null);
+  const [eType, setEType] = useState<"PERCENT" | "FIXED">("PERCENT");
+  const [eValue, setEValue] = useState("");
+  const [eMin, setEMin] = useState("");
+  const [eOnce, setEOnce] = useState(false);
   const [maxUses, setMaxUses] = useState("1");
 
   // Müşteri seçimi: "" = tüm müşteriler
@@ -86,13 +101,19 @@ export default function AdminCoupons({ coupons, customers, products }: Props) {
     e.preventDefault();
     const ok = await call("POST", {
       code,
-      discountPercent: Number(percent),
+      discountType: dType,
+      discountPercent: dType === "PERCENT" ? Number(percent) : undefined,
+      discountAmount: dType === "FIXED" ? Number(percent) : undefined,
+      minCartTotal: minCart === "" ? 0 : Number(minCart),
+      perUserOnce,
       maxUses: Number(maxUses),
       userEmail: customerEmail,
       productId,
     });
     if (ok) {
       setCode("");
+      setMinCart("");
+      setPerUserOnce(false);
       setCustomerEmail("");
       setCustomerQuery("");
       setProductId("");
@@ -142,12 +163,20 @@ export default function AdminCoupons({ coupons, customers, products }: Props) {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="font-semibold text-neutral-700 block mb-1">İndirim (%)</label>
+                <label className="font-semibold text-neutral-700 block mb-1">İndirim Türü</label>
+                <select value={dType} onChange={(e) => setDType(e.target.value as "PERCENT" | "FIXED")} className={inputCls}>
+                  <option value="PERCENT">Yüzde (%)</option>
+                  <option value="FIXED">TL tutar</option>
+                </select>
+              </div>
+              <div>
+                <label className="font-semibold text-neutral-700 block mb-1">{dType === "PERCENT" ? "İndirim (%)" : "İndirim (₺)"}</label>
                 <input
                   required
                   type="number"
-                  min={1}
-                  max={100}
+                  min={0.01}
+                  max={dType === "PERCENT" ? 99.99 : 100000}
+                  step="any"
                   value={percent}
                   onChange={(e) => setPercent(e.target.value)}
                   className={inputCls}
@@ -155,15 +184,16 @@ export default function AdminCoupons({ coupons, customers, products }: Props) {
               </div>
               <div>
                 <label className="font-semibold text-neutral-700 block mb-1">Kullanım Limiti</label>
-                <input
-                  required
-                  type="number"
-                  min={1}
-                  value={maxUses}
-                  onChange={(e) => setMaxUses(e.target.value)}
-                  className={inputCls}
-                />
+                <input required type="number" min={1} value={maxUses} onChange={(e) => setMaxUses(e.target.value)} className={inputCls} />
               </div>
+              <div>
+                <label className="font-semibold text-neutral-700 block mb-1">Minimum Sepet (₺)</label>
+                <input type="number" min={0} step="any" value={minCart} onChange={(e) => setMinCart(e.target.value)} placeholder="Yok" className={inputCls} />
+              </div>
+              <label className="col-span-2 flex items-center gap-2 font-semibold text-neutral-700">
+                <input type="checkbox" checked={perUserOnce} onChange={(e) => setPerUserOnce(e.target.checked)} className="accent-amber-600" />
+                Kişi başı 1 kullanım
+              </label>
             </div>
 
             {/* Müşteri */}
@@ -294,9 +324,17 @@ export default function AdminCoupons({ coupons, customers, products }: Props) {
                 {coupons.map((c) => {
                   const remaining = Math.max(0, c.maxUses - c.usedCount);
                   return (
-                    <tr key={c.id} className={c.active ? "" : "opacity-50"}>
+                    <Fragment key={c.id}>
+                    <tr className={c.active ? "" : "opacity-50"}>
                       <td className="p-3 font-mono font-bold text-neutral-900">{c.code}</td>
-                      <td className="p-3">%{c.discountPercent}</td>
+                      <td className="p-3">
+                        {c.discountType === "FIXED" && c.discountAmount ? tl(c.discountAmount) : `%${c.discountPercent}`}
+                        {(c.minCartTotal || c.perUserLimit) && (
+                          <span className="block text-[10px] text-neutral-500">
+                            {[c.minCartTotal ? `Min. sepet ${tl(c.minCartTotal)}` : "", c.perUserLimit ? "Kişi başı 1" : ""].filter(Boolean).join(" • ")}
+                          </span>
+                        )}
+                      </td>
                       <td className="p-3">
                         {c.usedCount} / {c.maxUses >= 1_000_000 ? "∞" : c.maxUses}
                         <span className="block text-[10px] text-neutral-500">
@@ -320,11 +358,11 @@ export default function AdminCoupons({ coupons, customers, products }: Props) {
                           type="button"
                           disabled={busy}
                           onClick={() => {
-                            const v = window.prompt(`"${c.code}" için yeni indirim yüzdesi (0-100 arası, 100 hariç). Mevcut siparişler değişmez.`, String(c.discountPercent));
-                            if (v === null) return;
-                            const n = Number(v.replace(",", "."));
-                            if (!(n > 0 && n < 100)) return alert("İndirim yüzdesi 0 ile 100 arasında olmalıdır (100 hariç).");
-                            call("PATCH", { id: c.id, discountPercent: n });
+                            setEditId(editId === c.id ? null : c.id);
+                            setEType(c.discountType === "FIXED" ? "FIXED" : "PERCENT");
+                            setEValue(String(c.discountType === "FIXED" ? c.discountAmount ?? "" : c.discountPercent));
+                            setEMin(c.minCartTotal ? String(c.minCartTotal) : "");
+                            setEOnce(Boolean(c.perUserLimit));
                           }}
                           className="font-semibold text-amber-700 hover:underline mr-3"
                         >
@@ -340,6 +378,52 @@ export default function AdminCoupons({ coupons, customers, products }: Props) {
                         </button>
                       </td>
                     </tr>
+                    {editId === c.id && (
+                      <tr className="bg-amber-50/40">
+                        <td colSpan={6} className="p-3">
+                          <form
+                            className="flex flex-wrap items-end gap-3"
+                            onSubmit={async (e) => {
+                              e.preventDefault();
+                              const ok = await call("PATCH", {
+                                id: c.id,
+                                discountType: eType,
+                                discountPercent: eType === "PERCENT" ? Number(eValue) : undefined,
+                                discountAmount: eType === "FIXED" ? Number(eValue) : undefined,
+                                minCartTotal: eMin === "" ? 0 : Number(eMin),
+                                perUserOnce: eOnce,
+                              });
+                              if (ok) setEditId(null);
+                            }}
+                          >
+                            <div>
+                              <label className="font-semibold text-neutral-700 block mb-1">Tür</label>
+                              <select value={eType} onChange={(e) => setEType(e.target.value as "PERCENT" | "FIXED")} className={inputCls}>
+                                <option value="PERCENT">Yüzde (%)</option>
+                                <option value="FIXED">TL tutar</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="font-semibold text-neutral-700 block mb-1">{eType === "PERCENT" ? "Yüzde" : "Tutar (₺)"}</label>
+                              <input required type="number" min={0.01} max={eType === "PERCENT" ? 99.99 : 100000} step="any" value={eValue} onChange={(e) => setEValue(e.target.value)} className={inputCls} />
+                            </div>
+                            <div>
+                              <label className="font-semibold text-neutral-700 block mb-1">Minimum Sepet (₺)</label>
+                              <input type="number" min={0} step="any" value={eMin} onChange={(e) => setEMin(e.target.value)} placeholder="Yok" className={inputCls} />
+                            </div>
+                            <label className="flex items-center gap-2 font-semibold text-neutral-700 pb-2.5">
+                              <input type="checkbox" checked={eOnce} onChange={(e) => setEOnce(e.target.checked)} className="accent-amber-600" />
+                              Kişi başı 1 kullanım
+                            </label>
+                            <button type="submit" disabled={busy} className="bg-neutral-900 hover:bg-amber-600 disabled:opacity-60 text-white font-semibold px-4 py-2.5 rounded-xl transition-colors">
+                              Kaydet
+                            </button>
+                            <p className="basis-full text-[10px] text-neutral-500">Kod değişmez. Mevcut siparişlerin tutarları değişmez; değişiklik yalnızca yeni siparişlerde geçerlidir.</p>
+                          </form>
+                        </td>
+                      </tr>
+                    )}
+                    </Fragment>
                   );
                 })}
               </tbody>

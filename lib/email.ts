@@ -375,13 +375,14 @@ export async function sendCartReminderEmail(data: { to: string; name: string; it
 }
 
 /** Müşteriye özel kupon e-postası, KAMPANYA sürümü: zorunlu alt bilgi ve çıkış bağlantısı içerir (yalnızca ticari ileti onayı olanlara). */
-export async function sendCampaignCouponEmail(data: { to: string; name: string; code: string; discountPercent: number; footerHtml: string }) {
+export async function sendCampaignCouponEmail(data: { to: string; name: string; code: string; discountPercent: number; discountAmount?: number | null; footerHtml: string }) {
+  const label = data.discountAmount ? `${data.discountAmount.toLocaleString("tr-TR")} ₺` : `%${data.discountPercent}`;
   return sendViaResend(process.env.RESEND_API_KEY, {
     to: [data.to],
-    subject: `Size özel %${data.discountPercent} indirim kuponu - Yıldırım Avize`,
+    subject: `Size özel ${label} indirim kuponu - Yıldırım Avize`,
     html: `<div style="font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #171717;">
       <h2 style="margin: 0 0 12px;">Sayın ${esc(data.name)},</h2>
-      <p style="font-size: 14px; line-height: 1.6;">Size özel <strong>%${data.discountPercent}</strong> indirim kuponu tanımlandı!</p>
+      <p style="font-size: 14px; line-height: 1.6;">Size özel <strong>${label}</strong> indirim kuponu tanımlandı!</p>
       <p style="text-align: center; margin: 20px 0;"><span style="display: inline-block; font-family: monospace; font-size: 20px; font-weight: bold; letter-spacing: 2px; background: #fffbeb; border: 1px dashed #d97706; border-radius: 10px; padding: 10px 20px; color: #92400e;">${esc(data.code)}</span></p>
       <p style="font-size: 12px; color: #737373;">Kuponu sepet sayfasında kullanabilir, Hesabım → Kuponlarım bölümünden de görebilirsiniz.<br />Yıldırım Avize | Tel: ${PHONE_DISPLAY}</p>
       ${data.footerHtml}

@@ -24,6 +24,8 @@ export async function GET() {
       id: c.id,
       code: c.code,
       discountPercent: c.discountPercent,
+      discountAmount: c.discountType === "FIXED" ? c.discountAmount : null,
+      minCartTotal: c.minCartTotal,
       personal: Boolean(c.userEmail),
       remaining: c.maxUses >= 1_000_000 ? null : c.maxUses - c.usedCount, // null: sınırsız
       product: c.product ? { title: c.product.title, modelCode: c.product.modelCode } : null,

@@ -234,6 +234,10 @@ model Coupon {
   id              String   @id @default(uuid())
   code            String   @unique
   discountPercent Float
+  discountType    String   @default("PERCENT") // PERCENT | FIXED
+  discountAmount  Float? // FIXED: TL tutar
+  minCartTotal    Float? // uygun kalemlerin (kademe sonrası) asgari toplamı
+  perUserLimit    Int? // aynı e-posta/üye için iptal edilmemiş siparişte kullanım sınırı
   maxUses         Int      @default(1)
   usedCount       Int      @default(0)
   userEmail       String? // null: herkese açık

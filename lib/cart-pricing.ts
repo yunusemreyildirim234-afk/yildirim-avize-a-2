@@ -94,8 +94,11 @@ export function priceCart(opts: {
   const eligible = lines.filter((l) => l.couponAllowed);
   if (opts.coupon) {
     const applicable = eligible.filter((l) => !opts.coupon!.productId || l.productId === opts.coupon!.productId);
+    const applicableTotal = applicable.reduce((sum, l) => sum + l.lineTotal, 0);
     if (applicable.length === 0) couponError = COUPON_UNAVAILABLE;
-    else couponRaw = couponDiscountFor(opts.coupon, eligible.map((l) => ({ productId: l.productId, lineTotal: l.lineTotal })));
+    else if (opts.coupon.minCartTotal && applicableTotal < opts.coupon.minCartTotal) {
+      couponError = `Bu kod için minimum sepet tutarı ${opts.coupon.minCartTotal.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺`;
+    } else couponRaw = couponDiscountFor(opts.coupon, eligible.map((l) => ({ productId: l.productId, lineTotal: l.lineTotal })));
   }
   const isPickup = opts.shippingType === SHIPPING_TYPES.PICKUP;
   const shipping = isPickup || itemsTotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;

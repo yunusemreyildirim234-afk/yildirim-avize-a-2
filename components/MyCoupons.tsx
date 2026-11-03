@@ -8,6 +8,8 @@ interface CouponItem {
   id: string;
   code: string;
   discountPercent: number;
+  discountAmount: number | null; // TL kuponu
+  minCartTotal: number | null;
   personal: boolean;
   remaining: number | null; // null: sınırsız
   product: { title: string; modelCode: string | null } | null;
@@ -49,7 +51,9 @@ export default function MyCoupons() {
           {coupons.map((c) => (
             <li key={c.id} className="border border-dashed border-amber-300 bg-amber-50/50 rounded-2xl p-5 space-y-3 text-xs">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-2xl font-serif font-bold text-neutral-900">%{c.discountPercent}</span>
+                <span className="text-2xl font-serif font-bold text-neutral-900">
+                  {c.discountAmount ? `${c.discountAmount.toLocaleString("tr-TR")} ₺` : `%${c.discountPercent}`}
+                </span>
                 <span
                   className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${
                     c.personal ? "bg-purple-100 text-purple-800" : "bg-emerald-100 text-emerald-800"

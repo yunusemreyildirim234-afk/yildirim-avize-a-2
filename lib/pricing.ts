@@ -19,6 +19,9 @@ export interface CouponRule {
   code: string;
   discountPercent: number;
   productId: string | null; // null: tüm sepet
+  discountType?: "PERCENT" | "FIXED"; // yoksa PERCENT
+  discountAmount?: number | null; // FIXED: TL tutar
+  minCartTotal?: number | null; // uygun kalemlerin (kademe sonrası) asgari toplamı
 }
 
 export interface PriceLine {
@@ -26,10 +29,17 @@ export interface PriceLine {
   lineTotal: number;
 }
 
-/** Kuponun uygulanacağı tutar üzerinden yüzde indirim (ürüne özelse yalnızca o ürünün satırları). */
+/** Kuponun uygulanacağı tutar (ürüne özelse yalnızca o ürünün satırları). */
+export function couponBaseFor(rule: CouponRule, lines: PriceLine[]): number {
+  return lines.reduce((sum, l) => (rule.productId && l.productId !== rule.productId ? sum : sum + l.lineTotal), 0);
+}
+
+/** Kupon indirimi: yüzde için tutar üzerinden yüzde; TL için min(tutar, uygun ara toplam), sipariş başına bir kez. Minimum sepet altında 0. */
 export function couponDiscountFor(rule: CouponRule | null | undefined, lines: PriceLine[]): number {
   if (!rule) return 0;
-  const base = lines.reduce((sum, l) => (rule.productId && l.productId !== rule.productId ? sum : sum + l.lineTotal), 0);
+  const base = couponBaseFor(rule, lines);
+  if (rule.minCartTotal && base < rule.minCartTotal) return 0;
+  if (rule.discountType === "FIXED") return Math.min(Math.max(0, rule.discountAmount ?? 0), base);
   return Math.round((base * rule.discountPercent) / 100);
 }
 

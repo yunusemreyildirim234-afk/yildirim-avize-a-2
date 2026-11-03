@@ -18,6 +18,7 @@ export async function validateCoupon(opts: {
   code: string;
   email?: string | null;
   lines: PriceLine[];
+  userId?: string | null; // giriş yapmış üye (kişi başı limit için)
 }): Promise<CouponResult> {
   const code = opts.code.trim().toUpperCase();
   if (!code) return { ok: false, error: "Geçersiz veya süresi dolmuş kupon kodu." };
@@ -37,10 +38,39 @@ export async function validateCoupon(opts: {
     return { ok: false, error: "Bu kupon yalnızca belirli bir üründe geçerlidir; ürün sepetinizde bulunmuyor." };
   }
 
+  // Kişi başı limit: aynı e-posta (veya üye) için iptal edilmemiş siparişlerde bu kupon kullanıldıysa reddedilir
+  if (coupon.perUserLimit) {
+    const email = (opts.email ?? "").trim().toLowerCase();
+    if (!email && !opts.userId) return { ok: false, error: "Bu kupon için lütfen giriş yapın veya e-posta adresinizi girin." };
+    const [local, domain] = email.split("@");
+    const used = await prisma.order.count({
+      where: {
+        couponCode: coupon.code,
+        status: { notIn: ["CANCELLED", "RETURNED", "PAYMENT_FAILED"] },
+        user: {
+          OR: [
+            ...(opts.userId ? [{ id: opts.userId }] : []),
+            ...(email ? [{ email: { equals: email, mode: "insensitive" as const } }] : []),
+            // Kayıtlı hesabı olan e-postanın misafir siparişleri "+misafir" etiketli adresle açılır
+            ...(local && domain ? [{ email: { startsWith: `${local}+misafir`, endsWith: `@${domain}`, mode: "insensitive" as const } }] : []),
+          ],
+        },
+      },
+    });
+    if (used >= coupon.perUserLimit) return { ok: false, error: "Bu kuponu daha önce kullandınız." };
+  }
+
   return {
     ok: true,
     couponId: coupon.id,
-    rule: { code: coupon.code, discountPercent: coupon.discountPercent, productId: coupon.productId },
+    rule: {
+      code: coupon.code,
+      discountPercent: coupon.discountPercent,
+      productId: coupon.productId,
+      discountType: coupon.discountType === "FIXED" ? "FIXED" : "PERCENT",
+      discountAmount: coupon.discountAmount,
+      minCartTotal: coupon.minCartTotal,
+    },
   };
 }
 

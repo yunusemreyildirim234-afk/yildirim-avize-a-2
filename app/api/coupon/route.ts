@@ -20,7 +20,7 @@ export async function POST(req: Request) {
   const sessionUser = userId ? await prisma.user.findUnique({ where: { id: userId }, select: { email: true } }) : null;
   const email = sessionUser?.email ?? (typeof body.email === "string" ? body.email : null);
 
-  const result = await validateCoupon({ code, email, lines });
+  const result = await validateCoupon({ code, email, lines, userId });
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 });
   return NextResponse.json({ rule: result.rule });
 }
