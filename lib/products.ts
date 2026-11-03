@@ -1,10 +1,32 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 
+/**
+ * Kart/liste için gereken alanlar (ProductCard, priceLadder, bulkTiersOf, ana sayfa havuzları).
+ * description, images, brand, trendyol* ve zaman damgaları çekilmez.
+ */
+export const CARD_SELECT = {
+  id: true,
+  title: true,
+  category: true,
+  basePrice: true,
+  listPrice: true,
+  imageUrl: true,
+  modelCode: true,
+  bulkMinQty: true,
+  bulkDiscountType: true,
+  bulkDiscountValue: true,
+  bulkTiers: true,
+  couponAllowed: true,
+  pickupDiscountPct: true,
+  transferDiscountPct: true,
+  variations: { select: { id: true, variationValue: true, extraPrice: true, stock: true }, orderBy: { id: "asc" } },
+} satisfies Prisma.ProductSelect;
+
 export async function getProducts(where: Prisma.ProductWhereInput = {}, take?: number) {
   return prisma.product.findMany({
     where: { active: true, ...where },
-    include: { variations: { orderBy: { id: "asc" } } },
+    select: CARD_SELECT,
     orderBy: { updatedAt: "desc" },
     take,
   });
