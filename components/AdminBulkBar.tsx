@@ -82,6 +82,7 @@ export default function AdminBulkBar({ ids, scopes, onApplied, extraCategories, 
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!confirm(`Bu işlem seçili ${ids.length} ürüne uygulanacak. Devam edilsin mi?`)) return;
     if (tab === "stock") return run({ action: "stock", mode: stockMode, value: Number(stockValue) });
     if (tab === "rename") return run({ action: "rename", prefix, suffix });
     if (tab === "color") {
@@ -110,7 +111,9 @@ export default function AdminBulkBar({ ids, scopes, onApplied, extraCategories, 
 
   const removeScope = (payload: Record<string, unknown>, msg: string) => {
     setRemoveOpen(false);
-    if (confirm(msg)) run({ action: "removeDiscount", label: "İndirim kaldırma", ...payload });
+    if (confirm(`${msg}
+
+Etkilenecek ürün sayısı: ${ids.length}`)) run({ action: "removeDiscount", label: "İndirim kaldırma", ...payload });
   };
 
   const input = "p-2 rounded-lg border border-neutral-300 bg-white text-xs focus:outline-none focus:border-amber-600";
@@ -192,7 +195,7 @@ export default function AdminBulkBar({ ids, scopes, onApplied, extraCategories, 
               type="button"
               disabled={busy}
               onClick={() => {
-                if (allProducts && !confirm("Varsayılana dönüş KATALOGDAKİ TÜM ürünlere uygulanacak. Emin misiniz?")) return;
+                if (!confirm(allProducts ? "Varsayılana dönüş KATALOGDAKİ TÜM ürünlere uygulanacak. Emin misiniz?" : `Varsayılana dönüş seçili ${ids.length} ürüne uygulanacak. Devam edilsin mi?`)) return;
                 run({ action: "specialDiscount", all: allProducts, reset: true, label: "Varsayılana dönüş" });
               }}
               className="px-3 py-2 rounded-lg border border-neutral-300 font-semibold hover:bg-neutral-100 disabled:opacity-60"

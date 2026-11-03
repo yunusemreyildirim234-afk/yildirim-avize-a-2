@@ -118,6 +118,8 @@ export default function AdminProductList({ products, maxTotalDiscountPct }: { pr
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [editingId, setEditingId] = useState<string | null>(null);
   const [chips, setChips] = useState<string[]>([]);
+  const PAGE = 8;
+  const [shown, setShown] = useState(PAGE); // listede gösterilen ürün sayısı (8'er artar)
   // Son işlem öncesi durum (Geri Al)
   const [undo, setUndo] = useState<{ snapshot: unknown; label: string } | null>(null);
   const [undoing, setUndoing] = useState(false);
@@ -311,7 +313,7 @@ Yine de geri alınsın mı?`)) await doUndo(true);
             aria-label="Ürün ismi, stok kodu veya model kodu ile ara"
             placeholder="Ürün İsmi / Stok Kodu / Model Kodu ile Ara"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => { setQuery(e.target.value); setShown(PAGE); }}
             className="w-full text-xs pl-9 pr-3 py-2.5 rounded-xl border border-neutral-300 bg-white focus:outline-none focus:border-amber-600"
           />
         </div>
@@ -319,7 +321,7 @@ Yine de geri alınsın mı?`)) await doUndo(true);
           <SmartFilterChips
             label="Ürün vitrin ve indirim filtreleri"
             selected={chips}
-            onChange={setChips}
+            onChange={(c) => { setChips(c); setShown(PAGE); }}
             total={products.length}
             options={[
               { key: "discount", label: "İndirimdekiler", count: products.filter(CHIP_TESTS.discount).length },
@@ -342,7 +344,8 @@ Yine de geri alınsın mı?`)) await doUndo(true);
       {filtered.length > 0 && (
         <label className="flex items-center gap-2 px-5 sm:px-6 py-2.5 border-b border-neutral-100 text-xs font-semibold text-neutral-600 cursor-pointer">
           <input type="checkbox" checked={allFilteredSelected} onChange={toggleAll} className="w-4 h-4 accent-amber-600" />
-          Tümünü Seç ({filtered.length})
+          Filtredeki {filtered.length} ürünün tamamını seç{filtered.length > shown ? " (görünmeyenler dahil)" : ""}
+          {allFilteredSelected && <span className="font-bold text-amber-800">• Filtredeki {filtered.length} ürünün tamamı seçildi</span>}
           {selected.size > 0 && (
             <button type="button" onClick={() => setSelected(new Set())} className="ml-auto text-amber-700 hover:underline">
               Seçimi temizle
@@ -355,7 +358,7 @@ Yine de geri alınsın mı?`)) await doUndo(true);
         {filtered.length === 0 && (
           <p className="p-10 text-center text-xs text-neutral-400">&ldquo;{query}&rdquo; ile eşleşen ürün bulunamadı.</p>
         )}
-        {filtered.map((product) => (
+        {filtered.slice(0, shown).map((product) => (
           <div key={product.id}>
           <div className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-neutral-50/50 transition-colors">
             {/* Sol: Seçim, Görsel ve Başlık */}
@@ -474,6 +477,16 @@ Yine de geri alınsın mı?`)) await doUndo(true);
           </div>
         ))}
       </div>
+      {filtered.length > 0 && (
+        <div className="flex items-center justify-between gap-3 px-5 sm:px-6 py-3 border-t border-neutral-100 text-xs text-neutral-600">
+          <span>Gösterilen: {Math.min(shown, filtered.length)} / {filtered.length}</span>
+          {filtered.length > shown && (
+            <button type="button" onClick={() => setShown((n) => n + PAGE)} className="font-semibold text-amber-800 hover:underline">
+              Daha fazla göster
+            </button>
+          )}
+        </div>
+      )}
       </div>
       )}
       {undo && (
