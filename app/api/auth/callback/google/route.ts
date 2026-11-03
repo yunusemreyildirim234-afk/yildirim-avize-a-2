@@ -77,7 +77,7 @@ export async function GET(req: Request) {
     res.cookies.set(USER_COOKIE, await issueUserToken(user.id, { picture: googleUser.picture ?? null }), cookieOptions);
     return res;
   } catch (err) {
-    console.error("Google Auth Hatası:", err);
+    console.error("[google-auth]", (err as Error)?.message ?? "bilinmeyen hata");
     return NextResponse.redirect(new URL("/giris?error=sunucu_hatasi", SITE_URL));
   }
 }
