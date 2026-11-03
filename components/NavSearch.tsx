@@ -43,7 +43,7 @@ function Results({
     return (
       <div className="p-5 text-center text-xs text-zinc-600 space-y-2">
         <p>&ldquo;{query}&rdquo; ile eşleşen ürün bulunamadı.</p>
-        <a href="/kategori/tum" className="inline-block font-semibold text-amber-800 underline underline-offset-2">Tüm koleksiyona göz atın →</a>
+        <Link href="/kategori/tum" className="inline-block font-semibold text-amber-800 underline underline-offset-2">Tüm koleksiyona göz atın →</Link>
       </div>
     );
   }
@@ -92,6 +92,16 @@ export default function NavSearch() {
     if (term.trim().length < 2) return;
     setRecent(saveRecentSearch(term));
     track("SEARCH", term.trim());
+  };
+
+  const onChange = (value: string) => {
+    setQuery(value);
+    if (!value.trim()) {
+      setResults([]);
+      setSearched(false);
+      setLoading(false);
+    }
+    setOpen(true);
   };
 
   const openPanel = () => {
@@ -182,16 +192,6 @@ export default function NavSearch() {
       document.body.style.overflow = prev;
     };
   }, [open]);
-
-  const onChange = (value: string) => {
-    setQuery(value);
-    if (!value.trim()) {
-      setResults([]);
-      setSearched(false);
-      setLoading(false);
-    }
-    setOpen(true);
-  };
 
   // Enter: tek/ilk sonuca git
   const onSubmit = (e: React.FormEvent) => {

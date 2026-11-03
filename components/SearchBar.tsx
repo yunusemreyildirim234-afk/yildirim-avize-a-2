@@ -183,7 +183,7 @@ export default function SearchBar() {
           ) : (
             <div className="p-5 text-center text-xs text-neutral-600 space-y-2">
               <p>&ldquo;{query}&rdquo; ile eşleşen bir ürün bulunamadı.</p>
-              <a href="/kategori/tum" className="inline-block font-semibold text-amber-800 underline underline-offset-2">Tüm koleksiyona göz atın →</a>
+              <Link href="/kategori/tum" className="inline-block font-semibold text-amber-800 underline underline-offset-2">Tüm koleksiyona göz atın →</Link>
             </div>
           )}
         </div>

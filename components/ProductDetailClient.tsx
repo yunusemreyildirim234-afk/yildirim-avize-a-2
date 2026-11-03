@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { HoverMagnifier, ImageLightbox } from "@/components/ImageZoom";
 import { useCart } from "@/context/CartContext";
@@ -37,6 +38,7 @@ interface Product {
 }
 
 export default function ProductDetailClient({ product, ladderCtx }: { product: Product; ladderCtx: LadderContext }) {
+  const router = useRouter();
   const maxTotalDiscountPct = ladderCtx.maxTotalDiscountPct;
   const { addToCart } = useCart();
 
@@ -89,7 +91,7 @@ export default function ProductDetailClient({ product, ladderCtx }: { product: P
       quantity: quantity,
     });
 
-    toast.success("Sepete eklendi", { description: `${quantity}x ${product.title}`, action: { label: "Sepete Git", onClick: () => (window.location.href = "/sepet") } });
+    toast.success("Sepete eklendi", { description: `${quantity}x ${product.title}`, action: { label: "Sepete Git", onClick: () => router.push("/sepet") } });
     setAddedToCart(true);
     setTimeout(() => setAddedToCart(false), 2500);
   };
