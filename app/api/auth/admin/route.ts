@@ -21,7 +21,7 @@ const findAdmin = (email: string) =>
 
 async function sendLoginCode(req: Request, email: string) {
   const ip = clientIp(req);
-  const wait = await rateLimitRemaining(email, ip);
+  const wait = await rateLimitRemaining(email, ip, "ADMIN_LOGIN");
   if (wait > 0) return { ok: true as const, retryAfter: wait }; // kod yakın zamanda gönderildi; mevcut kodla devam edilir
   const code = await createCode(email, "ADMIN_LOGIN", ip);
   if (!(await sendVerificationCodeEmail({ to: email, code, type: "ADMIN_LOGIN" }))) return { ok: false as const };

@@ -13,11 +13,11 @@ export const clientIp = (req: Request) => {
   return raw.replace(/^::ffff:/, "") || null;
 };
 
-/** 60 sn içinde aynı e-posta veya IP'den ikinci kod isteğini engeller; kalan saniyeyi döner. */
-export async function rateLimitRemaining(email: string, ip: string | null): Promise<number> {
+/** 60 sn içinde aynı e-posta veya IP'den ikinci kod isteğini engeller; kalan saniyeyi döner. `type` verilirse yalnızca AYNI türdeki kodlar sayılır (şifre değiştirme kodu giriş/2FA kodunu engellemez). */
+export async function rateLimitRemaining(email: string, ip: string | null, type?: CodeType): Promise<number> {
   const since = new Date(Date.now() - RESEND_WAIT_SECONDS * 1000);
   const last = await prisma.verificationCode.findFirst({
-    where: { createdAt: { gt: since }, OR: [{ email }, ...(ip ? [{ ip }] : [])] },
+    where: { createdAt: { gt: since }, ...(type ? { type } : {}), OR: [{ email }, ...(ip ? [{ ip }] : [])] },
     orderBy: { createdAt: "desc" },
     select: { createdAt: true },
   });

@@ -38,7 +38,7 @@ export async function POST(req: Request) {
   }
 
   const ip = clientIp(req);
-  const wait = await rateLimitRemaining(to, ip);
+  const wait = await rateLimitRemaining(to, ip, type);
   if (wait > 0) return NextResponse.json({ error: "Lütfen yeni kod istemeden önce 60 saniye bekleyin.", retryAfter: wait }, { status: 429 });
   const code = await createCode(to, type, ip);
   if (!(await sendVerificationCodeEmail({ to, code, type }))) return NextResponse.json({ error: "Doğrulama e-postası gönderilemedi. Lütfen daha sonra tekrar deneyin." }, { status: 502 });
