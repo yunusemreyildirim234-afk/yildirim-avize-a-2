@@ -10,7 +10,8 @@ import AdminKargonomiOrderActions from "@/components/AdminKargonomiOrderActions"
 import AdminMessages from "@/components/AdminMessages";
 import { FEATURED, getBestSellers } from "@/lib/products";
 import AdminHomepage from "@/components/AdminHomepage";
-import { getHomepageConfig, getSectionPools } from "@/lib/homepage";
+import { getHomepageConfig, getHomepageRaw, getSectionPools } from "@/lib/homepage";
+import { resolvePromoCards } from "@/lib/promo-cards";
 import AdminCoupons from "@/components/AdminCoupons";
 import AdminDiscountSettings from "@/components/AdminDiscountSettings";
 import AdminSessions from "@/components/AdminSessions";
@@ -87,7 +88,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const featuredIds = flaggedFeatured.length > 0 ? flaggedFeatured : await prisma.product.findMany({ where: { active: true, ...FEATURED }, select: { id: true } });
   const showcase = { featured: featuredIds.map((p) => p.id), bestSellers: (await getBestSellers(48)).map((p) => p.id), manualFeatured: flaggedFeatured.length };
   // Ana Sayfayı Düzenle: bölüm havuzları (yalnızca ilgili kümeden seçilebilir) ve kayıtlı ayar
-  const [homeConfig, homePools] = await Promise.all([getHomepageConfig(), getSectionPools()]);
+  const [homeConfig, homePools, homeRaw] = await Promise.all([getHomepageConfig(), getSectionPools(), getHomepageRaw()]);
   const slim = (list: { id: string; title: string; modelCode: string | null }[]) => list.map((p) => ({ id: p.id, title: p.title, modelCode: p.modelCode }));
   const discountCap = (await prisma.siteConfig.findUnique({ where: { id: 1 }, select: { maxTotalDiscountPct: true } }))?.maxTotalDiscountPct ?? null;
   const activity = await getActivity();
@@ -204,6 +205,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
 
         <AdminHomepage
           initial={homeConfig}
+          promoCards={resolvePromoCards(homeRaw)}
           pools={{ featured: slim(homePools.featured), discounted: slim(homePools.discounted), bestsellers: slim(homePools.bestsellers) }}
         />
 

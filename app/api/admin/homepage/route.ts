@@ -3,8 +3,9 @@ import { adminGuard } from "@/lib/admin-guard";
 import { prisma } from "@/lib/db";
 import { rateLimit, tooMany } from "@/lib/rate-limit";
 import { MAX_COUNT, MAX_PINNED, SECTION_KEYS } from "@/lib/homepage-compose";
+import { couponCodesOf, couponWarnings, validatePromoCards, type CouponRow } from "@/lib/promo-cards";
 
-// Ana sayfa bölüm ayarları (yalnızca yönetici). Gövde: { featured|discounted|bestsellers: { count, pinnedIds[] } }
+// Ana sayfa ayarları (yalnızca yönetici). Gövde: { featured|discounted|bestsellers: { count, pinnedIds[] }, promoCards: [...] | null }
 export async function PUT(req: Request) {
   const denied = await adminGuard();
   if (denied) return denied;
@@ -13,7 +14,7 @@ export async function PUT(req: Request) {
 
   const body = await req.json().catch(() => null);
   if (!body || typeof body !== "object" || Array.isArray(body)) return NextResponse.json({ error: "Geçersiz istek." }, { status: 400 });
-  const unknownTop = Object.keys(body).filter((k) => !(SECTION_KEYS as readonly string[]).includes(k));
+  const unknownTop = Object.keys(body).filter((k) => !(SECTION_KEYS as readonly string[]).includes(k) && k !== "promoCards");
   if (unknownTop.length) return NextResponse.json({ error: `Bilinmeyen alan: ${unknownTop[0]}` }, { status: 400 });
 
   const config: Record<string, { count: number; pinnedIds: string[] }> = {};
@@ -41,7 +42,15 @@ export async function PUT(req: Request) {
     ids.forEach((i) => allPinned.add(i));
     config[key] = { count: s.count, pinnedIds: ids };
   }
-  if (Object.keys(config).length === 0 && reset.length === 0) return NextResponse.json({ error: "Kaydedilecek bölüm yok." }, { status: 400 });
+  // Avantaj kartları: null varsayılana döner (kayıt silinir), liste sıkı doğrulanır
+  const rawCards = (body as Record<string, unknown>).promoCards;
+  let cards: ReturnType<typeof validatePromoCards> | null = null;
+  if (rawCards === null) reset.push("promoCards");
+  else if (rawCards !== undefined) {
+    cards = validatePromoCards(rawCards);
+    if (!cards.ok) return NextResponse.json({ error: cards.error }, { status: 400 });
+  }
+  if (Object.keys(config).length === 0 && reset.length === 0 && !cards) return NextResponse.json({ error: "Kaydedilecek bölüm yok." }, { status: 400 });
 
   // Sabitlenen ürünler mevcut ve aktif olmalı
   if (allPinned.size) {
@@ -52,7 +61,17 @@ export async function PUT(req: Request) {
   // Gönderilmeyen bölümler mevcut kayıtlı değerini korur
   const current = (await prisma.siteConfig.findUnique({ where: { id: 1 }, select: { homepageConfig: true } }))?.homepageConfig;
   const merged: Record<string, unknown> = { ...(current && typeof current === "object" && !Array.isArray(current) ? current : {}), ...config };
+  if (cards?.ok) merged.promoCards = cards.cards;
   for (const key of reset) delete merged[key];
   await prisma.siteConfig.upsert({ where: { id: 1 }, create: { id: 1, homepageConfig: merged as object }, update: { homepageConfig: merged as object } });
-  return NextResponse.json({ success: true });
+  // Kupon kartlarında kod geçerli değilse UYARI (kaydı engellemez)
+  let warnings: string[] = [];
+  if (cards?.ok) {
+    const codes = couponCodesOf(cards.cards.filter((c) => c.active));
+    const rows = codes.length ? await prisma.coupon.findMany({ where: { code: { in: codes } } }) : [];
+    const byCode: Record<string, CouponRow | undefined> = {};
+    for (const r of rows) byCode[r.code.toUpperCase()] = r;
+    warnings = couponWarnings(cards.cards.filter((c) => c.active), byCode);
+  }
+  return NextResponse.json({ success: true, warnings });
 }
