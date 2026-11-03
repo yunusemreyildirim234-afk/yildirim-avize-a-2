@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { serverError } from "@/lib/api-error";
+import { serverError, badRequest } from "@/lib/api-error";
 import { prisma } from "@/lib/db";
 import { rateLimit, tooMany } from "@/lib/rate-limit";
 import { getSessionUserId } from "@/lib/account";
@@ -26,7 +26,13 @@ export async function POST(req: Request) {
   const rlAll = rateLimit(req, "auth-all", 15, 15 * 60_000);
   if (rlAll.limited) return tooMany(rlAll.retryAfter);
   try {
-    const body = await req.json();
+    let body;
+    try {
+      body = await req.json();
+    } catch {
+      return badRequest();
+    }
+    if (!body || typeof body !== "object") return badRequest();
     const action = body.action as string;
     const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
     const password = typeof body.password === "string" ? body.password : "";

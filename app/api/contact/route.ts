@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { serverError } from "@/lib/api-error";
+import { serverError, badRequest } from "@/lib/api-error";
 import { prisma } from "@/lib/db";
 import { rateLimit, tooMany } from "@/lib/rate-limit";
 import { getSessionUserId } from "@/lib/account";
@@ -14,7 +14,13 @@ export async function POST(req: Request) {
   const rl = rateLimit(req, "contact", 3, 10 * 60_000);
   if (rl.limited) return tooMany(rl.retryAfter, "Çok fazla mesaj gönderdiniz. Lütfen 10 dakika sonra tekrar deneyin.");
   try {
-    const body = await req.json().catch(() => ({}));
+    let body;
+    try {
+      body = await req.json();
+    } catch {
+      return badRequest();
+    }
+    if (!body || typeof body !== "object") return badRequest();
     const name = clean(body.name, 120);
     const email = clean(body.email, 200).toLowerCase();
     const phone = clean(body.phone, 40);

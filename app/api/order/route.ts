@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { serverError } from "@/lib/api-error";
+import { serverError, badRequest } from "@/lib/api-error";
 import { prisma } from "@/lib/db";
 import { rateLimit, tooMany } from "@/lib/rate-limit";
 import { finalizeOrder } from "@/lib/orders";
@@ -28,7 +28,13 @@ export async function POST(req: Request) {
   const rl = rateLimit(req, "order", 5, 10 * 60_000);
   if (rl.limited) return tooMany(rl.retryAfter, "Kısa sürede çok fazla sipariş denemesi yaptınız. Lütfen daha sonra tekrar deneyin.");
   try {
-    const body = await req.json();
+    let body;
+    try {
+      body = await req.json();
+    } catch {
+      return badRequest();
+    }
+    if (!body || typeof body !== "object") return badRequest();
     const { name, email, phone, address, buyerStateId, buyerCityId, buyerStateName, buyerCityName, shippingType, couponCode } =
       body;
     const paymentMethod: "CREDIT_CARD" | "BANK_TRANSFER" = body.paymentMethod === "BANK_TRANSFER" ? "BANK_TRANSFER" : "CREDIT_CARD";

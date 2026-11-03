@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { badRequest } from "@/lib/api-error";
 import { prisma } from "@/lib/db";
 import { isLimited, rateLimit, recordFailure, tooMany } from "@/lib/rate-limit";
 import { getSessionUserId } from "@/lib/account";
@@ -11,7 +12,13 @@ export async function POST(req: Request) {
   if (rl.limited) return tooMany(rl.retryAfter);
   const failLimit = isLimited(req, COUPON_FAIL_LIMIT.name, COUPON_FAIL_LIMIT.max);
   if (failLimit.limited) return tooMany(failLimit.retryAfter, COUPON_LIMITED_ERROR);
-  const body = await req.json().catch(() => ({}));
+  let body;
+  try {
+    body = await req.json();
+  } catch {
+    return badRequest();
+  }
+  if (!body || typeof body !== "object") return badRequest();
   const code = typeof body.code === "string" ? body.code : "";
   const rawLines: { productId?: unknown; lineTotal?: unknown }[] = Array.isArray(body.lines) ? body.lines.slice(0, 100) : [];
   const lines: PriceLine[] = rawLines
