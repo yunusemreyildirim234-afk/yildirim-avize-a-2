@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { rateLimit, tooMany } from "@/lib/rate-limit";
+import { isLimited, rateLimit, recordFailure, tooMany } from "@/lib/rate-limit";
 import { bulkTiersOf } from "@/lib/bulk-pricing";
 import { priceCart } from "@/lib/cart-pricing";
 import { SHIPPING_LABELS, type CouponRule } from "@/lib/pricing";
-import { validateCoupon } from "@/lib/coupons";
+import { COUPON_FAIL_LIMIT, COUPON_LIMITED_ERROR, validateCoupon } from "@/lib/coupons";
 import { getSessionUserId } from "@/lib/account";
 
 const COUPON_GENERIC_ERROR = "Geçersiz veya süresi dolmuş kupon kodu.";
@@ -57,12 +57,12 @@ export async function POST(req: Request) {
   // Kupon (yalnızca doğrulama ve hesap; rezervasyon yok)
   const cap = (await prisma.siteConfig.findUnique({ where: { id: 1 }, select: { maxTotalDiscountPct: true } }))?.maxTotalDiscountPct ?? null;
   let priced = priceCart({ lines: priceLines, maxTotalDiscountPct: cap, shippingType, paymentMethod });
-  let coupon: { ok: boolean; rule?: CouponRule; error?: string } | null = null;
+  let coupon: { ok: boolean; rule?: CouponRule; error?: string; limited?: boolean } | null = null;
   const code = typeof body.coupon === "string" ? body.coupon.trim() : "";
-  // Kupon denemeleri ayrı ve sıkı sınırlanır (kod tahminini önlemek için); sınır aşılırsa teklif kuponsuz çalışır
-  const couponRl = code ? rateLimit(req, "cart-quote-coupon", 15, 10 * 60_000) : null;
-  if (couponRl?.limited) {
-    coupon = { ok: false, error: "Çok fazla deneme, lütfen sonra tekrar deneyin" };
+  // Yalnızca BAŞARISIZ kupon doğrulamaları sayılır (kod tahminini önlemek için); geçerli kodun tekrarlanan teklifleri sınıra girmez.
+  // Sınır aşılırsa kupon doğrulanmaz, teklif kuponsuz döner ve istemci kuponu düşürmeden mesajı gösterir (limited).
+  if (code && isLimited(req, COUPON_FAIL_LIMIT.name, COUPON_FAIL_LIMIT.max).limited) {
+    coupon = { ok: false, error: COUPON_LIMITED_ERROR, limited: true };
   } else if (code) {
     // Oturum varsa e-posta hesaptan alınır; form e-postası yalnızca oturum yokken ve (kupon kısıtı varsa) doğrulamada kullanılır
     const userId = await getSessionUserId();
@@ -80,7 +80,10 @@ export async function POST(req: Request) {
         priced = withCoupon;
         coupon = { ok: true, rule: check.rule };
       }
-    } else coupon = { ok: false, error: COUPON_GENERIC_ERROR }; // var/yok, kişiye özel, limit ayrımı yapılmaz
+    } else {
+      recordFailure(req, COUPON_FAIL_LIMIT.name, COUPON_FAIL_LIMIT.windowMs);
+      coupon = { ok: false, error: COUPON_GENERIC_ERROR };
+    } // var/yok, kişiye özel, limit ayrımı yapılmaz
   }
 
   const lines = [

@@ -2,6 +2,12 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { DEFAULT_COUPON_CODE, type CouponRule, type PriceLine } from "@/lib/pricing";
 
+export const COUPON_GENERIC_ERROR = "Geçersiz veya süresi dolmuş kupon kodu.";
+export const COUPON_PRODUCT_ERROR = "Bu kupon yalnızca belirli bir üründe geçerlidir; ürün sepetinizde bulunmuyor.";
+/** Kupon denemesi sınırı: IP başına 10 dakikada en fazla 10 BAŞARISIZ doğrulama */
+export const COUPON_FAIL_LIMIT = { name: "coupon-fail", max: 10, windowMs: 10 * 60_000 };
+export const COUPON_LIMITED_ERROR = "Çok fazla deneme, lütfen sonra tekrar deneyin";
+
 export type CouponResult = { ok: true; rule: CouponRule; couponId: string } | { ok: false; error: string };
 
 /** Varsayılan genel kod yoksa oluşturur (%5, herkese açık, yüksek limit). */
@@ -35,7 +41,7 @@ export async function validateCoupon(opts: {
   }
 
   if (coupon.productId && !opts.lines.some((l) => l.productId === coupon.productId)) {
-    return { ok: false, error: "Bu kupon yalnızca belirli bir üründe geçerlidir; ürün sepetinizde bulunmuyor." };
+    return { ok: false, error: COUPON_PRODUCT_ERROR };
   }
 
   // Kişi başı limit: aynı e-posta (veya üye) için iptal edilmemiş siparişlerde bu kupon kullanıldıysa reddedilir

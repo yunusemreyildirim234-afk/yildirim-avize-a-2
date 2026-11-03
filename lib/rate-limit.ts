@@ -28,3 +28,19 @@ export function tooMany(retryAfter: number, message = "Çok fazla deneme yaptın
     headers: { "Content-Type": "application/json", "Retry-After": String(retryAfter) },
   });
 }
+
+/** Sayacı ARTIRMADAN sınırın aşılıp aşılmadığına bakar (yalnızca başarısız denemeleri saymak için `recordFailure` ile birlikte). */
+export function isLimited(req: Request, name: string, max: number) {
+  const b = buckets.get(`${name}:${requestIp(req)}`);
+  const now = Date.now();
+  return b && b.resetAt > now && b.count >= max ? { limited: true as const, retryAfter: Math.ceil((b.resetAt - now) / 1000) } : { limited: false as const, retryAfter: 0 };
+}
+
+/** Başarısız bir denemeyi sayar. */
+export function recordFailure(req: Request, name: string, windowMs: number) {
+  const now = Date.now();
+  const key = `${name}:${requestIp(req)}`;
+  const b = buckets.get(key);
+  if (!b || b.resetAt <= now) buckets.set(key, { count: 1, resetAt: now + windowMs });
+  else b.count += 1;
+}
