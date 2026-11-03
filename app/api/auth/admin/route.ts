@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { rateLimit, tooMany } from "@/lib/rate-limit";
-import { verifyPassword } from "@/lib/password";
+import { hashPassword, verifyPassword } from "@/lib/password";
 import { ADMIN_COOKIE, cookieOptions, safeCompare } from "@/lib/session";
 import { issueAdminToken } from "@/lib/admin-session";
 import { sendVerificationCodeEmail } from "@/lib/email";
 import { clientIp, consumeCode, createCode, issueProof, rateLimitRemaining, readProof } from "@/lib/verification";
 import { ADMIN_2FA_PURPOSE, canVerifyAdminCode, planAdminLogin } from "@/lib/admin-2fa";
+
+// Kullanıcı bulunamadığında da aynı maliyetli scrypt doğrulaması çalışsın (hesap varlığı zamanlamadan anlaşılmasın)
+const DUMMY_HASH = hashPassword("dummy-admin-login-timing");
 
 const BAD_CODE = "Doğrulama kodu hatalı veya süresi dolmuş. Çok sayıda hatalı denemeden sonra kod iptal olur; yeni kod isteyin.";
 const EXPIRED = "Oturum süresi doldu. Lütfen şifrenizle yeniden giriş yapın.";
@@ -68,7 +71,8 @@ export async function POST(req: Request) {
     const user = await prisma.user
       .findUnique({ where: { email: login.toLowerCase() } })
       .catch(() => null);
-    ok = !!user && user.role === "ADMIN" && verifyPassword(password, user.password);
+    const passOk = verifyPassword(password, user?.password ?? DUMMY_HASH);
+    ok = !!user && user.role === "ADMIN" && passOk;
   }
 
   const account = ok ? await findAdmin(login.toLowerCase()) : null;
