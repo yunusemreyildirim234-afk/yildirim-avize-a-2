@@ -45,18 +45,20 @@ async function getAdminData() {
   const [orders, products, messages, coupons, customers, reviews, company] = await Promise.all([
     prisma.order.findMany({
       include: {
-        user: true,
+        user: { select: { name: true, email: true } },
         items: {
           include: {
-            variation: true,
+            variation: { omit: { syncSnapshot: true, syncStock: true } },
           },
         },
       },
       orderBy: { createdAt: "desc" },
     }),
     prisma.product.findMany({
+      omit: { syncSnapshot: true, lastSyncedAt: true },
       include: {
         variations: {
+          omit: { syncSnapshot: true, syncStock: true },
           orderBy: { id: "asc" },
         },
       },
