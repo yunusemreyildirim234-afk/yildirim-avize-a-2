@@ -68,22 +68,22 @@ export async function sendOrderNotificationEmails(data: EmailOrderData) {
         <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
           ${
             data.kargonomiShipmentId
-              ? `<tr><td style="padding: 4px 0; color: #78350f;">Kargonomi Gönderi No:</td><td style="padding: 4px 0; text-align: right; font-family: monospace; font-weight: bold; color: #171717;">#${data.kargonomiShipmentId}</td></tr>`
+              ? `<tr><td style="padding: 4px 0; color: #78350f;">Kargonomi Gönderi No:</td><td style="padding: 4px 0; text-align: right; font-family: monospace; font-weight: bold; color: #171717;">#${esc(String(data.kargonomiShipmentId))}</td></tr>`
               : ""
           }
           ${
             data.shippingProviderName
-              ? `<tr><td style="padding: 4px 0; color: #78350f;">Kargo Firması:</td><td style="padding: 4px 0; text-align: right; font-weight: bold; color: #171717;">${data.shippingProviderName}</td></tr>`
+              ? `<tr><td style="padding: 4px 0; color: #78350f;">Kargo Firması:</td><td style="padding: 4px 0; text-align: right; font-weight: bold; color: #171717;">${esc(data.shippingProviderName)}</td></tr>`
               : ""
           }
           ${
             data.shippingTrackingCode
-              ? `<tr><td style="padding: 4px 0; color: #78350f;">Kargo Takip Kodu:</td><td style="padding: 4px 0; text-align: right; font-family: monospace; font-weight: bold; color: #059669;">${data.shippingTrackingCode}</td></tr>`
+              ? `<tr><td style="padding: 4px 0; color: #78350f;">Kargo Takip Kodu:</td><td style="padding: 4px 0; text-align: right; font-family: monospace; font-weight: bold; color: #059669;">${esc(data.shippingTrackingCode)}</td></tr>`
               : ""
           }
           ${
             data.shippingBarcode
-              ? `<tr><td style="padding: 4px 0; color: #78350f;">Paket Barkodu:</td><td style="padding: 4px 0; text-align: right; font-family: monospace; color: #171717;">${data.shippingBarcode}</td></tr>`
+              ? `<tr><td style="padding: 4px 0; color: #78350f;">Paket Barkodu:</td><td style="padding: 4px 0; text-align: right; font-family: monospace; color: #171717;">${esc(data.shippingBarcode)}</td></tr>`
               : ""
           }
         </table>
@@ -463,9 +463,9 @@ export async function sendShippedEmail(data: { to: string; name: string; orderId
     html: `<div style="font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 28px; background: #fafafa; border: 1px solid #e5e5e5; border-radius: 16px; color: #171717;">
       <h1 style="text-align: center; font-size: 22px; letter-spacing: 1px; margin: 0 0 16px;">YILDIRIM AVİZE</h1>
       <h2 style="font-size: 17px; margin: 0 0 10px;">Sayın ${esc(data.name)},</h2>
-      <p style="font-size: 14px; line-height: 1.6;"><strong>#${data.orderId.slice(0, 8)}</strong> numaralı siparişiniz korumalı kolide <strong>${esc(data.carrier)}</strong>'ya teslim edildi.</p>
+      <p style="font-size: 14px; line-height: 1.6;"><strong>#${esc(data.orderId.slice(0, 8))}</strong> numaralı siparişiniz korumalı kolide <strong>${esc(data.carrier)}</strong>'ya teslim edildi.</p>
       <p style="text-align: center; margin: 18px 0;"><span style="display: inline-block; font-family: monospace; font-size: 20px; font-weight: bold; letter-spacing: 2px; background: #ffffff; border: 2px dashed #d97706; border-radius: 10px; padding: 10px 20px; color: #92400e;">${esc(data.trackingNumber)}</span></p>
-      <p style="text-align: center; margin: 22px 0 8px;"><a href="${live}" style="display: inline-block; background: #171717; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 14px; padding: 12px 28px; border-radius: 10px;">Kargomu Takip Et</a></p>
+      <p style="text-align: center; margin: 22px 0 8px;"><a href="${esc(live)}" style="display: inline-block; background: #171717; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 14px; padding: 12px 28px; border-radius: 10px;">Kargomu Takip Et</a></p>
       <p style="font-size: 12px; color: #737373; text-align: center;">Yıldırım Avize | Tel: ${PHONE_DISPLAY}</p>
     </div>`,
   });
