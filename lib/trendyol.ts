@@ -1,9 +1,9 @@
-import { prisma } from "@/lib/db";
+import type { IncomingProduct } from "@/lib/trendyol-plan";
 
 const BASE = "https://apigw.trendyol.com/integration/product/sellers";
 const PAGE_SIZE = 50;
 
-interface TrendyolItem {
+export interface TrendyolItem {
   barcode: string;
   title: string;
   productMainId: string;
@@ -93,17 +93,8 @@ function cleanDescription(text?: string) {
     .join("\n");
 }
 
-export interface SyncResult {
-  fetched: number;
-  products: number;
-  variations: number;
-  inactiveProducts: number;
-}
-
-/** Trendyol ürünlerini ürün (productMainId) + varyasyon (barkod) olarak veritabanına yazar. */
-export async function syncTrendyolProducts(): Promise<SyncResult> {
-  const items = await fetchTrendyolProducts();
-
+/** Trendyol kayıtlarını ürün (productMainId) + varyasyon (barkod) olarak gruplar (saf; yazma yok). */
+export function buildIncoming(items: TrendyolItem[]): IncomingProduct[] {
   const groups = new Map<string, TrendyolItem[]>();
   for (const item of items) {
     if (!item.barcode) continue;
@@ -112,77 +103,45 @@ export async function syncTrendyolProducts(): Promise<SyncResult> {
     groups.set(item.productMainId, list);
   }
 
-  let variations = 0;
-  let inactiveProducts = 0;
-
+  const out: IncomingProduct[] = [];
   for (const [mainId, group] of groups) {
     const sellable = (i: TrendyolItem) => i.onSale && !i.archived && !i.blacklisted && i.salePrice > 0;
     const pool = group.some(sellable) ? group.filter(sellable) : group;
     const lead = pool[0];
-    const active = group.some(sellable);
-    if (!active) inactiveProducts++;
-
     const basePrice = Math.min(...pool.map((i) => i.salePrice));
     const listPrice = Math.max(...pool.map((i) => i.listPrice));
     const images = [...new Set(pool.flatMap((i) => (i.images ?? []).map((img) => img.url)))];
 
-    const productData = {
-      title: lead.title,
-      description: cleanDescription(lead.description),
-      category: mapCategory(lead),
-      basePrice,
-      listPrice: listPrice > basePrice ? listPrice : null,
-      imageUrl: images[0] ?? null,
-      images,
-      active,
-      brand: lead.brand ?? null,
-      trendyolCategory: lead.categoryName ?? null,
-      trendyolUrl: lead.productUrl ?? null,
-    };
-
-    const product = await prisma.product.upsert({
-      where: { trendyolMainId: mainId },
-      create: { ...productData, trendyolMainId: mainId },
-      update: productData,
-    });
-
     const seenLabels = new Set<string>();
-    const barcodes: string[] = [];
-    for (const item of pool) {
+    const variations = pool.map((item) => {
       let label = variationLabel(item);
       if (seenLabels.has(label)) label = `${label} (${item.barcode.slice(-4)})`;
       seenLabels.add(label);
-      barcodes.push(item.barcode);
-
-      const data = {
-        productId: product.id,
-        variationType: "Seçenek",
+      return {
+        barcode: item.barcode,
         variationValue: label,
         extraPrice: item.salePrice - basePrice,
         stock: Math.max(0, item.quantity ?? 0),
         stockCode: item.stockCode || null,
         salePrice: item.salePrice,
-        listPrice: item.listPrice,
+        listPrice: item.listPrice ?? null,
       };
-      await prisma.productVariation.upsert({
-        where: { barcode: item.barcode },
-        create: { ...data, barcode: item.barcode },
-        update: data,
-      });
-      variations++;
-    }
+    });
 
-    // Trendyol'da artık bulunmayan varyasyonları temizle (siparişe bağlı olanlar korunur)
-    await prisma.productVariation.deleteMany({
-      where: { productId: product.id, barcode: { notIn: barcodes }, orderItems: { none: {} } },
+    out.push({
+      mainId,
+      title: lead.title,
+      description: cleanDescription(lead.description) || null,
+      category: mapCategory(lead),
+      basePrice,
+      listPrice: listPrice > basePrice ? listPrice : null,
+      images,
+      active: group.some(sellable),
+      brand: lead.brand ?? null,
+      trendyolCategory: lead.categoryName ?? null,
+      trendyolUrl: lead.productUrl ?? null,
+      variations,
     });
   }
-
-  // Trendyol'dan kalkmış ürünleri pasife al
-  await prisma.product.updateMany({
-    where: { trendyolMainId: { not: null, notIn: [...groups.keys()] } },
-    data: { active: false },
-  });
-
-  return { fetched: items.length, products: groups.size, variations, inactiveProducts };
+  return out;
 }

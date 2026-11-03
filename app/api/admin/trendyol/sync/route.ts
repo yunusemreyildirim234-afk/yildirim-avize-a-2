@@ -2,18 +2,31 @@ import { NextResponse } from "next/server";
 import { withStorefrontRevalidate } from "@/lib/revalidate";
 import { serverError } from "@/lib/api-error";
 import { adminGuard } from "@/lib/admin-guard";
-import { syncTrendyolProducts } from "@/lib/trendyol";
+import { rateLimit, tooMany } from "@/lib/rate-limit";
+import { applyPlan, buildPlan, parseSettings } from "@/lib/trendyol-sync";
+import { onizleme } from "@/lib/trendyol-plan";
 
+// Vercel Hobby (Fluid Compute) üst sınırı 300 sn; Trendyol sayfalama + toplu yazma bu sınıra sığdırılır.
 export const maxDuration = 300;
 
-async function POSTHandler() {
+// dryRun: Trendyol'dan OKUR, hiçbir şey yazmaz, planı döner. Uygulama: plan SUNUCUDA yeniden hesaplanır (istemci planına güvenilmez),
+// yalnızca seciliUrunler (productMainId listesi; verilmezse tümü) uygulanır.
+async function POSTHandler(req: Request) {
   const denied = await adminGuard();
   if (denied) return denied;
+  const rl = rateLimit(req, "admin-trendyol-sync", 5, 60_000);
+  if (rl.limited) return tooMany(rl.retryAfter);
+  const body = await req.json().catch(() => ({}));
+  const ayarlar = parseSettings(body.ayarlar);
+  const secili = Array.isArray(body.seciliUrunler) ? body.seciliUrunler.filter((x: unknown): x is string => typeof x === "string") : undefined;
   try {
-    return NextResponse.json({ success: true, result: await syncTrendyolProducts() });
+    const plan = await buildPlan(ayarlar);
+    if (body.dryRun !== false) return NextResponse.json({ success: true, dryRun: true, plan: onizleme(plan) });
+    return NextResponse.json({ success: true, dryRun: false, sonuc: await applyPlan(plan, secili), sayac: plan.sayac });
   } catch (error) {
     return serverError("admin/trendyol/sync", error, "Trendyol senkronizasyonu başarısız oldu. Lütfen tekrar deneyin.", 502);
   }
 }
 
+// dryRun yanıtı da 2xx olduğundan vitrin yenilenir; zararsızdır (yazma yok, yalnızca önbellek tazelenir).
 export const POST = withStorefrontRevalidate(POSTHandler);
