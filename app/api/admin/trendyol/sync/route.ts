@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { withStorefrontRevalidate } from "@/lib/revalidate";
+import { revalidateStorefront } from "@/lib/revalidate";
 import { serverError } from "@/lib/api-error";
 import { adminGuard } from "@/lib/admin-guard";
 import { rateLimit, tooMany } from "@/lib/rate-limit";
@@ -11,7 +11,7 @@ export const maxDuration = 300;
 
 // dryRun: Trendyol'dan OKUR, hiçbir şey yazmaz, planı döner. Uygulama: plan SUNUCUDA yeniden hesaplanır (istemci planına güvenilmez),
 // yalnızca seciliUrunler (productMainId listesi; verilmezse tümü) uygulanır.
-async function POSTHandler(req: Request) {
+export async function POST(req: Request) {
   const denied = await adminGuard();
   if (denied) return denied;
   const rl = rateLimit(req, "admin-trendyol-sync", 5, 60_000);
@@ -22,11 +22,11 @@ async function POSTHandler(req: Request) {
   try {
     const plan = await buildPlan(ayarlar);
     if (body.dryRun !== false) return NextResponse.json({ success: true, dryRun: true, plan: onizleme(plan) });
-    return NextResponse.json({ success: true, dryRun: false, sonuc: await applyPlan(plan, secili), sayac: plan.sayac });
+    const sonuc = await applyPlan(plan, secili);
+    revalidateStorefront(); // vitrin yalnızca gerçek uygulamadan sonra yenilenir (önizleme yazmaz, önbelleği sıfırlamaz)
+    return NextResponse.json({ success: true, dryRun: false, sonuc, sayac: plan.sayac });
   } catch (error) {
     return serverError("admin/trendyol/sync", error, "Trendyol senkronizasyonu başarısız oldu. Lütfen tekrar deneyin.", 502);
   }
 }
 
-// dryRun yanıtı da 2xx olduğundan vitrin yenilenir; zararsızdır (yazma yok, yalnızca önbellek tazelenir).
-export const POST = withStorefrontRevalidate(POSTHandler);
