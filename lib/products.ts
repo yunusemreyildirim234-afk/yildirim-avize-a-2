@@ -41,6 +41,32 @@ export function countProducts(where: Prisma.ProductWhereInput = {}) {
   return prisma.product.count({ where: { active: true, ...where } });
 }
 
+// ---- Veri düzeyinde 60 sn önbellek (kişiden bağımsız sorgular) ----
+// Anahtar: işlev argümanları (where/take/skip veya ürün kimliği). Hiçbir kişisel veri (oturum, favori, yorum yetkisi) bu işlevlere girmez.
+// Etiket "storefront": revalidateStorefront() yönetici işlemlerinde bunları da geçersiz kılar. Kart alanlarında zaman damgası yoktur (JSON güvenli).
+export const STOREFRONT_CACHE_SECONDS = 60;
+export const getProductsCached = unstable_cache(getProducts, ["sf-products"], { revalidate: STOREFRONT_CACHE_SECONDS, tags: ["storefront"] });
+export const countProductsCached = unstable_cache(async (where: Prisma.ProductWhereInput) => countProducts(where), ["sf-count"], { revalidate: STOREFRONT_CACHE_SECONDS, tags: ["storefront"] });
+
+/** Ürün detayı: ürün + varyasyonlar + ONAYLI yorumlar (yorumcu adı). Kişiye bağlı değildir; tarihler ISO metin olarak döner (önbellek JSON'dur). */
+export const getProductDetail = unstable_cache(
+  async (id: string) => {
+    const p = await prisma.product.findUnique({
+      where: { id },
+      include: { variations: true, reviews: { where: { status: "APPROVED" }, orderBy: { createdAt: "desc" }, include: { user: { select: { name: true } } } } },
+    });
+    if (!p) return null;
+    return {
+      ...p,
+      createdAt: p.createdAt.toISOString(),
+      updatedAt: p.updatedAt.toISOString(),
+      reviews: p.reviews.map((r) => ({ ...r, createdAt: r.createdAt.toISOString() })),
+    };
+  },
+  ["sf-product-detail"],
+  { revalidate: STOREFRONT_CACHE_SECONDS, tags: ["storefront"] }
+);
+
 export type ProductWithVariations = Awaited<ReturnType<typeof getProducts>>[number];
 
 // Otomatik "İndirimliler": üstü çizili eski fiyatı olan (listPrice yalnızca basePrice'tan yüksekse tutulur) veya adet indirimi tanımlı ürünler

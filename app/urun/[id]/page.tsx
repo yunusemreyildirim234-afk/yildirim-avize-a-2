@@ -1,13 +1,12 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { prisma } from "@/lib/db";
 import { getLadderContext } from "@/lib/showcase";
 import ProductDetailClient from "@/components/ProductDetailClient";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import ProductReviews from "@/components/ProductReviews";
 import ProductQuestionForm from "@/components/ProductQuestionForm";
 import ProductCard from "@/components/ProductCard";
-import { getProducts } from "@/lib/products";
+import { getProductDetail, getProductsCached } from "@/lib/products";
 import { getUserSession } from "@/lib/account";
 import { reviewEligibility, type ReviewEligibility } from "@/lib/reviews";
 import JsonLd from "@/components/JsonLd";
@@ -19,7 +18,7 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  const product = await prisma.product.findUnique({ where: { id } });
+  const product = await getProductDetail(id); // önbellekli (60 sn), sayfayla aynı sonuç
   if (!product || !product.active) return {};
   const description =
     product.description?.slice(0, 160) || `${product.title} – Yıldırım Avize Beyoğlu Şişhane`;
@@ -41,13 +40,7 @@ export default async function ProductDetailPage({ params }: Props) {
   const { id } = await params;
 
   // Veritabanından ilgili ürünü ve bağlı varyasyonlarını çekiyoruz
-  const product = await prisma.product.findUnique({
-    where: { id },
-    include: {
-      variations: true,
-      reviews: { where: { status: "APPROVED" }, orderBy: { createdAt: "desc" }, include: { user: { select: { name: true } } } },
-    },
-  });
+  const product = await getProductDetail(id);
 
   const ladderCtx = await getLadderContext();
 
@@ -55,7 +48,7 @@ export default async function ProductDetailPage({ params }: Props) {
     notFound();
   }
 
-  const similar = await getProducts({ category: product.category, id: { not: product.id } }, 4).catch(() => []);
+  const similar = await getProductsCached({ category: product.category, id: { not: product.id } }, 4).catch(() => []);
 
   const userSession = await getUserSession();
   const eligibility: ReviewEligibility | "guest" = userSession?.uid ? await reviewEligibility(userSession.uid, product.id) : "guest";
@@ -68,7 +61,7 @@ export default async function ProductDetailPage({ params }: Props) {
       comment: r.comment,
       imageUrl: r.imageUrl,
       verified: r.verified,
-      createdAt: r.createdAt.toISOString(),
+      createdAt: r.createdAt,
     };
   });
   const ratingAvg = reviews.length ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length : 0;

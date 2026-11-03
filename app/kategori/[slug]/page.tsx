@@ -6,7 +6,7 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import ProductCard from "@/components/ProductCard";
 import { prisma } from "@/lib/db";
 import Pagination from "@/components/Pagination";
-import { DISCOUNTED, FEATURED, countProducts, getBestSellers, getProducts } from "@/lib/products";
+import { DISCOUNTED, FEATURED, countProductsCached, getBestSellers, getProductsCached } from "@/lib/products";
 import PageSizeLinks from "@/components/PageSizeLinks";
 import { canonicalListing, pageHref, parseAdet, parsePage, rangeOf, totalPages } from "@/lib/pagination";
 import { CATEGORIES, COLLECTIONS } from "@/lib/site";
@@ -91,7 +91,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
   const path = `/kategori/${slug}`;
   let total: number;
   let all: Awaited<ReturnType<typeof getBestSellers>> | null = null;
-  if (current.where) total = await countProducts(current.where);
+  if (current.where) total = await countProductsCached(current.where);
   else {
     all = await getBestSellers(48);
     total = all.length;
@@ -102,7 +102,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
   const page = parsePage(query.sayfa);
   const pages = totalPages(total, size);
   const range = rangeOf(page, total, size);
-  const products = all ? all.slice((page - 1) * size, page * size) : await getProducts(current.where!, size, (page - 1) * size);
+  const products = all ? all.slice((page - 1) * size, page * size) : await getProductsCached(current.where!, size, (page - 1) * size);
 
   return (
     <main className="min-h-screen bg-white pb-20">
