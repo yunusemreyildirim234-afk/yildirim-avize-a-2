@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { withStorefrontRevalidate } from "@/lib/revalidate";
 import { adminGuard } from "@/lib/admin-guard";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { prisma } from "@/lib/db";
@@ -7,7 +8,7 @@ import { COMPANY_TAG } from "@/lib/company";
 const TEXT_FIELDS = ["companyTitle", "taxOffice", "taxNumber", "mersisNo", "kepAddress", "headquartersAddress"] as const;
 
 // Kurumsal & yasal bilgiler (yalnızca yönetici — proxy.ts /api/admin altını korur)
-export async function PUT(req: Request) {
+async function PUTHandler(req: Request) {
   const denied = await adminGuard();
   if (denied) return denied;
   const body = await req.json().catch(() => null);
@@ -33,7 +34,7 @@ export async function PUT(req: Request) {
 }
 
 // Genel indirim ayarları: toplam indirim üst sınırı % (boş: sınırsız)
-export async function PATCH(req: Request) {
+async function PATCHHandler(req: Request) {
   const denied = await adminGuard();
   if (denied) return denied;
   const body = await req.json().catch(() => null);
@@ -46,3 +47,6 @@ export async function PATCH(req: Request) {
   await prisma.siteConfig.upsert({ where: { id: 1 }, create: { id: 1, maxTotalDiscountPct: cap }, update: { maxTotalDiscountPct: cap } });
   return NextResponse.json({ success: true, maxTotalDiscountPct: cap });
 }
+
+export const PUT = withStorefrontRevalidate(PUTHandler);
+export const PATCH = withStorefrontRevalidate(PATCHHandler);

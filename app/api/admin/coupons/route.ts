@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { withStorefrontRevalidate } from "@/lib/revalidate";
 import { expiryFromDate } from "@/lib/coupon-expiry";
 import { adminGuard } from "@/lib/admin-guard";
 import { prisma } from "@/lib/db";
@@ -47,7 +48,7 @@ function parseTerms(body: Record<string, unknown>): Terms | { error: string } {
 }
 
 // Promosyon kodu yönetimi (proxy yalnızca yöneticiye açar)
-export async function POST(req: Request) {
+async function POSTHandler(req: Request) {
   const denied = await adminGuard();
   if (denied) return denied;
   const body = await req.json().catch(() => ({}));
@@ -91,7 +92,7 @@ export async function POST(req: Request) {
 }
 
 // Pasife alma / yeniden aktifleştirme
-export async function PATCH(req: Request) {
+async function PATCHHandler(req: Request) {
   const denied = await adminGuard();
   if (denied) return denied;
   const body = await req.json().catch(() => ({}));
@@ -109,7 +110,7 @@ export async function PATCH(req: Request) {
   return NextResponse.json({ success: true });
 }
 
-export async function DELETE(req: Request) {
+async function DELETEHandler(req: Request) {
   const denied = await adminGuard();
   if (denied) return denied;
   const { id } = await req.json().catch(() => ({}));
@@ -117,3 +118,7 @@ export async function DELETE(req: Request) {
   await prisma.coupon.delete({ where: { id } });
   return NextResponse.json({ success: true });
 }
+
+export const POST = withStorefrontRevalidate(POSTHandler);
+export const PATCH = withStorefrontRevalidate(PATCHHandler);
+export const DELETE = withStorefrontRevalidate(DELETEHandler);

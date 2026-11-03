@@ -12,7 +12,7 @@ import { getHomepageConfig, getSectionPools } from "@/lib/homepage";
 import type { ProductWithVariations } from "@/lib/products";
 import { ADDRESS_LINE, CATEGORIES, LAT, LNG, PHONE_TEL, SITE_URL } from "@/lib/site";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60; // Genel (kişiselleştirmesiz) sayfa: 60 sn önbellek; yönetici işlemleri revalidateStorefront() ile anında yeniler
 
 export const metadata: Metadata = {
   title: { absolute: "Yıldırım Avize | Beyoğlu Şişhane Kristal, Modern & Klasik Avize" },

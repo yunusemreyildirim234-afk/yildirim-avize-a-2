@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
+import { withStorefrontRevalidate } from "@/lib/revalidate";
 import { adminGuard } from "@/lib/admin-guard";
 import { prisma } from "@/lib/db";
 
 // Tekil ürüne renk varyasyonu ekleme / silme (proxy yalnızca yöneticiye açar)
-export async function POST(req: Request) {
+async function POSTHandler(req: Request) {
   const denied = await adminGuard();
   if (denied) return denied;
   const body = await req.json().catch(() => ({}));
@@ -24,7 +25,7 @@ export async function POST(req: Request) {
   return NextResponse.json({ success: true, variation });
 }
 
-export async function DELETE(req: Request) {
+async function DELETEHandler(req: Request) {
   const denied = await adminGuard();
   if (denied) return denied;
   const { variationId } = await req.json().catch(() => ({}));
@@ -44,3 +45,6 @@ export async function DELETE(req: Request) {
   await prisma.productVariation.delete({ where: { id: variationId } });
   return NextResponse.json({ success: true });
 }
+
+export const POST = withStorefrontRevalidate(POSTHandler);
+export const DELETE = withStorefrontRevalidate(DELETEHandler);

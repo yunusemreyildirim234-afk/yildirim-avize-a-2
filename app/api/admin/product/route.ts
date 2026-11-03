@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
+import { withStorefrontRevalidate } from "@/lib/revalidate";
 import { serverError } from "@/lib/api-error";
 import { adminGuard } from "@/lib/admin-guard";
 import { prisma } from "@/lib/db";
 import { buildUndoToken, snapshotForDelete, snapshotProducts } from "@/lib/admin-undo";
 
 // 1. Yeni Avize Ekleme (POST)
-export async function POST(req: Request) {
+async function POSTHandler(req: Request) {
   const denied = await adminGuard();
   if (denied) return denied;
   try {
@@ -49,7 +50,7 @@ export async function POST(req: Request) {
 }
 
 // 2. Stok Adedini Güncelleme (PATCH)
-export async function PATCH(req: Request) {
+async function PATCHHandler(req: Request) {
   const denied = await adminGuard();
   if (denied) return denied;
   try {
@@ -126,7 +127,7 @@ export async function PATCH(req: Request) {
 }
 
 // 3. Avizeyi Güvenle Silme (DELETE)
-export async function DELETE(req: Request) {
+async function DELETEHandler(req: Request) {
   const denied = await adminGuard();
   if (denied) return denied;
   try {
@@ -160,3 +161,7 @@ export async function DELETE(req: Request) {
     return serverError("admin/product", error);
   }
 }
+
+export const POST = withStorefrontRevalidate(POSTHandler);
+export const PATCH = withStorefrontRevalidate(PATCHHandler);
+export const DELETE = withStorefrontRevalidate(DELETEHandler);

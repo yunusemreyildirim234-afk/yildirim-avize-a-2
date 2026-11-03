@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
+import { withStorefrontRevalidate } from "@/lib/revalidate";
 import { adminGuard } from "@/lib/admin-guard";
 import { UndoError, restoreFromToken } from "@/lib/admin-undo";
 
 // Son ürün işlemini geri alır. Gövde: { snapshot: <sunucunun imzaladığı belirteç>, force?: boolean }
-export async function POST(req: Request) {
+async function POSTHandler(req: Request) {
   const denied = await adminGuard();
   if (denied) return denied;
   const body = await req.json().catch(() => ({}));
@@ -16,3 +17,5 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Geri alınamadı. Lütfen sayfayı yenileyip kontrol edin." }, { status: 500 });
   }
 }
+
+export const POST = withStorefrontRevalidate(POSTHandler);

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { withStorefrontRevalidate } from "@/lib/revalidate";
 import { adminGuard } from "@/lib/admin-guard";
 import { prisma } from "@/lib/db";
 import { rateLimit, tooMany } from "@/lib/rate-limit";
@@ -6,7 +7,7 @@ import { MAX_COUNT, MAX_PINNED, SECTION_KEYS } from "@/lib/homepage-compose";
 import { couponCodesOf, couponWarnings, validatePromoCards, type CouponRow } from "@/lib/promo-cards";
 
 // Ana sayfa ayarları (yalnızca yönetici). Gövde: { featured|discounted|bestsellers: { count, pinnedIds[] }, promoCards: [...] | null }
-export async function PUT(req: Request) {
+async function PUTHandler(req: Request) {
   const denied = await adminGuard();
   if (denied) return denied;
   const rl = rateLimit(req, "admin-homepage", 30, 10 * 60_000);
@@ -75,3 +76,5 @@ export async function PUT(req: Request) {
   }
   return NextResponse.json({ success: true, warnings });
 }
+
+export const PUT = withStorefrontRevalidate(PUTHandler);

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { withStorefrontRevalidate } from "@/lib/revalidate";
 import { adminGuard } from "@/lib/admin-guard";
 import { prisma } from "@/lib/db";
 import { reserveCoupon } from "@/lib/coupons";
@@ -20,7 +21,7 @@ interface OrderUndo extends Record<string, unknown> {
 
 // Sipariş durumu değişikliğini geri alır. Her şey tek transaction'da: durum (karşılaştır-ve-ata), stok (yeterliyse düş), kupon (geçerliyse yeniden say).
 // Biri başarısız olursa hiçbir şey değişmez ve neden gösterilir. Müşteriye e-posta/bildirim GÖNDERİLMEZ.
-export async function POST(req: Request) {
+async function POSTHandler(req: Request) {
   const denied = await adminGuard();
   if (denied) return denied;
   const body = await req.json().catch(() => ({}));
@@ -63,3 +64,5 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Geri alınamadı." }, { status: 500 });
   }
 }
+
+export const POST = withStorefrontRevalidate(POSTHandler);

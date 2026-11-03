@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { withStorefrontRevalidate } from "@/lib/revalidate";
 import { adminGuard } from "@/lib/admin-guard";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
@@ -108,7 +109,7 @@ async function planBulk(body: Record<string, unknown>, selected: string[]): Prom
 }
 
 // Seçili ürünlerde toplu işlem: stok, isim, renk ekleme, koleksiyon (proxy yalnızca yöneticiye açar)
-export async function POST(req: Request) {
+async function POSTHandler(req: Request) {
   const denied = await adminGuard();
   if (denied) return denied;
   const body = await req.json().catch(() => ({}));
@@ -283,3 +284,5 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Geçersiz işlem." }, { status: 400 });
   }
 }
+
+export const POST = withStorefrontRevalidate(POSTHandler);
