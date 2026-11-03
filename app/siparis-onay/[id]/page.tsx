@@ -86,7 +86,7 @@ export default async function OrderConfirmationPage({ params }: { params: Promis
             <p className="font-semibold text-neutral-800">
               {isPickup
                 ? "📍 Mağazadan Teslim – Şişhane merkezimizden teslim alınacak"
-                : "📦 Adrese Teslim – sigortalı korumalı koli ile adresinize gönderilecek"}
+                : "📦 Adrese Teslim – korumalı koli ile adresinize gönderilecek"}
             </p>
             {order.kargonomiShipmentId && (
               <p className="text-neutral-600 mt-1">
