@@ -18,6 +18,6 @@ export function mergeByVariation<T extends { variationId: string; quantity: numb
 export const isShort = (stock: number, qty: number) => stock < qty;
 
 /** Cron'un kapatacağı sipariş mi? Yalnızca kartlı + AWAITING_PAYMENT + eşik geçmiş. Havale (PENDING_NEW) asla. */
-export function shouldCloseAbandonedCard(o: { status: string; paymentMethod: string; createdAt: Date }, now: number): boolean {
+export function shouldCloseAbandonedCard(o: { status: string; paymentMethod: string | null; createdAt: Date }, now: number): boolean {
   return o.status === "AWAITING_PAYMENT" && o.paymentMethod === "CREDIT_CARD" && o.createdAt.getTime() < now - ABANDONED_CARD_MINUTES * 60_000;
 }

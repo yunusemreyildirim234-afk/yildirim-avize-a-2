@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { sendAbandonedCartEmail, sendCartReminderEmail, sendReceiptReminderEmail } from "@/lib/email";
 import { buildCampaignFooter, hasActiveConsent } from "@/lib/marketing";
+import { releaseCoupon } from "@/lib/coupons";
+import { ABANDONED_CARD_MINUTES, shouldCloseAbandonedCard } from "@/lib/stock-rules";
 import { SHOWCASE_COUPON_CODE } from "@/lib/site";
 import { couponValueLabel, loadShowcaseCoupon } from "@/lib/showcase";
 
@@ -66,5 +68,22 @@ export async function GET(req: Request) {
     else await prisma.order.update({ where: { id: o.id }, data: { receiptReminderSent: false } });
   }
 
-  return NextResponse.json({ success: true, abandoned, receipts });
+  // 3) Terk edilmiş KARTLI ödemeler: token ömrü + pay geçmişse PAYMENT_FAILED, kupon bir kez serbest.
+  // Havale/EFT (PENDING_NEW) siparişlerine dokunulmaz. (E-posta adımından sonra çalışır.)
+  let closed = 0;
+  const stale = await prisma.order.findMany({
+    where: { status: "AWAITING_PAYMENT", paymentMethod: "CREDIT_CARD", createdAt: { lt: new Date(now - ABANDONED_CARD_MINUTES * 60_000) } },
+    select: { id: true, couponCode: true, status: true, paymentMethod: true, createdAt: true },
+    take: 200,
+  });
+  for (const o of stale) {
+    if (!shouldCloseAbandonedCard(o, now)) continue;
+    // Durum koşullu geçiş: callback ile yarışırsa yalnızca biri kazanır, kupon tek kez serbest kalır
+    const failed = await prisma.order.updateMany({ where: { id: o.id, status: "AWAITING_PAYMENT" }, data: { status: "PAYMENT_FAILED" } });
+    if (failed.count === 0) continue;
+    await releaseCoupon(o.couponCode).catch((err) => console.error("[cron] kupon serbest bırakılamadı:", (err as Error).message));
+    closed++;
+  }
+
+  return NextResponse.json({ success: true, abandoned, receipts, closed });
 }
