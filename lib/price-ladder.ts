@@ -1,3 +1,4 @@
+import type { BulkRule } from "@/lib/bulk-pricing";
 import { priceCart } from "@/lib/cart-pricing";
 import { BANK_TRANSFER_DISCOUNT, PICKUP_DISCOUNT, SHIPPING_TYPES, type CouponRule } from "@/lib/pricing";
 import { SHOWCASE_COUPON_CODE } from "@/lib/site";
@@ -24,23 +25,25 @@ export interface LadderProduct {
 const pctText = (pct: number) => pct.toLocaleString("tr-TR", { maximumFractionDigits: 2 });
 
 /** Adet=1 için adım adım düşen fiyatlar (priceCart ile; her adım öncekini içerir, kargo hariç). Aynı kalan adımlar atlanır. */
-export function priceLadder(p: LadderProduct, ctx: LadderContext, price: number = p.basePrice): LadderStep[] {
+export function priceLadder(p: LadderProduct, ctx: LadderContext, price: number = p.basePrice, qty?: { quantity: number; tiers: BulkRule[] }): LadderStep[] {
+  // qty verilirse (sepet satırı) kademe ve adet hesaba katılır; fiyatlar BİRİM başınadır. Verilmezse adet=1, kademesiz (eski davranış).
+  const n = qty?.quantity ?? 1;
   const line = {
     variationId: "ladder",
     productId: "ladder",
     price,
-    quantity: 1,
-    tiers: [],
+    quantity: n,
+    tiers: qty?.tiers ?? [],
     couponAllowed: p.couponAllowed ?? true,
     pickupPct: p.pickupDiscountPct ?? null,
     transferPct: p.transferDiscountPct ?? null,
   };
   const net = (shippingType: string, paymentMethod: "CREDIT_CARD" | "BANK_TRANSFER", coupon: CouponRule | null) => {
     const r = priceCart({ lines: [line], shippingType, paymentMethod, coupon, maxTotalDiscountPct: ctx.maxTotalDiscountPct });
-    return { r, price: r.total - r.shipping, couponOk: !r.couponError && r.couponDiscount > 0 };
+    return { r, price: (r.total - r.shipping) / n, couponOk: !r.couponError && r.couponDiscount > 0 };
   };
   const steps: LadderStep[] = [];
-  let prev = price;
+  let prev = qty ? net(SHIPPING_TYPES.HOME, "CREDIT_CARD", null).price : price;
   let coupon: CouponRule | null = null;
 
   if (ctx.coupon && line.couponAllowed) {

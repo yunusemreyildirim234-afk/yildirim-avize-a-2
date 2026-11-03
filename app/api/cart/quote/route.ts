@@ -6,6 +6,8 @@ import { priceCart } from "@/lib/cart-pricing";
 import { SHIPPING_LABELS, type CouponRule } from "@/lib/pricing";
 import { COUPON_FAIL_LIMIT, COUPON_LIMITED_ERROR, validateCoupon } from "@/lib/coupons";
 import { getSessionUserId } from "@/lib/account";
+import { priceLadder } from "@/lib/price-ladder";
+import { getLadderContext } from "@/lib/showcase";
 
 const COUPON_GENERIC_ERROR = "Geçersiz veya süresi dolmuş kupon kodu.";
 
@@ -86,6 +88,8 @@ export async function POST(req: Request) {
     } // var/yok, kişiye özel, limit ayrımı yapılmaz
   }
 
+  // Sepet satırı fiyat merdiveni (yalnızca gösterim); vitrin kuponu + üst sınır istek başına bir kez okunur
+  const ladderCtx = await getLadderContext().catch(() => null);
   const lines = [
     ...priced.lines.map((l, i) => ({
       variationId: l.variationId,
@@ -103,6 +107,9 @@ export async function POST(req: Request) {
       lineTotal: l.lineTotal,
       capInfo: l.capInfo ?? null,
       rules: { couponAllowed: l.couponAllowed, pickupPct: l.pickupPct, transferPct: l.transferPct },
+      ladder: ladderCtx
+        ? priceLadder({ basePrice: l.price, couponAllowed: l.couponAllowed, pickupDiscountPct: l.pickupPct, transferDiscountPct: l.transferPct }, ladderCtx, l.price, { quantity: l.tierQty, tiers: l.tiers })
+        : [],
     })),
     ...missing,
   ];

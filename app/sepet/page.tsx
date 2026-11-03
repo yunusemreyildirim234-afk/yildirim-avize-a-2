@@ -10,6 +10,8 @@ import { cartPriceLines, useCart, type ItemRules } from "@/context/CartContext";
 import { FREE_SHIPPING_THRESHOLD, SHIPPING_COST, SHIPPING_LABELS, type CouponRule } from "@/lib/pricing";
 import { discountsApplied, priceCart, type CapInfo } from "@/lib/cart-pricing";
 import { lineNotices } from "@/lib/cart-notices";
+import PriceLadder from "@/components/PriceLadder";
+import type { LadderStep } from "@/lib/price-ladder";
 import BankTransferCard from "@/components/BankTransferCard";
 import ContractModal from "@/components/ContractModal";
 import { invoiceError } from "@/lib/validation";
@@ -143,7 +145,7 @@ export default function CartPage() {
 
   // Sunucu fiyat teklifi (/api/cart/quote, salt okunur): gösterilen tutar buradan gelir
   interface Quote {
-    lines: { variationId: string; available: boolean; stockShort?: boolean; title?: string; price?: number; unitPrice?: number; bulk?: BulkRule[]; rules?: ItemRules; capInfo?: CapInfo | null }[];
+    lines: { variationId: string; available: boolean; stockShort?: boolean; title?: string; price?: number; unitPrice?: number; bulk?: BulkRule[]; rules?: ItemRules; capInfo?: CapInfo | null; ladder?: LadderStep[] }[];
     totals: { itemsTotal: number; shipping: number; couponDiscount: number; pickupDiscount: number; bankDiscount: number; total: number };
     coupon: { ok: boolean; error?: string; limited?: boolean } | null;
     maxTotalDiscountPct?: number | null;
@@ -515,6 +517,7 @@ export default function CartPage() {
                         <span className="ml-2 text-xs font-medium text-neutral-400 line-through">{item.price.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
                       )}
                     </div>
+                    {fresh && <PriceLadder steps={quote.lines.find((l) => l.variationId === item.variationId)?.ladder ?? []} size="sm" />}
                     {item.bulk?.map((t) => (
                       <p key={t.minQty} className="text-[11px] text-emerald-800 mt-1">
                         {activeTier(item.bulk, pricedOf(item.variationId)?.tierQty ?? item.quantity)?.minQty === t.minQty ? "✓ " : ""}
