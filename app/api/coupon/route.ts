@@ -1,14 +1,16 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { rateLimit, tooMany } from "@/lib/rate-limit";
+import { isLimited, rateLimit, recordFailure, tooMany } from "@/lib/rate-limit";
 import { getSessionUserId } from "@/lib/account";
-import { validateCoupon } from "@/lib/coupons";
+import { COUPON_FAIL_LIMIT, COUPON_GENERIC_ERROR, COUPON_LIMITED_ERROR, COUPON_PRODUCT_ERROR, validateCoupon } from "@/lib/coupons";
 import type { PriceLine } from "@/lib/pricing";
 
 // Sepetteki kupon doğrulaması (oturum açıksa hesabın e-postası, değilse formdaki e-posta kullanılır)
 export async function POST(req: Request) {
   const rl = rateLimit(req, "coupon", 10, 60_000);
   if (rl.limited) return tooMany(rl.retryAfter);
+  const failLimit = isLimited(req, COUPON_FAIL_LIMIT.name, COUPON_FAIL_LIMIT.max);
+  if (failLimit.limited) return tooMany(failLimit.retryAfter, COUPON_LIMITED_ERROR);
   const body = await req.json().catch(() => ({}));
   const code = typeof body.code === "string" ? body.code : "";
   const rawLines: { productId?: unknown; lineTotal?: unknown }[] = Array.isArray(body.lines) ? body.lines.slice(0, 100) : [];
@@ -21,6 +23,10 @@ export async function POST(req: Request) {
   const email = sessionUser?.email ?? (typeof body.email === "string" ? body.email : null);
 
   const result = await validateCoupon({ code, email, lines, userId });
-  if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 });
+  if (!result.ok) {
+    recordFailure(req, COUPON_FAIL_LIMIT.name, COUPON_FAIL_LIMIT.windowMs);
+    // Var/yok, pasif, kişiye özel, limit ve kişi başı ayrımı sızdırılmaz; yalnızca ürün uygunluğu mesajı korunur
+    return NextResponse.json({ error: result.error === COUPON_PRODUCT_ERROR ? result.error : COUPON_GENERIC_ERROR }, { status: 400 });
+  }
   return NextResponse.json({ rule: result.rule });
 }
