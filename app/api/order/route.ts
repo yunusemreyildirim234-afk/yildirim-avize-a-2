@@ -8,6 +8,7 @@ import { SHIPPING_LABELS } from "@/lib/pricing";
 import { getSessionUserId } from "@/lib/account";
 import { EMAIL_RE, invoiceError } from "@/lib/validation";
 import { bulkTiersOf } from "@/lib/bulk-pricing";
+import { isShort, mergeByVariation } from "@/lib/stock-rules";
 import { priceCart } from "@/lib/cart-pricing";
 import { releaseCoupon, reserveCoupon, validateCoupon } from "@/lib/coupons";
 
@@ -67,6 +68,7 @@ export async function POST(req: Request) {
     }
 
     // 1. Fiyatlar istemciden değil veritabanından hesaplanır
+    const wantedByVariation = new Map(mergeByVariation(items.map((i) => ({ variationId: i.variationId, quantity: Math.max(1, Math.floor(Number(i.quantity) || 1)) }))).map((l) => [l.variationId, l.quantity]));
     const orderLines = [];
     for (const item of items) {
       const quantity = Math.max(1, Math.floor(Number(item.quantity) || 1));
@@ -77,7 +79,8 @@ export async function POST(req: Request) {
       if (!variation || !variation.product.active) {
         return NextResponse.json({ error: "Sepetinizdeki bir ürün artık satışta değil. Lütfen sepeti yenileyin." }, { status: 400 });
       }
-      if (variation.stock < quantity) {
+      // Aynı varyasyon birden fazla satırda gelebilir: toplam adet stokla karşılaştırılır
+      if (isShort(variation.stock, wantedByVariation.get(item.variationId) ?? quantity)) {
         return NextResponse.json({ error: `"${variation.product.title}" için yeterli stok yok.` }, { status: 400 });
       }
       orderLines.push({ variation, quantity, unitPrice: variation.product.basePrice + variation.extraPrice });
