@@ -10,9 +10,13 @@ export async function POST(req: Request) {
   const denied = await adminGuard();
   if (denied) return denied;
   const body = await req.json().catch(() => ({}));
-  const ids: string[] = Array.isArray(body.ids)
-    ? [...new Set<string>(body.ids.filter((i: unknown): i is string => typeof i === "string"))].slice(0, 500)
-    : [];
+  // "Tüm ürünler" yalnızca özel indirim kurallarında desteklenir
+  const allProducts = body.all === true && body.action === "specialDiscount";
+  const ids: string[] = allProducts
+    ? (await prisma.product.findMany({ select: { id: true }, take: 2000 })).map((p) => p.id)
+    : Array.isArray(body.ids)
+      ? [...new Set<string>(body.ids.filter((i: unknown): i is string => typeof i === "string"))].slice(0, 500)
+      : [];
   if (ids.length === 0) return NextResponse.json({ error: "Ürün seçilmedi." }, { status: 400 });
 
   // Geri Al için işlem öncesi durum
@@ -132,6 +136,23 @@ export async function POST(req: Request) {
         })
       );
       return NextResponse.json({ snapshot: await done(), success: true, updated: products.length });
+    }
+
+    // Özel indirim kuralları: kupon geçerli mi, mağazadan teslim %, Havale/EFT % (null: varsayılan, 0: bu üründe yok)
+    case "specialDiscount": {
+      const pctOf = (v: unknown): number | null | undefined => {
+        if (v === null || v === "" || v === undefined) return null;
+        const n = Number(v);
+        return Number.isFinite(n) && n >= 0 && n <= 100 ? n : undefined;
+      };
+      const pickupPct = pctOf(body.pickupPct);
+      const transferPct = pctOf(body.transferPct);
+      if (pickupPct === undefined || transferPct === undefined) return NextResponse.json({ error: "İndirim oranları 0 ile 100 arasında olmalıdır." }, { status: 400 });
+      const data = body.reset === true
+        ? { couponAllowed: true, pickupDiscountPct: null, transferDiscountPct: null }
+        : { couponAllowed: body.couponAllowed !== false, pickupDiscountPct: pickupPct, transferDiscountPct: transferPct };
+      const res = await prisma.product.updateMany({ where: { id: { in: ids } }, data });
+      return NextResponse.json({ snapshot: await done(), success: true, updated: res.count });
     }
 
     // Vitrin: Öne Çıkanlar / Çok Satanlar ekle-çıkar

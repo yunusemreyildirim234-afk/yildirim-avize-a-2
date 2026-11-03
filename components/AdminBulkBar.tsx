@@ -45,6 +45,12 @@ export default function AdminBulkBar({ ids, scopes, onApplied, extraCategories, 
   const [discValue, setDiscValue] = useState("10");
   const [minQty, setMinQty] = useState("1");
   const [removeOpen, setRemoveOpen] = useState(false);
+  const [special, setSpecial] = useState(false); // İndirim sekmesinde "Özel İndirimler" bölümü açık mı
+  // Özel indirimler
+  const [couponOk, setCouponOk] = useState(true);
+  const [pickupPct, setPickupPct] = useState("");
+  const [transferPct, setTransferPct] = useState("");
+  const [allProducts, setAllProducts] = useState(false);
   const [showField, setShowField] = useState<"isFeatured" | "isBestSeller">("isFeatured");
   const [showValue, setShowValue] = useState(true);
 
@@ -79,6 +85,13 @@ export default function AdminBulkBar({ ids, scopes, onApplied, extraCategories, 
     if (tab === "rename") return run({ action: "rename", prefix, suffix });
     if (tab === "color") {
       return run({ action: "addVariation", variationValue: colorName, stock: Number(colorStock), extraPrice: Number(colorExtra) });
+    }
+    if (tab === "discount" && special) {
+      for (const [label, v] of [["Mağazadan teslim", pickupPct], ["Havale/EFT", transferPct]] as const) {
+        if (v.trim() !== "" && !(Number(v) >= 0 && Number(v) <= 100)) return alert(`${label} indirimi 0 ile 100 arasında olmalıdır.`);
+      }
+      if (allProducts && !confirm("Özel indirim kuralları KATALOGDAKİ TÜM ürünlere uygulanacak. Emin misiniz?")) return;
+      return run({ action: "specialDiscount", all: allProducts, couponAllowed: couponOk, pickupPct: pickupPct.trim() === "" ? null : Number(pickupPct), transferPct: transferPct.trim() === "" ? null : Number(transferPct), label: "Özel indirim kuralı" });
     }
     if (tab === "discount") {
       const value = Number(discValue);
@@ -146,6 +159,50 @@ export default function AdminBulkBar({ ids, scopes, onApplied, extraCategories, 
         )}
 
         {tab === "discount" && (
+          <div className="basis-full flex items-center gap-2 text-neutral-600">
+            <button type="button" aria-pressed={!special} onClick={() => setSpecial(false)} className={`px-3 py-1 rounded-full border text-[11px] font-semibold ${!special ? "bg-neutral-900 text-white border-neutral-900" : "bg-white border-neutral-300"}`}>
+              Fiyat / Adet İndirimi
+            </button>
+            <button type="button" aria-pressed={special} onClick={() => setSpecial(true)} className={`px-3 py-1 rounded-full border text-[11px] font-semibold ${special ? "bg-neutral-900 text-white border-neutral-900" : "bg-white border-neutral-300"}`}>
+              Özel İndirimler
+            </button>
+          </div>
+        )}
+
+        {tab === "discount" && special && (
+          <>
+            <label className="flex items-center gap-1.5 text-neutral-700 font-semibold">
+              <input type="checkbox" checked={couponOk} onChange={(e) => setCouponOk(e.target.checked)} className="w-4 h-4 accent-amber-600" />
+              Kupon geçerli
+            </label>
+            <label className="flex items-center gap-1.5 text-neutral-600">
+              Mağazadan teslim %
+              <input aria-label="Mağazadan teslim indirimi yüzdesi" type="number" min={0} max={100} step="any" placeholder="varsayılan" value={pickupPct} onChange={(e) => setPickupPct(e.target.value)} className={`${input} w-24`} />
+            </label>
+            <label className="flex items-center gap-1.5 text-neutral-600">
+              Havale/EFT %
+              <input aria-label="Havale EFT indirimi yüzdesi" type="number" min={0} max={100} step="any" placeholder="varsayılan" value={transferPct} onChange={(e) => setTransferPct(e.target.value)} className={`${input} w-24`} />
+            </label>
+            <label className="flex items-center gap-1.5 text-neutral-600">
+              <input type="checkbox" checked={allProducts} onChange={(e) => setAllProducts(e.target.checked)} className="w-4 h-4 accent-amber-600" />
+              Tüm ürünler
+            </label>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                if (allProducts && !confirm("Varsayılana dönüş KATALOGDAKİ TÜM ürünlere uygulanacak. Emin misiniz?")) return;
+                run({ action: "specialDiscount", all: allProducts, reset: true, label: "Varsayılana dönüş" });
+              }}
+              className="px-3 py-2 rounded-lg border border-neutral-300 font-semibold hover:bg-neutral-100 disabled:opacity-60"
+            >
+              Varsayılana dön
+            </button>
+            <span className="basis-full text-[11px] text-neutral-500">Boş oran = varsayılan (Mağaza %3, Havale %5); 0 = bu üründe indirim yok. Kupon tiki kalkarsa kod bu üründe geçmez.</span>
+          </>
+        )}
+
+        {tab === "discount" && !special && (
           <>
             <select aria-label="İndirim türü" value={discMode} onChange={(e) => setDiscMode(e.target.value as "PERCENT" | "FIXED")} className={input}>
               <option value="PERCENT">Yüzde (%)</option>
@@ -207,7 +264,7 @@ export default function AdminBulkBar({ ids, scopes, onApplied, extraCategories, 
         >
           {busy ? "Uygulanıyor..." : `${ids.length} ürüne uygula`}
         </button>
-        {tab === "discount" && (
+        {tab === "discount" && !special && (
           <div className="relative">
             <button
               type="button"

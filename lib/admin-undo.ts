@@ -22,7 +22,7 @@ export class UndoError extends Error {
 }
 
 // ---------- Durum okuma ----------
-const FIELD_KEYS = ["title", "category", "basePrice", "listPrice", "isFeatured", "isBestSeller", "bulkTiers", "modelCode", "images", "imageUrl", "active"] as const;
+const FIELD_KEYS = ["title", "category", "basePrice", "listPrice", "isFeatured", "isBestSeller", "bulkTiers", "modelCode", "images", "imageUrl", "active", "couponAllowed", "pickupDiscountPct", "transferDiscountPct"] as const;
 type FieldKey = (typeof FIELD_KEYS)[number];
 type Fields = Partial<Record<FieldKey, unknown>>;
 
@@ -36,7 +36,7 @@ export async function snapshotProducts(ids: string[]): Promise<ProductState[]> {
   const rows = await prisma.product.findMany({ where: { id: { in: ids } }, include: { variations: { select: { id: true, stock: true, extraPrice: true } } } });
   return rows.map((p) => ({
     id: p.id,
-    fields: { title: p.title, category: p.category, basePrice: p.basePrice, listPrice: p.listPrice, isFeatured: p.isFeatured, isBestSeller: p.isBestSeller, bulkTiers: p.bulkTiers, modelCode: p.modelCode, images: p.images, imageUrl: p.imageUrl, active: p.active },
+    fields: { title: p.title, category: p.category, basePrice: p.basePrice, listPrice: p.listPrice, isFeatured: p.isFeatured, isBestSeller: p.isBestSeller, bulkTiers: p.bulkTiers, modelCode: p.modelCode, images: p.images, imageUrl: p.imageUrl, active: p.active, couponAllowed: p.couponAllowed, pickupDiscountPct: p.pickupDiscountPct, transferDiscountPct: p.transferDiscountPct },
     variations: p.variations,
   }));
 }
@@ -109,6 +109,11 @@ const num = (v: unknown, what: string, nullable = false, int = false): number | 
   if (typeof v !== "number" || !Number.isFinite(v) || v < 0 || v > 1e9 || (int && !Number.isInteger(v))) return bad(what);
   return v;
 };
+const pct = (v: unknown, what: string): number | null => {
+  const n = num(v, what, true);
+  if (n !== null && n > 100) bad(what);
+  return n;
+};
 const bool = (v: unknown, what: string): boolean => (typeof v === "boolean" ? v : (bad(what) as never));
 const id = (v: unknown, what: string): string => (typeof v === "string" && ID_RE.test(v) ? v : (bad(what) as never));
 const images = (v: unknown): string[] => {
@@ -142,6 +147,9 @@ function cleanFields(raw: unknown): Fields {
       case "images": out.images = images(v); break;
       case "imageUrl": out.imageUrl = str(v, 1000, k, true); break;
       case "active": out.active = bool(v, k); break;
+      case "couponAllowed": out.couponAllowed = bool(v, k); break;
+      case "pickupDiscountPct": out.pickupDiscountPct = pct(v, k); break;
+      case "transferDiscountPct": out.transferDiscountPct = pct(v, k); break;
       default: bad(`bilinmeyen alan: ${k}`);
     }
   }
@@ -167,6 +175,9 @@ function cleanRecreate(raw: unknown) {
       listPrice: num(p.listPrice ?? null, "listPrice", true),
       isFeatured: bool(p.isFeatured ?? false, "isFeatured"),
       isBestSeller: bool(p.isBestSeller ?? false, "isBestSeller"),
+      couponAllowed: bool(p.couponAllowed ?? true, "couponAllowed"),
+      pickupDiscountPct: pct(p.pickupDiscountPct ?? null, "pickupDiscountPct"),
+      transferDiscountPct: pct(p.transferDiscountPct ?? null, "transferDiscountPct"),
       bulkTiers: jsonOrNull(tiers(p.bulkTiers ?? null)),
       trendyolMainId: str(p.trendyolMainId ?? null, 100, "trendyolMainId", true),
       modelCode: str(p.modelCode ?? null, 40, "modelCode", true),
@@ -199,12 +210,12 @@ const jsonOrNull = (v: unknown) => (v === null || v === undefined ? Prisma.DbNul
 
 /** İmzayı ve süreyi doğrular, yükü katı biçimde temizler. */
 export async function readUndoToken(token: unknown) {
-  if (typeof token !== "string" || token.length > 500_000) throw new UndoError(400, "Geri alınacak kayıt yok.");
+  if (typeof token !== "string" || token.length > 1_000_000) throw new UndoError(400, "Geri alınacak kayıt yok.");
   const p = await verifySession<UndoPayload>(token);
   if (!p || p.kind !== "undo" || typeof p.iat !== "number") throw new UndoError(400, "Geri alma kaydı geçersiz veya değiştirilmiş.");
   if (Date.now() - p.iat > UNDO_TTL_MS) throw new UndoError(410, "Geri alma süresi (30 dk) doldu.");
 
-  if (!Array.isArray(p.products) || p.products.length > 600 || !Array.isArray(p.variations) || p.variations.length > 20000) return bad("liste");
+  if (!Array.isArray(p.products) || p.products.length > 2000 || !Array.isArray(p.variations) || p.variations.length > 20000) return bad("liste");
   return {
     products: p.products.map((x) => {
       if (!isObj(x)) return bad("product");
