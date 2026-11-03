@@ -4,6 +4,7 @@ import { toggleSelection } from "@/lib/filter-chips";
 
 /**
  * Sipariş listesi filtre çipleri. Seçim ?durum= parametresinde saklanır; her çip o gruptaki sipariş adedini gösterir.
+ * ?durum= yokken varsayılan olarak Yeni gelen + Teslime hazır + Kargo sürecinde + Talep bekleyen seçilidir; "Tümü" (?durum=tumu) hepsini açar.
  * `selected` boşsa yalnızca "Tümü" aktiftir ve tüm siparişler listelenir. Bir çipe tıklamak Tümü'nü söndürüp yalnızca
  * o grubu seçer; seçili çipe tekrar tıklamak kaldırır (hiçbiri kalmazsa Tümü yeniden aktif olur); Tümü alt seçimleri temizler.
  */
