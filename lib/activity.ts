@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { cleanGuestEmail } from "@/lib/guest-email";
+import { ADMIN_EMAILS } from "@/lib/site";
 
 const DAY = 86_400_000;
 export const RETENTION_MS = 3 * DAY;
@@ -18,6 +19,7 @@ export interface ActivityRow {
   email: string | null;
   name: string | null;
   registeredAt: string | null; // yalnızca üyeler
+  isAdmin: boolean; // yönetici hesabı (ADMIN_EMAILS veya admin rolü)
   firstAt: string | null;
   lastAt: string | null;
   activeMinutes: number;
@@ -28,7 +30,7 @@ export interface ActivityRow {
 }
 
 const empty = (key: string, email: string | null): ActivityRow => ({
-  key, email, name: null, registeredAt: null, firstAt: null, lastAt: null, activeMinutes: 0, searches: [], cartAdds: [], checkoutStarts: 0, errors: [],
+  key, email, name: null, registeredAt: null, isAdmin: false, firstAt: null, lastAt: null, activeMinutes: 0, searches: [], cartAdds: [], checkoutStarts: 0, errors: [],
 });
 
 /** Son 3 günün olaylarını müşteri (e-posta) veya anonim oturum bazında gruplar. */
@@ -36,23 +38,20 @@ export async function getActivity(): Promise<{ registered: ActivityRow[]; guests
   try {
     await purgeOldEvents();
     const [users, events] = await Promise.all([
-      prisma.user.findMany({ where: { role: "USER", password: { not: "guest_checkout" } }, select: { name: true, email: true, createdAt: true }, orderBy: { createdAt: "desc" } }),
+      prisma.user.findMany({ where: { password: { not: "guest_checkout" } }, select: { name: true, email: true, role: true, createdAt: true }, orderBy: { createdAt: "desc" } }),
       prisma.clientEvent.findMany({ orderBy: { createdAt: "asc" }, take: 5000 }),
     ]);
-
-    // Aynı oturumun herhangi bir olayında e-posta varsa tüm oturum o e-postaya bağlanır
-    const sessionEmail = new Map<string, string>();
-    for (const e of events) if (e.email) sessionEmail.set(e.sessionId, cleanGuestEmail(e.email).toLowerCase());
 
     const rows = new Map<string, ActivityRow>();
     for (const u of users) {
       const key = u.email.toLowerCase();
-      rows.set(key, { ...empty(key, u.email), name: u.name, registeredAt: u.createdAt.toISOString() });
+      rows.set(key, { ...empty(key, u.email), name: u.name, registeredAt: u.createdAt.toISOString(), isAdmin: u.role !== "USER" || ADMIN_EMAILS.includes(u.email.toLowerCase()) });
     }
     const registeredKeys = new Set(rows.keys());
 
     for (const e of events) {
-      const email = sessionEmail.get(e.sessionId) ?? null;
+      // Yalnızca olayın KENDİ doğrulanmış e-postası kullanılır; oturumdaki başka bir olayın e-postası bu olaya yazılmaz
+      const email = e.email ? cleanGuestEmail(e.email).toLowerCase() : null;
       const key = email ?? `s:${e.sessionId}`;
       let r = rows.get(key);
       if (!r) {

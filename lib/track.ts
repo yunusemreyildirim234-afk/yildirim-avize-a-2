@@ -13,10 +13,15 @@ function sessionId(): string {
   return sid;
 }
 
-/** Sepet formuna yazılan geçerli e-postayı bu tarayıcı oturumuyla ilişkilendirmek için saklar. */
-export function rememberEmail(email: string) {
+/**
+ * Eski sürümler formdaki e-postayı localStorage'da (ya_email) saklıyordu; çıkıştan sonra da kalıp misafir etkinliklerini
+ * eski üyenin altında gösteriyordu. Artık e-posta saklanmaz/gönderilmez (kimliği sunucu ya_user çerezinden belirler);
+ * bu fonksiyon yalnızca eski değeri temizler.
+ */
+export function rememberEmail(_email?: string) {
+  void _email;
   try {
-    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) localStorage.setItem(EMAIL_KEY, email.trim().toLowerCase());
+    localStorage.removeItem(EMAIL_KEY);
   } catch {
     /* depolama kapalı olabilir */
   }
@@ -24,6 +29,7 @@ export function rememberEmail(email: string) {
 
 export function track(type: TrackType, detail: string, page?: string) {
   try {
+    localStorage.removeItem(EMAIL_KEY); // eski sürümden kalan değeri temizle
     fetch("/api/events", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -33,7 +39,6 @@ export function track(type: TrackType, detail: string, page?: string) {
         detail: detail.slice(0, 300),
         page: (page ?? window.location.pathname).slice(0, 120),
         sessionId: sessionId(),
-        email: localStorage.getItem(EMAIL_KEY) ?? undefined,
       }),
     }).catch(() => {});
   } catch {

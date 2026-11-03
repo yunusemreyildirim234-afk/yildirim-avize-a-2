@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSessionUserId } from "@/lib/account";
 import { rateLimit, tooMany } from "@/lib/rate-limit";
-import { EMAIL_RE } from "@/lib/validation";
 import { purgeOldEvents } from "@/lib/activity";
 
 const TYPES = ["SEARCH", "CART_ADD", "CHECKOUT_START", "ERROR"];
@@ -18,14 +17,11 @@ export async function POST(req: Request) {
     const sessionId = str(body.sessionId, 64);
     if (!TYPES.includes(type) || !/^[a-zA-Z0-9-]{8,64}$/.test(sessionId)) return NextResponse.json({ ok: false }, { status: 400 });
 
-    // Oturumdaki üyenin e-postası güvenilirdir; yoksa formdan gelen geçerli e-posta kullanılır
+    // Kimlik YALNIZCA sunucuda doğrulanmış oturumdan (ya_user çerezi) gelir. İstemcinin gönderdiği e-posta doğrulanmadığı için
+    // üyeymiş gibi kullanılmaz; oturum yoksa etkinlik misafir kalır (email = null).
     let email: string | null = null;
     const userId = await getSessionUserId();
     if (userId) email = (await prisma.user.findUnique({ where: { id: userId }, select: { email: true } }))?.email ?? null;
-    if (!email) {
-      const given = str(body.email, 200).toLowerCase();
-      email = EMAIL_RE.test(given) ? given : null;
-    }
 
     await prisma.clientEvent.create({ data: { type, sessionId, email, detail: str(body.detail, 300) || null, page: str(body.page, 120) || null } });
     if (Math.random() < 0.05) await purgeOldEvents();
