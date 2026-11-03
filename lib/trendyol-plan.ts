@@ -275,6 +275,7 @@ export function onizleme(plan: Plan, limit = 200) {
   return {
     sayac: plan.sayac,
     toplamUrun: listed.length,
+    listelenmeyen: Math.max(0, listed.length - limit), // listede gösterilmeyen ürün sayısı (yalnızca açık onayla uygulanır)
     urunler: listed.slice(0, limit).map((p) => ({
       mainId: p.mainId,
       title: p.title,

@@ -35,6 +35,7 @@ interface ProductView {
 interface Preview {
   sayac: { ezilecek: number; korunacak: number; atlandi: number; yeniUrun: number; yeniVaryasyon: number; pasifeAlinacak: number; degisenUrun: number };
   toplamUrun: number;
+  listelenmeyen: number;
   urunler: ProductView[];
 }
 interface Result { guncellenenUrun: number; yeniUrun: number; yeniVaryasyon: number; stokGuncellenen: number; atlanan: number; hata: number }
@@ -61,6 +62,7 @@ export default function AdminTrendyolSync() {
   const [previewSettings, setPreviewSettings] = useState<Settings | null>(null);
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const [open, setOpen] = useState<string | null>(null);
+  const [includeHidden, setIncludeHidden] = useState(false); // listelenmeyen ürünler de dahil (varsayılan KAPALI)
   const [busy, setBusy] = useState<"" | "preview" | "apply">("");
   const [error, setError] = useState("");
   const [result, setResult] = useState<Result | null>(null);
@@ -77,6 +79,7 @@ export default function AdminTrendyolSync() {
       setPreview(p);
       setPreviewSettings(settings);
       setChecked(new Set(p.urunler.map((u) => u.mainId)));
+      setIncludeHidden(false);
       setOpen(null);
     } catch (e) {
       setError((e as Error).message);
@@ -101,12 +104,11 @@ export default function AdminTrendyolSync() {
 
   const onApply = async () => {
     if (!preview || stale) return;
-    const listed = preview.urunler.length;
-    const everything = checked.size === listed && preview.toplamUrun > listed; // listelenmeyenler de dahil tümü
+    const everything = includeHidden && preview.listelenmeyen > 0; // kutu işaretliyse TÜMÜ (listelenmeyenler dahil), değilse yalnızca işaretliler
     const count = everything ? preview.toplamUrun : checked.size;
     const hasOverwrite = Object.values(settings).includes("OVERWRITE");
     const st = overwriteStats();
-    let msg = `${count} ürün Trendyol'a göre güncellenecek.${everything ? " (Listede gösterilmeyen ürünler de dahil.)" : ""}`;
+    let msg = `${count} ürün Trendyol'a göre güncellenecek.${everything ? ` Listede gösterilmeyen ${preview.listelenmeyen} ürün de dahil (toplam ${preview.toplamUrun}).` : ""}`;
     if (hasOverwrite) msg += `\n\nBu işlem elle yaptığınız değişiklikleri ezer; Geri Al yoktur.\nEzilecek: ${st.fields} alan, ${st.products} ürün (yalnızca listelenenler).`;
     else msg += "\n\nGeri Al yoktur.";
     if (!window.confirm(msg)) return;
@@ -253,7 +255,16 @@ export default function AdminTrendyolSync() {
             ))}
           </ul>
 
-          <button type="button" onClick={onApply} disabled={busy !== "" || stale || checked.size === 0} className="min-h-11 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white px-5 rounded-xl transition-colors disabled:opacity-50">
+          {preview.listelenmeyen > 0 && (
+            <label className="flex items-start gap-2 text-xs text-neutral-800 bg-white border border-amber-300 rounded-xl p-2.5">
+              <input type="checkbox" checked={includeHidden} onChange={(e) => setIncludeHidden(e.target.checked)} className="w-4 h-4 mt-0.5 accent-amber-600 shrink-0" />
+              <span>
+                <strong>Listelenmeyen {preview.listelenmeyen} ürün de dahil edilsin.</strong> İşaretlenirse listedeki seçimden bağımsız olarak değişen {preview.toplamUrun} ürünün tamamı uygulanır; işaretlenmezse yalnızca yukarıda işaretli {checked.size} ürün uygulanır.
+              </span>
+            </label>
+          )}
+
+          <button type="button" onClick={onApply} disabled={busy !== "" || stale || (checked.size === 0 && !(includeHidden && preview.listelenmeyen > 0))} className="min-h-11 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white px-5 rounded-xl transition-colors disabled:opacity-50">
             {busy === "apply" ? "Uygulanıyor..." : "Seçilenleri uygula"}
           </button>
         </div>
