@@ -13,6 +13,7 @@ import { resolvePromoCards } from "@/lib/promo-cards";
 import AdminDiscountSettings from "@/components/AdminDiscountSettings";
 import AdminSessions from "@/components/AdminSessions";
 import AdminTwoFactor, { AdminTwoFactorBanner } from "@/components/AdminTwoFactor";
+import AdminPasswordChange from "@/components/AdminPasswordChange";
 import AdminLiveAlerts from "@/components/AdminLiveAlerts";
 import AdminSection from "@/components/AdminSection";
 import AdminReceiptActions from "@/components/AdminReceiptActions";
@@ -213,6 +214,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         <AdminDiscountSettings initial={discountCap} />
         <AdminSessions />
         <AdminTwoFactor admins={adminRows} />
+        <AdminPasswordChange />
 
         <AdminHomepage
           initial={homeConfig}

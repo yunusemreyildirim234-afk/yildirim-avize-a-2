@@ -311,6 +311,7 @@ const CODE_COPY: Record<string, { subject: string; lead: string }> = {
   TWO_FACTOR_DISABLE: { subject: "İki Aşamalı Doğrulamayı Kapatma Kodunuz", lead: "İki aşamalı doğrulamayı kapatmak için onay kodunuz:" },
   TWO_FACTOR_LOGIN: { subject: "Giriş Doğrulama Kodunuz", lead: "Hesabınıza giriş yapmak için doğrulama kodunuz:" },
   ADMIN_LOGIN: { subject: "Yönetici Girişi Doğrulama Kodunuz", lead: "Yönetim paneline giriş yapmak için doğrulama kodunuz:" },
+  ADMIN_PASSWORD: { subject: "Yönetici Şifre Değiştirme Kodunuz", lead: "Yönetici şifrenizi değiştirmek için doğrulama kodunuz:" },
 };
 
 /** 6 haneli e-posta doğrulama kodu (kurumsal şablon). */
@@ -326,6 +327,19 @@ export async function sendVerificationCodeEmail(data: { to: string; code: string
       <div style="text-align: center; margin: 22px 0;"><span style="display: inline-block; font-family: monospace; font-size: 34px; font-weight: bold; letter-spacing: 8px; background: #ffffff; border: 2px dashed #d97706; border-radius: 12px; padding: 14px 24px; color: #92400e;">${data.code}</span></div>
       <p style="font-size: 12px; color: #b91c1c; text-align: center; font-weight: bold;">Bu kod 10 dakika süreyle geçerlidir. Güvenliğiniz için kimseyle paylaşmayınız.</p>
       <p style="font-size: 11px; color: #a3a3a3; text-align: center; margin-top: 18px;">Bu işlemi siz başlatmadıysanız bu e-postayı dikkate almayınız.</p>
+    </div>`,
+  });
+}
+
+/** Yönetici şifresi değişince hesap sahibine bilgi (şifre veya kod içermez). */
+export async function sendPasswordChangedEmail(to: string) {
+  return sendViaResend(process.env.RESEND_API_KEY, {
+    to: [to],
+    subject: "Şifreniz değiştirildi - Yıldırım Avize",
+    html: `<div style="font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 28px; background: #fafafa; border: 1px solid #e5e5e5; border-radius: 16px; color: #171717;">
+      <h1 style="text-align: center; font-size: 22px; letter-spacing: 1px; margin: 0 0 16px;">YILDIRIM AVİZE</h1>
+      <p style="font-size: 14px; line-height: 1.6;">Yönetici hesabınızın şifresi değiştirildi ve tüm yönetici oturumları kapatıldı.</p>
+      <p style="font-size: 12px; color: #b91c1c; font-weight: bold;">Bu işlemi siz yapmadıysanız hemen bizimle iletişime geçin.</p>
     </div>`,
   });
 }
