@@ -177,6 +177,7 @@ model SiteConfig {
   etbisUrl            String?  @default("https://www.eticaret.gov.tr")
   etbisQrImage        String? // ETBİS karekod görseli (data URL veya bağlantı)
   maxTotalDiscountPct Float? // Toplam indirim üst sınırı % (boş: sınırsız)
+  homepageConfig      Json? // Ana sayfa bölümleri: { featured|discounted|bestsellers: { count, pinnedIds[] } } (boş: varsayılan)
   updatedAt           DateTime @updatedAt
 }
 
