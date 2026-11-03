@@ -3,6 +3,8 @@ import { prisma } from "@/lib/db";
 import { releaseCoupon } from "@/lib/coupons";
 import { finalizeOrder } from "@/lib/orders";
 import { fromMerchantOid } from "@/lib/paytr";
+import { reportLatePayment } from "@/lib/late-payment";
+import { notifyAdmins } from "@/lib/notifications";
 
 const ok = () => new Response("OK", { status: 200, headers: { "Content-Type": "text/plain; charset=utf-8" } });
 
@@ -36,7 +38,12 @@ export async function POST(req: Request) {
 
   // İdempotency: sipariş zaten işlenmişse (PENDING/SHIPPED/DELIVERED/PAYMENT_FAILED/CANCELLED vb.) stok ve kupon işlemleri tekrarlanmaz
   const current = await prisma.order.findUnique({ where: { id: orderId }, select: { status: true, totalAmount: true } });
-  if (!current || !["AWAITING_PAYMENT", "PENDING_NEW"].includes(current.status)) return ok();
+  if (!current) return ok();
+  if (!["AWAITING_PAYMENT", "PENDING_NEW"].includes(current.status)) {
+    // Mevcut davranış aynen: durum, stok, kupon değişmez ve yanıt 200 OK. Ek olarak geç "success" kaydedilir ve yöneticiye bildirilir.
+    await reportLatePayment({ log: console.error, warn: console.warn, notifyAdmins }, { merchantOid: p.merchant_oid, orderId, orderStatus: current.status, payStatus: p.status }).catch(() => {});
+    return ok();
+  }
   // Yalnızca uyarı: taksit/vade farkı olabilir, ödeme reddedilmez
   if (Number(p.total_amount) !== Math.round(current.totalAmount * 100)) {
     console.warn("PayTR callback: total_amount sipariş tutarından farklı", { oid: p.merchant_oid, gelen: p.total_amount, siparis: Math.round(current.totalAmount * 100) });
