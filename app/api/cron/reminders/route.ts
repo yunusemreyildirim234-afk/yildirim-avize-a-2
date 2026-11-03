@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { sendAbandonedCartEmail, sendCartReminderEmail, sendReceiptReminderEmail } from "@/lib/email";
 import { buildCampaignFooter, hasActiveConsent } from "@/lib/marketing";
 import { releaseCoupon } from "@/lib/coupons";
+import { restoreOrderStock } from "@/lib/orders";
 import { ABANDONED_CARD_MINUTES, shouldCloseAbandonedCard } from "@/lib/stock-rules";
 import { SHOWCASE_COUPON_CODE } from "@/lib/site";
 import { couponValueLabel, loadShowcaseCoupon } from "@/lib/showcase";
@@ -82,9 +83,13 @@ export async function GET(req: Request) {
     // Durum koşullu geçiş: callback ile yarışırsa yalnızca biri kazanır, kupon tek kez serbest kalır
     const failed = await prisma.order.updateMany({ where: { id: o.id, status: "AWAITING_PAYMENT" }, data: { status: "PAYMENT_FAILED" } });
     if (failed.count === 0) continue;
+    await restoreOrderStock(o.id).catch((err) => console.error("[cron] stok iade edilemedi (sonraki süpürmede denenir):", (err as Error).message));
     await releaseCoupon(o.couponCode).catch((err) => console.error("[cron] kupon serbest bırakılamadı:", (err as Error).message));
     closed++;
   }
+  // Süpürme: kartlı PAYMENT_FAILED olup stoğu hâlâ ayrılı kalmış siparişler (iade adımı hata verdiyse) bayrak koşullu iade edilir
+  const stuck = await prisma.order.findMany({ where: { status: "PAYMENT_FAILED", paymentMethod: "CREDIT_CARD", stockDeducted: true }, select: { id: true }, take: 200 });
+  for (const o of stuck) await restoreOrderStock(o.id).catch((err) => console.error("[cron] stok süpürme hatası:", (err as Error).message));
 
   return NextResponse.json({ success: true, abandoned, receipts, closed });
 }

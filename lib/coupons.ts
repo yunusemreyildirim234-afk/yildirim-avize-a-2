@@ -20,6 +20,25 @@ export async function ensureDefaultCoupon() {
   });
 }
 
+/** Kişi başı limit sayımı: aynı e-posta (veya üye) için iptal edilmemiş siparişlerde bu kupon kaç kez kullanıldı. İstemci prisma veya transaction (kilit altında) olabilir. */
+export async function countUserCouponUses(db: Pick<Prisma.TransactionClient, "order">, code: string, email: string, userId?: string | null): Promise<number> {
+  const [local, domain] = email.split("@");
+  return db.order.count({
+    where: {
+      couponCode: code,
+      status: { notIn: ["CANCELLED", "RETURNED", "PAYMENT_FAILED"] },
+      user: {
+        OR: [
+          ...(userId ? [{ id: userId }] : []),
+          ...(email ? [{ email: { equals: email, mode: "insensitive" as const } }] : []),
+          // Kayıtlı hesabı olan e-postanın misafir siparişleri "+misafir" etiketli adresle açılır
+          ...(local && domain ? [{ email: { startsWith: `${local}+misafir`, endsWith: `@${domain}`, mode: "insensitive" as const } }] : []),
+        ],
+      },
+    },
+  });
+}
+
 /** Kodu doğrular: aktiflik, kullanım limiti, kişiye özel e-posta ve ürüne özel sepet şartı. */
 export async function validateCoupon(opts: {
   code: string;
@@ -51,21 +70,7 @@ export async function validateCoupon(opts: {
   if (coupon.perUserLimit) {
     const email = (opts.email ?? "").trim().toLowerCase();
     if (!email && !opts.userId) return { ok: false, error: "Bu kupon için lütfen giriş yapın veya e-posta adresinizi girin." };
-    const [local, domain] = email.split("@");
-    const used = await prisma.order.count({
-      where: {
-        couponCode: coupon.code,
-        status: { notIn: ["CANCELLED", "RETURNED", "PAYMENT_FAILED"] },
-        user: {
-          OR: [
-            ...(opts.userId ? [{ id: opts.userId }] : []),
-            ...(email ? [{ email: { equals: email, mode: "insensitive" as const } }] : []),
-            // Kayıtlı hesabı olan e-postanın misafir siparişleri "+misafir" etiketli adresle açılır
-            ...(local && domain ? [{ email: { startsWith: `${local}+misafir`, endsWith: `@${domain}`, mode: "insensitive" as const } }] : []),
-          ],
-        },
-      },
-    });
+    const used = await countUserCouponUses(prisma, coupon.code, email, opts.userId);
     if (used >= coupon.perUserLimit) return { ok: false, error: "Bu kuponu daha önce kullandınız." };
   }
 
@@ -86,11 +91,25 @@ export async function validateCoupon(opts: {
 /**
  * Kupon hakkını sipariş kaydıyla AYNI veritabanı işleminde (tx) rezerve eder.
  * Tek SQL ifadesi kontrol + artırımı atomik yapar; eşzamanlı isteklerde limit aşılamaz.
- * Kupon pasifse veya usedCount >= maxUses ise false döner.
+ * Kupon pasifse, süresi bitmişse (expiresAt; bitiş anı Europe/Istanbul günün 23:59:59'u olarak saklanır) veya usedCount >= maxUses ise false döner.
  */
 export async function reserveCoupon(tx: Prisma.TransactionClient, code: string): Promise<boolean> {
-  const n = await tx.$executeRaw`UPDATE "Coupon" SET "usedCount" = "usedCount" + 1 WHERE "code" = ${code} AND "active" = true AND "usedCount" < "maxUses"`;
+  const n = await tx.$executeRaw`UPDATE "Coupon" SET "usedCount" = "usedCount" + 1 WHERE "code" = ${code} AND "active" = true AND "usedCount" < "maxUses" AND ("expiresAt" IS NULL OR "expiresAt" >= ${new Date()})`;
   return n > 0;
+}
+
+export type CouponReserveResult = "OK" | "LIMIT" | "USER_LIMIT";
+
+/**
+ * Sipariş transaction'ında kuponu KİLİTLER (SELECT ... FOR UPDATE), kişi başı limiti kilit altında sayar, sonra atomik rezerve eder.
+ * Aynı kuponu eşzamanlı kullanan istekler sırayla işlenir: ikinci istek birincinin siparişini görür.
+ */
+export async function reserveCouponLocked(tx: Prisma.TransactionClient, code: string, who: { email: string; userId?: string | null }): Promise<CouponReserveResult> {
+  const rows = await tx.$queryRaw<{ perUserLimit: number | null }[]>`SELECT "perUserLimit" FROM "Coupon" WHERE "code" = ${code} FOR UPDATE`;
+  if (rows.length === 0) return "LIMIT";
+  const limit = rows[0].perUserLimit;
+  if (limit && (await countUserCouponUses(tx, code, who.email, who.userId)) >= limit) return "USER_LIMIT";
+  return (await reserveCoupon(tx, code)) ? "OK" : "LIMIT";
 }
 
 /** Ödemesi başarısız olan veya iptal edilen siparişin kupon hakkını geri verir. */

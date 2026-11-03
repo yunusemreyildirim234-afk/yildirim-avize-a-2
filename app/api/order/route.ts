@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { serverError, badRequest } from "@/lib/api-error";
 import { prisma } from "@/lib/db";
 import { rateLimit, tooMany } from "@/lib/rate-limit";
-import { finalizeOrder } from "@/lib/orders";
+import { finalizeOrder, releaseStaleReservations, restoreOrderStock } from "@/lib/orders";
 import { getPaytrToken } from "@/lib/paytr";
 import { SHIPPING_LABELS } from "@/lib/pricing";
 import { getSessionUserId } from "@/lib/account";
@@ -10,7 +10,8 @@ import { EMAIL_RE, invoiceError } from "@/lib/validation";
 import { bulkTiersOf } from "@/lib/bulk-pricing";
 import { isShort, mergeByVariation } from "@/lib/stock-rules";
 import { priceCart } from "@/lib/cart-pricing";
-import { releaseCoupon, reserveCoupon, validateCoupon } from "@/lib/coupons";
+import { releaseCoupon, reserveCouponLocked, validateCoupon } from "@/lib/coupons";
+import { reserveLines, StockShortError } from "@/lib/stock-reserve";
 import { bestEffort, createOrFindGuest } from "@/lib/best-effort";
 
 interface CartLine {
@@ -85,16 +86,19 @@ export async function POST(req: Request) {
     const orderLines = [];
     for (const item of items) {
       const quantity = Math.max(1, Math.floor(Number(item.quantity) || 1));
-      const variation = await prisma.productVariation.findUnique({
-        where: { id: item.variationId },
-        include: { product: true },
-      });
+      const loadVariation = () => prisma.productVariation.findUnique({ where: { id: item.variationId }, include: { product: true } });
+      let variation = await loadVariation();
       if (!variation || !variation.product.active) {
         return NextResponse.json({ error: "Sepetinizdeki bir ürün artık satışta değil. Lütfen sepeti yenileyin." }, { status: 400 });
       }
       // Aynı varyasyon birden fazla satırda gelebilir: toplam adet stokla karşılaştırılır
-      if (isShort(variation.stock, wantedByVariation.get(item.variationId) ?? quantity)) {
-        return NextResponse.json({ error: `"${variation.product.title}" için yeterli stok yok.` }, { status: 400 });
+      const wanted = wantedByVariation.get(item.variationId) ?? quantity;
+      // Kartlı sipariş: stok yetersiz görünüyorsa 45 dk'yı geçmiş ödeme bekleyen rezervasyonlar önce serbest bırakılır, kontrol bir kez daha yapılır
+      if (isShort(variation.stock, wanted) && paymentMethod === "CREDIT_CARD" && (await releaseStaleReservations([...wantedByVariation.keys()]))) {
+        variation = (await loadVariation()) ?? variation;
+      }
+      if (isShort(variation.stock, wanted)) {
+        return NextResponse.json({ error: `"${variation.product.title}" için stok yetersiz.` }, { status: 400 });
       }
       orderLines.push({ variation, quantity, unitPrice: variation.product.basePrice + variation.extraPrice });
     }
@@ -162,12 +166,23 @@ export async function POST(req: Request) {
     const totalQty = orderLines.reduce((sum, l) => sum + l.quantity, 0);
     // Kupon hakkı rezervasyonu ve sipariş kaydı tek işlemde: limit doluysa sipariş hiç oluşmaz
     class CouponLimitError extends Error {}
-    let order;
-    try {
-      order = await prisma.$transaction(async (tx) => {
-        if (appliedCouponCode && !(await reserveCoupon(tx, appliedCouponCode))) throw new CouponLimitError();
+    class CouponUserLimitError extends Error {}
+    const reservedLines = mergeByVariation(itemRows);
+    const createOrderTx = () =>
+      prisma.$transaction(async (tx) => {
+        if (appliedCouponCode) {
+          // Kupon satırı kilitlenir; kişi başı limit sayımı ve hak rezervasyonu kilit altında yapılır (eşzamanlı çift kullanım engellenir)
+          const r = await reserveCouponLocked(tx, appliedCouponCode, { email: normalizedEmail, userId: sessionUserId });
+          if (r === "LIMIT") throw new CouponLimitError();
+          if (r === "USER_LIMIT") throw new CouponUserLimitError();
+        }
+        // Kartlı sipariş: stok şimdi ayrılır (koşullu atomik UPDATE, stock >= adet) ve Order.stockDeducted ile işaretlenir; yetmezse sipariş açılmaz
+        if (paymentMethod === "CREDIT_CARD") {
+          await reserveLines(reservedLines, async (variationId, quantity) => (await tx.$executeRaw`UPDATE "ProductVariation" SET "stock" = "stock" - ${quantity} WHERE "id" = ${variationId} AND "stock" >= ${quantity}`) > 0);
+        }
         return tx.order.create({
       data: {
+        stockDeducted: paymentMethod === "CREDIT_CARD",
         userId: user.id,
         totalAmount: totals.total,
         shippingType,
@@ -191,10 +206,26 @@ export async function POST(req: Request) {
         },
       },
         });
-      });
+      }, { maxWait: 5000, timeout: 10000 });
+    let order;
+    try {
+      try {
+        order = await createOrderTx();
+      } catch (err) {
+        // Eşzamanlı bir sipariş son stoğu aldıysa: bayat rezervasyonlar bırakılır ve bir kez daha denenir
+        if (!(err instanceof StockShortError) || !(await releaseStaleReservations(reservedLines.map((l) => l.variationId)))) throw err;
+        order = await createOrderTx();
+      }
     } catch (err) {
       if (err instanceof CouponLimitError) {
         return NextResponse.json({ error: "Bu kuponun kullanım hakkı dolmuştur veya kupon artık geçerli değil." }, { status: 400 });
+      }
+      if (err instanceof CouponUserLimitError) {
+        return NextResponse.json({ error: "Bu kuponu daha önce kullandınız." }, { status: 400 });
+      }
+      if (err instanceof StockShortError) {
+        const l = orderLines.find((x) => x.variation.id === err.variationId);
+        return NextResponse.json({ error: `"${l?.variation.product.title ?? "Ürün"}" için stok yetersiz.` }, { status: 400 });
       }
       throw err;
     }
@@ -229,6 +260,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, orderId: order.id, paytrToken: token });
     } catch (err) {
       await prisma.order.update({ where: { id: order.id }, data: { status: "PAYMENT_FAILED" } });
+      await restoreOrderStock(order.id).catch((e) => console.error("[siparis] stok iadesi başarısız (cron süpürür):", (e as Error).message));
       await releaseCoupon(appliedCouponCode).catch(() => {});
       return serverError("order/paytr", err, "Ödeme başlatılamadı. Lütfen tekrar deneyin.", 502);
     }

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { withStorefrontRevalidate } from "@/lib/revalidate";
 import { serverError } from "@/lib/api-error";
 import { adminGuard } from "@/lib/admin-guard";
 import { prisma } from "@/lib/db";
@@ -17,7 +18,7 @@ const STATUS_NOTICE: Record<string, string> = {
 
 const VALID_STATUSES = ["PENDING", "PENDING_NEW", "AWAITING_PAYMENT", "PAYMENT_FAILED", "READY_FOR_PICKUP", "SHIPPED", "DELIVERED", "CANCELLED", "RETURNED"];
 
-export async function POST(req: Request) {
+async function POSTHandler(req: Request) {
   const denied = await adminGuard();
   if (denied) return denied;
   try {
@@ -30,15 +31,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Geçersiz sipariş durumu." }, { status: 400 });
     }
 
-    const before = await prisma.order.findUnique({ where: { id: orderId }, select: { status: true } });
+    const before = await prisma.order.findUnique({ where: { id: orderId }, select: { status: true, stockDeducted: true } });
     if (!before) return NextResponse.json({ error: "Sipariş bulunamadı." }, { status: 404 });
     const updatedOrder = await prisma.order.update({
       where: { id: orderId },
       data: { status },
     });
 
-    // Doğrudan iptal/iade (karar lib/order-undo.ts planStatusChange): stoğu düşülmüş siparişte stok + kupon, ödeme bekleyen siparişte yalnızca kupon iade edilir
-    const plan = before.status !== status ? planStatusChange(before.status, status) : { restoreStock: false, releaseCoupon: false };
+    // Doğrudan iptal/iade (karar lib/order-undo.ts planStatusChange): stok bayrağı (stockDeducted) true ise stok (kartlı rezervasyon dahil), kupon henüz iade edilmediyse kupon iade edilir
+    const plan = before.status !== status ? planStatusChange(before.status, status, before.stockDeducted) : { restoreStock: false, releaseCoupon: false };
     const restoredStock = plan.restoreStock;
     if (plan.restoreStock) await restoreOrderStock(orderId);
     if (plan.releaseCoupon) await releaseCoupon(updatedOrder.couponCode).catch(() => {});
@@ -61,3 +62,5 @@ export async function POST(req: Request) {
     return serverError("admin/order-status", error);
   }
 }
+
+export const POST = withStorefrontRevalidate(POSTHandler);

@@ -1,7 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { prisma } from "@/lib/db";
 import { releaseCoupon } from "@/lib/coupons";
-import { finalizeOrder } from "@/lib/orders";
+import { finalizeOrder, restoreOrderStock } from "@/lib/orders";
 import { fromMerchantOid } from "@/lib/paytr";
 import { reportLatePayment } from "@/lib/late-payment";
 import { notifyAdmins } from "@/lib/notifications";
@@ -54,6 +54,8 @@ export async function POST(req: Request) {
   } else {
     const failed = await prisma.order.updateMany({ where: { id: orderId, status: "AWAITING_PAYMENT" }, data: { status: "PAYMENT_FAILED" } });
     if (failed.count > 0) {
+      // Kartlı siparişte sipariş anında ayrılan stok iade edilir (bayrak koşullu, idempotent); hata cron süpürmesine kalır
+      await restoreOrderStock(orderId).catch((e) => console.error("[paytr] stok iadesi başarısız (cron süpürür):", (e as Error).message));
       const o = await prisma.order.findUnique({ where: { id: orderId }, select: { couponCode: true } });
       await releaseCoupon(o?.couponCode).catch(() => {});
     }

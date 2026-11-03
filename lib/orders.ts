@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { sendOrderNotificationEmails, sendStockShortageEmail } from "@/lib/email";
-import { mergeByVariation } from "@/lib/stock-rules";
+import { mergeByVariation, RESERVATION_RELEASE_MINUTES } from "@/lib/stock-rules";
+import { releaseCoupon } from "@/lib/coupons";
 import { createShipmentForOrder } from "@/lib/kargonomi";
 import { notifyAdmins, notifyCustomer } from "@/lib/notifications";
 import { cleanGuestEmail } from "@/lib/guest-email";
@@ -56,6 +57,41 @@ async function reportShortage(orderId: string, shortages: { variationId: string;
 export async function restoreOrderStock(orderId: string) {
   // Bayrak ve stok artışları tek transaction'da: biri başarısız olursa ikisi de geri alınır
   await prisma.$transaction(async (tx) => restoreStockInTx(tx as unknown as RestoreTx, orderId), TX_OPTIONS);
+}
+
+/**
+ * Ödeme bekleyen KARTLI siparişi kapatır: AWAITING_PAYMENT → PAYMENT_FAILED (koşullu, yalnızca bir çağrı kazanır),
+ * ardından ayrılmış stok (bayrak koşullu) ve kupon hakkı iade edilir. Aynı olay tekrar gelirse etkisizdir. Kapatıldıysa true.
+ */
+export async function failAwaitingCardOrder(orderId: string): Promise<boolean> {
+  const o = await prisma.order.findUnique({ where: { id: orderId }, select: { couponCode: true } });
+  const failed = await prisma.order.updateMany({ where: { id: orderId, status: "AWAITING_PAYMENT", paymentMethod: "CREDIT_CARD" }, data: { status: "PAYMENT_FAILED" } });
+  if (failed.count === 0) return false;
+  await restoreOrderStock(orderId);
+  await releaseCoupon(o?.couponCode).catch((err) => console.error("[siparis] kupon serbest bırakılamadı:", (err as Error).message));
+  return true;
+}
+
+/**
+ * Yeni kartlı sipariş stok yetersizliği görünce, aynı varyasyonları tutan ve token ömrü + 15 dk (45 dk) geçmiş
+ * AWAITING_PAYMENT kartlı rezervasyonları serbest bırakır (cron günde bir çalıştığı için beklemesin). Serbest bırakılan sayısı döner.
+ */
+export async function releaseStaleReservations(variationIds: string[], now: number = Date.now()): Promise<number> {
+  if (variationIds.length === 0) return 0;
+  const stale = await prisma.order.findMany({
+    where: {
+      status: "AWAITING_PAYMENT",
+      paymentMethod: "CREDIT_CARD",
+      stockDeducted: true,
+      createdAt: { lt: new Date(now - RESERVATION_RELEASE_MINUTES * 60_000) },
+      items: { some: { variationId: { in: variationIds } } },
+    },
+    select: { id: true },
+    take: 50,
+  });
+  let n = 0;
+  for (const o of stale) if (await failAwaitingCardOrder(o.id).catch(() => false)) n++;
+  return n;
 }
 
 type FullOrder = Awaited<ReturnType<typeof loadOrder>>;

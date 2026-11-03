@@ -1,13 +1,15 @@
 import { cleanGuestEmail } from "@/lib/guest-email";
+import { withStorefrontRevalidate } from "@/lib/revalidate";
 import { adminGuard } from "@/lib/admin-guard";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { sendRequestDecisionEmail } from "@/lib/email";
 import { restoreOrderStock } from "@/lib/orders";
 import { releaseCoupon } from "@/lib/coupons";
+import { COUPON_FREE_STATES } from "@/lib/order-undo";
 
 // Yönetici iptal/iade talebini onaylar veya reddeder (proxy yalnızca yöneticiye açar)
-export async function POST(req: Request) {
+async function POSTHandler(req: Request) {
   const denied = await adminGuard();
   if (denied) return denied;
   const body = await req.json().catch(() => ({}));
@@ -32,10 +34,11 @@ export async function POST(req: Request) {
     },
   });
 
-  // Onaylanan iptalde sipariş stoğu geri eklenir
+  // Onaylanan iptalde sipariş stoğu geri eklenir (bayrak koşullu: kartlı rezervasyon dahil, idempotent)
   if (approve && isCancel) {
     await restoreOrderStock(orderId);
-    await releaseCoupon(order.couponCode).catch(() => {});
+    // Kupon durum zaten PAYMENT_FAILED/CANCELLED/RETURNED ise daha önce iade edilmiştir
+    if (!COUPON_FREE_STATES.includes(order.status)) await releaseCoupon(order.couponCode).catch(() => {});
   }
 
   const emailed = await sendRequestDecisionEmail({
@@ -49,3 +52,5 @@ export async function POST(req: Request) {
 
   return NextResponse.json({ success: true, emailed });
 }
+
+export const POST = withStorefrontRevalidate(POSTHandler);

@@ -21,3 +21,11 @@ export const isShort = (stock: number, qty: number) => stock < qty;
 export function shouldCloseAbandonedCard(o: { status: string; paymentMethod: string | null; createdAt: Date }, now: number): boolean {
   return o.status === "AWAITING_PAYMENT" && o.paymentMethod === "CREDIT_CARD" && o.createdAt.getTime() < now - ABANDONED_CARD_MINUTES * 60_000;
 }
+
+/** Kartlı siparişte stok sipariş anında ayrılır. Token ömrü + 15 dk geçen AWAITING_PAYMENT rezervasyonu yeni sipariş stok yetersizliği görünce serbest bırakılır. */
+export const RESERVATION_RELEASE_MINUTES = PAYTR_TIMEOUT_MINUTES + 15;
+
+/** Rezervasyon bayatladı mı (serbest bırakılabilir)? Sınır dahil değil: tam 45. dakikada hâlâ ayrılı. */
+export function isStaleReservation(createdAt: Date, now: number): boolean {
+  return createdAt.getTime() < now - RESERVATION_RELEASE_MINUTES * 60_000;
+}

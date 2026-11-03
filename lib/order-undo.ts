@@ -1,27 +1,28 @@
 // Sipariş durumu değişikliği ve Geri Al için saf karar yardımcıları (veritabanı çağrıları parametredir; test edilebilir).
 
-/** Stoğu düşülmemiş (veya zaten iade edilmiş) durumlar. */
-export const NO_STOCK_STATES = ["AWAITING_PAYMENT", "PAYMENT_FAILED", "CANCELLED", "RETURNED"];
+/** Kupon hakkı zaten iade edilmiş durumlar (tekrar iade edilmez). */
+export const COUPON_FREE_STATES = ["PAYMENT_FAILED", "CANCELLED", "RETURNED"];
 
 export interface StatusChangePlan {
-  restoreStock: boolean; // düşülmüş stok iade edilir
+  restoreStock: boolean; // ayrılmış/düşülmüş stok iade edilir
   releaseCoupon: boolean; // kupon hakkı iade edilir
 }
 
 /**
- * İptal/iade geçişinde ne iade edilir?
- * - Stoğu düşülmüş sipariş (PENDING, SHIPPED...): stok + kupon.
- * - Ödeme bekleyen sipariş: yalnızca kupon (hak sipariş anında ayrılmıştı, stok düşülmemişti).
- * - PAYMENT_FAILED / CANCELLED / RETURNED: hiçbiri (kupon zaten iade edilmişti).
+ * Durum geçişinde ne iade edilir? Stok için TEK doğruluk kaynağı Order.stockDeducted bayrağıdır (kartlı sipariş oluşturulurken, havale/ödeme sonrası düşülür).
+ * - İptal/iade veya PAYMENT_FAILED'a geçişte bayrak true ise stok iade edilir (kartlı AWAITING_PAYMENT rezervasyonu dahil).
+ * - İptal/iade geçişinde kupon, daha önce iade edilmediyse (PAYMENT_FAILED/CANCELLED/RETURNED değilse) iade edilir.
  */
-export function planStatusChange(before: string, next: string): StatusChangePlan {
+export function planStatusChange(before: string, next: string, stockDeducted: boolean): StatusChangePlan {
   const closing = next === "CANCELLED" || next === "RETURNED";
-  const restoreStock = closing && !NO_STOCK_STATES.includes(before);
-  return { restoreStock, releaseCoupon: restoreStock || (closing && before === "AWAITING_PAYMENT") };
+  return {
+    restoreStock: (closing || next === "PAYMENT_FAILED") && stockDeducted,
+    releaseCoupon: closing && !COUPON_FREE_STATES.includes(before),
+  };
 }
 
 export const COUPON_UNDO_WARNING = (code: string) =>
-  `Sipariş eski durumuna döndürüldü ancak "${code}" kuponunun hakkı yeniden ayrılamadı (kupon pasif veya kullanım limiti bu arada doldu). Kupon sayacını Kuponlar bölümünden kontrol edin.`;
+  `Sipariş eski durumuna döndürüldü ancak "${code}" kuponunun hakkı yeniden ayrılamadı (kupon pasif, süresi dolmuş veya kullanım limiti bu arada doldu). Kupon sayacını Kuponlar bölümünden kontrol edin.`;
 
 /**
  * Geri Al sırasında kupon hakkını yeniden ayırır. `reserve` atomik koşullu UPDATE'tir (usedCount < maxUses).
