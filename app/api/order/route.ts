@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { prisma } from "@/lib/db";
 import { rateLimit, tooMany } from "@/lib/rate-limit";
 import { finalizeOrder } from "@/lib/orders";
@@ -191,9 +192,9 @@ export async function POST(req: Request) {
     } catch (err) {
       await prisma.order.update({ where: { id: order.id }, data: { status: "PAYMENT_FAILED" } });
       await releaseCoupon(appliedCouponCode).catch(() => {});
-      return NextResponse.json({ error: (err as Error).message }, { status: 502 });
+      return serverError("order/paytr", err, "Ödeme başlatılamadı. Lütfen tekrar deneyin.", 502);
     }
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    return serverError("order", error, "Siparişiniz oluşturulamadı. Lütfen tekrar deneyin.");
   }
 }

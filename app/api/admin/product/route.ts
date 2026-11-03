@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { adminGuard } from "@/lib/admin-guard";
 import { prisma } from "@/lib/db";
 import { buildUndoToken, snapshotForDelete, snapshotProducts } from "@/lib/admin-undo";
@@ -43,7 +44,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, product: newProduct });
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    return serverError("admin/product", error);
   }
 }
 
@@ -120,7 +121,7 @@ export async function PATCH(req: Request) {
 
     return NextResponse.json({ success: true, variation: updated, snapshot: before.length ? await buildUndoToken(before) : null });
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    return serverError("admin/product", error);
   }
 }
 
@@ -156,6 +157,6 @@ export async function DELETE(req: Request) {
 
     return NextResponse.json({ success: true, snapshot: await buildUndoToken(before, fullCopy) });
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    return serverError("admin/product", error);
   }
 }

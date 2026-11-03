@@ -15,6 +15,7 @@ export async function GET() {
       warehouse: list[0] ? `${list[0].name} (${list[0].city})` : null,
     });
   } catch (error) {
-    return NextResponse.json({ connected: false, error: (error as Error).message }, { status: 200 });
+    console.error("[admin/kargonomi]", (error as Error).message);
+    return NextResponse.json({ connected: false, error: "Kargonomi bağlantısı kurulamadı." }, { status: 200 });
   }
 }

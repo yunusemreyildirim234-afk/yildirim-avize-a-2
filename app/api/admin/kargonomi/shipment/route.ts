@@ -4,7 +4,10 @@ import { KargonomiError, createShipmentForOrder, refreshOrderShipment } from "@/
 
 function fail(error: unknown) {
   const status = error instanceof KargonomiError ? error.status : 500;
-  return NextResponse.json({ error: (error as Error).message }, { status: status >= 400 && status < 600 ? status : 502 });
+  console.error("[admin/kargonomi/shipment]", (error as Error).message);
+  // Kargonomi'nin bildirdiği (adres/gönderi) hataları yöneticiye aktarılır; beklenmeyen hatada genel mesaj
+  const message = error instanceof KargonomiError ? error.message : "Gönderi işlemi sırasında bir hata oluştu. Lütfen tekrar deneyin.";
+  return NextResponse.json({ error: message }, { status: status >= 400 && status < 600 ? status : 502 });
 }
 
 // Gönderi oluştur

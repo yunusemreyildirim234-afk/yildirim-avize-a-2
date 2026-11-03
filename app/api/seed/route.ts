@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { prisma } from "@/lib/db";
 
 export async function GET() {
@@ -67,6 +68,6 @@ export async function GET() {
       message: "Avizeler gerçek fotoğraflarıyla veritabanına yüklendi!",
     });
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    return serverError("seed", error);
   }
 }

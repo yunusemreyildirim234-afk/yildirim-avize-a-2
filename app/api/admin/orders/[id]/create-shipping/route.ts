@@ -60,6 +60,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     return NextResponse.json({ success: true, order: updated });
   } catch (error) {
     const status = error instanceof KargonomiError && error.status >= 400 && error.status < 600 ? error.status : 502;
-    return NextResponse.json({ error: (error as Error).message }, { status });
+    console.error("[admin/create-shipping]", (error as Error).message);
+    const message = error instanceof KargonomiError ? error.message : "Kargo kaydı oluşturulamadı. Lütfen tekrar deneyin.";
+    return NextResponse.json({ error: message }, { status });
   }
 }

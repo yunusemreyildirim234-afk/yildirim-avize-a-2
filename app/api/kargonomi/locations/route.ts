@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { listCities, listStates } from "@/lib/kargonomi";
 
 export async function GET(req: Request) {
@@ -12,6 +13,6 @@ export async function GET(req: Request) {
     const states: { id: number; name: string }[] = await listStates();
     return NextResponse.json({ states: states.map(({ id, name }) => ({ id, name })) });
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 502 });
+    return serverError("kargonomi/locations", error, "Konum listesi şu an alınamadı. Lütfen tekrar deneyin.", 502);
   }
 }

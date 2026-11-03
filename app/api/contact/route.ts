@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { prisma } from "@/lib/db";
 import { rateLimit, tooMany } from "@/lib/rate-limit";
 import { getSessionUserId } from "@/lib/account";
@@ -76,6 +77,6 @@ export async function POST(req: Request) {
           : "Talebiniz Beyoğlu merkezimize ulaştı. Uzman ekibimiz en kısa sürede dönüş yapacaktır.",
     });
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    return serverError("contact", error, "Mesajınız gönderilemedi. Lütfen tekrar deneyin.");
   }
 }

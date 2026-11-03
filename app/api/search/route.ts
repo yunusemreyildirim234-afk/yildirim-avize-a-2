@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { prisma } from "@/lib/db";
 import { getLadderContext } from "@/lib/showcase";
 import { priceLadder } from "@/lib/price-ladder";
@@ -42,6 +43,6 @@ export async function GET(req: Request) {
     const ctx = await getLadderContext();
     return NextResponse.json({ products: products.map((p) => ({ ...p, ladder: priceLadder(p, ctx) })) });
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    return serverError("search", error, "Arama şu an yapılamadı. Lütfen tekrar deneyin.");
   }
 }

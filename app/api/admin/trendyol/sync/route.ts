@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { adminGuard } from "@/lib/admin-guard";
 import { syncTrendyolProducts } from "@/lib/trendyol";
 
@@ -10,6 +11,6 @@ export async function POST() {
   try {
     return NextResponse.json({ success: true, result: await syncTrendyolProducts() });
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 502 });
+    return serverError("admin/trendyol/sync", error, "Trendyol senkronizasyonu başarısız oldu. Lütfen tekrar deneyin.", 502);
   }
 }

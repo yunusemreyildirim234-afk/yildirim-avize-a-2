@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/api-error";
 import { adminGuard } from "@/lib/admin-guard";
 import { prisma } from "@/lib/db";
 import { notifyCustomer } from "@/lib/notifications";
@@ -53,6 +54,6 @@ export async function POST(req: Request) {
         : null;
     return NextResponse.json({ success: true, order: updatedOrder, undoToken, notified });
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    return serverError("admin/order-status", error);
   }
 }
