@@ -53,6 +53,7 @@ export default function CartPage() {
   const [appliedCoupon, setAppliedCoupon] = useState<CouponRule | null>(null);
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponError, setCouponError] = useState("");
+  const [couponSkipped, setCouponSkipped] = useState(false); // "Kuponsuz devam et" seçildi
 
   // PayTR iFrame token'ı (kart bilgileri sitemizde toplanmaz)
   const [paytrToken, setPaytrToken] = useState<string | null>(null);
@@ -218,6 +219,7 @@ export default function CartPage() {
 
   const fresh = quote !== null && quote.sig === quoteSig && cart.length > 0;
   const { shipping: shippingCost, couponDiscount, pickupDiscount, bankDiscount, total: finalTotal } = fresh ? quote.totals : localTotals;
+  const couponUnverifiable = appliedCoupon !== null && ((fresh && quote.coupon?.limited === true) || quoteFailed);
   const itemsShown = fresh ? quote.totals.itemsTotal : totalPrice;
 
   const handleApplyCoupon = async (e: React.FormEvent) => {
@@ -248,7 +250,13 @@ export default function CartPage() {
     }
   };
 
+  const handleSkipCoupon = () => {
+    handleRemoveCoupon();
+    setCouponSkipped(true);
+  };
+
   const handleRemoveCoupon = () => {
+    setCouponSkipped(false);
     setAppliedCoupon(null);
     setCouponInput("");
     setCouponError("");
@@ -619,6 +627,14 @@ export default function CartPage() {
 
               {couponError && (
                 <p className="text-xs text-red-600 font-medium">{couponError}</p>
+              )}
+              {couponUnverifiable && (
+                <button type="button" onClick={handleSkipCoupon} className="text-xs font-semibold text-amber-800 underline underline-offset-2">
+                  Kuponsuz devam et
+                </button>
+              )}
+              {couponSkipped && !appliedCoupon && (
+                <p className="text-xs text-neutral-600">Kupon olmadan devam ediyorsunuz; tutar kuponsuz hesaplanır.</p>
               )}
             </div>
 
