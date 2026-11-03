@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { adminGuard } from "@/lib/admin-guard";
 import { confirmBankPayment } from "@/lib/orders";
+import { withStorefrontRevalidate } from "@/lib/revalidate";
 
 // Yönetici havale ödemesini onaylar (proxy yalnızca yöneticiye açar)
-export async function POST(req: Request) {
+// Onayla stok düşer (çok satanlar/stok görünümü) → başarılı yanıtta vitrin yenilenir
+async function POSTHandler(req: Request) {
   const denied = await adminGuard();
   if (denied) return denied;
   const { orderId } = await req.json().catch(() => ({}));
@@ -12,3 +14,5 @@ export async function POST(req: Request) {
   if (!ok) return NextResponse.json({ error: "Sipariş onay bekleyen havale durumunda değil." }, { status: 409 });
   return NextResponse.json({ success: true });
 }
+
+export const POST = withStorefrontRevalidate(POSTHandler);
