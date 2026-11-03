@@ -3,7 +3,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { sendAbandonedCartEmail, sendCartReminderEmail, sendReceiptReminderEmail } from "@/lib/email";
 import { buildCampaignFooter, hasActiveConsent } from "@/lib/marketing";
-import { DEFAULT_COUPON_CODE } from "@/lib/pricing";
+import { SHOWCASE_COUPON_CODE } from "@/lib/site";
+import { couponValueLabel, loadShowcaseCoupon } from "@/lib/showcase";
 
 const HOUR = 60 * 60 * 1000;
 
@@ -28,6 +29,8 @@ export async function GET(req: Request) {
     include: { user: true, items: { include: { variation: { include: { product: { select: { title: true } } } } } } },
     take: 50,
   });
+  // Vitrin kuponu geçerli değilse (pasif, süresi dolmuş, limit dolu, kişiye/ürüne özel) onaylı kişiye de sade hatırlatma gider
+  const showcase = carts.length > 0 ? await loadShowcaseCoupon().catch(() => null) : null;
   for (const o of carts) {
     // Önce işaretle: aynı mail ikinci kez gitmesin
     const claimed = await prisma.order.updateMany({ where: { id: o.id, abandonedEmailSent: false }, data: { abandonedEmailSent: true } });
@@ -35,9 +38,9 @@ export async function GET(req: Request) {
     const to = cleanGuestEmail(o.user.email);
     const items = o.items.map((i) => ({ title: i.variation.product.title, quantity: i.quantity }));
     // Ticari ileti onayı kontrolü (hata/tablo yoksa "onay yok" sayılır): onaylıya kampanya, diğerlerine indirimsiz sade hatırlatma
-    const footerHtml = (await hasActiveConsent(to)) ? await buildCampaignFooter(to) : null;
-    const ok = await (footerHtml
-      ? sendAbandonedCartEmail({ to, name: o.user.name, orderId: o.id, couponCode: DEFAULT_COUPON_CODE, items, footerHtml })
+    const footerHtml = showcase && (await hasActiveConsent(to)) ? await buildCampaignFooter(to) : null;
+    const ok = await (footerHtml && showcase
+      ? sendAbandonedCartEmail({ to, name: o.user.name, orderId: o.id, couponCode: SHOWCASE_COUPON_CODE, discountLabel: couponValueLabel(showcase), items, footerHtml })
       : sendCartReminderEmail({ to, name: o.user.name, items })
     ).catch(() => false);
     if (ok) abandoned++;

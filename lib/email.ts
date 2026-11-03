@@ -339,15 +339,15 @@ export async function sendVerificationCodeEmail(data: { to: string; code: string
   });
 }
 
-/** Terk edilen ödeme denemesi için KAMPANYA sürümü (%5 kupon ile). Yalnızca ticari ileti onayı olanlara gönderilir; footerHtml (unvan, adres, çıkış bağlantısı) zorunludur. */
-export async function sendAbandonedCartEmail(data: { to: string; name: string; orderId: string; items: { title: string; quantity: number }[]; couponCode: string; footerHtml: string }) {
+/** Terk edilen ödeme denemesi için KAMPANYA sürümü (vitrin kuponunun gerçek değeriyle). Yalnızca ticari ileti onayı olanlara gönderilir; footerHtml (unvan, adres, çıkış bağlantısı) zorunludur. */
+export async function sendAbandonedCartEmail(data: { to: string; name: string; orderId: string; items: { title: string; quantity: number }[]; couponCode: string; discountLabel: string; footerHtml: string }) {
   return sendViaResend(process.env.RESEND_API_KEY, {
     to: [data.to],
-    subject: `Sepetinizdeki avize sizi bekliyor! Size özel %5 indirim: ${data.couponCode}`,
+    subject: `Sepetinizdeki avize sizi bekliyor! Size özel ${data.discountLabel} indirim: ${data.couponCode}`,
     html: `<div style="font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 28px; background: #fafafa; border: 1px solid #e5e5e5; border-radius: 16px; color: #171717;">
       <h1 style="text-align: center; font-size: 22px; letter-spacing: 1px; margin: 0 0 16px;">YILDIRIM AVİZE</h1>
       <h2 style="font-size: 17px; margin: 0 0 10px;">Sayın ${esc(data.name)},</h2>
-      <p style="font-size: 14px; line-height: 1.6;">Sepetinizdeki avize sizi bekliyor! Siparişinizi tamamlamanız için size özel <strong>%5 indirim</strong> kuponunuz:</p>
+      <p style="font-size: 14px; line-height: 1.6;">Sepetinizdeki avize sizi bekliyor! Siparişinizi tamamlamanız için size özel <strong>${esc(data.discountLabel)} indirim</strong> kuponunuz:</p>
       <p style="text-align: center; margin: 18px 0;"><span style="display: inline-block; font-family: monospace; font-size: 22px; font-weight: bold; letter-spacing: 3px; background: #fffbeb; border: 1px dashed #d97706; border-radius: 10px; padding: 10px 22px; color: #92400e;">${esc(data.couponCode)}</span></p>
       <ul style="font-size: 13px; color: #525252; padding-left: 18px;">${data.items.map((i) => `<li>${i.quantity}x ${esc(i.title)}</li>`).join("")}</ul>
       <p style="text-align: center; margin: 22px 0 8px;"><a href="${SITE_URL}/sepet" style="display: inline-block; background: #171717; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 14px; padding: 12px 28px; border-radius: 10px;">Siparişimi Tamamla</a></p>
