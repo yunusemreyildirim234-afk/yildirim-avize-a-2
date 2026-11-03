@@ -47,9 +47,6 @@ export function unitPriceFor(unit: number, quantity: number, tiers: BulkRule[] |
   return round2(Math.max(0, next));
 }
 
-export const lineTotalFor = (unit: number, quantity: number, tiers: BulkRule[] | null | undefined) =>
-  round2(unitPriceFor(unit, quantity, tiers) * quantity);
-
 /** "2 ve üzeri alımda %10 indirim" / "2+ alımda adet başı 500 ₺ indirim" */
 export function bulkLabel(rule: BulkRule): string {
   const v = rule.value.toLocaleString("tr-TR", rule.type === "FIXED" ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : undefined);
