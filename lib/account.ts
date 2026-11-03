@@ -17,11 +17,17 @@ export async function getSessionUserId() {
   return user.id;
 }
 
-/** Doğrulanmış müşteri oturumu (imza, süre, oturum sürümü). Sürüm okunamazsa oturum geçerli kalır (loglanır). */
+/** Doğrulanmış müşteri oturumu (imza, süre, oturum sürümü). Kullanıcı silinmişse null; sürüm okunamazsa (DB hatası) oturum geçerli kalır (loglanır). */
 export const getUserSession = cache(async (): Promise<UserSession | null> => {
   const session = await verifySession<UserSession>((await cookies()).get(USER_COOKIE)?.value);
   if (!session?.uid) return null;
-  return verifyVersioned(session, "sv", async () => (await readUser(session.uid))?.sessionVersion ?? null);
+  let deleted = false;
+  const valid = await verifyVersioned(session, "sv", async () => {
+    const user = await readUser(session.uid);
+    if (!user) deleted = true;
+    return user?.sessionVersion ?? null;
+  });
+  return deleted ? null : valid;
 });
 
 /** Kullanıcının güncel oturum sürümünü içeren yeni oturum belirteci. */
