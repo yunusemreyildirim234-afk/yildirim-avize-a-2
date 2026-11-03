@@ -13,7 +13,7 @@ import ContractModal from "@/components/ContractModal";
 import { invoiceError } from "@/lib/validation";
 import { ADDRESS_LINE } from "@/lib/site";
 import { rememberEmail, track } from "@/lib/track";
-import { activeTier, bulkLabel, lineTotalFor, unitPriceFor } from "@/lib/bulk-pricing";
+import { activeTier, bulkLabel, unitPriceFor, type BulkRule } from "@/lib/bulk-pricing";
 
 interface LocationItem {
   id: number;
@@ -22,7 +22,7 @@ interface LocationItem {
 
 export default function CartPage() {
   const router = useRouter();
-  const { cart, removeFromCart, emptyCart, updateQuantity, clearCart, totalPrice } = useCart();
+  const { cart, removeFromCart, emptyCart, updateQuantity, applyServerPrices, clearCart, totalPrice } = useCart();
 
   // Eski sepet kayıtlarında görsel yoksa ürün görselleri veritabanından tamamlanır
   const [images, setImages] = useState<Record<string, string>>({});
@@ -130,16 +130,86 @@ export default function CartPage() {
   const isPickup = shippingType === "BEYOGLU_MAGAZA_TESLIM";
   const effectiveAddress = isPickup ? ADDRESS_LINE : address;
 
-  // Tutarlar (sunucu aynı hesabı yapar)
-  const { shipping: shippingCost, couponDiscount, pickupDiscount, bankDiscount, total: finalTotal } = computeTotals({
+  // Yerel hesap (sunucuyla birebir: satır yuvarlanmaz, birim fiyat × adet). Sunucu teklifi gelene kadar yedek olarak kullanılır.
+  const lineTotal = (i: { price: number; quantity: number; bulk?: BulkRule[] | null }) => unitPriceFor(i.price, i.quantity, i.bulk) * i.quantity;
+  const localTotals = computeTotals({
     itemsTotal: totalPrice,
     shippingType,
     couponDiscount: couponDiscountFor(
       appliedCoupon,
-      cart.map((i) => ({ productId: i.productId, lineTotal: lineTotalFor(i.price, i.quantity, i.bulk) }))
+      cart.map((i) => ({ productId: i.productId, lineTotal: lineTotal(i) }))
     ),
     paymentMethod,
   });
+
+  // Sunucu fiyat teklifi (/api/cart/quote, salt okunur): gösterilen tutar buradan gelir
+  interface Quote {
+    lines: { variationId: string; available: boolean; stockShort?: boolean; title?: string; price?: number; bulk?: BulkRule[] }[];
+    totals: { itemsTotal: number; shipping: number; couponDiscount: number; pickupDiscount: number; bankDiscount: number; total: number };
+    coupon: { ok: boolean; error?: string } | null;
+  }
+  const quoteSig = JSON.stringify([cart.map((i) => [i.variationId, i.quantity]), appliedCoupon?.code ?? "", shippingType, paymentMethod, appliedCoupon ? email : ""]);
+  const [quote, setQuote] = useState<(Quote & { sig: string }) | null>(null);
+  const [priceNotice, setPriceNotice] = useState<{ from: number; to: number } | null>(null);
+  const [priceAcked, setPriceAcked] = useState(true);
+  const [issues, setIssues] = useState<string[]>([]);
+
+  const fetchQuote = async (signal?: AbortSignal): Promise<Quote | null> => {
+    try {
+      const res = await fetch("/api/cart/quote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal,
+        body: JSON.stringify({
+          items: cart.map((i) => ({ productId: i.productId, variationId: i.variationId, qty: i.quantity })),
+          coupon: appliedCoupon?.code,
+          email: appliedCoupon ? email : undefined,
+          deliveryMethod: shippingType,
+          paymentMethod,
+        }),
+      });
+      return res.ok ? ((await res.json()) as Quote) : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const kurus = (n: number) => Math.round(n * 100);
+  // Teklifi uygular: bayat fiyat/kademeler güncellenir, fark varsa kullanıcıya bildirilir ve onayı istenir
+  const absorbQuote = (q: Quote, shownTotal: number) => {
+    applyServerPrices(q.lines.filter((l) => l.available && typeof l.price === "number").map((l) => ({ variationId: l.variationId, price: l.price as number, bulk: l.bulk ?? [] })));
+    setIssues(q.lines.flatMap((l) => (!l.available ? ["Sepetinizdeki bir ürün artık satışta değil."] : l.stockShort ? [`"${l.title}" için yeterli stok yok.`] : [])));
+    if (appliedCoupon && q.coupon && !q.coupon.ok) {
+      setAppliedCoupon(null);
+      setCouponError(q.coupon.error || "Kupon artık geçerli değil.");
+    }
+    if (kurus(q.totals.total) !== kurus(shownTotal)) {
+      setPriceNotice({ from: shownTotal, to: q.totals.total });
+      setPriceAcked(false);
+      return true;
+    }
+    return false;
+  };
+
+  useEffect(() => {
+    if (cart.length === 0) return;
+    const ctrl = new AbortController();
+    const timer = setTimeout(async () => {
+      const q = await fetchQuote(ctrl.signal);
+      if (!q || ctrl.signal.aborted) return;
+      setQuote({ ...q, sig: quoteSig });
+      absorbQuote(q, localTotals.total);
+    }, 300);
+    return () => {
+      clearTimeout(timer);
+      ctrl.abort();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quoteSig]);
+
+  const fresh = quote !== null && quote.sig === quoteSig && cart.length > 0;
+  const { shipping: shippingCost, couponDiscount, pickupDiscount, bankDiscount, total: finalTotal } = fresh ? quote.totals : localTotals;
+  const itemsShown = fresh ? quote.totals.itemsTotal : totalPrice;
 
   const handleApplyCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -152,7 +222,7 @@ export default function CartPage() {
         body: JSON.stringify({
           code: couponInput,
           email,
-          lines: cart.map((i) => ({ productId: i.productId, lineTotal: lineTotalFor(i.price, i.quantity, i.bulk) })),
+          lines: cart.map((i) => ({ productId: i.productId, lineTotal: lineTotal(i) })),
         }),
       });
       const data = await res.json();
@@ -204,6 +274,30 @@ export default function CartPage() {
     const selectedStateObj = states.find((s) => Number(s.id) === Number(buyerStateId));
     const selectedCityObj = cities.find((c) => Number(c.id) === Number(buyerCityId));
 
+    if (priceNotice && !priceAcked) {
+      toast.error("Bazı fiyatlar güncellendi", { description: "Devam etmeden önce güncel tutarı onaylayın." });
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    if (issues.length > 0) {
+      toast.error("Sepetinizi kontrol edin", { description: issues[0] });
+      return;
+    }
+    // Ödemeye geçmeden önce sunucudan güncel teklif alınır; tutar farklıysa kullanıcı görmeden sipariş başlatılmaz
+    setLoading(true);
+    const latest = await fetchQuote();
+    if (latest && latest.lines.some((l) => !l.available || l.stockShort)) {
+      absorbQuote(latest, finalTotal);
+      setLoading(false);
+      toast.error("Sepetinizi kontrol edin", { description: "Bir ürün artık satışta değil veya stok yetersiz." });
+      return;
+    }
+    if (latest && absorbQuote(latest, finalTotal)) {
+      setLoading(false);
+      toast.error("Bazı fiyatlar güncellendi", { description: "Güncel tutarı kontrol edip tekrar deneyin." });
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
     track("CHECKOUT_START", `${cart.length} kalem • ${paymentMethod === "BANK_TRANSFER" ? "Havale/EFT" : "Kart"}`, "sepet/odeme");
     setLoading(true);
     try {
@@ -317,6 +411,27 @@ export default function CartPage() {
         <h1 className="text-3xl font-serif font-bold text-neutral-900 mb-8">
           Alışveriş Sepeti & Güvenli Ödeme
         </h1>
+
+        {priceNotice && (
+          <div role="alert" className="mb-6 rounded-2xl border border-amber-300 bg-amber-50 text-amber-950 text-sm p-4 space-y-2">
+            <p>
+              <strong>Bazı fiyatlar güncellendi.</strong> Önceki tutar {priceNotice.from.toLocaleString("tr-TR")} ₺ idi; güncel ödenecek tutar{" "}
+              <strong>{priceNotice.to.toLocaleString("tr-TR")} ₺</strong>.
+            </p>
+            {!priceAcked && (
+              <button type="button" onClick={() => setPriceAcked(true)} className="bg-neutral-900 hover:bg-amber-600 text-white text-xs font-semibold px-4 py-2 rounded-xl transition-colors">
+                Güncel tutarı gördüm
+              </button>
+            )}
+          </div>
+        )}
+        {issues.length > 0 && (
+          <div role="alert" className="mb-6 rounded-2xl border border-red-200 bg-red-50 text-red-800 text-xs p-4">
+            {issues.map((m, i) => (
+              <p key={i}>{m}</p>
+            ))}
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Sol Kolon */}
@@ -731,7 +846,7 @@ export default function CartPage() {
               <div className="space-y-2 pt-4 border-t border-neutral-100 text-xs">
                 <div className="flex justify-between text-neutral-600">
                   <span>Ürünler Toplamı</span>
-                  <span>{totalPrice.toLocaleString("tr-TR")} ₺</span>
+                  <span>{itemsShown.toLocaleString("tr-TR")} ₺</span>
                 </div>
                 <div className="flex justify-between text-neutral-600">
                   <span>Kargo / Teslimat</span>
@@ -786,7 +901,7 @@ export default function CartPage() {
 
               <button
                 type="submit"
-                disabled={loading || !agreePre || !agreeSales}
+                disabled={loading || !agreePre || !agreeSales || (priceNotice !== null && !priceAcked)}
                 className="w-full bg-neutral-900 hover:bg-amber-600 text-white py-3.5 px-4 rounded-xl transition-colors text-xs font-semibold shadow-sm mt-4 disabled:opacity-50"
               >
                 {loading
@@ -815,7 +930,7 @@ export default function CartPage() {
             isPickup,
             region: [cities.find((c) => Number(c.id) === Number(buyerCityId))?.name, states.find((st) => Number(st.id) === Number(buyerStateId))?.name].filter(Boolean).join(" / "),
             items: cart.map((i) => ({ title: i.title, variation: i.variationName, quantity: i.quantity, price: unitPriceFor(i.price, i.quantity, i.bulk) })),
-            itemsTotal: totalPrice,
+            itemsTotal: itemsShown,
             shippingLabel: SHIPPING_LABELS[shippingType] ?? shippingType,
             shippingCost,
             discount: couponDiscount + pickupDiscount + bankDiscount,

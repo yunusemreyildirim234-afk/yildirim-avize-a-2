@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { useAccountSync } from "@/context/useAccountSync";
 import { toast } from "sonner";
 import { track } from "@/lib/track";
-import { bulkTiersOf, lineTotalFor, type BulkRule } from "@/lib/bulk-pricing";
+import { bulkTiersOf, unitPriceFor, type BulkRule } from "@/lib/bulk-pricing";
 
 export interface CartItem {
   productId: string;
@@ -23,6 +23,8 @@ interface CartContextType {
   removeFromCart: (variationId: string) => void;
   emptyCart: () => void; // kullanıcı eylemi: geri alınabilir
   updateQuantity: (variationId: string, quantity: number) => void;
+  /** Sunucunun güncel birim fiyat/kademe bilgisini sepet kalemlerine yazar (bayat tarayıcı fiyatı korunmaz). */
+  applyServerPrices: (updates: { variationId: string; price: number; bulk: BulkRule[] }[]) => void;
   clearCart: () => void;
   totalItems: number;
   totalPrice: number;
@@ -132,8 +134,22 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const clearCart = () => setCart([]);
 
+  const applyServerPrices = (updates: { variationId: string; price: number; bulk: BulkRule[] }[]) => {
+    const map = new Map(updates.map((u) => [u.variationId, u]));
+    setCart((prev) => {
+      let changed = false;
+      const next = prev.map((i) => {
+        const u = map.get(i.variationId);
+        if (!u || (u.price === i.price && JSON.stringify(u.bulk) === JSON.stringify(i.bulk ?? []))) return i;
+        changed = true;
+        return { ...i, price: u.price, bulk: u.bulk };
+      });
+      return changed ? next : prev;
+    });
+  };
+
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const totalPrice = cart.reduce((sum, item) => sum + lineTotalFor(item.price, item.quantity, item.bulk), 0);
+  const totalPrice = cart.reduce((sum, item) => sum + unitPriceFor(item.price, item.quantity, item.bulk) * item.quantity, 0);
 
   return (
     <CartContext.Provider
@@ -143,6 +159,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         removeFromCart,
         emptyCart,
         updateQuantity,
+        applyServerPrices,
         clearCart,
         totalItems,
         totalPrice,

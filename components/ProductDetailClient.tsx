@@ -4,9 +4,9 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { HoverMagnifier, ImageLightbox } from "@/components/ImageZoom";
 import { useCart } from "@/context/CartContext";
-import { BANK_TRANSFER_DISCOUNT, FREE_SHIPPING_THRESHOLD, PICKUP_DISCOUNT } from "@/lib/pricing";
+import { BANK_TRANSFER_DISCOUNT, FREE_SHIPPING_THRESHOLD, PICKUP_DISCOUNT, SHIPPING_TYPES, computeTotals } from "@/lib/pricing";
 import { SITE_URL, WHATSAPP_NUMBER } from "@/lib/site";
-import { activeTier, bulkLabel, bulkTiersOf, lineTotalFor, unitPriceFor } from "@/lib/bulk-pricing";
+import { activeTier, bulkLabel, bulkTiersOf, unitPriceFor } from "@/lib/bulk-pricing";
 
 interface Variation {
   id: string;
@@ -47,6 +47,9 @@ export default function ProductDetailClient({ product }: { product: Product }) {
   const listShown = product.listPrice && product.listPrice > product.basePrice ? product.listPrice + (selectedVariation?.extraPrice || 0) : null;
   const bulk = bulkTiersOf(product);
   const unitNow = unitPriceFor(currentPrice, quantity, bulk);
+  // Sepet/sunucuyla aynı hesap: satır toplamı yuvarlanmaz; Havale indirimi computeTotals'tan gelir
+  const lineNow = unitNow * quantity;
+  const bankDiscountNow = computeTotals({ itemsTotal: lineNow, shippingType: SHIPPING_TYPES.HOME, paymentMethod: "BANK_TRANSFER" }).bankDiscount;
   const maxQty = selectedVariation ? Math.max(0, selectedVariation.stock) : 0;
   const outOfStock = !selectedVariation || maxQty <= 0;
   const freeShipping = currentPrice >= FREE_SHIPPING_THRESHOLD;
@@ -164,7 +167,7 @@ export default function ProductDetailClient({ product }: { product: Product }) {
               <span className="block text-sm text-neutral-500 line-through">{(currentPrice * quantity).toLocaleString("tr-TR")} ₺</span>
             )}
             <span className="text-3xl font-bold tabular-nums text-neutral-900">
-              {lineTotalFor(currentPrice, quantity, bulk).toLocaleString("tr-TR")} ₺
+              {lineNow.toLocaleString("tr-TR")} ₺
             </span>
             {bulk.length > 0 && (
               <ul className="mt-2 space-y-1">
@@ -177,7 +180,7 @@ export default function ProductDetailClient({ product }: { product: Product }) {
               </ul>
             )}
             <p className="mt-2 text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-1.5 w-fit">
-              Havale/EFT ile %{Math.round(BANK_TRANSFER_DISCOUNT * 100)} İndirimli: <strong>{Math.round(lineTotalFor(currentPrice, quantity, bulk) * (1 - BANK_TRANSFER_DISCOUNT)).toLocaleString("tr-TR")} ₺</strong>
+              Havale/EFT ile %{Math.round(BANK_TRANSFER_DISCOUNT * 100)} İndirimli: <strong>{(lineNow - bankDiscountNow).toLocaleString("tr-TR")} ₺</strong> <span className="text-emerald-700/80">(kupon, kargo ve mağaza indirimi hariç; diğer indirimlerle değişebilir)</span>
             </p>
             {freeShipping && (
               <p className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-emerald-600 rounded-full px-3 py-1">
