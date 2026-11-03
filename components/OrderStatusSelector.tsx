@@ -37,9 +37,13 @@ export default function OrderStatusSelector({ orderId, initialStatus, shippingTy
         }
         router.refresh();
       } else {
+        // Sunucu değişikliği reddetti (ör. eşzamanlı güncelleme): seçim eski duruma döner, güncel durum yeniden okunur
+        setStatus(previous);
         toast.error("Durum güncellenemedi", { description: data.error });
+        if (data.alreadyUpdated) router.refresh();
       }
     } catch {
+      setStatus(previous);
       toast.error("Bağlantı hatası oluştu.");
     } finally {
       setLoading(false);
