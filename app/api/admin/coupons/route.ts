@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { expiryFromDate } from "@/lib/coupon-expiry";
 import { adminGuard } from "@/lib/admin-guard";
 import { prisma } from "@/lib/db";
 import { sendCampaignCouponEmail } from "@/lib/email";
@@ -8,7 +9,7 @@ import { notifyCustomer } from "@/lib/notifications";
 const MAX_FIXED_AMOUNT = 100_000;
 const MAX_MIN_CART = 1_000_000;
 
-type Terms = { discountType: "PERCENT" | "FIXED"; discountPercent: number; discountAmount: number | null; minCartTotal: number | null; perUserLimit: number | null };
+type Terms = { expiresAt: Date | null; discountType: "PERCENT" | "FIXED"; discountPercent: number; discountAmount: number | null; minCartTotal: number | null; perUserLimit: number | null };
 
 /** İndirim türü/tutarı, minimum sepet ve kişi başı limit doğrulaması (oluşturma ve düzenleme ortak). */
 function parseTerms(body: Record<string, unknown>): Terms | { error: string } {
@@ -29,7 +30,14 @@ function parseTerms(body: Record<string, unknown>): Terms | { error: string } {
   }
   const minRaw = body.minCartTotal === undefined || body.minCartTotal === null || body.minCartTotal === "" ? 0 : Number(body.minCartTotal);
   if (!(Number.isFinite(minRaw) && minRaw >= 0 && minRaw <= MAX_MIN_CART)) return { error: "Minimum sepet tutarı 0 veya daha büyük olmalı." };
+  // Bitiş tarihi (isteğe bağlı, "YYYY-MM-DD"): boş/null = süresiz; seçilen günün sonuna (TR saati) kadar geçerli
+  let expiresAt: Date | null = null;
+  if (typeof body.expiresAt === "string" && body.expiresAt.trim()) {
+    expiresAt = expiryFromDate(body.expiresAt.trim());
+    if (!expiresAt) return { error: "Bitiş tarihi geçersiz." };
+  }
   return {
+    expiresAt,
     discountType: fixed ? "FIXED" : "PERCENT",
     discountPercent,
     discountAmount,

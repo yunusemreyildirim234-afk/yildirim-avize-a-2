@@ -195,6 +195,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
             id: c.id,
             code: c.code,
             discountPercent: c.discountPercent,
+            expiresAt: c.expiresAt ? c.expiresAt.toISOString() : null,
             discountType: c.discountType,
             discountAmount: c.discountAmount,
             minCartTotal: c.minCartTotal,

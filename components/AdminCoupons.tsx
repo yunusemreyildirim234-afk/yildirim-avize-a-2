@@ -1,5 +1,6 @@
 "use client";
 
+import { daysLeft, trDateOf, trToday } from "@/lib/coupon-expiry";
 import { Fragment, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown, Search, Tag, Users } from "lucide-react";
@@ -11,6 +12,7 @@ export interface CouponRow {
   discountType: string; // PERCENT | FIXED
   discountAmount: number | null;
   minCartTotal: number | null;
+  expiresAt: string | null; // ISO; boş = süresiz
   perUserLimit: number | null;
   maxUses: number;
   usedCount: number;
@@ -41,12 +43,14 @@ export default function AdminCoupons({ coupons, customers, products }: Props) {
   const [dType, setDType] = useState<"PERCENT" | "FIXED">("PERCENT");
   const [minCart, setMinCart] = useState("");
   const [perUserOnce, setPerUserOnce] = useState(false);
+  const [expires, setExpires] = useState(""); // YYYY-MM-DD, boş = süresiz
   // Düzenleme paneli (kod değişmez; yalnızca yeni siparişleri etkiler)
   const [editId, setEditId] = useState<string | null>(null);
   const [eType, setEType] = useState<"PERCENT" | "FIXED">("PERCENT");
   const [eValue, setEValue] = useState("");
   const [eMin, setEMin] = useState("");
   const [eOnce, setEOnce] = useState(false);
+  const [eExpires, setEExpires] = useState("");
   const [maxUses, setMaxUses] = useState("1");
 
   // Müşteri seçimi: "" = tüm müşteriler
@@ -97,8 +101,12 @@ export default function AdminCoupons({ coupons, customers, products }: Props) {
     }
   };
 
+  // Geçmiş tarih girilirse uyarı + onay
+  const pastOk = (d: string) => !d || d >= trToday() || confirm("Seçtiğiniz bitiş tarihi geçmişte; kupon hemen geçersiz olur. Yine de kaydedilsin mi?");
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!pastOk(expires)) return;
     const ok = await call("POST", {
       code,
       discountType: dType,
@@ -106,6 +114,7 @@ export default function AdminCoupons({ coupons, customers, products }: Props) {
       discountAmount: dType === "FIXED" ? Number(percent) : undefined,
       minCartTotal: minCart === "" ? 0 : Number(minCart),
       perUserOnce,
+      expiresAt: expires,
       maxUses: Number(maxUses),
       userEmail: customerEmail,
       productId,
@@ -114,6 +123,7 @@ export default function AdminCoupons({ coupons, customers, products }: Props) {
       setCode("");
       setMinCart("");
       setPerUserOnce(false);
+      setExpires("");
       setCustomerEmail("");
       setCustomerQuery("");
       setProductId("");
@@ -189,6 +199,11 @@ export default function AdminCoupons({ coupons, customers, products }: Props) {
               <div>
                 <label className="font-semibold text-neutral-700 block mb-1">Minimum Sepet (₺)</label>
                 <input type="number" min={0} step="any" value={minCart} onChange={(e) => setMinCart(e.target.value)} placeholder="Yok" className={inputCls} />
+              </div>
+              <div className="col-span-2">
+                <label className="font-semibold text-neutral-700 block mb-1">Bitiş Tarihi (isteğe bağlı)</label>
+                <input type="date" value={expires} onChange={(e) => setExpires(e.target.value)} className={inputCls} />
+                <span className="text-[10px] text-neutral-500">Boş = süresiz. Seçilen günün sonuna (23:59, Türkiye saati) kadar geçerlidir.</span>
               </div>
               <label className="col-span-2 flex items-center gap-2 font-semibold text-neutral-700">
                 <input type="checkbox" checked={perUserOnce} onChange={(e) => setPerUserOnce(e.target.checked)} className="accent-amber-600" />
@@ -308,6 +323,7 @@ export default function AdminCoupons({ coupons, customers, products }: Props) {
                   <th className="p-3">Kod</th>
                   <th className="p-3">İndirim</th>
                   <th className="p-3">Kullanım</th>
+                  <th className="p-3">Bitiş</th>
                   <th className="p-3">Müşteri</th>
                   <th className="p-3">Ürün</th>
                   <th className="p-3 text-right">İşlem</th>
@@ -316,7 +332,7 @@ export default function AdminCoupons({ coupons, customers, products }: Props) {
               <tbody className="divide-y divide-neutral-100">
                 {coupons.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="p-6 text-center text-neutral-400">
+                    <td colSpan={7} className="p-6 text-center text-neutral-400">
                       Henüz promosyon kodu yok.
                     </td>
                   </tr>
@@ -341,6 +357,22 @@ export default function AdminCoupons({ coupons, customers, products }: Props) {
                           {c.maxUses >= 1_000_000 ? "Sınırsız" : `Kalan: ${remaining}`}
                         </span>
                       </td>
+                      <td className="p-3">
+                        {c.expiresAt ? (
+                          <>
+                            {trDateOf(c.expiresAt).split("-").reverse().join(".")}
+                            {daysLeft(c.expiresAt) < 0 ? (
+                              <span className="block mt-0.5 w-fit rounded-full bg-red-100 text-red-800 text-[10px] font-bold px-2 py-0.5">Süresi doldu</span>
+                            ) : daysLeft(c.expiresAt) <= 7 ? (
+                              <span className="block mt-0.5 w-fit rounded-full bg-amber-100 text-amber-900 text-[10px] font-bold px-2 py-0.5">
+                                {daysLeft(c.expiresAt) === 0 ? "Bugün bitiyor" : `${daysLeft(c.expiresAt)} gün kaldı`}
+                              </span>
+                            ) : null}
+                          </>
+                        ) : (
+                          <span className="text-neutral-400">Süresiz</span>
+                        )}
+                      </td>
                       <td className="p-3 break-all">{c.userEmail ?? "Tüm müşteriler"}</td>
                       <td className="p-3">
                         {c.productTitle ? `#${c.productModelCode ?? "-"} ${c.productTitle}` : "Tüm ürünler"}
@@ -363,6 +395,7 @@ export default function AdminCoupons({ coupons, customers, products }: Props) {
                             setEValue(String(c.discountType === "FIXED" ? c.discountAmount ?? "" : c.discountPercent));
                             setEMin(c.minCartTotal ? String(c.minCartTotal) : "");
                             setEOnce(Boolean(c.perUserLimit));
+                            setEExpires(c.expiresAt ? trDateOf(c.expiresAt) : "");
                           }}
                           className="font-semibold text-amber-700 hover:underline mr-3"
                         >
@@ -380,11 +413,12 @@ export default function AdminCoupons({ coupons, customers, products }: Props) {
                     </tr>
                     {editId === c.id && (
                       <tr className="bg-amber-50/40">
-                        <td colSpan={6} className="p-3">
+                        <td colSpan={7} className="p-3">
                           <form
                             className="flex flex-wrap items-end gap-3"
                             onSubmit={async (e) => {
                               e.preventDefault();
+                              if (!pastOk(eExpires)) return;
                               const ok = await call("PATCH", {
                                 id: c.id,
                                 discountType: eType,
@@ -392,6 +426,7 @@ export default function AdminCoupons({ coupons, customers, products }: Props) {
                                 discountAmount: eType === "FIXED" ? Number(eValue) : undefined,
                                 minCartTotal: eMin === "" ? 0 : Number(eMin),
                                 perUserOnce: eOnce,
+                                expiresAt: eExpires,
                               });
                               if (ok) setEditId(null);
                             }}
@@ -410,6 +445,17 @@ export default function AdminCoupons({ coupons, customers, products }: Props) {
                             <div>
                               <label className="font-semibold text-neutral-700 block mb-1">Minimum Sepet (₺)</label>
                               <input type="number" min={0} step="any" value={eMin} onChange={(e) => setEMin(e.target.value)} placeholder="Yok" className={inputCls} />
+                            </div>
+                            <div>
+                              <label className="font-semibold text-neutral-700 block mb-1">Bitiş Tarihi</label>
+                              <div className="flex items-center gap-2">
+                                <input type="date" value={eExpires} onChange={(e) => setEExpires(e.target.value)} className={inputCls} />
+                                {eExpires && (
+                                  <button type="button" onClick={() => setEExpires("")} className="font-semibold text-amber-700 hover:underline whitespace-nowrap">
+                                    Süresiz yap
+                                  </button>
+                                )}
+                              </div>
                             </div>
                             <label className="flex items-center gap-2 font-semibold text-neutral-700 pb-2.5">
                               <input type="checkbox" checked={eOnce} onChange={(e) => setEOnce(e.target.checked)} className="accent-amber-600" />
