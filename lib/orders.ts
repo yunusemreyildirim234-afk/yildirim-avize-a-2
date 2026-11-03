@@ -1,17 +1,51 @@
 import { prisma } from "@/lib/db";
-import { sendOrderNotificationEmails } from "@/lib/email";
+import { sendOrderNotificationEmails, sendStockShortageEmail } from "@/lib/email";
+import { mergeByVariation } from "@/lib/stock-rules";
 import { createShipmentForOrder } from "@/lib/kargonomi";
 import { notifyAdmins, notifyCustomer } from "@/lib/notifications";
 import { cleanGuestEmail } from "@/lib/guest-email";
 
-/** Sipariş kalemleri kadar varyasyon stoğunu düşer (0'ın altına inmez); bir sipariş için yalnızca bir kez. */
+/**
+ * Sipariş kalemleri kadar varyasyon stoğunu düşer; bir sipariş için yalnızca bir kez.
+ * Bayrak ve tüm düşümler TEK transaction'dadır (biri başarısız olursa hepsi geri alınır).
+ * Düşüm koşulludur (stock >= adet). Koşul tutmazsa (ödeme alınmış ama stok yetersiz) sipariş REDDEDİLMEZ:
+ * stok 0'a çekilir ve yöneticiye uyarı gider.
+ */
 export async function deductOrderStock(orderId: string) {
-  const claimed = await prisma.order.updateMany({ where: { id: orderId, stockDeducted: false }, data: { stockDeducted: true } });
-  if (claimed.count === 0) return;
-  const items = await prisma.orderItem.findMany({ where: { orderId }, select: { variationId: true, quantity: true } });
-  for (const i of items) {
-    await prisma.$executeRaw`UPDATE "ProductVariation" SET "stock" = GREATEST(0, "stock" - ${i.quantity}) WHERE "id" = ${i.variationId}`;
-  }
+  const shortages: { variationId: string; quantity: number }[] = [];
+  await prisma.$transaction(async (tx) => {
+    const claimed = await tx.order.updateMany({ where: { id: orderId, stockDeducted: false }, data: { stockDeducted: true } });
+    if (claimed.count === 0) return;
+    const items = await tx.orderItem.findMany({ where: { orderId }, select: { variationId: true, quantity: true } });
+    for (const i of mergeByVariation(items)) {
+      const n = await tx.$executeRaw`UPDATE "ProductVariation" SET "stock" = "stock" - ${i.quantity} WHERE "id" = ${i.variationId} AND "stock" >= ${i.quantity}`;
+      if (n === 0) {
+        await tx.$executeRaw`UPDATE "ProductVariation" SET "stock" = 0 WHERE "id" = ${i.variationId}`;
+        shortages.push(i);
+      }
+    }
+  });
+  if (shortages.length > 0) await reportShortage(orderId, shortages).catch((err) => console.error("[stok] uyarı gönderilemedi:", (err as Error).message));
+}
+
+/** Ödemesi alınmış siparişte stok yetmediğinde yöneticiye e-posta + panel bildirimi; hata siparişi bozmaz. */
+async function reportShortage(orderId: string, shortages: { variationId: string; quantity: number }[]) {
+  const vars = await prisma.productVariation.findMany({
+    where: { id: { in: shortages.map((s) => s.variationId) } },
+    select: { id: true, variationValue: true, product: { select: { title: true } } },
+  });
+  const rows = shortages.map((s) => {
+    const v = vars.find((x) => x.id === s.variationId);
+    return { product: v?.product.title ?? s.variationId, color: v?.variationValue ?? "-", quantity: s.quantity };
+  });
+  console.error(`[stok] YETERSİZ STOK sipariş=${orderId}`, JSON.stringify(rows));
+  await notifyAdmins({
+    title: `Stok yetersiz: #${orderId.slice(0, 8)}`,
+    message: rows.map((r) => `${r.product} (${r.color}) x${r.quantity}`).join("; "),
+    type: "ORDER",
+    link: "/admin#siparisler",
+  });
+  await sendStockShortageEmail({ orderId, items: rows });
 }
 
 /** Düşülmüş sipariş stoğunu iade eder (iptal onayında). */

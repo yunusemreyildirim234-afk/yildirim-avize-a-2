@@ -403,6 +403,17 @@ export async function sendReceiptUploadedAdminEmail(data: { orderId: string; sen
   });
 }
 
+/** Ödemesi alınan siparişte stok yetmediğinde yöneticilere uyarı. */
+export async function sendStockShortageEmail(data: { orderId: string; items: { product: string; color: string; quantity: number }[] }) {
+  return sendViaResend(process.env.RESEND_API_KEY, {
+    to: ADMIN_EMAILS,
+    subject: `Stok yetersiz: #${data.orderId.slice(0, 8)}`,
+    html: `<p>Ödemesi alınan siparişte stok yetersiz kaldı; stok 0'a çekildi. Siparişi kontrol edip müşteriyle iletişime geçin.</p>
+      <p>Sipariş: <code>${esc(data.orderId)}</code></p>
+      <ul>${data.items.map((i) => `<li>${esc(i.product)} — ${esc(i.color)} — ${i.quantity} adet</li>`).join("")}</ul>`,
+  });
+}
+
 const REQUEST_LABEL: Record<string, string> = { CANCEL: "İptal", RETURN: "İade" };
 
 /** Müşteri iptal/iade talebi açınca yöneticilere bildirim. */
