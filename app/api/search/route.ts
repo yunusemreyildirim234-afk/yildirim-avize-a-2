@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { serverError } from "@/lib/api-error";
 import { prisma } from "@/lib/db";
+import { CARD_SELECT } from "@/lib/products";
 import { getLadderContext } from "@/lib/showcase";
 import { priceLadder } from "@/lib/price-ladder";
 import { rateLimit, tooMany } from "@/lib/rate-limit";
@@ -18,13 +19,10 @@ export async function GET(req: Request) {
 
   try {
     const code = q.trim();
-    const include = {
-      variations: { select: { id: true, variationValue: true, extraPrice: true, stock: true }, orderBy: { id: "asc" as const } },
-    };
-
+    // Yalnızca arama listesinin ve fiyat merdiveninin kullandığı alanlar (açıklama, görsel dizisi, Trendyol alanları çekilmez)
     // Başlıkta, açıklamada, kategoride, stok kodunda, barkodda veya model kodunda ara (büyük/küçük harf duyarsız)
     const [byCode, byText] = await Promise.all([
-      prisma.product.findFirst({ where: { active: true, modelCode: code }, include }),
+      prisma.product.findFirst({ where: { active: true, modelCode: code }, select: CARD_SELECT }),
       prisma.product.findMany({
         where: {
           active: true,
@@ -36,7 +34,7 @@ export async function GET(req: Request) {
             { variations: { some: { stockCode: { contains: code, mode: "insensitive" } } } },
           ],
         },
-        include,
+        select: CARD_SELECT,
         take: 6,
       }),
     ]);
