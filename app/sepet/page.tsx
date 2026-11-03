@@ -151,6 +151,8 @@ export default function CartPage() {
   const [priceNotice, setPriceNotice] = useState<{ from: number; to: number } | null>(null);
   const [priceAcked, setPriceAcked] = useState(true);
   const [issues, setIssues] = useState<string[]>([]);
+  const [quoteFailed, setQuoteFailed] = useState(false);
+  const [quoteRetry, setQuoteRetry] = useState(0);
 
   const fetchQuote = async (signal?: AbortSignal): Promise<Quote | null> => {
     try {
@@ -194,7 +196,12 @@ export default function CartPage() {
     const ctrl = new AbortController();
     const timer = setTimeout(async () => {
       const q = await fetchQuote(ctrl.signal);
-      if (!q || ctrl.signal.aborted) return;
+      if (ctrl.signal.aborted) return;
+      if (!q) {
+        setQuoteFailed(true);
+        return;
+      }
+      setQuoteFailed(false);
       setCapPct(q.maxTotalDiscountPct ?? null);
       setQuote({ ...q, sig: quoteSig });
       absorbQuote(q, localTotals.total);
@@ -204,7 +211,7 @@ export default function CartPage() {
       ctrl.abort();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [quoteSig]);
+  }, [quoteSig, quoteRetry]);
 
   const fresh = quote !== null && quote.sig === quoteSig && cart.length > 0;
   const { shipping: shippingCost, couponDiscount, pickupDiscount, bankDiscount, total: finalTotal } = fresh ? quote.totals : localTotals;
@@ -285,6 +292,12 @@ export default function CartPage() {
     // Ödemeye geçmeden önce sunucudan güncel teklif alınır; tutar farklıysa kullanıcı görmeden sipariş başlatılmaz
     setLoading(true);
     const latest = await fetchQuote();
+    if (!latest) {
+      setLoading(false);
+      setQuoteFailed(true);
+      toast.error("Fiyat doğrulanamadı, lütfen tekrar deneyin");
+      return;
+    }
     if (latest && latest.lines.some((l) => !l.available || l.stockShort)) {
       absorbQuote(latest, finalTotal);
       setLoading(false);
@@ -911,7 +924,7 @@ export default function CartPage() {
 
               <button
                 type="submit"
-                disabled={loading || !agreePre || !agreeSales || (priceNotice !== null && !priceAcked)}
+                disabled={loading || !fresh || !agreePre || !agreeSales || (priceNotice !== null && !priceAcked)}
                 className="w-full bg-neutral-900 hover:bg-amber-600 text-white py-3.5 px-4 rounded-xl transition-colors text-xs font-semibold shadow-sm mt-4 disabled:opacity-50"
               >
                 {loading
@@ -920,6 +933,15 @@ export default function CartPage() {
                   ? `🔒 Ödemeye Geç (${finalTotal.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺)`
                   : `Siparişi Tamamla (${finalTotal.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺)`}
               </button>
+
+              {quoteFailed && (
+                <p role="alert" className="text-xs text-red-600 font-medium text-center mt-2">
+                  Fiyat doğrulanamadı, lütfen tekrar deneyin.{" "}
+                  <button type="button" onClick={() => { setQuoteFailed(false); setQuoteRetry((n) => n + 1); }} className="underline font-semibold">
+                    Yeniden dene
+                  </button>
+                </p>
+              )}
 
               <div className="text-center pt-2 text-[10px] text-neutral-400">
                 🔒 256-Bit SSL & Kargonomi Entegre Lojistik Güvencesi
