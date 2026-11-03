@@ -6,7 +6,7 @@ import { prisma } from "@/lib/db";
 import { sendRequestDecisionEmail } from "@/lib/email";
 import { restoreOrderStock } from "@/lib/orders";
 import { releaseCoupon } from "@/lib/coupons";
-import { COUPON_FREE_STATES } from "@/lib/order-undo";
+import { planStatusChange } from "@/lib/order-undo";
 
 // Yönetici iptal/iade talebini onaylar veya reddeder (proxy yalnızca yöneticiye açar)
 async function POSTHandler(req: Request) {
@@ -34,11 +34,12 @@ async function POSTHandler(req: Request) {
     },
   });
 
-  // Onaylanan iptalde sipariş stoğu geri eklenir (bayrak koşullu: kartlı rezervasyon dahil, idempotent)
-  if (approve && isCancel) {
-    await restoreOrderStock(orderId);
-    // Kupon durum zaten PAYMENT_FAILED/CANCELLED/RETURNED ise daha önce iade edilmiştir
-    if (!COUPON_FREE_STATES.includes(order.status)) await releaseCoupon(order.couponCode).catch(() => {});
+  // Onaylanan iptalde VE iadede (RETURNED) stok/kupon iadesi order-status ile aynı karardan (planStatusChange): stok bayrak koşullu (idempotent),
+  // kupon durum zaten PAYMENT_FAILED/CANCELLED/RETURNED ise daha önce iade edilmiştir
+  if (approve) {
+    const plan = planStatusChange(order.status, isCancel ? "CANCELLED" : "RETURNED", order.stockDeducted);
+    if (plan.restoreStock) await restoreOrderStock(orderId);
+    if (plan.releaseCoupon) await releaseCoupon(order.couponCode).catch(() => {});
   }
 
   const emailed = await sendRequestDecisionEmail({
