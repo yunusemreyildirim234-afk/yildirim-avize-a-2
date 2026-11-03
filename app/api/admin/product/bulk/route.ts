@@ -142,11 +142,11 @@ export async function POST(req: Request) {
       if (!Number.isFinite(value)) return NextResponse.json({ error: "Geçerli bir sayı giriniz." }, { status: 400 });
       if (body.mode === "set") {
         if (value < 0) return NextResponse.json({ error: "Stok negatif olamaz." }, { status: 400 });
-        const res = await prisma.productVariation.updateMany({ where: { productId: { in: ids } }, data: { stock: value } });
+        await prisma.productVariation.updateMany({ where: { productId: { in: ids } }, data: { stock: value } });
         return NextResponse.json({ snapshot: await done(), success: true, updated: ids.length, skipped });
       }
       // Artırma/azaltma: 0'ın altına inmez
-      const res = await prisma.$executeRaw`UPDATE "ProductVariation" SET "stock" = GREATEST(0, "stock" + ${value}) WHERE "productId" = ANY(${ids})`;
+      await prisma.$executeRaw`UPDATE "ProductVariation" SET "stock" = GREATEST(0, "stock" + ${value}) WHERE "productId" = ANY(${ids})`;
       return NextResponse.json({ snapshot: await done(), success: true, updated: ids.length, skipped });
     }
 
@@ -180,7 +180,7 @@ export async function POST(req: Request) {
           .map((v: { productId: string }) => v.productId)
       );
       const targets = ids.filter((id) => !has.has(id));
-      const res = await prisma.productVariation.createMany({
+      await prisma.productVariation.createMany({
         data: targets.map((productId) => ({ productId, variationType: "Renk", variationValue: value, stock, extraPrice })),
       });
       const created = await prisma.productVariation.findMany({ where: { productId: { in: targets }, variationType: "Renk", variationValue: value }, select: { id: true } });
@@ -191,7 +191,7 @@ export async function POST(req: Request) {
     case "category": {
       const category = typeof body.category === "string" ? body.category.trim().slice(0, 80) : "";
       if (!category) return NextResponse.json({ error: "Koleksiyon adı zorunludur." }, { status: 400 });
-      const res = await prisma.product.updateMany({ where: { id: { in: ids } }, data: { category } });
+      await prisma.product.updateMany({ where: { id: { in: ids } }, data: { category } });
       return NextResponse.json({ snapshot: await done(), success: true, updated: ids.length, skipped });
     }
 
@@ -263,7 +263,7 @@ export async function POST(req: Request) {
       const data = body.reset === true
         ? { couponAllowed: true, pickupDiscountPct: null, transferDiscountPct: null }
         : { couponAllowed: body.couponAllowed !== false, pickupDiscountPct: pickupPct, transferDiscountPct: transferPct };
-      const res = await prisma.product.updateMany({ where: { id: { in: ids } }, data });
+      await prisma.product.updateMany({ where: { id: { in: ids } }, data });
       return NextResponse.json({ snapshot: await done(), success: true, updated: ids.length, skipped });
     }
 

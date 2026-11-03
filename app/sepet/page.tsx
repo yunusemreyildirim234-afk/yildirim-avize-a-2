@@ -18,7 +18,6 @@ import { invoiceError } from "@/lib/validation";
 import { ADDRESS_LINE } from "@/lib/site";
 import { rememberEmail, track } from "@/lib/track";
 import { activeTier, bulkLabel, type BulkRule } from "@/lib/bulk-pricing";
-import { PICKUP_DISCOUNT, BANK_TRANSFER_DISCOUNT } from "@/lib/pricing";
 
 interface LocationItem {
   id: number;

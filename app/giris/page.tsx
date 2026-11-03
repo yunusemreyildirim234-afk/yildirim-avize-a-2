@@ -398,7 +398,6 @@ export default function AuthPage() {
   );
 }
 function AdminLoginForm() {
-  const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -417,6 +416,7 @@ function AdminLoginForm() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Giriş başarısız.");
       // Tam sayfa yönlendirme: yeni çerez proxy tarafından ilk istekte görülür
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- bilinçli tam sayfa yönlendirme (çerez)
       window.location.assign("/admin");
     } catch (err) {
       setError((err as Error).message);
