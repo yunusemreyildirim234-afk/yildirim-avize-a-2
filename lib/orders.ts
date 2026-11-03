@@ -4,6 +4,10 @@ import { mergeByVariation } from "@/lib/stock-rules";
 import { createShipmentForOrder } from "@/lib/kargonomi";
 import { notifyAdmins, notifyCustomer } from "@/lib/notifications";
 import { cleanGuestEmail } from "@/lib/guest-email";
+import { restoreStockInTx, type RestoreTx } from "@/lib/stock-restore";
+
+// Havuz küçük (max 3): interaktif işlemler kısa sürede bitmeli veya hata vermeli
+const TX_OPTIONS = { maxWait: 5000, timeout: 10000 };
 
 /**
  * Sipariş kalemleri kadar varyasyon stoğunu düşer; bir sipariş için yalnızca bir kez.
@@ -24,7 +28,7 @@ export async function deductOrderStock(orderId: string) {
         shortages.push(i);
       }
     }
-  });
+  }, TX_OPTIONS);
   if (shortages.length > 0) await reportShortage(orderId, shortages).catch((err) => console.error("[stok] uyarı gönderilemedi:", (err as Error).message));
 }
 
@@ -50,12 +54,8 @@ async function reportShortage(orderId: string, shortages: { variationId: string;
 
 /** Düşülmüş sipariş stoğunu iade eder (iptal onayında). */
 export async function restoreOrderStock(orderId: string) {
-  const claimed = await prisma.order.updateMany({ where: { id: orderId, stockDeducted: true }, data: { stockDeducted: false } });
-  if (claimed.count === 0) return;
-  const items = await prisma.orderItem.findMany({ where: { orderId }, select: { variationId: true, quantity: true } });
-  for (const i of items) {
-    await prisma.productVariation.update({ where: { id: i.variationId }, data: { stock: { increment: i.quantity } } });
-  }
+  // Bayrak ve stok artışları tek transaction'da: biri başarısız olursa ikisi de geri alınır
+  await prisma.$transaction(async (tx) => restoreStockInTx(tx as unknown as RestoreTx, orderId), TX_OPTIONS);
 }
 
 type FullOrder = Awaited<ReturnType<typeof loadOrder>>;
