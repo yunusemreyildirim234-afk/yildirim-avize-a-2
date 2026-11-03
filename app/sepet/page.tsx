@@ -143,7 +143,7 @@ export default function CartPage() {
   interface Quote {
     lines: { variationId: string; available: boolean; stockShort?: boolean; title?: string; price?: number; bulk?: BulkRule[]; rules?: ItemRules }[];
     totals: { itemsTotal: number; shipping: number; couponDiscount: number; pickupDiscount: number; bankDiscount: number; total: number };
-    coupon: { ok: boolean; error?: string } | null;
+    coupon: { ok: boolean; error?: string; limited?: boolean } | null;
     maxTotalDiscountPct?: number | null;
   }
   const quoteSig = JSON.stringify([cart.map((i) => [i.variationId, i.quantity]), appliedCoupon?.code ?? "", shippingType, paymentMethod, appliedCoupon ? email : ""]);
@@ -179,7 +179,10 @@ export default function CartPage() {
   const absorbQuote = (q: Quote, shownTotal: number) => {
     applyServerPrices(q.lines.filter((l) => l.available && typeof l.price === "number").map((l) => ({ variationId: l.variationId, price: l.price as number, bulk: l.bulk ?? [], rules: l.rules })));
     setIssues(q.lines.flatMap((l) => (!l.available ? ["Sepetinizdeki bir ürün artık satışta değil."] : l.stockShort ? [`"${l.title}" için yeterli stok yok.`] : [])));
-    if (appliedCoupon && q.coupon && !q.coupon.ok) {
+    if (appliedCoupon && q.coupon?.limited) {
+      // Deneme sınırı: kupon düşürülmez, kod ve durum korunur; mesaj gösterilir
+      setCouponError(q.coupon.error || "Çok fazla deneme, lütfen sonra tekrar deneyin");
+    } else if (appliedCoupon && q.coupon && !q.coupon.ok) {
       setAppliedCoupon(null);
       setCouponError(q.coupon.error || "Kupon artık geçerli değil.");
     }
@@ -296,6 +299,12 @@ export default function CartPage() {
       setLoading(false);
       setQuoteFailed(true);
       toast.error("Fiyat doğrulanamadı, lütfen tekrar deneyin");
+      return;
+    }
+    if (appliedCoupon && latest?.coupon?.limited) {
+      setLoading(false);
+      setCouponError(latest.coupon.error || "Çok fazla deneme, lütfen sonra tekrar deneyin");
+      toast.error("Kupon şu an doğrulanamıyor", { description: "Lütfen biraz sonra tekrar deneyin." });
       return;
     }
     if (latest && latest.lines.some((l) => !l.available || l.stockShort)) {
@@ -577,7 +586,7 @@ export default function CartPage() {
                     <span>
                       <strong>{appliedCoupon.code}</strong> kuponu uygulandı:{" "}
                       <strong>
-                        %{appliedCoupon.discountPercent} İndirim{appliedCoupon.productId ? " (seçili ürün)" : ""}
+                        {appliedCoupon.discountType === "FIXED" && appliedCoupon.discountAmount ? `${appliedCoupon.discountAmount.toLocaleString("tr-TR")} ₺` : `%${appliedCoupon.discountPercent}`} İndirim{appliedCoupon.productId ? " (seçili ürün)" : ""}
                       </strong>
                     </span>
                   </div>
