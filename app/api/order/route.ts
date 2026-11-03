@@ -6,7 +6,7 @@ import { finalizeOrder } from "@/lib/orders";
 import { getPaytrToken } from "@/lib/paytr";
 import { SHIPPING_LABELS } from "@/lib/pricing";
 import { getSessionUserId } from "@/lib/account";
-import { invoiceError } from "@/lib/validation";
+import { EMAIL_RE, invoiceError } from "@/lib/validation";
 import { bulkTiersOf } from "@/lib/bulk-pricing";
 import { priceCart } from "@/lib/cart-pricing";
 import { releaseCoupon, reserveCoupon, validateCoupon } from "@/lib/coupons";
@@ -36,6 +36,20 @@ export async function POST(req: Request) {
     if (items.length === 0) return NextResponse.json({ error: "Sepetiniz boş olamaz" }, { status: 400 });
     if (!email || !name || !phone || !address) {
       return NextResponse.json({ error: "Ad, e-posta, telefon ve adres zorunludur." }, { status: 400 });
+    }
+    // Girdi doğrulama (tip ve uzunluk sınırları)
+    if (items.length > 50) return NextResponse.json({ error: "Sepette en fazla 50 kalem olabilir." }, { status: 400 });
+    if (items.some((i) => !i || typeof i.variationId !== "string" || !Number.isInteger(i.quantity) || i.quantity < 1 || i.quantity > 100)) {
+      return NextResponse.json({ error: "Sepetteki ürün adetleri geçersiz." }, { status: 400 });
+    }
+    if (typeof name !== "string" || name.length > 120 || typeof phone !== "string" || phone.length > 30 || typeof address !== "string" || address.length > 500) {
+      return NextResponse.json({ error: "Ad, telefon veya adres geçersiz ya da çok uzun." }, { status: 400 });
+    }
+    if (typeof email !== "string" || email.length > 254 || !EMAIL_RE.test(email)) {
+      return NextResponse.json({ error: "Geçerli bir e-posta adresi giriniz." }, { status: 400 });
+    }
+    if (buyerStateId !== undefined && buyerStateId !== null && !Number.isInteger(buyerStateId)) {
+      return NextResponse.json({ error: "Geçersiz il bilgisi." }, { status: 400 });
     }
     // Yasal onaylar, fatura bilgileri ve sipariş notu
     if (body.consent !== true) {
