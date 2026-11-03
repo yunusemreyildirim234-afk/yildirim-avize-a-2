@@ -11,6 +11,7 @@ import { getUserSession } from "@/lib/account";
 import { reviewEligibility, type ReviewEligibility } from "@/lib/reviews";
 import JsonLd from "@/components/JsonLd";
 import { CATEGORIES, SITE_URL } from "@/lib/site";
+import { defaultOffer, feedBrand } from "@/lib/feed";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -66,8 +67,8 @@ export default async function ProductDetailPage({ params }: Props) {
   });
   const ratingAvg = reviews.length ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length : 0;
   const category = CATEGORIES.find((c) => c.dbCategory === product.category);
-  const inStock = product.variations.some((v) => v.stock > 0);
-  const prices = product.variations.map((v) => product.basePrice + v.extraPrice);
+  // Fiyat/stok/marka Google feed'iyle (lib/feed.ts) ve sayfadaki varsayılan seçimle AYNI kaynaktan gelir
+  const offer = defaultOffer(product);
   const productImages = [product.imageUrl, ...product.images].filter((u): u is string => Boolean(u)).map((u) => (u.startsWith("/") ? `${SITE_URL}${u}` : u));
   const productSchema = {
     "@context": "https://schema.org",
@@ -75,7 +76,7 @@ export default async function ProductDetailPage({ params }: Props) {
     name: product.title,
     description: product.description || product.title,
     category: product.category,
-    brand: { "@type": "Brand", name: "Yıldırım Avize" },
+    brand: { "@type": "Brand", name: feedBrand(product.brand) },
     url: `${SITE_URL}/urun/${id}`,
     ...(productImages.length ? { image: productImages.slice(0, 6) } : {}),
     ...(product.modelCode ? { sku: product.modelCode } : {}),
@@ -95,9 +96,9 @@ export default async function ProductDetailPage({ params }: Props) {
       "@type": "Offer",
       url: `${SITE_URL}/urun/${id}`,
       priceCurrency: "TRY",
-      price: Math.min(product.basePrice, ...prices),
+      price: offer.price,
       seller: { "@type": "Organization", name: "Yıldırım Avize" },
-      availability: inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      availability: offer.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
       itemCondition: "https://schema.org/NewCondition",
     },
   };
