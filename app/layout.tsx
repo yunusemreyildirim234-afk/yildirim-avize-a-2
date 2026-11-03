@@ -10,7 +10,8 @@ import { CartProvider } from "@/context/CartContext";
 import { WishlistProvider } from "@/context/WishlistContext";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 
-const inter = Inter({ subsets: ["latin"] });
+// Türkçe karakterler (ğ, ş, ı, İ) latin-ext alt kümesindedir; yoksa sistem yazı tipine düşer
+const inter = Inter({ subsets: ["latin", "latin-ext"] });
 
 const DESCRIPTION =
   "Beyoğlu Şişhane'den kristal, modern ve klasik avize modelleri. Üst düzey korumalı koliyle kargo veya mağazadan teslim.";
