@@ -7,7 +7,14 @@ declare global {
 
 // Prisma 7: sorgular sürücü adaptörü (node-pg) üzerinden gider. Neon bağlantı dizesi ortamdan okunur.
 function createClient() {
-  return new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) });
+  // Sunucusuz ortamda her örnek az bağlantı tutsun (Neon pooler); bekleyen bağlantılar kapansın, bağlantı kurulamazsa hızlı hata ver.
+  const adapter = new PrismaPg({
+    connectionString: process.env.DATABASE_URL,
+    max: 3,
+    connectionTimeoutMillis: 10_000,
+    idleTimeoutMillis: 30_000,
+  });
+  return new PrismaClient({ adapter });
 }
 
 export const prisma = globalThis.prismaInstance ?? createClient();
