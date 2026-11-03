@@ -12,6 +12,8 @@ import { reviewEligibility, type ReviewEligibility } from "@/lib/reviews";
 import JsonLd from "@/components/JsonLd";
 import { CATEGORIES, SITE_URL } from "@/lib/site";
 import { defaultOffer, feedBrand } from "@/lib/feed";
+import { GtmEvent } from "@/components/GtmEvent";
+import { gaItem, viewItemEvent } from "@/lib/gtm-events";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -107,6 +109,7 @@ export default async function ProductDetailPage({ params }: Props) {
     <main className="min-h-screen bg-neutral-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
         <JsonLd data={productSchema} />
+        <GtmEvent event={viewItemEvent([gaItem({ id: product.id, name: product.title, price: offer.price, category: product.category, brand: feedBrand(product.brand), variant: offer.variation?.variationValue })])} />
         <Breadcrumbs
           className="text-neutral-500 mb-8"
           items={[

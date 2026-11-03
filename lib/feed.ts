@@ -83,7 +83,7 @@ export function absoluteHttps(u: string | null | undefined, site: string): strin
 }
 
 /** Ürün sayfasının varsayılan seçimiyle aynı: ilk stoklu varyasyon (yoksa ilki); görünen fiyat = taban + fark; üstü çizili liste fiyatı yalnız taban fiyattan yüksekse. */
-export function defaultOffer(p: Pick<FeedProduct, "basePrice" | "listPrice" | "variations">) {
+export function defaultOffer<V extends FeedVariation>(p: { basePrice: number; listPrice: number | null; variations: V[] }) {
   const v = p.variations.find((x) => x.stock > 0) ?? p.variations[0] ?? null;
   const extra = v?.extraPrice ?? 0;
   const price = p.basePrice + extra;

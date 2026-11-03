@@ -4,6 +4,8 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { useAccountSync } from "@/context/useAccountSync";
 import { toast } from "sonner";
 import { track } from "@/lib/track";
+import { gtmPush } from "@/lib/gtm";
+import { addToCartEvent, gaItem } from "@/lib/gtm-events";
 import { bulkTiersOf, type BulkRule } from "@/lib/bulk-pricing";
 import { priceCart, type CartPriceLine } from "@/lib/cart-pricing";
 
@@ -95,6 +97,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const addToCart = (newItem: CartItem) => {
     track("CART_ADD", `${newItem.title} (${newItem.variationName}) x${newItem.quantity}`);
+    gtmPush(addToCartEvent([gaItem({ id: newItem.productId, name: newItem.title, price: newItem.price, quantity: newItem.quantity, variant: newItem.variationName })]));
     setCart((prev) => {
       const existing = prev.find((item) => item.variationId === newItem.variationId);
       if (existing) {

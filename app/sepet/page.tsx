@@ -18,6 +18,8 @@ import ContractModal from "@/components/ContractModal";
 import { invoiceError } from "@/lib/validation";
 import { ADDRESS_LINE } from "@/lib/site";
 import { rememberEmail, track } from "@/lib/track";
+import { gtmPush } from "@/lib/gtm";
+import { beginCheckoutEvent, gaItem } from "@/lib/gtm-events";
 import { activeTier, bulkLabel, type BulkRule } from "@/lib/bulk-pricing";
 import { forgetCardOrder, previousCardOrderId, rememberCardOrder } from "@/lib/pending-card-order";
 
@@ -339,6 +341,7 @@ export default function CartPage() {
       return;
     }
     track("CHECKOUT_START", `${cart.length} kalem • ${paymentMethod === "BANK_TRANSFER" ? "Havale/EFT" : "Kart"}`, "sepet/odeme");
+    gtmPush(beginCheckoutEvent(cart.map((i) => gaItem({ id: i.productId, name: i.title, price: i.price, quantity: i.quantity, variant: i.variationName }))));
     setLoading(true);
     try {
       const res = await fetch("/api/order", {

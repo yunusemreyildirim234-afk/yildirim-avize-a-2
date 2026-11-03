@@ -6,6 +6,10 @@ import ClearCart from "@/components/ClearCart";
 import BankTransferCard from "@/components/BankTransferCard";
 import ReceiptUpload from "@/components/ReceiptUpload";
 import { maskName } from "@/lib/mask-name";
+import { GtmAwaitPayment, GtmEvent } from "@/components/GtmEvent";
+import { gaItem, isPurchasable, purchaseEvent, purchaseOnceKey } from "@/lib/gtm-events";
+import { feedBrand } from "@/lib/feed";
+import { FREE_SHIPPING_THRESHOLD, SHIPPING_COST } from "@/lib/pricing";
 
 export const metadata: Metadata = {
   title: "Siparişiniz Alındı",
@@ -23,9 +27,24 @@ export default async function OrderConfirmationPage({ params }: { params: Promis
   const isPickup = order.shippingType === "BEYOGLU_MAGAZA_TESLIM";
   const awaitingPayment = order.status === "AWAITING_PAYMENT";
   const paymentFailed = order.status === "PAYMENT_FAILED";
+  // Ölçüm (GTM): yalnızca ödemesi alınmış kartlı veya oluşturulmuş havale siparişi; kargo = sabit kural (mağazadan teslim 0, eşik üstü 0, aksi 100 ₺)
+  const itemsSum = order.items.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
+  const shippingFee = isPickup || itemsSum >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
+  const purchase = isPurchasable(order.status)
+    ? purchaseEvent({
+        id: order.id,
+        total: order.totalAmount,
+        shipping: shippingFee,
+        paymentType: order.paymentMethod,
+        coupon: order.couponCode,
+        items: order.items.map((i) => gaItem({ id: i.variation.product.id, name: i.variation.product.title, price: i.unitPrice, quantity: i.quantity, category: i.variation.product.category, brand: feedBrand(i.variation.product.brand), variant: i.variation.variationValue })),
+      })
+    : null;
 
   return (
     <main className="min-h-screen bg-neutral-50 py-12 sm:py-16 px-4">
+      {purchase && <GtmEvent event={purchase} onceKey={purchaseOnceKey(order.id)} />}
+      {awaitingPayment && <GtmAwaitPayment />}
       {!paymentFailed && order.status !== "CANCELLED" && order.status !== "RETURNED" && <ClearCart orderId={order.id} createdAt={order.createdAt.toISOString()} />}
       <div className="max-w-xl mx-auto bg-white rounded-3xl border border-neutral-200 p-6 sm:p-12 text-center space-y-6 shadow-sm">
         <div

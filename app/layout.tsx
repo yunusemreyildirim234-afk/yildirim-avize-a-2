@@ -6,6 +6,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import CookieBanner from "@/components/CookieBanner";
+import GoogleTagManager from "@/components/GoogleTagManager";
 import { CartProvider } from "@/context/CartContext";
 import { WishlistProvider } from "@/context/WishlistContext";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
@@ -82,6 +83,7 @@ export default function RootLayout({
             <Footer />
             <WhatsAppButton />
             <CookieBanner />
+            <GoogleTagManager />
             <Toaster position="top-right" richColors closeButton />
           </WishlistProvider>
         </CartProvider>
