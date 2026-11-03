@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { serverError, badRequest } from "@/lib/api-error";
 import { prisma } from "@/lib/db";
 import { rateLimit, tooMany } from "@/lib/rate-limit";
-import { bumpUserSessionVersion, getSessionUserId, issueUserToken } from "@/lib/account";
+import { bumpUserSessionVersion, getSessionUserId, getUserSession, issueUserToken } from "@/lib/account";
 import { getCustomerWithOrders } from "@/lib/customer";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { sendVerificationCodeEmail } from "@/lib/email";
@@ -16,6 +16,15 @@ const WEAK = "Şifre en az 8 karakter olmalı; büyük harf, küçük harf, raka
 async function respond(userId: string) {
   const res = NextResponse.json({ success: true, user: await getCustomerWithOrders(userId) });
   res.cookies.set(USER_COOKIE, await issueUserToken(userId), cookieOptions);
+  return res;
+}
+
+/** Şifre değişince: eski tüm oturumlar geçersiz olur; isteği yapanın kendi oturumu (varsa) yeni sürümle yenilenir. */
+async function revokeOthers(userId: string, keepCurrent: boolean) {
+  const picture = (await getUserSession())?.picture;
+  await bumpUserSessionVersion(userId);
+  const res = NextResponse.json({ success: true });
+  if (keepCurrent) res.cookies.set(USER_COOKIE, await issueUserToken(userId, picture ? { picture } : {}), cookieOptions);
   return res;
 }
 
@@ -87,8 +96,9 @@ export async function POST(req: Request) {
       if (!isStrongPassword(password)) return NextResponse.json({ error: WEAK }, { status: 400 });
       const user = await findByEmail(email);
       if (!user) return NextResponse.json({ error: "Hesap bulunamadı." }, { status: 404 });
+      const wasLoggedIn = (await getSessionUserId()) === user.id;
       await prisma.user.update({ where: { id: user.id }, data: { password: hashPassword(password) } });
-      return NextResponse.json({ success: true });
+      return revokeOthers(user.id, wasLoggedIn);
     }
 
     // Profilden şifre değiştirme: oturum + e-posta kodu kanıtı
@@ -102,7 +112,7 @@ export async function POST(req: Request) {
       }
       if (!isStrongPassword(password)) return NextResponse.json({ error: WEAK }, { status: 400 });
       await prisma.user.update({ where: { id: user.id }, data: { password: hashPassword(password) } });
-      return NextResponse.json({ success: true });
+      return revokeOthers(user.id, true);
     }
 
     // 2FA'yı kapat (oturum açık kullanıcı)

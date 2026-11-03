@@ -93,6 +93,18 @@ export default function AuthPage() {
     router.refresh();
   };
 
+  const handleLogoutAll = async () => {
+    if (!confirm("Tüm cihazlardaki oturumlarınız kapatılacak (bu cihazda açık kalırsınız). Devam edilsin mi?")) return;
+    try {
+      const res = await fetch("/api/auth/logout-all", { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "İşlem başarısız.");
+      toast.success("Diğer tüm cihazlardaki oturumlar kapatıldı.");
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
+  };
+
   if (user) {
     return (
       <main className="min-h-screen bg-neutral-50 py-16 px-4 sm:px-6 lg:px-8">
@@ -108,12 +120,20 @@ export default function AuthPage() {
               <p className="text-xs text-neutral-500 mt-0.5">{user.email}</p>
             </div>
 
-            <button
-              onClick={handleLogout}
-              className="text-xs font-semibold bg-neutral-100 hover:bg-neutral-200 text-neutral-700 px-4 py-2 rounded-xl transition-colors w-fit"
-            >
-              Çıkış Yap
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={handleLogoutAll}
+                className="text-xs font-semibold bg-neutral-100 hover:bg-neutral-200 text-neutral-700 px-4 py-2 rounded-xl transition-colors w-fit"
+              >
+                Tüm cihazlardan çıkış yap
+              </button>
+              <button
+                onClick={handleLogout}
+                className="text-xs font-semibold bg-neutral-100 hover:bg-neutral-200 text-neutral-700 px-4 py-2 rounded-xl transition-colors w-fit"
+              >
+                Çıkış Yap
+              </button>
+            </div>
           </div>
 
           <div id="siparisler" className="bg-white rounded-3xl border border-neutral-200 p-8 shadow-sm space-y-6 scroll-mt-24">
