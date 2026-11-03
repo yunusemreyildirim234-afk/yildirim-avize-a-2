@@ -125,11 +125,12 @@ export interface CouponRow {
   discountType: string;
   discountPercent: number;
   discountAmount: number | null;
+  productId?: string | null; // doluysa kupon yalnızca o üründe geçer (ana sayfa kartında genel kupon gibi gösterilmez)
 }
 
-/** Herkese açık kart için kupon kullanılabilir mi: aktif + süresi geçmemiş + limiti dolmamış + kişiye özel değil. */
+/** Herkese açık kart için kupon kullanılabilir mi: aktif + süresi geçmemiş + limiti dolmamış + kişiye özel değil + ürüne özel değil. */
 export function couponUsable(c: CouponRow | undefined | null, now: Date = new Date()): boolean {
-  if (!c || !c.active || c.userEmail) return false;
+  if (!c || !c.active || c.userEmail || c.productId) return false;
   if (c.expiresAt && now.getTime() > new Date(c.expiresAt).getTime()) return false;
   return c.usedCount < c.maxUses;
 }
