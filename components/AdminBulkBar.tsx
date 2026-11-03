@@ -74,7 +74,7 @@ export default function AdminBulkBar({ ids, scopes, onApplied, extraCategories, 
         alert(dry.data.error || "İşlem başarısız.");
         return;
       }
-      const d = dry.data as { selected: number; apply: number; skipped: number; showcase: { auto: boolean; before: number; after: number; revertsToAuto: boolean } | null };
+      const d = dry.data as { selected: number; apply: number; skipped: number; hidden?: number; showcase: { auto: boolean; before: number; after: number; revertsToAuto: boolean } | null };
       if (d.apply === 0) {
         alert("Seçili ürünlerin hepsi zaten bu durumda.");
         return;
@@ -89,6 +89,10 @@ export default function AdminBulkBar({ ids, scopes, onApplied, extraCategories, 
       } else if (d.showcase?.revertsToAuto) {
         msg += "\n\nBu işlem elle işaretli son ürünü kaldırır; öne çıkanlar otomatik seçime dönecek.";
       }
+      const hiddenNote = d.hidden ? `${d.hidden} ürün pasif olduğu için sitede görünmeyecek.` : "";
+      if (hiddenNote) msg += `
+
+⚠ ${hiddenNote} (İşlem yine de uygulanır.)`;
       if (!confirm(msg)) return;
 
       const { ok, data } = await post(payload);
@@ -97,7 +101,8 @@ export default function AdminBulkBar({ ids, scopes, onApplied, extraCategories, 
         return;
       }
       if (data.snapshot) onApplied(data.snapshot, String(payload.label ?? TAB_LABEL[tab]));
-      alert(`✓ ${resultMessage(data.updated ?? 0, data.skipped ?? 0)}`);
+      alert(`✓ ${resultMessage(data.updated ?? 0, data.skipped ?? 0)}${hiddenNote ? `
+⚠ ${hiddenNote}` : ""}`);
       router.refresh();
       onDone();
     } catch {

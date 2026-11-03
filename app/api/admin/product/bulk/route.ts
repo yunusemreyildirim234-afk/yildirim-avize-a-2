@@ -125,7 +125,10 @@ export async function POST(req: Request) {
   const plan = await planBulk(body, selected);
   const ids = plan.targets;
   const skipped = selected.length - ids.length;
-  if (body.dryRun === true) return NextResponse.json({ dryRun: true, selected: selected.length, apply: ids.length, skipped, showcase: plan.info ?? null });
+  // Vitrine/indirime giren ama PASİF olan ürünler sitede (getProducts: active=true) görünmez; işlem engellenmez, yalnızca uyarılır
+  const exposes = body.action === "discount" || body.action === "tier" || (body.action === "showcase" && body.value === true);
+  const hidden = exposes && ids.length ? await prisma.product.count({ where: { id: { in: ids }, active: false } }) : 0;
+  if (body.dryRun === true) return NextResponse.json({ dryRun: true, selected: selected.length, apply: ids.length, skipped, hidden, showcase: plan.info ?? null });
   if (ids.length === 0) return NextResponse.json({ success: true, updated: ids.length, skipped });
 
   // Geri Al için işlem öncesi durum: yalnızca gerçekten değişecek ürünler (otomatik işaretlenenler dahil)

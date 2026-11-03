@@ -29,6 +29,7 @@ interface Product {
   modelCode?: string | null;
   images?: string[];
   listPrice?: number | null;
+  active?: boolean;
   isFeatured?: boolean;
   isBestSeller?: boolean;
   couponAllowed?: boolean;
@@ -77,7 +78,8 @@ function DiscountBadges({ product, onRemove, disabled }: { product: Product; onR
   const tiers = bulkTiersOf(product);
   const badge = "inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded";
   const x = "ml-0.5 rounded-sm px-1 leading-none hover:bg-black/10 disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-amber-600";
-  if (!old && tiers.length === 0 && !product.isFeatured && !product.isBestSeller && product.couponAllowed !== false && product.pickupDiscountPct == null && product.transferDiscountPct == null) return null;
+  const hidden = product.active === false && Boolean(old || tiers.length > 0 || product.isFeatured || product.isBestSeller);
+  if (!hidden && !old && tiers.length === 0 && !product.isFeatured && !product.isBestSeller && product.couponAllowed !== false && product.pickupDiscountPct == null && product.transferDiscountPct == null) return null;
   return (
     <div className="flex flex-wrap items-center gap-1 mt-1">
       {old && (
@@ -104,6 +106,7 @@ function DiscountBadges({ product, onRemove, disabled }: { product: Product; onR
       {product.pickupDiscountPct != null && <span className={`${badge} bg-zinc-100 text-zinc-800`}>Mağaza %{product.pickupDiscountPct}</span>}
       {product.transferDiscountPct != null && <span className={`${badge} bg-zinc-100 text-zinc-800`}>Havale %{product.transferDiscountPct}</span>}
       {product.isBestSeller && <span className={`${badge} bg-emerald-100 text-emerald-900`}>Çok Satan</span>}
+      {hidden && <span className={`${badge} bg-red-100 text-red-800`}>Sitede görünmüyor (pasif)</span>}
     </div>
   );
 }
