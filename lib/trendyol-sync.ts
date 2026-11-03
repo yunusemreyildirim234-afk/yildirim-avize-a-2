@@ -76,11 +76,13 @@ export async function applyPlan(plan: Plan, secili?: string[]): Promise<ApplyRes
   const newProducts = chosen.filter((p) => p.create);
   const productRows = newProducts.map((p) => ({ ...(p.create!.data as Prisma.ProductCreateManyInput), id: randomUUID(), trendyolMainId: p.mainId, syncSnapshot: p.create!.snapshot as Json, lastSyncedAt: now }));
   const idOf = new Map(newProducts.map((p, i) => [p.mainId, productRows[i].id as string]));
-  res.hata += await inChunks(productRows, async (c) => { await prisma.product.createMany({ data: c, skipDuplicates: true }); res.yeniUrun += c.length; });
+  // Yalnızca BAŞARIYLA eklenen yeni ürünlerin kimlikleri tutulur: ürün eklenemediyse varyasyonları eklenmez (FK hatası ilgisiz varyasyonların grubunu da düşürürdü); ürün hatası zaten hata sayacındadır
+  const created = new Set<string>();
+  res.hata += await inChunks(productRows, async (c) => { await prisma.product.createMany({ data: c, skipDuplicates: true }); res.yeniUrun += c.length; for (const r of c) created.add(r.id as string); });
   const varRows: Prisma.ProductVariationCreateManyInput[] = [];
   for (const p of chosen) {
     const pid = p.id ?? idOf.get(p.mainId);
-    if (!pid) continue;
+    if (!pid || (!p.id && !created.has(pid))) continue;
     for (const v of p.variations) {
       if (!v.create) continue;
       varRows.push({ ...(v.create.data as Prisma.ProductVariationCreateManyInput), productId: pid, variationType: "Seçenek", syncSnapshot: v.create.snapshot as Json, syncStock: v.create.syncStock });
