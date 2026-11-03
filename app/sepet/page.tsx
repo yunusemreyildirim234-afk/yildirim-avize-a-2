@@ -683,7 +683,7 @@ export default function CartPage() {
                   <div className="flex items-center justify-between text-xs font-semibold text-neutral-900">
                     <span>📦 Adrese Teslim</span>
                     <span className="text-neutral-700 font-bold">
-                      {totalPrice >= FREE_SHIPPING_THRESHOLD ? "Ücretsiz" : `${SHIPPING_COST.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺`}
+                      {itemsShown >= FREE_SHIPPING_THRESHOLD ? "Ücretsiz" : `${SHIPPING_COST.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺`}
                     </span>
                   </div>
                   <p className="text-[11px] text-neutral-500 mt-1">
