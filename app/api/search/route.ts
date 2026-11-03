@@ -3,10 +3,14 @@ import { serverError } from "@/lib/api-error";
 import { prisma } from "@/lib/db";
 import { getLadderContext } from "@/lib/showcase";
 import { priceLadder } from "@/lib/price-ladder";
+import { rateLimit, tooMany } from "@/lib/rate-limit";
 
 export async function GET(req: Request) {
+  // Kimliksiz ve indeksiz (contains) arama: IP başına dakikada 120 istek, sorgu en çok 80 karakter
+  const rl = rateLimit(req, "search", 120, 60_000);
+  if (rl.limited) return tooMany(rl.retryAfter);
   const { searchParams } = new URL(req.url);
-  const q = searchParams.get("q") || "";
+  const q = (searchParams.get("q") || "").slice(0, 80);
 
   if (!q.trim()) {
     return NextResponse.json({ products: [] });

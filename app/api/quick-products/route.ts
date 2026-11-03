@@ -2,9 +2,12 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getLadderContext } from "@/lib/showcase";
 import { priceLadder } from "@/lib/price-ladder";
+import { rateLimit, tooMany } from "@/lib/rate-limit";
 
 // Sepet/favoriler gibi istemci listeleri için güncel görsel, fiyat ve stok bilgisi
 export async function GET(req: Request) {
+  const rl = rateLimit(req, "quick-products", 120, 60_000);
+  if (rl.limited) return tooMany(rl.retryAfter);
   const ids = (new URL(req.url).searchParams.get("ids") ?? "")
     .split(",")
     .map((s) => s.trim())

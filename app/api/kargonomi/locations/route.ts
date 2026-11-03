@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import { serverError } from "@/lib/api-error";
 import { listCities, listStates } from "@/lib/kargonomi";
+import { rateLimit, tooMany } from "@/lib/rate-limit";
 
 export async function GET(req: Request) {
+  // Kargonomi'ye giden herkese açık uç: IP başına dakikada 60 istek
+  const rl = rateLimit(req, "locations", 60, 60_000);
+  if (rl.limited) return tooMany(rl.retryAfter);
   const stateId = Number(new URL(req.url).searchParams.get("stateId"));
 
   try {
