@@ -6,7 +6,8 @@ import ProductCard from "@/components/ProductCard";
 import { prisma } from "@/lib/db";
 import Pagination from "@/components/Pagination";
 import { DISCOUNTED, FEATURED, countProducts, getBestSellers, getProducts } from "@/lib/products";
-import { PAGE_SIZE, canonicalPage, pageHref, parsePage, rangeOf, totalPages } from "@/lib/pagination";
+import PageSizeLinks from "@/components/PageSizeLinks";
+import { canonicalListing, pageHref, parseAdet, parsePage, rangeOf, totalPages } from "@/lib/pagination";
 import { CATEGORIES, COLLECTIONS } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
@@ -52,8 +53,21 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   const current = await resolve(slug);
   if (!current) return {};
   // Her sayfanın kendi kanonik adresi vardır (sayfa=1 parametresiz)
-  const page = parsePage((await searchParams).sayfa);
+  const sp = await searchParams;
+  const page = parsePage(sp.sayfa);
+  const { adet } = parseAdet(sp.adet);
   const path = `/kategori/${slug}`;
+  // Varsayılan olmayan sayfa boyutu: aynı içeriğin kopyası → noindex,follow ve varsayılan boyutlu birinci sayfaya canonical
+  if (adet !== "24") {
+    const base = pageHref(path, 1);
+    return {
+      title: current.title,
+      description: current.desc,
+      alternates: { canonical: base },
+      robots: { index: false, follow: true },
+      openGraph: { title: current.title, description: current.desc, url: base },
+    };
+  }
   const url = pageHref(path, page);
   return {
     title: page > 1 ? `${current.title} - Sayfa ${page}` : current.title,
@@ -80,12 +94,13 @@ export default async function CategoryPage({ params, searchParams }: Props) {
     all = await getBestSellers(48);
     total = all.length;
   }
-  const fix = canonicalPage(query.sayfa, total);
-  if (fix !== null) redirect(pageHref(path, fix, query)); // geçersiz → 1, sınır dışı → son sayfa (404 yok)
+  const fix = canonicalListing(query, total);
+  if (fix) redirect(pageHref(path, fix.page, query, fix.adet)); // geçersiz sayfa/adet → varsayılan, sınır dışı → son sayfa (404 yok)
+  const { adet, size } = parseAdet(query.adet);
   const page = parsePage(query.sayfa);
-  const pages = totalPages(total);
-  const range = rangeOf(page, total);
-  const products = all ? all.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE) : await getProducts(current.where!, PAGE_SIZE, (page - 1) * PAGE_SIZE);
+  const pages = totalPages(total, size);
+  const range = rangeOf(page, total, size);
+  const products = all ? all.slice((page - 1) * size, page * size) : await getProducts(current.where!, size, (page - 1) * size);
 
   return (
     <main className="min-h-screen bg-white pb-20">
@@ -101,10 +116,14 @@ export default async function CategoryPage({ params, searchParams }: Props) {
       </section>
 
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10">
-        <div className="flex items-center justify-between border-b border-zinc-200 pb-4 mb-8 text-xs text-zinc-500">
-          <span>{range ? `${range.from}-${range.to} / ${range.total} ürün gösteriliyor` : "0 ürün listeleniyor"}</span>
-          <span className="text-amber-700 font-medium hidden sm:inline">📍 Beyoğlu Mağazasında Sergilenen Modeller</span>
+        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b border-zinc-200 pb-4 mb-6 text-xs text-zinc-500">
+          <div className="flex items-center gap-4">
+            <span>{range ? `${range.from}-${range.to} / ${range.total} ürün gösteriliyor` : "0 ürün listeleniyor"}</span>
+            <span className="text-amber-700 font-medium hidden lg:inline">📍 Beyoğlu Mağazasında Sergilenen Modeller</span>
+          </div>
+          {total > 0 && <PageSizeLinks path={path} current={adet} page={page} size={size} params={query} />}
         </div>
+        <Pagination path={path} page={page} pages={pages} params={query} label="Sayfalama (üst)" className="mb-8" />
 
         {products.length === 0 ? (
           <div className="bg-zinc-50 rounded-3xl border border-zinc-200 p-12 text-center max-w-md mx-auto space-y-3">
@@ -124,7 +143,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
             ))}
           </div>
         )}
-        <Pagination path={path} page={page} pages={pages} params={query} />
+        <Pagination path={path} page={page} pages={pages} params={query} label="Sayfalama (alt)" />
       </section>
     </main>
   );
