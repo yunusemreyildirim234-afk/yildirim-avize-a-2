@@ -1,9 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, ExternalLink, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import AdminBulkBar from "@/components/AdminBulkBar";
+import AdminSelectionPanel, { scrollToRow } from "@/components/AdminSelectionPanel";
+import { addAll, chipLabel, nextLastId, removeAll, removeId, toggleId } from "@/lib/admin-selection";
 import AdminProductEditor from "@/components/AdminProductEditor";
 import SmartFilterChips from "@/components/SmartFilterChips";
 import { bulkTiersOf, tierBadgeLabel, tierValueLabel } from "@/lib/bulk-pricing";
@@ -119,7 +121,12 @@ export default function AdminProductList({ products, maxTotalDiscountPct, showca
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [selected, setSelected] = useState<Set<string>>(new Set()); // ürün KİMLİKLERİ: süzgeç/arama/sayfalama değişse de korunur
+  const [lastId, setLastId] = useState<string | null>(null); // son seçilen ürün ("Seçtiğim yere dön")
+  const [flash, setFlash] = useState<string | null>(null); // çipten gidilen satırın kısa vurgusu
+  const [notice, setNotice] = useState("");
+  const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (flashTimer.current) clearTimeout(flashTimer.current); }, []);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [chips, setChips] = useState<string[]>([]);
   const PAGE = 8;
@@ -213,20 +220,37 @@ Yine de geri alınsın mı?`)) await doUndo(true);
   );
 
   const allFilteredSelected = filtered.length > 0 && filtered.every((p) => selected.has(p.id));
-  const toggleOne = (id: string) =>
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  const toggleAll = () =>
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (allFilteredSelected) filtered.forEach((p) => next.delete(p.id));
-      else filtered.forEach((p) => next.add(p.id));
-      return next;
-    });
+  const toggleOne = (id: string) => {
+    const next = toggleId(selected, id);
+    setSelected(next);
+    setLastId((prev) => nextLastId(prev, next, id));
+  };
+  const dropOne = (id: string) => {
+    const next = removeId(selected, id);
+    setSelected(next);
+    setLastId((prev) => nextLastId(prev, next, id));
+  };
+  const toggleAll = () => setSelected((prev) => (allFilteredSelected ? removeAll(prev, filtered.map((p) => p.id)) : addAll(prev, filtered.map((p) => p.id))));
+
+  // Çip tıklaması: satıra kaydır + kısa vurgu. Satır "Daha fazla göster" ile gizliyse görünür yapılır; süzgeç dışındaysa bilgi verilir.
+  const focusProduct = (id: string) => {
+    const idx = filtered.findIndex((p) => p.id === id);
+    if (idx < 0) {
+      setNotice("Bu ürün şu anki arama/filtrede görünmüyor; seçili kalır. Filtreyi temizleyince listede bulunur.");
+      return;
+    }
+    setNotice("");
+    if (idx >= shown) setShown(Math.ceil((idx + 1) / PAGE) * PAGE);
+    requestAnimationFrame(() => requestAnimationFrame(() => scrollToRow(id)));
+    setFlash(id);
+    if (flashTimer.current) clearTimeout(flashTimer.current);
+    flashTimer.current = setTimeout(() => setFlash(null), 1800);
+  };
+  const byId = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
+  const chipItems = [...selected].flatMap((id) => {
+    const p = byId.get(id);
+    return p ? [{ id, label: chipLabel(p.title, p.modelCode) }] : [];
+  });
 
   // Stok Artır / Azalt
   const handleStockChange = async (variationId: string, newStock: number) => {
@@ -301,7 +325,7 @@ Yine de geri alınsın mı?`)) await doUndo(true);
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden shadow-sm">
+    <div className="bg-white rounded-2xl border border-neutral-200 overflow-clip shadow-sm">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -372,9 +396,12 @@ Yine de geri alınsın mı?`)) await doUndo(true);
         )}
       </div>
 
-      {selected.size > 0 && (
-        <AdminBulkBar maxTotalDiscountPct={maxTotalDiscountPct} ids={[...selected]} scopes={scopes} onApplied={(snapshot, label) => setUndo({ snapshot, label })} extraCategories={extraCategories} onDone={() => setSelected(new Set())} />
-      )}
+      <AdminSelectionPanel chips={chipItems} lastId={lastId} onRemove={dropOne} onClear={() => { setSelected(new Set()); setLastId(null); }} onChipClick={focusProduct}>
+        {selected.size > 0 && (
+          <AdminBulkBar maxTotalDiscountPct={maxTotalDiscountPct} ids={[...selected]} scopes={scopes} onApplied={(snapshot, label) => setUndo({ snapshot, label })} extraCategories={extraCategories} onDone={() => { setSelected(new Set()); setLastId(null); }} />
+        )}
+      </AdminSelectionPanel>
+      {notice && <p role="status" className="px-5 sm:px-6 py-2 text-[11px] text-amber-900 bg-amber-100/60 border-b border-amber-200">{notice}</p>}
 
       {filtered.length > 0 && (
         <label className="flex items-center gap-2 px-5 sm:px-6 py-2.5 border-b border-neutral-100 text-xs font-semibold text-neutral-600 cursor-pointer">
@@ -382,7 +409,7 @@ Yine de geri alınsın mı?`)) await doUndo(true);
           Filtredeki {filtered.length} ürünün tamamını seç{filtered.length > shown ? " (görünmeyenler dahil)" : ""}
           {allFilteredSelected && <span className="font-bold text-amber-800">• Filtredeki {filtered.length} ürünün tamamı seçildi</span>}
           {selected.size > 0 && (
-            <button type="button" onClick={() => setSelected(new Set())} className="ml-auto text-amber-700 hover:underline">
+            <button type="button" onClick={() => { setSelected(new Set()); setLastId(null); }} className="ml-auto text-amber-700 hover:underline">
               Seçimi temizle
             </button>
           )}
@@ -394,7 +421,7 @@ Yine de geri alınsın mı?`)) await doUndo(true);
           <p className="p-10 text-center text-xs text-neutral-400">{q ? <>&ldquo;{query}&rdquo; ile eşleşen ürün bulunamadı.</> : "Bu filtrede ürün yok."}</p>
         )}
         {filtered.slice(0, shown).map((product) => (
-          <div key={product.id}>
+          <div key={product.id} id={`ap-${product.id}`} className={`scroll-mt-40 transition-colors ${flash === product.id ? "bg-amber-100/70 ring-2 ring-inset ring-amber-500" : ""}`}>
           <div className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-neutral-50/50 transition-colors">
             {/* Sol: Seçim, Görsel ve Başlık */}
             <div className="flex items-center gap-4">
@@ -452,19 +479,19 @@ Yine de geri alınsın mı?`)) await doUndo(true);
                   <div className="flex items-center border border-neutral-200 rounded-lg overflow-hidden">
                     <button
                       type="button"
-                      disabled={loadingId === v.id || v.stock <= 0}
-                      onClick={() => handleStockChange(v.id, v.stock - 1)}
+                      aria-disabled={loadingId === v.id || v.stock <= 0}
+                      onClick={() => { if (loadingId !== v.id && v.stock > 0) handleStockChange(v.id, v.stock - 1); }}
                       aria-label={`${v.variationValue} stoğunu azalt`}
-                      className="px-2 py-0.5 hover:bg-neutral-100 text-neutral-600 font-bold disabled:opacity-40"
+                      className="px-2 py-0.5 hover:bg-neutral-100 text-neutral-600 font-bold aria-disabled:opacity-40"
                     >
                       -
                     </button>
                     <button
                       type="button"
-                      disabled={loadingId === v.id}
-                      onClick={() => handleStockChange(v.id, v.stock + 1)}
+                      aria-disabled={loadingId === v.id}
+                      onClick={() => { if (loadingId !== v.id) handleStockChange(v.id, v.stock + 1); }}
                       aria-label={`${v.variationValue} stoğunu artır`}
-                      className="px-2 py-0.5 hover:bg-neutral-100 text-neutral-600 font-bold disabled:opacity-40 border-l border-neutral-200"
+                      className="px-2 py-0.5 hover:bg-neutral-100 text-neutral-600 font-bold aria-disabled:opacity-40 border-l border-neutral-200"
                     >
                       +
                     </button>

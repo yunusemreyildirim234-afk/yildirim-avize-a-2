@@ -147,7 +147,7 @@ export default function AdminBulkBar({ ids, scopes, onApplied, extraCategories, 
   const input = "p-2 rounded-lg border border-neutral-300 bg-white text-xs focus:outline-none focus:border-amber-600";
 
   return (
-    <div className="sticky top-0 z-10 bg-amber-50 border-b border-amber-200 px-4 sm:px-6 py-3 space-y-3">
+    <div className="border-t border-amber-200 px-4 sm:px-6 py-3 space-y-3">
       <div className="flex flex-wrap items-center gap-2 text-xs">
         <strong className="text-amber-950 mr-2">{ids.length} ürün seçili</strong>
         {TABS.map((t) => (
