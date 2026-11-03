@@ -371,7 +371,21 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                         </div>
                       </td>
                       <td className="p-4">
-                        <AdminKargonomiOrderActions order={order} />
+                        {/* İstemciye yalnızca gereken alanlar gider (tam sipariş nesnesi müşteri kaydını, parola özetini de taşırdı) */}
+                        <AdminKargonomiOrderActions
+                          order={{
+                            id: order.id,
+                            status: order.status,
+                            shippingType: order.shippingType,
+                            kargonomiShipmentId: order.kargonomiShipmentId,
+                            kargonomiStatusLabel: order.kargonomiStatusLabel,
+                            shippingTrackingCode: order.shippingTrackingCode,
+                            shippingBarcode: order.shippingBarcode,
+                            shippingProviderName: order.shippingProviderName,
+                            barcodeUrl: order.barcodeUrl,
+                            labelCreated: order.labelCreated,
+                          }}
+                        />
                       </td>
                       <td className="p-4">
                         {order.status === "AWAITING_PAYMENT" && (
