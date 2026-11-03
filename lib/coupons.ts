@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { isExpired } from "@/lib/coupon-expiry";
 import { DEFAULT_COUPON_CODE, type CouponRule, type PriceLine } from "@/lib/pricing";
 
 export const COUPON_GENERIC_ERROR = "Geçersiz veya süresi dolmuş kupon kodu.";
@@ -32,6 +33,8 @@ export async function validateCoupon(opts: {
 
   const coupon = await prisma.coupon.findUnique({ where: { code } });
   if (!coupon || !coupon.active) return { ok: false, error: "Geçersiz veya süresi dolmuş kupon kodu." };
+  // Süresi dolmuş kupon: ayrıntı verilmez (tek genel hata). Yalnızca yeni doğrulamalarda kontrol edilir.
+  if (isExpired(coupon.expiresAt)) return { ok: false, error: COUPON_GENERIC_ERROR };
   if (coupon.usedCount >= coupon.maxUses) return { ok: false, error: "Bu kuponun kullanım hakkı dolmuştur." };
 
   if (coupon.userEmail) {

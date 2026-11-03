@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isExpired } from "@/lib/coupon-expiry";
 import { prisma } from "@/lib/db";
 import { getSessionUserId } from "@/lib/account";
 import { ensureDefaultCoupon } from "@/lib/coupons";
@@ -19,7 +20,7 @@ export async function GET() {
   });
 
   const coupons = rows
-    .filter((c) => c.usedCount < c.maxUses)
+    .filter((c) => c.usedCount < c.maxUses && !isExpired(c.expiresAt))
     .map((c) => ({
       id: c.id,
       code: c.code,

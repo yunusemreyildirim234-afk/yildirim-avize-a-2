@@ -237,6 +237,7 @@ model Coupon {
   discountType    String   @default("PERCENT") // PERCENT | FIXED
   discountAmount  Float? // FIXED: TL tutar
   minCartTotal    Float? // uygun kalemlerin (kademe sonrası) asgari toplamı
+  expiresAt       DateTime? // boş: süresiz; seçilen günün sonuna (TR saati 23:59:59) kadar geçerli
   perUserLimit    Int? // aynı e-posta/üye için iptal edilmemiş siparişte kullanım sınırı
   maxUses         Int      @default(1)
   usedCount       Int      @default(0)
