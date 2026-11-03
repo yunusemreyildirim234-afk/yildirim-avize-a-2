@@ -34,7 +34,7 @@ interface Product {
   variations: Variation[];
 }
 
-export default function ProductDetailClient({ product }: { product: Product }) {
+export default function ProductDetailClient({ product, maxTotalDiscountPct = null }: { product: Product; maxTotalDiscountPct?: number | null }) {
   const { addToCart } = useCart();
 
   const [selectedVariation, setSelectedVariation] = useState<Variation | null>(
@@ -57,6 +57,7 @@ export default function ProductDetailClient({ product }: { product: Product }) {
     lines: [{ variationId: selectedVariation?.id ?? "v", productId: product.id, price: currentPrice, quantity, tiers: bulk, ...rules }],
     shippingType: SHIPPING_TYPES.HOME,
     paymentMethod: "BANK_TRANSFER",
+    maxTotalDiscountPct,
   });
   const lineNow = priced.itemsTotal;
   const bankDiscountNow = priced.bankDiscount;
@@ -190,6 +191,11 @@ export default function ProductDetailClient({ product }: { product: Product }) {
                   </li>
                 ))}
                 <li className="text-[11px] text-neutral-500">Aynı ürünün farklı renkleri toplam adede sayılır.</li>
+                {maxTotalDiscountPct != null && (
+                  <li className="text-[11px] text-neutral-500">
+                    Adet indirimi uygulanan ürünlerde kupon, mağazadan teslim ve Havale indirimleri, bir üründe toplam indirim en fazla %{maxTotalDiscountPct.toLocaleString("tr-TR")} olacak şekilde sınırlandırılır.
+                  </li>
+                )}
               </ul>
             )}
             {bankPct > 0 && (

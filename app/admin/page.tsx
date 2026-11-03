@@ -212,7 +212,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         />
 
         {/* 3. Canlı Avize Kataloğu & Stok Yönetimi */}
-        <AdminProductList products={products} />
+        <AdminProductList products={products} maxTotalDiscountPct={discountCap} />
 
         {/* 4. Canlı Siparişler & Kargonomi Operasyon Tablosu */}
         <AdminSection

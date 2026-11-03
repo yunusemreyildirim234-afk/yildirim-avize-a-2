@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import Script from "next/script";
 import { cartPriceLines, useCart, type ItemRules } from "@/context/CartContext";
 import { FREE_SHIPPING_THRESHOLD, SHIPPING_COST, SHIPPING_LABELS, type CouponRule } from "@/lib/pricing";
-import { priceCart, ruleNotes } from "@/lib/cart-pricing";
+import { capMessage, discountsApplied, priceCart, ruleNotes } from "@/lib/cart-pricing";
 import BankTransferCard from "@/components/BankTransferCard";
 import ContractModal from "@/components/ContractModal";
 import { invoiceError } from "@/lib/validation";
@@ -133,7 +133,10 @@ export default function CartPage() {
   const effectiveAddress = isPickup ? ADDRESS_LINE : address;
 
   // Yerel hesap (sunucuyla birebir: satır yuvarlanmaz, birim fiyat × adet). Sunucu teklifi gelene kadar yedek olarak kullanılır.
-  const localTotals = priceCart({ lines: cartPriceLines(cart), shippingType, paymentMethod, coupon: appliedCoupon });
+  const [capPct, setCapPct] = useState<number | null>(null); // sunucudaki toplam indirim üst sınırı (teklifle gelir)
+  const localTotals = priceCart({ lines: cartPriceLines(cart), shippingType, paymentMethod, coupon: appliedCoupon, maxTotalDiscountPct: capPct });
+  const applied = discountsApplied({ lines: cartPriceLines(cart), coupon: appliedCoupon, maxTotalDiscountPct: capPct });
+  const notApplied = <span className="font-medium text-neutral-500"> (bu sepette uygulanmaz)</span>;
   const pricedOf = (variationId: string) => localTotals.lines.find((l) => l.variationId === variationId);
 
   // Sunucu fiyat teklifi (/api/cart/quote, salt okunur): gösterilen tutar buradan gelir
@@ -141,6 +144,7 @@ export default function CartPage() {
     lines: { variationId: string; available: boolean; stockShort?: boolean; title?: string; price?: number; bulk?: BulkRule[]; rules?: ItemRules }[];
     totals: { itemsTotal: number; shipping: number; couponDiscount: number; pickupDiscount: number; bankDiscount: number; total: number };
     coupon: { ok: boolean; error?: string } | null;
+    maxTotalDiscountPct?: number | null;
   }
   const quoteSig = JSON.stringify([cart.map((i) => [i.variationId, i.quantity]), appliedCoupon?.code ?? "", shippingType, paymentMethod, appliedCoupon ? email : ""]);
   const [quote, setQuote] = useState<(Quote & { sig: string }) | null>(null);
@@ -191,6 +195,7 @@ export default function CartPage() {
     const timer = setTimeout(async () => {
       const q = await fetchQuote(ctrl.signal);
       if (!q || ctrl.signal.aborted) return;
+      setCapPct(q.maxTotalDiscountPct ?? null);
       setQuote({ ...q, sig: quoteSig });
       absorbQuote(q, localTotals.total);
     }, 300);
@@ -480,6 +485,11 @@ export default function CartPage() {
                       </p>
                     ))}
                     {item.bulk && item.bulk.length > 0 && <p className="text-[11px] text-neutral-500 mt-0.5">Aynı ürünün farklı renkleri toplam adede sayılır.</p>}
+                    {pricedOf(item.variationId)?.capInfo && (
+                      <p className="text-[11px] text-amber-900 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1 mt-1.5 leading-snug">
+                        {capMessage(pricedOf(item.variationId)!.capInfo!)}
+                      </p>
+                    )}
                     {ruleNotes(item.rules).map((n) => (
                       <p key={n} className="text-[11px] text-neutral-600 mt-0.5">
                         {n}
@@ -607,10 +617,10 @@ export default function CartPage() {
                 >
                   <div className="flex items-center justify-between text-xs font-semibold text-neutral-900">
                     <span>📍 Mağazadan Teslim</span>
-                    <span className="text-emerald-600 font-bold">Ücretsiz • %3 İndirim</span>
+                    <span className="text-emerald-600 font-bold">Ücretsiz • %3 İndirim{!applied.pickup && notApplied}</span>
                   </div>
                   <p className="text-[11px] text-neutral-500 mt-1">
-                    Şişhane merkezimizden görerek teslimat. Sepet tutarına ekstra %3 indirim uygulanır.
+                    Şişhane merkezimizden görerek teslimat. Sepet tutarına ekstra %3 indirim uygulanır{!applied.pickup ? " (bu sepette uygulanmaz)" : ""}.
                   </p>
                 </div>
 
@@ -674,7 +684,7 @@ export default function CartPage() {
                       : "border-neutral-200 text-neutral-600 hover:border-neutral-300"
                   }`}
                 >
-                  🏦 Havale / EFT (%5 İndirimli)
+                  🏦 Havale / EFT (%5 İndirimli){!applied.transfer && notApplied}
                 </button>
               </div>
 
@@ -690,7 +700,7 @@ export default function CartPage() {
                 <div className="space-y-3">
                   <BankTransferCard />
                   <div className="font-semibold text-emerald-700 text-xs">
-                    ✓ Havale ödemelerinde %5 nakit indirimi otomatik uygulanmıştır.
+                    {applied.transfer ? "✓ Havale ödemelerinde %5 nakit indirimi otomatik uygulanmıştır." : "Havale indirimi bu sepette uygulanmaz."}
                   </div>
                 </div>
               )}

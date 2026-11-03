@@ -49,6 +49,8 @@ export default async function ProductDetailPage({ params }: Props) {
     },
   });
 
+  const maxTotalDiscountPct = (await prisma.siteConfig.findUnique({ where: { id: 1 }, select: { maxTotalDiscountPct: true } }))?.maxTotalDiscountPct ?? null;
+
   if (!product || !product.active) {
     notFound();
   }
@@ -123,7 +125,7 @@ export default async function ProductDetailPage({ params }: Props) {
         />
 
         {/* İstemci Tarafı İnteraktif Detay Bileşeni */}
-        <ProductDetailClient product={product} />
+        <ProductDetailClient product={product} maxTotalDiscountPct={maxTotalDiscountPct} />
 
         {similar.length > 0 && (
           <section aria-labelledby="benzer" className="mt-10">

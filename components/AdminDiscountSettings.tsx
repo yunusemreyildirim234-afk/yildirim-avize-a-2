@@ -34,7 +34,7 @@ export default function AdminDiscountSettings({ initial }: { initial: number | n
       <div className="basis-full">
         <h3 className="font-bold text-neutral-900 text-sm">Genel İndirim Ayarları</h3>
         <p className="text-xs text-neutral-500 mt-0.5">
-          Toplam indirim üst sınırı: adet indirimi + kupon + mağaza + Havale indirimleri toplamı, ürünlerin liste tutarının bu yüzdesini aşamaz. Boş = sınırsız. Yalnızca yeni siparişleri etkiler.
+          Bir üründe adet indirimi + kupon + mağazadan teslim + Havale indirimlerinin toplamı bu yüzdeyi aşmaz. Adet indirimi kısılmaz; kalan pay diğer indirimlere göre verilir. Boş = sınırsız. Yalnızca yeni siparişleri etkiler.
         </p>
       </div>
       <label className="text-xs font-semibold text-neutral-700">

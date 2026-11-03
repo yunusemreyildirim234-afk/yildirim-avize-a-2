@@ -24,10 +24,11 @@ interface Props {
   onApplied: (snapshot: unknown, label: string) => void;
   extraCategories: string[]; // varsayılan listede olmayan mevcut koleksiyonlar
   onDone: () => void;
+  maxTotalDiscountPct?: number | null; // genel toplam indirim üst sınırı (uyarı için)
 }
 
 // Seçili ürünler için toplu işlem çubuğu
-export default function AdminBulkBar({ ids, scopes, onApplied, extraCategories, onDone }: Props) {
+export default function AdminBulkBar({ ids, scopes, onApplied, extraCategories, onDone, maxTotalDiscountPct }: Props) {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("stock");
   const [busy, setBusy] = useState(false);
@@ -213,6 +214,11 @@ export default function AdminBulkBar({ ids, scopes, onApplied, extraCategories, 
               <input aria-label="Adet (en az)" type="number" min={1} step={1} value={minQty} onChange={(e) => setMinQty(e.target.value)} className={`${input} w-16`} />
             </label>
             <input aria-label="İndirim değeri" type="number" min={1} step="any" required value={discValue} onChange={(e) => setDiscValue(e.target.value)} className={`${input} w-24`} />
+            {maxTotalDiscountPct != null && Number(minQty) >= 2 && discMode === "PERCENT" && Number(discValue) >= maxTotalDiscountPct && (
+              <span role="alert" className="basis-full text-[11px] font-semibold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1">
+                Bu kademe genel üst sınırı aşıyor; bu üründe kupon, mağaza ve Havale indirimleri uygulanmaz.
+              </span>
+            )}
           </>
         )}
 

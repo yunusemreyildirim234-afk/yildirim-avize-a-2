@@ -98,13 +98,14 @@ export async function POST(req: Request) {
       tierQty: l.tierQty,
       unitPrice: l.unitPrice,
       lineTotal: l.lineTotal,
+      capInfo: l.capInfo ?? null,
       rules: { couponAllowed: l.couponAllowed, pickupPct: l.pickupPct, transferPct: l.transferPct },
     })),
     ...missing,
   ];
   const { itemsTotal, shipping, couponDiscount, pickupDiscount, bankDiscount, total } = priced;
   return NextResponse.json(
-    { lines, itemsTotal, totals: { itemsTotal, shipping, couponDiscount, pickupDiscount, bankDiscount, total }, coupon },
+    { lines, maxTotalDiscountPct: cap, itemsTotal, totals: { itemsTotal, shipping, couponDiscount, pickupDiscount, bankDiscount, total }, coupon },
     { headers: { "Cache-Control": "no-store" } }
   );
 }

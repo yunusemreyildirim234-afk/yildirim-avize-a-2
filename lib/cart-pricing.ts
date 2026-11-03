@@ -45,7 +45,14 @@ export interface CartPriceLine {
   transferPct: number | null;
 }
 
+export interface CapInfo {
+  tierPct: number; // ürünün adet kademesi indirimi (% liste)
+  remainingPct: number; // kupon+mağaza+Havale için kalan pay (% liste)
+  capPct: number;
+}
+
 export interface PricedLine extends CartPriceLine {
+  capInfo?: CapInfo; // yalnızca üst sınır nedeniyle kısılma olduysa
   unitPrice: number; // kademe sonrası birim fiyat
   lineTotal: number; // unitPrice × quantity (yuvarlanmaz)
   tierQty: number; // kademeyi belirleyen toplam adet (aynı ürünün tüm renkleri)
@@ -135,22 +142,73 @@ export function priceCart(opts: {
 
   const result: CartPricing = { lines, itemsTotal, shipping, couponDiscount, pickupDiscount, bankDiscount, total: Math.max(0, afterDiscounts - bankDiscount), couponError };
 
-  // 5) Toplam indirim üst sınırı: adet kademesi indirimi + kupon + mağaza + Havale, kademe öncesi ürün toplamının %cap'ini aşamaz.
-  //    Aşılırsa kupon/mağaza/Havale indirimleri orantılı kısılır (adet kademesi fiyatı korunur). Ödenecek tutar buna göre yükselir.
+  // 5) Toplam indirim üst sınırı (ÜRÜN bazlı): bir ürünün adet kademesi indirimi + kupon + mağaza + Havale payı, ürünün liste tutarının %cap'ini aşamaz.
+  //    Aşan ürünün kupon/mağaza/Havale payları orantılı kısılır (kuruşa aşağı); adet kademesi fiyatı ASLA kısılmaz.
   const cap = opts.maxTotalDiscountPct;
   if (cap !== null && cap !== undefined && cap >= 0 && cap < 100) {
-    const listTotal = lines.reduce((s, l) => s + l.price * l.quantity, 0);
-    const tierDiscount = listTotal - itemsTotal;
-    const others = couponDiscount + pickupDiscount + bankDiscount;
-    const room = Math.max(0, (listTotal * cap) / 100 - tierDiscount);
-    if (others > room) {
-      const k = others > 0 ? room / others : 0;
-      const cut = (x: number) => Math.floor(x * k * 100) / 100;
-      result.couponDiscount = cut(couponDiscount);
-      result.pickupDiscount = cut(pickupDiscount);
-      result.bankDiscount = cut(bankDiscount);
-      result.total = Math.max(0, itemsTotal + shipping - result.couponDiscount - result.pickupDiscount - result.bankDiscount);
+    const applicable = opts.coupon && !couponError ? eligible.filter((l) => !opts.coupon!.productId || l.productId === opts.coupon!.productId) : [];
+    const applicableTotal = applicable.reduce((sum, l) => sum + l.lineTotal, 0);
+    // Satır payları (toplamlar mevcut hesapla aynıdır; yalnızca ürünlere dağıtılır)
+    const couponPart = lines.map((l) => (applicableTotal > 0 && applicable.includes(l) ? (couponDiscount * l.lineTotal) / applicableTotal : 0));
+    const pickupPart = lines.map(() => 0);
+    pickupGroups.forEach(([, ls], gi) => {
+      const gt = ls.reduce((sum, l) => sum + l.lineTotal, 0);
+      for (const l of ls) pickupPart[lines.indexOf(l)] = gt > 0 ? (pickupByGroup[gi] * l.lineTotal) / gt : 0;
+    });
+    const bankPart = lines.map(() => 0);
+    if (bankDiscount > 0) {
+      const w = lines.map((l, i) => {
+        const base = l.lineTotal + (itemsTotal > 0 ? (shipping * l.lineTotal) / itemsTotal : 0) - couponPart[i] - pickupPart[i];
+        return Math.max(0, base) * rateOf(l.transferPct, BANK_TRANSFER_DISCOUNT);
+      });
+      const wSum = w.reduce((a, b) => a + b, 0);
+      if (wSum > 0) w.forEach((x, i) => (bankPart[i] = (bankDiscount * x) / wSum));
+    }
+
+    let clippedAny = false;
+    const byProduct = new Map<string, number[]>();
+    lines.forEach((l, i) => byProduct.set(l.productId, [...(byProduct.get(l.productId) ?? []), i]));
+    for (const idxs of byProduct.values()) {
+      const L = idxs.reduce((sum, i) => sum + lines[i].price * lines[i].quantity, 0);
+      const T = L - idxs.reduce((sum, i) => sum + lines[i].lineTotal, 0);
+      const H = Math.max(0, (cap * L) / 100 - T);
+      const extra = idxs.reduce((sum, i) => sum + couponPart[i] + pickupPart[i] + bankPart[i], 0);
+      if (extra <= H + 1e-9) continue;
+      clippedAny = true;
+      const k = extra > 0 ? H / extra : 0;
+      const cut = (x: number) => Math.floor(x * k * 100 + 1e-9) / 100;
+      for (const i of idxs) {
+        couponPart[i] = cut(couponPart[i]);
+        pickupPart[i] = cut(pickupPart[i]);
+        bankPart[i] = cut(bankPart[i]);
+        lines[i].capInfo = { tierPct: L > 0 ? (T / L) * 100 : 0, remainingPct: L > 0 ? (H / L) * 100 : 0, capPct: cap };
+      }
+    }
+    if (clippedAny) {
+      const r2 = (x: number) => Math.round(x * 100) / 100;
+      const sum = (a: number[]) => r2(a.reduce((x, y) => x + y, 0));
+      result.couponDiscount = sum(couponPart);
+      result.pickupDiscount = sum(pickupPart);
+      result.bankDiscount = sum(bankPart);
+      result.total = Math.max(0, r2(itemsTotal + shipping - result.couponDiscount - result.pickupDiscount - result.bankDiscount));
     }
   }
   return result;
+}
+
+/** Üst sınır nedeniyle kısılan ürün için sepet satırı mesajı. */
+export function capMessage(c: CapInfo): string {
+  const f = (x: number) => x.toLocaleString("tr-TR", { maximumFractionDigits: 2 });
+  const floor2 = (x: number) => Math.floor(x * 100 + 1e-9) / 100;
+  if (c.remainingPct > 0.005) {
+    return `Bu üründe adet indirimi %${f(c.tierPct)} uygulandığı için kupon, mağazadan teslim ve Havale indirimlerinden toplamda en fazla %${f(floor2(c.remainingPct))} daha yararlanabilirsiniz (bir üründe toplam indirim en fazla %${f(c.capPct)}).`;
+  }
+  return "Bu üründe adet indirimi uygulandığı için kupon, mağazadan teslim ve Havale indirimleri ek olarak uygulanmaz.";
+}
+
+/** Seçili teslimat/ödeme indirimleri bu sepette fiilen uygulanıyor mu? (başlık yazılarındaki "(bu sepette uygulanmaz)" için) */
+export function discountsApplied(opts: Omit<Parameters<typeof priceCart>[0], "shippingType" | "paymentMethod">) {
+  const pickup = priceCart({ ...opts, shippingType: SHIPPING_TYPES.PICKUP, paymentMethod: "CREDIT_CARD" }).pickupDiscount > 0;
+  const transfer = priceCart({ ...opts, shippingType: SHIPPING_TYPES.HOME, paymentMethod: "BANK_TRANSFER" }).bankDiscount > 0;
+  return { pickup, transfer };
 }

@@ -110,7 +110,7 @@ function DiscountBadges({ product, onRemove, disabled }: { product: Product; onR
 
 const norm = (v?: string | null) => (v ?? "").toLocaleLowerCase("tr").trim();
 
-export default function AdminProductList({ products }: { products: Product[] }) {
+export default function AdminProductList({ products, maxTotalDiscountPct }: { products: Product[]; maxTotalDiscountPct?: number | null }) {
   const router = useRouter();
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
@@ -336,7 +336,7 @@ Yine de geri alınsın mı?`)) await doUndo(true);
       </div>
 
       {selected.size > 0 && (
-        <AdminBulkBar ids={[...selected]} scopes={scopes} onApplied={(snapshot, label) => setUndo({ snapshot, label })} extraCategories={extraCategories} onDone={() => setSelected(new Set())} />
+        <AdminBulkBar maxTotalDiscountPct={maxTotalDiscountPct} ids={[...selected]} scopes={scopes} onApplied={(snapshot, label) => setUndo({ snapshot, label })} extraCategories={extraCategories} onDone={() => setSelected(new Set())} />
       )}
 
       {filtered.length > 0 && (
