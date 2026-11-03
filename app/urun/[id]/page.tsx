@@ -3,13 +3,12 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { getLadderContext } from "@/lib/showcase";
 import ProductDetailClient from "@/components/ProductDetailClient";
-import { cookies } from "next/headers";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import ProductReviews from "@/components/ProductReviews";
 import ProductQuestionForm from "@/components/ProductQuestionForm";
 import ProductCard from "@/components/ProductCard";
 import { getProducts } from "@/lib/products";
-import { USER_COOKIE, verifySession } from "@/lib/session";
+import { getUserSession } from "@/lib/account";
 import { reviewEligibility, type ReviewEligibility } from "@/lib/reviews";
 import JsonLd from "@/components/JsonLd";
 import { CATEGORIES, SITE_URL } from "@/lib/site";
@@ -58,7 +57,7 @@ export default async function ProductDetailPage({ params }: Props) {
 
   const similar = await getProducts({ category: product.category, id: { not: product.id } }, 4).catch(() => []);
 
-  const userSession = await verifySession<{ uid: string }>((await cookies()).get(USER_COOKIE)?.value);
+  const userSession = await getUserSession();
   const eligibility: ReviewEligibility | "guest" = userSession?.uid ? await reviewEligibility(userSession.uid, product.id) : "guest";
   const reviews = product.reviews.map((r) => {
     const [first, ...rest] = r.user.name.trim().split(/\s+/);

@@ -2,11 +2,11 @@ import { NextResponse } from "next/server";
 import { serverError, badRequest } from "@/lib/api-error";
 import { prisma } from "@/lib/db";
 import { rateLimit, tooMany } from "@/lib/rate-limit";
-import { getSessionUserId } from "@/lib/account";
+import { bumpUserSessionVersion, getSessionUserId, issueUserToken } from "@/lib/account";
 import { getCustomerWithOrders } from "@/lib/customer";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { sendVerificationCodeEmail } from "@/lib/email";
-import { USER_COOKIE, cookieOptions, signSession } from "@/lib/session";
+import { USER_COOKIE, cookieOptions } from "@/lib/session";
 import { EMAIL_RE, isStrongPassword } from "@/lib/validation";
 import { clientIp, createCode, issueProof, rateLimitRemaining, readProof } from "@/lib/verification";
 
@@ -15,7 +15,7 @@ const WEAK = "Şifre en az 8 karakter olmalı; büyük harf, küçük harf, raka
 
 async function respond(userId: string) {
   const res = NextResponse.json({ success: true, user: await getCustomerWithOrders(userId) });
-  res.cookies.set(USER_COOKIE, await signSession({ uid: userId }), cookieOptions);
+  res.cookies.set(USER_COOKIE, await issueUserToken(userId), cookieOptions);
   return res;
 }
 

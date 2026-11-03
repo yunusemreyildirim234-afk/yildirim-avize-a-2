@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
-import { USER_COOKIE, verifySession } from "@/lib/session";
+import { getUserSession } from "@/lib/account";
 import { reviewEligibility, REVIEW_STATUS } from "@/lib/reviews";
 import { IMAGE_MIMES, validateUpload } from "@/lib/uploads";
 import { notifyAdmins, notifyCustomer } from "@/lib/notifications";
@@ -12,7 +11,7 @@ import { rateLimit, tooMany } from "@/lib/rate-limit";
 export async function POST(req: Request) {
   const rl = rateLimit(req, "review", 10, 10 * 60_000);
   if (rl.limited) return tooMany(rl.retryAfter);
-  const session = await verifySession<{ uid: string }>((await cookies()).get(USER_COOKIE)?.value);
+  const session = await getUserSession();
   if (!session) {
     return NextResponse.json({ error: "Yorum yazmak için giriş yapmalısınız." }, { status: 401 });
   }

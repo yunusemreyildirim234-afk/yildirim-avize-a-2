@@ -59,8 +59,41 @@ export function safeCompare(a: string, b: string) {
   return safeEqual(a, b);
 }
 
-/** Yönetici oturumu: imza geçerli olmalı VE payload'da role === "admin" bulunmalı (üye/proof token'ları kabul edilmez). */
+/**
+ * Oturum sürümü kontrolü. Belirteçte sürüm yoksa (eski oturumlar) 0 sayılır.
+ * `dbVersion === null` (veritabanı okunamadı / kayıt yok) → mevcut davranış korunur, oturum geçersiz SAYILMAZ.
+ */
+export function versionMatches(tokenVersion: unknown, dbVersion: number | null): boolean {
+  if (dbVersion === null) return true;
+  const tv = typeof tokenVersion === "number" && Number.isInteger(tokenVersion) ? tokenVersion : 0;
+  return tv === dbVersion;
+}
+
+/** İmzası/süresi doğrulanmış oturumun sürümünü veritabanındakiyle karşılaştırır; okuma hatası loglanır, oturum geçerli kalır. */
+export async function verifyVersioned<T extends Record<string, unknown>>(session: T | null, field: "sv" | "av", readVersion: () => Promise<number | null>): Promise<T | null> {
+  if (!session) return null;
+  let dbVersion: number | null = null;
+  try {
+    dbVersion = await readVersion();
+  } catch (err) {
+    console.error("[oturum] sürüm okunamadı, mevcut davranış korunuyor:", (err as Error).message);
+  }
+  return versionMatches(session[field], dbVersion) ? session : null;
+}
+
+async function readAdminVersion(): Promise<number | null> {
+  const { prisma } = await import("@/lib/db"); // proxy paketini şişirmemek için gerektiğinde yüklenir
+  const row = await prisma.siteConfig.findUnique({ where: { id: 1 }, select: { adminSessionVersion: true } });
+  return row?.adminSessionVersion ?? 0;
+}
+
+/** Test edilebilir çekirdek: imza + süre + role === "admin" + yönetici oturum sürümü ("av"). */
+export async function verifyAdminSessionWith(token: string | null | undefined, readVersion: () => Promise<number | null>) {
+  const session = await verifySession<{ role?: string; av?: number }>(token);
+  return verifyVersioned(session?.role === "admin" ? session : null, "av", readVersion);
+}
+
+/** Yönetici oturumu: imza geçerli olmalı VE payload'da role === "admin" bulunmalı (üye/proof token'ları kabul edilmez); "av" veritabanıyla eşleşmeli. */
 export async function verifyAdminSession(token?: string | null) {
-  const session = await verifySession<{ role?: string }>(token);
-  return session?.role === "admin" ? session : null;
+  return verifyAdminSessionWith(token, readAdminVersion);
 }

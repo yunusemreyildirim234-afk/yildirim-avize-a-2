@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { SITE_URL } from "@/lib/site";
-import { USER_COOKIE, cookieOptions, signSession } from "@/lib/session";
+import { USER_COOKIE, cookieOptions } from "@/lib/session";
+import { issueUserToken } from "@/lib/account";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -73,7 +74,7 @@ export async function GET(req: Request) {
     // 4. Giriş başarılı -> imzalı oturum çerezi ile hesap sayfasına yönlendir
     const res = NextResponse.redirect(new URL("/giris", SITE_URL));
     res.cookies.delete("ya_oauth_state");
-    res.cookies.set(USER_COOKIE, await signSession({ uid: user.id, picture: googleUser.picture ?? null }), cookieOptions);
+    res.cookies.set(USER_COOKIE, await issueUserToken(user.id, { picture: googleUser.picture ?? null }), cookieOptions);
     return res;
   } catch (err) {
     console.error("Google Auth Hatası:", err);
