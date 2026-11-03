@@ -1,5 +1,7 @@
 import type { Prisma } from "@/generated/prisma/client";
+import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/db";
+import { BEST_SELLER_CACHE_SECONDS, bestSellerSince, rankProducts } from "@/lib/best-sellers-rules";
 
 /**
  * Kart/liste için gereken alanlar (ProductCard, priceLadder, bulkTiersOf, ana sayfa havuzları).
@@ -56,27 +58,29 @@ export async function getFeatured(take: number) {
   return flagged.length > 0 ? flagged : getProducts(FEATURED, take);
 }
 
+/** Son 90 günde en çok sipariş edilen ürün kimlikleri (çoktan aza). Tüm geçmiş yerine 90 gün; sonuç 5 dk önbellekte (yalnızca kimlik listesi). */
+const getRankedSellerIds = unstable_cache(
+  async (): Promise<string[]> => {
+    const sold = await prisma.orderItem.groupBy({
+      by: ["variationId"],
+      where: { order: { createdAt: { gte: bestSellerSince() }, status: { notIn: ["AWAITING_PAYMENT", "PAYMENT_FAILED", "CANCELLED", "RETURNED"] } } },
+      _sum: { quantity: true },
+    });
+    const variations = sold.length ? await prisma.productVariation.findMany({ where: { id: { in: sold.map((r) => r.variationId) } }, select: { id: true, productId: true } }) : [];
+    const productOf = new Map(variations.map((v) => [v.id, v.productId]));
+    return rankProducts(sold.flatMap((r) => (productOf.has(r.variationId) ? [{ productId: productOf.get(r.variationId)!, quantity: r._sum.quantity ?? 0 }] : [])));
+  },
+  ["best-seller-ids-90d"],
+  { revalidate: BEST_SELLER_CACHE_SECONDS, tags: ["storefront"] }
+);
+
 /** Çok Satanlar: yönetici işaretlileri önce; eksik kalırsa en çok sipariş edilen aktif ürünlerle, o da yetmezse güncel ürünlerle tamamlanır. */
 export async function getBestSellers(take: number) {
   const picked = await getProducts({ isBestSeller: true }, take);
   if (picked.length >= take) return picked;
   const seen = new Set(picked.map((p) => p.id));
 
-  const sold = await prisma.orderItem.groupBy({
-    by: ["variationId"],
-    where: { order: { status: { notIn: ["AWAITING_PAYMENT", "PAYMENT_FAILED", "CANCELLED", "RETURNED"] } } },
-    _sum: { quantity: true },
-  });
-  const variations = sold.length
-    ? await prisma.productVariation.findMany({ where: { id: { in: sold.map((r) => r.variationId) } }, select: { id: true, productId: true } })
-    : [];
-  const productOf = new Map(variations.map((v) => [v.id, v.productId]));
-  const perProduct = new Map<string, number>();
-  for (const r of sold) {
-    const pid = productOf.get(r.variationId);
-    if (pid) perProduct.set(pid, (perProduct.get(pid) ?? 0) + (r._sum.quantity ?? 0));
-  }
-  const rankedIds = [...perProduct.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => id).filter((id) => !seen.has(id));
+  const rankedIds = (await getRankedSellerIds()).filter((id) => !seen.has(id));
 
   const ranked = rankedIds.length ? await getProducts({ id: { in: rankedIds }, ...FEATURED }, undefined) : [];
   ranked.sort((a, b) => rankedIds.indexOf(a.id) - rankedIds.indexOf(b.id));
