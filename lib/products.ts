@@ -2,6 +2,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/db";
 import { BEST_SELLER_CACHE_SECONDS, bestSellerSince, rankProducts } from "@/lib/best-sellers-rules";
+import { productsCacheKey, storefrontTags } from "@/lib/storefront-cache-key";
 
 /**
  * Kart/liste için gereken alanlar (ProductCard, priceLadder, bulkTiersOf, ana sayfa havuzları).
@@ -45,8 +46,11 @@ export function countProducts(where: Prisma.ProductWhereInput = {}) {
 // Anahtar: işlev argümanları (where/take/skip veya ürün kimliği). Hiçbir kişisel veri (oturum, favori, yorum yetkisi) bu işlevlere girmez.
 // Etiket "storefront": revalidateStorefront() yönetici işlemlerinde bunları da geçersiz kılar. Kart alanlarında zaman damgası yoktur (JSON güvenli).
 export const STOREFRONT_CACHE_SECONDS = 60;
-export const getProductsCached = unstable_cache(getProducts, ["sf-products"], { revalidate: STOREFRONT_CACHE_SECONDS, tags: ["storefront"] });
-export const countProductsCached = unstable_cache(async (where: Prisma.ProductWhereInput) => countProducts(where), ["sf-count"], { revalidate: STOREFRONT_CACHE_SECONDS, tags: ["storefront"] });
+// Anahtar açıkça parametrelerden (where/take/skip) üretilir; etiketler: "storefront" + varsa kategoriye özel.
+export const getProductsCached = (where: Prisma.ProductWhereInput = {}, take?: number, skip?: number) =>
+  unstable_cache(() => getProducts(where, take, skip), ["sf-products", productsCacheKey(where, take, skip)], { revalidate: STOREFRONT_CACHE_SECONDS, tags: storefrontTags(where) })();
+export const countProductsCached = (where: Prisma.ProductWhereInput = {}) =>
+  unstable_cache(() => countProducts(where), ["sf-count", productsCacheKey(where)], { revalidate: STOREFRONT_CACHE_SECONDS, tags: storefrontTags(where) })();
 
 /** Ürün detayı: ürün + varyasyonlar + ONAYLI yorumlar (yorumcu adı). Kişiye bağlı değildir; tarihler ISO metin olarak döner (önbellek JSON'dur). */
 export const getProductDetail = unstable_cache(
