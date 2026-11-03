@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 
 export const INVOICE_PENDING_MSG = "Fatura özelliği için veritabanı güncellemesi bekleniyor";

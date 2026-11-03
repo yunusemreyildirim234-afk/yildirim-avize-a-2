@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client";
+import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { isExpired } from "@/lib/coupon-expiry";
 import { DEFAULT_COUPON_CODE, type CouponRule, type PriceLine } from "@/lib/pricing";
