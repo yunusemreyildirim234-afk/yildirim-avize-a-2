@@ -1,19 +1,13 @@
 import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import OrderTracker from "@/components/OrderTracker";
+import { maskName } from "@/lib/mask-name";
 
 export const metadata: Metadata = {
   title: "Kargo & Sipariş Takibi",
   description: "Yıldırım Avize sipariş ve Kargonomi kargo durumunuzu sipariş veya takip koduyla sorgulayın.",
   alternates: { canonical: "/kargo-takip" },
 };
-
-/** KVKK: "Ahmet Yılmaz" → "Ahmet Y." */
-function maskName(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length < 2) return parts[0] ?? "Müşteri";
-  return `${parts.slice(0, -1).join(" ")} ${parts[parts.length - 1][0].toLocaleUpperCase("tr-TR")}.`;
-}
 
 export default async function TrackingPage({ searchParams }: { searchParams: Promise<{ code?: string }> }) {
   const code = (await searchParams).code?.trim().slice(0, 100);

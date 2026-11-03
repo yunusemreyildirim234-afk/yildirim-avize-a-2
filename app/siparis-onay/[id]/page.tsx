@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import ClearCart from "@/components/ClearCart";
 import BankTransferCard from "@/components/BankTransferCard";
 import ReceiptUpload from "@/components/ReceiptUpload";
+import { maskName } from "@/lib/mask-name";
 
 export const metadata: Metadata = {
   title: "Siparişiniz Alındı",
@@ -41,7 +42,7 @@ export default async function OrderConfirmationPage({ params }: { params: Promis
             ? "Ödemeniz alınamadı. Sepete dönerek tekrar deneyebilirsiniz."
             : awaitingPayment
             ? "Ödeme bilginiz bankadan onaylanıyor. Birkaç saniye içinde sayfayı yenileyin; onaylanınca e-posta ile bilgilendirileceksiniz."
-            : <>Sayın <strong>{order.user.name}</strong>, siparişiniz merkezimize iletildi. Onay ve gelişmeler e-posta ile bildirilecektir.</>}
+            : <>Sayın <strong>{maskName(order.user.name)}</strong>, siparişiniz merkezimize iletildi. Onay ve gelişmeler e-posta ile bildirilecektir.</>}
         </p>
 
         <div className="bg-neutral-50 border border-neutral-200 rounded-2xl p-5 text-xs text-left space-y-3">
