@@ -15,6 +15,7 @@ model User {
   password         String
   role             String           @default("USER") // "USER" veya "ADMIN"
   twoFactorEnabled Boolean          @default(false) // E-posta ile iki aşamalı doğrulama
+  sessionVersion   Int              @default(0) // Artınca bu kullanıcının eski oturum çerezleri geçersiz olur
   orders           Order[]
   reviews          Review[]
   cartItems        CartItem[]
@@ -186,6 +187,7 @@ model SiteConfig {
   etbisUrl            String?  @default("https://www.eticaret.gov.tr")
   etbisQrImage        String? // ETBİS karekod görseli (data URL veya bağlantı)
   maxTotalDiscountPct Float? // Toplam indirim üst sınırı % (boş: sınırsız)
+  adminSessionVersion Int @default(0) // Artınca tüm eski yönetici oturum çerezleri geçersiz olur
   homepageConfig      Json? // Ana sayfa bölümleri: { featured|discounted|bestsellers: { count, pinnedIds[] } } (boş: varsayılan)
   updatedAt           DateTime @updatedAt
 }
