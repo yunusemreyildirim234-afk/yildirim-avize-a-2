@@ -23,13 +23,20 @@ export const CARD_SELECT = {
   variations: { select: { id: true, variationValue: true, extraPrice: true, stock: true }, orderBy: { id: "asc" } },
 } satisfies Prisma.ProductSelect;
 
-export async function getProducts(where: Prisma.ProductWhereInput = {}, take?: number) {
+export async function getProducts(where: Prisma.ProductWhereInput = {}, take?: number, skip?: number) {
   return prisma.product.findMany({
     where: { active: true, ...where },
     select: CARD_SELECT,
-    orderBy: { updatedAt: "desc" },
+    // Sayfalama (skip) kullanılırken eşit updatedAt değerlerinde sayfalar arası kayma olmasın diye id ile kararlı sıra
+    orderBy: skip === undefined ? { updatedAt: "desc" } : [{ updatedAt: "desc" }, { id: "asc" }],
     take,
+    skip,
   });
+}
+
+/** getProducts ile aynı koşulla (yalnızca aktif) ürün sayısı. */
+export function countProducts(where: Prisma.ProductWhereInput = {}) {
+  return prisma.product.count({ where: { active: true, ...where } });
 }
 
 export type ProductWithVariations = Awaited<ReturnType<typeof getProducts>>[number];
