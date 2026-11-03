@@ -19,6 +19,7 @@ import { invoiceError } from "@/lib/validation";
 import { ADDRESS_LINE } from "@/lib/site";
 import { rememberEmail, track } from "@/lib/track";
 import { activeTier, bulkLabel, type BulkRule } from "@/lib/bulk-pricing";
+import { forgetCardOrder, previousCardOrderId, rememberCardOrder } from "@/lib/pending-card-order";
 
 interface LocationItem {
   id: number;
@@ -361,6 +362,7 @@ export default function CartPage() {
           taxOffice,
           companyTitle,
           consent: true,
+          ...(previousCardOrderId() ? { previousOrderId: previousCardOrderId() } : {}),
           items: cart,
         }),
       });
@@ -369,9 +371,11 @@ export default function CartPage() {
       if (data.success && data.paytrToken) {
         // Kartlı ödeme: PayTR güvenli iFrame formu açılır; sepet ödeme onayından sonra temizlenir
         setPaytrToken(data.paytrToken);
+        rememberCardOrder(data.orderId);
         window.scrollTo({ top: 0, behavior: "smooth" });
       } else if (data.success) {
         clearCart();
+        forgetCardOrder();
         router.push(`/siparis-onay/${data.orderId}`);
       } else {
         toast.error("Sipariş oluşturulamadı", { description: data.error });

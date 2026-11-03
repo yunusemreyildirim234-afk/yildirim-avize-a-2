@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { serverError, badRequest } from "@/lib/api-error";
 import { prisma } from "@/lib/db";
 import { rateLimit, tooMany } from "@/lib/rate-limit";
-import { finalizeOrder, releaseStaleReservations, restoreOrderStock } from "@/lib/orders";
+import { finalizeOrder, releasePreviousCardOrder, releaseStaleReservations, restoreOrderStock } from "@/lib/orders";
 import { getPaytrToken } from "@/lib/paytr";
 import { SHIPPING_LABELS } from "@/lib/pricing";
 import { getSessionUserId } from "@/lib/account";
@@ -79,6 +79,12 @@ export async function POST(req: Request) {
     if (invErr) return NextResponse.json({ error: invErr }, { status: 400 });
     if (!(shippingType in SHIPPING_LABELS)) {
       return NextResponse.json({ error: "Geçersiz teslimat yöntemi." }, { status: 400 });
+    }
+
+    // Kartlı ödeme ekranını kapatıp tekrar deneyen müşteri: yalnızca istemcinin bildiği önceki sipariş kimliği ve aynı e-posta/oturum ile
+    // kendi bekleyen kartlı siparişi (stok + kupon) yeni rezervasyondan ÖNCE serbest bırakılır; geçersiz kimlik sessizce yok sayılır.
+    if (paymentMethod === "CREDIT_CARD" && body.previousOrderId !== undefined) {
+      await releasePreviousCardOrder(body.previousOrderId, { email: String(email).trim().toLowerCase(), sessionUserId: await getSessionUserId() }).catch((e) => console.error("[siparis] önceki sipariş serbest bırakılamadı:", (e as Error).message));
     }
 
     // 1. Fiyatlar istemciden değil veritabanından hesaplanır

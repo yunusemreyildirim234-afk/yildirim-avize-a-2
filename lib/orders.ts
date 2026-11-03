@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { sendOrderNotificationEmails, sendStockShortageEmail } from "@/lib/email";
 import { mergeByVariation, RESERVATION_RELEASE_MINUTES } from "@/lib/stock-rules";
 import { releaseCoupon } from "@/lib/coupons";
+import { canReleasePrevious, isOrderId } from "@/lib/previous-order";
 import { createShipmentForOrder } from "@/lib/kargonomi";
 import { notifyAdmins, notifyCustomer } from "@/lib/notifications";
 import { cleanGuestEmail } from "@/lib/guest-email";
@@ -70,6 +71,17 @@ export async function failAwaitingCardOrder(orderId: string): Promise<boolean> {
   await restoreOrderStock(orderId);
   await releaseCoupon(o?.couponCode).catch((err) => console.error("[siparis] kupon serbest bırakılamadı:", (err as Error).message));
   return true;
+}
+
+/**
+ * Müşterinin kendi önceki ödenmemiş kartlı siparişini (istemcinin bildiği kimlikle) serbest bırakır: failAwaitingCardOrder (stok + kupon, idempotent).
+ * Geçersiz / başkasına ait / zaten kapanmış kimlik sessizce yok sayılır. Serbest bırakıldıysa true.
+ */
+export async function releasePreviousCardOrder(previousOrderId: unknown, who: { email: string; sessionUserId?: string | null }): Promise<boolean> {
+  if (!isOrderId(previousOrderId)) return false;
+  const prev = await prisma.order.findUnique({ where: { id: previousOrderId }, select: { status: true, paymentMethod: true, userId: true, user: { select: { email: true, password: true } } } });
+  if (!canReleasePrevious(prev, who)) return false;
+  return failAwaitingCardOrder(previousOrderId);
 }
 
 /**
