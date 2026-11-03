@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cache } from "react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import Breadcrumbs from "@/components/Breadcrumbs";
@@ -29,7 +30,8 @@ const slugify = (v: string) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
 
-async function resolve(slug: string) {
+// generateMetadata ve sayfa aynı istekte aynı çözümü paylaşır (tekrar sayım/groupBy sorgusu yok)
+const resolve = cache(async (slug: string) => {
   const category = CATEGORIES.find((c) => c.slug === slug);
   if (category) return { title: category.title, desc: category.desc, where: { category: category.dbCategory } };
   if (slug === "tum") return { ...COLLECTIONS.tum, where: {} };
@@ -46,7 +48,7 @@ async function resolve(slug: string) {
   const match = rows.find((r: { category: string }) => slugify(r.category) === slug);
   if (match) return { title: match.category, desc: `${match.category} koleksiyonundaki avize ve aydınlatma modelleri.`, where: { category: match.category } };
   return null;
-}
+});
 
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { slug } = await params;
