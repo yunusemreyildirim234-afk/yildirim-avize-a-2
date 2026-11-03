@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSessionUserId } from "@/lib/account";
-import type { Prisma } from "@prisma/client";
+import type { Prisma } from "@/generated/prisma/client";
 import { bulkTiersOf } from "@/lib/bulk-pricing";
 
 type CartRow = Prisma.CartItemGetPayload<{ include: { variation: { include: { product: true } } } }>;

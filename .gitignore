@@ -46,3 +46,6 @@ next-env.d.ts
 # Gelistirme raporlari
 *_RAPORU.md
 TARAMA_RAPORU.md
+
+# Prisma 7 uretilmis istemci (derlemede "prisma generate" ile olusur)
+/generated/prisma

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import type { Prisma } from "@prisma/client";
+import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { ADMIN_COOKIE, verifyAdminSession } from "@/lib/session";
 import { getUserSession } from "@/lib/account";

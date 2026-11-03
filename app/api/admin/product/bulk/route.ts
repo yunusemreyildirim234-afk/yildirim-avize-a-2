@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { adminGuard } from "@/lib/admin-guard";
-import type { Prisma } from "@prisma/client";
+import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { buildUndoToken, snapshotProducts, type UndoExtra } from "@/lib/admin-undo";
 import { bulkTiersOf, upsertTier } from "@/lib/bulk-pricing";
