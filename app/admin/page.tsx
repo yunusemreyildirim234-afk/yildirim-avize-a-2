@@ -13,6 +13,7 @@ import AdminHomepage from "@/components/AdminHomepage";
 import { getHomepageConfig, getSectionPools } from "@/lib/homepage";
 import AdminCoupons from "@/components/AdminCoupons";
 import AdminDiscountSettings from "@/components/AdminDiscountSettings";
+import AdminSessions from "@/components/AdminSessions";
 import AdminLiveAlerts from "@/components/AdminLiveAlerts";
 import AdminSection from "@/components/AdminSection";
 import AdminReceiptActions from "@/components/AdminReceiptActions";
@@ -199,6 +200,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         <AdminAddProduct />
 
         <AdminDiscountSettings initial={discountCap} />
+        <AdminSessions />
 
         <AdminHomepage
           initial={homeConfig}
