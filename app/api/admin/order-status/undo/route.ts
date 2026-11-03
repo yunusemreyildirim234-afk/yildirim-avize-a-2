@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { reserveCoupon } from "@/lib/coupons";
 import { verifySession } from "@/lib/session";
 import { UNDO_TTL_MS } from "@/lib/admin-undo";
+import { reserveCouponForUndo } from "@/lib/order-undo";
 
 class Refusal extends Error {}
 
@@ -30,6 +31,7 @@ export async function POST(req: Request) {
   if (Date.now() - Number(t.iat) > UNDO_TTL_MS) return NextResponse.json({ error: "Geri alma süresi (30 dk) doldu." }, { status: 410 });
 
   try {
+    let couponWarning: string | undefined;
     await prisma.$transaction(async (tx) => {
       // Durum hâlâ değiştirdiğimiz değerdeyse atomik olarak eskisine döner
       const claimed = await tx.order.updateMany({ where: { id: t.orderId, status: t.to }, data: { status: t.from } });
@@ -50,12 +52,11 @@ export async function POST(req: Request) {
         }
       }
 
-      // İptalde iade edilen kupon hakkı tekrar kullanılmış sayılır (kupon pasif veya limiti dolu ise reddedilir)
-      if (t.coupon && !(await reserveCoupon(tx, t.coupon))) {
-        throw new Refusal(`"${t.coupon}" kuponu artık geçerli değil veya kullanım limiti dolmuş; geri alınamadı.`);
-      }
-    });
-    return NextResponse.json({ success: true, status: t.from });
+      // İptalde iade edilen kupon hakkı yeniden ayrılır (atomik, usedCount < maxUses). Durum geri alma yukarıda koşullu güncellemeyle
+      // yalnızca bir kez kazanıldığı için çift sayım olmaz. Limit bu arada dolduysa durum yine geri alınır, uyarı gösterilir.
+      couponWarning = (await reserveCouponForUndo(t.coupon, (code) => reserveCoupon(tx, code))).warning;
+    }, { maxWait: 5000, timeout: 10000 });
+    return NextResponse.json({ success: true, status: t.from, ...(couponWarning ? { couponWarning } : {}) });
   } catch (e) {
     if (e instanceof Refusal) return NextResponse.json({ error: e.message }, { status: 409 });
     console.error("[order-undo]", (e as Error).message);

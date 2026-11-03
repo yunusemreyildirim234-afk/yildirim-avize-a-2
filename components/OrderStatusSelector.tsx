@@ -60,6 +60,7 @@ export default function OrderStatusSelector({ orderId, initialStatus, shippingTy
       if (!res.ok) throw new Error(data.error || "Geri alınamadı.");
       setStatus(previous);
       toast.success("Sipariş durumu geri alındı");
+      if (data.couponWarning) toast.warning("Kupon uyarısı", { description: data.couponWarning, duration: 12000 });
       router.refresh();
     } catch (e) {
       toast.error("Geri alınamadı", { description: (e as Error).message });
