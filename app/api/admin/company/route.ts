@@ -31,3 +31,18 @@ export async function PUT(req: Request) {
   revalidatePath("/", "layout");
   return NextResponse.json({ success: true });
 }
+
+// Genel indirim ayarları: toplam indirim üst sınırı % (boş: sınırsız)
+export async function PATCH(req: Request) {
+  const denied = await adminGuard();
+  if (denied) return denied;
+  const body = await req.json().catch(() => null);
+  const raw = body?.maxTotalDiscountPct;
+  let cap: number | null = null;
+  if (raw !== null && raw !== "" && raw !== undefined) {
+    cap = Number(raw);
+    if (!Number.isFinite(cap) || cap < 0 || cap >= 100) return NextResponse.json({ error: "Üst sınır 0 ile 100 arasında olmalıdır (100 hariç) ya da boş bırakılmalıdır." }, { status: 400 });
+  }
+  await prisma.siteConfig.upsert({ where: { id: 1 }, create: { id: 1, maxTotalDiscountPct: cap }, update: { maxTotalDiscountPct: cap } });
+  return NextResponse.json({ success: true, maxTotalDiscountPct: cap });
+}

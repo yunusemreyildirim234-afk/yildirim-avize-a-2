@@ -52,7 +52,8 @@ export async function POST(req: Request) {
   }));
 
   // Kupon (yalnızca doğrulama ve hesap; rezervasyon yok)
-  let priced = priceCart({ lines: priceLines, shippingType, paymentMethod });
+  const cap = (await prisma.siteConfig.findUnique({ where: { id: 1 }, select: { maxTotalDiscountPct: true } }))?.maxTotalDiscountPct ?? null;
+  let priced = priceCart({ lines: priceLines, maxTotalDiscountPct: cap, shippingType, paymentMethod });
   let coupon: { ok: boolean; rule?: CouponRule; error?: string } | null = null;
   const code = typeof body.coupon === "string" ? body.coupon.trim() : "";
   if (code) {
@@ -62,7 +63,7 @@ export async function POST(req: Request) {
       lines: priced.lines.map((l) => ({ productId: l.productId, lineTotal: l.lineTotal })),
     });
     if (check.ok) {
-      const withCoupon = priceCart({ lines: priceLines, shippingType, paymentMethod, coupon: check.rule });
+      const withCoupon = priceCart({ lines: priceLines, maxTotalDiscountPct: cap, shippingType, paymentMethod, coupon: check.rule });
       if (withCoupon.couponError) coupon = { ok: false, error: withCoupon.couponError };
       else {
         priced = withCoupon;

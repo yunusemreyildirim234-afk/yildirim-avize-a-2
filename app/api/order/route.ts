@@ -80,7 +80,8 @@ export async function POST(req: Request) {
       pickupPct: l.variation.product.pickupDiscountPct,
       transferPct: l.variation.product.transferDiscountPct,
     }));
-    let priced = priceCart({ lines: priceLines, shippingType, paymentMethod });
+    const cap = (await prisma.siteConfig.findUnique({ where: { id: 1 }, select: { maxTotalDiscountPct: true } }))?.maxTotalDiscountPct ?? null;
+    let priced = priceCart({ lines: priceLines, maxTotalDiscountPct: cap, shippingType, paymentMethod });
     // Kupon: kişiye/ürüne özel şartlar ve kullanım limiti sunucuda doğrulanır
     let appliedCouponCode: string | null = null;
     if (typeof couponCode === "string" && couponCode.trim()) {
@@ -90,7 +91,7 @@ export async function POST(req: Request) {
         lines: priced.lines.map((l) => ({ productId: l.productId, lineTotal: l.lineTotal })),
       });
       if (!check.ok) return NextResponse.json({ error: check.error }, { status: 400 });
-      priced = priceCart({ lines: priceLines, shippingType, paymentMethod, coupon: check.rule });
+      priced = priceCart({ lines: priceLines, maxTotalDiscountPct: cap, shippingType, paymentMethod, coupon: check.rule });
       if (priced.couponError) return NextResponse.json({ error: priced.couponError }, { status: 400 });
       appliedCouponCode = check.rule.code;
     }

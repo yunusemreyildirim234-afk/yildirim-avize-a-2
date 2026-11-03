@@ -9,6 +9,7 @@ import AdminTrendyolSync from "@/components/AdminTrendyolSync";
 import AdminKargonomiOrderActions from "@/components/AdminKargonomiOrderActions";
 import AdminMessages from "@/components/AdminMessages";
 import AdminCoupons from "@/components/AdminCoupons";
+import AdminDiscountSettings from "@/components/AdminDiscountSettings";
 import AdminLiveAlerts from "@/components/AdminLiveAlerts";
 import AdminSection from "@/components/AdminSection";
 import AdminReceiptActions from "@/components/AdminReceiptActions";
@@ -76,6 +77,7 @@ async function getAdminData() {
 export default async function AdminPage({ searchParams }: { searchParams: Promise<{ durum?: string }> }) {
   const selectedGroups = parseGroupParam((await searchParams).durum);
   const { orders, products, messages, coupons, customers, reviews, company } = await getAdminData();
+  const discountCap = (await prisma.siteConfig.findUnique({ where: { id: 1 }, select: { maxTotalDiscountPct: true } }))?.maxTotalDiscountPct ?? null;
   const activity = await getActivity();
   const pendingReviews = reviews.filter((r) => r.status === "PENDING").length;
   const sortedReviews = [...reviews].sort(
@@ -184,6 +186,8 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
 
         {/* 2. Hızlı Avize Ekleme Modülü */}
         <AdminAddProduct />
+
+        <AdminDiscountSettings initial={discountCap} />
 
         {/* Promosyon Kodları Yönetimi */}
         <AdminCoupons

@@ -76,6 +76,7 @@ export function priceCart(opts: {
   shippingType: string;
   paymentMethod: "CREDIT_CARD" | "BANK_TRANSFER";
   coupon?: CouponRule | null;
+  maxTotalDiscountPct?: number | null; // toplam indirim üst sınırı % (boş/null: sınırsız)
 }): CartPricing {
   // 1) Kademe: aynı ürünün tüm renk/varyasyon satırlarının TOPLAM adedine göre
   const qtyByProduct = new Map<string, number>();
@@ -129,5 +130,24 @@ export function priceCart(opts: {
     }
   }
 
-  return { lines, itemsTotal, shipping, couponDiscount, pickupDiscount, bankDiscount, total: Math.max(0, afterDiscounts - bankDiscount), couponError };
+  const result: CartPricing = { lines, itemsTotal, shipping, couponDiscount, pickupDiscount, bankDiscount, total: Math.max(0, afterDiscounts - bankDiscount), couponError };
+
+  // 5) Toplam indirim üst sınırı: adet kademesi indirimi + kupon + mağaza + Havale, kademe öncesi ürün toplamının %cap'ini aşamaz.
+  //    Aşılırsa kupon/mağaza/Havale indirimleri orantılı kısılır (adet kademesi fiyatı korunur). Ödenecek tutar buna göre yükselir.
+  const cap = opts.maxTotalDiscountPct;
+  if (cap !== null && cap !== undefined && cap >= 0 && cap < 100) {
+    const listTotal = lines.reduce((s, l) => s + l.price * l.quantity, 0);
+    const tierDiscount = listTotal - itemsTotal;
+    const others = couponDiscount + pickupDiscount + bankDiscount;
+    const room = Math.max(0, (listTotal * cap) / 100 - tierDiscount);
+    if (others > room) {
+      const k = others > 0 ? room / others : 0;
+      const cut = (x: number) => Math.floor(x * k * 100) / 100;
+      result.couponDiscount = cut(couponDiscount);
+      result.pickupDiscount = cut(pickupDiscount);
+      result.bankDiscount = cut(bankDiscount);
+      result.total = Math.max(0, itemsTotal + shipping - result.couponDiscount - result.pickupDiscount - result.bankDiscount);
+    }
+  }
+  return result;
 }
