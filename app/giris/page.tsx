@@ -188,7 +188,7 @@ export default function AuthPage() {
                                 className="w-16 h-16 rounded-xl bg-neutral-100 overflow-hidden shrink-0 border border-neutral-200 flex items-center justify-center"
                               >
                                 {item.variation.product.imageUrl && (
-                                  <img src={item.variation.product.imageUrl} alt={item.variation.product.title} className="w-full h-full object-cover" />
+                                  <img src={item.variation.product.imageUrl} alt={item.variation.product.title} width={64} height={64} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                                 )}
                               </Link>
                             )}

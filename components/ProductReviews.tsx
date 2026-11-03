@@ -125,7 +125,7 @@ export default function ProductReviews({
               {r.imageUrl && (
                 <a href={r.imageUrl} target="_blank" rel="noopener noreferrer" className="inline-block pt-1">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={r.imageUrl} alt={`${r.author} müşterimizin gönderdiği fotoğraf`} loading="lazy" className="h-28 w-28 rounded-xl object-cover border border-neutral-200" />
+                  <img src={r.imageUrl} alt={`${r.author} müşterimizin gönderdiği fotoğraf`} width={112} height={112} loading="lazy" decoding="async" className="h-28 w-28 rounded-xl object-cover border border-neutral-200" />
                 </a>
               )}
             </li>
@@ -149,7 +149,7 @@ export default function ProductReviews({
                 <p className="text-neutral-700 whitespace-pre-line">{eligibility.review.comment}</p>
                 {eligibility.review.imageUrl && (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={eligibility.review.imageUrl} alt="Gönderdiğiniz fotoğraf" className="h-24 w-24 rounded-xl object-cover border border-neutral-200" />
+                  <img src={eligibility.review.imageUrl} alt="Gönderdiğiniz fotoğraf" width={96} height={96} loading="lazy" decoding="async" className="h-24 w-24 rounded-xl object-cover border border-neutral-200" />
                 )}
               </>
             )}

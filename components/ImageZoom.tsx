@@ -27,7 +27,7 @@ export function HoverMagnifier({ src, alt, onZoom }: { src: string; alt: string;
       aria-label="Görseli büyüt"
       className="absolute inset-0 w-full h-full cursor-zoom-in"
     >
-      <img src={src} alt={alt} className="w-full h-full object-cover" />
+      <img src={src} alt={alt} decoding="async" fetchPriority="high" className="w-full h-full object-cover" />
       <span className="absolute top-4 right-4 inline-flex items-center gap-1.5 bg-zinc-900/80 text-white text-[11px] font-semibold px-3 py-1.5 rounded-full">
         <ZoomIn aria-hidden="true" className="w-3.5 h-3.5" /> Büyüt
       </span>

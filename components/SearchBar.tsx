@@ -154,7 +154,7 @@ export default function SearchBar() {
                     <span className="w-12 h-12 rounded-lg bg-neutral-900 overflow-hidden shrink-0 border border-neutral-200">
                       {product.imageUrl && (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={product.imageUrl} alt="" loading="lazy" className="w-full h-full object-cover" />
+                        <img src={product.imageUrl} alt="" loading="lazy" decoding="async" width={48} height={48} className="w-full h-full object-cover" />
                       )}
                     </span>
                     <span className="min-w-0">

@@ -53,7 +53,7 @@ export default async function CustomerGalleryPage() {
               <li key={r.id} className="break-inside-avoid bg-white rounded-2xl border border-neutral-200 overflow-hidden shadow-sm">
                 <a href={r.imageUrl!} target="_blank" rel="noopener noreferrer" className="block bg-neutral-100">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={r.imageUrl!} alt={`${r.product.title} - müşteri fotoğrafı`} loading="lazy" className="w-full h-auto object-cover" />
+                  <img src={r.imageUrl!} alt={`${r.product.title} - müşteri fotoğrafı`} width={400} height={400} loading="lazy" decoding="async" className="w-full h-auto object-cover" />
                 </a>
                 <div className="p-4 space-y-2">
                   <span className="inline-flex" role="img" aria-label={`5 üzerinden ${r.rating} yıldız`}>

@@ -57,7 +57,7 @@ export default function AdminReviews({ reviews }: { reviews: AdminReview[] }) {
             {r.imageUrl && (
               <a href={r.imageUrl} target="_blank" rel="noopener noreferrer" className="shrink-0">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={r.imageUrl} alt="Müşteri fotoğrafı" loading="lazy" className="h-28 w-28 rounded-xl object-cover border border-neutral-200" />
+                <img src={r.imageUrl} alt="Müşteri fotoğrafı" width={112} height={112} loading="lazy" decoding="async" className="h-28 w-28 rounded-xl object-cover border border-neutral-200" />
               </a>
             )}
             <div className="min-w-0 flex-1 space-y-1.5 text-xs">

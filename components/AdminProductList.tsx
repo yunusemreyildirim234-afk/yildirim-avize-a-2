@@ -410,7 +410,7 @@ Yine de geri alınsın mı?`)) await doUndo(true);
                 className="w-16 h-16 rounded-xl bg-neutral-900 overflow-hidden shrink-0 border border-neutral-200 block"
               >
                 {product.imageUrl ? (
-                  <img src={product.imageUrl} alt={product.title} className="w-full h-full object-cover" />
+                  <img src={product.imageUrl} alt={product.title} width={64} height={64} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-amber-400 text-xs font-serif">💡</div>
                 )}

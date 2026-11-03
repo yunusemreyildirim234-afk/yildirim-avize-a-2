@@ -143,7 +143,7 @@ export default function AdminProductEditor({ product, onSaved }: { product: Edit
         <ul className="space-y-2">
           {images.map((url, i) => (
             <li key={i} className="flex items-center gap-2">
-              <img src={url} alt="" className="w-12 h-12 rounded-lg object-cover border border-neutral-200 bg-white shrink-0" />
+              <img src={url} alt="" width={48} height={48} loading="lazy" decoding="async" className="w-12 h-12 rounded-lg object-cover border border-neutral-200 bg-white shrink-0" />
               <input
                 aria-label={`Görsel ${i + 1} adresi`}
                 value={url}
