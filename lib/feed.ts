@@ -91,6 +91,9 @@ export function defaultOffer<V extends FeedVariation>(p: { basePrice: number; li
   return { variation: v, price, list: list && list > price ? list : null, inStock: p.variations.some((x) => x.stock > 0) };
 }
 
+/** Feed bağlantıları kanonik www adresini kullanır (ortam değişkeni www'suz ise de): yildirimavize.com.tr → www.yildirimavize.com.tr */
+export const feedSite = (u: string) => u.replace(/^(https:\/\/)(yildirimavize\.com\.tr)(?=\/|$)/i, "$1www.$2").replace(/\/$/, "");
+
 export const feedBrand = (b: string | null | undefined) => b?.trim() || FEED_BRAND_FALLBACK;
 
 export function googleCategory(category: string): string {

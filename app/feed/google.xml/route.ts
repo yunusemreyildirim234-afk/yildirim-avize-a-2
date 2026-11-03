@@ -1,13 +1,14 @@
 import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/db";
 import { SITE_URL } from "@/lib/site";
-import { FEED_HEAD, FEED_TAIL, feedItemXml } from "@/lib/feed";
+import { FEED_HEAD, FEED_TAIL, feedItemXml, feedSite } from "@/lib/feed";
 
 // Herkese açık, oturumsuz Google Merchant Center feed'i. Ürünler 50'şer (id sırasıyla) okunur ve parça parça akıtılır: bellek ürün sayısıyla büyümez.
 // Her parça "storefront" etiketiyle 1 saat önbelleğe alınır (revalidateStorefront() yönetici işlemlerinde yeniler).
 export const dynamic = "force-dynamic";
 
 const BATCH = 50;
+const SITE = feedSite(SITE_URL);
 
 const getBatch = unstable_cache(
   async (cursor: string | null) => {
@@ -22,7 +23,7 @@ const getBatch = unstable_cache(
       },
     });
     return {
-      xml: rows.map((p) => feedItemXml(p, SITE_URL)).filter((x): x is string => x !== null).join("\n"),
+      xml: rows.map((p) => feedItemXml(p, SITE)).filter((x): x is string => x !== null).join("\n"),
       last: rows.length === BATCH ? rows[rows.length - 1].id : null,
     };
   },
@@ -44,7 +45,7 @@ export async function GET() {
     async pull(controller) {
       if (!started) {
         started = true;
-        controller.enqueue(enc.encode(FEED_HEAD(SITE_URL)));
+        controller.enqueue(enc.encode(FEED_HEAD(SITE)));
       }
       if (batch) {
         if (batch.xml) controller.enqueue(enc.encode(batch.xml + "\n"));
