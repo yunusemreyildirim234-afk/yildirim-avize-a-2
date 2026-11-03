@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { ShieldCheck, X } from "lucide-react";
 import { toast } from "sonner";
 import CodeStep from "@/components/CodeStep";
@@ -30,9 +29,10 @@ export function AdminTwoFactorBanner({ missing }: { missing: number }) {
       <ShieldCheck aria-hidden="true" className="w-5 h-5 shrink-0 text-amber-700 mt-0.5" />
       <p className="flex-1">
         Hesabınızı korumak için 2 aşamalı doğrulamayı açın.{" "}
-        <Link href="/admin#guvenlik" className="font-semibold underline underline-offset-2 hover:text-amber-800 focus-visible:outline-2 focus-visible:outline-amber-700">
+        {/* Düz bağlantı: tarayıcı hashchange olayını tetikler, kapalı "İki Aşamalı Doğrulama" bölümü açılır (Next Link pushState kullanır, olay yok) */}
+        <a href="#guvenlik" className="font-semibold underline underline-offset-2 hover:text-amber-800 focus-visible:outline-2 focus-visible:outline-amber-700">
           Şimdi aç
-        </Link>
+        </a>
       </p>
       <button
         type="button"
