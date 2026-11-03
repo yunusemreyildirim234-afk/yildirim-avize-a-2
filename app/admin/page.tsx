@@ -1,5 +1,7 @@
 import { cleanGuestEmail } from "@/lib/guest-email";
 import { maskEmail } from "@/lib/admin-password";
+import AdminPayoutCard from "@/components/AdminPayoutCard";
+import { PAYOUT_EXCLUDED_STATUSES, PAYOUT_WINDOW_DAYS, buildPayouts } from "@/lib/payout";
 import Link from "next/link";
 import nextDynamic from "next/dynamic";
 import { prisma } from "@/lib/db";
@@ -103,6 +105,14 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const adminUsers = await prisma.user.findMany({ where: { role: "ADMIN" }, select: { id: true, email: true, twoFactorEnabled: true }, orderBy: { createdAt: "asc" } }).catch(() => []);
   const adminsWithout2fa = adminUsers.filter((a) => !a.twoFactorEnabled).length;
   const adminRows = adminUsers.map((a) => ({ id: a.id, maskedEmail: maskEmail(a.email), twoFactorEnabled: a.twoFactorEnabled })); // tam e-posta istemciye gitmez
+  // Kuveyt Türk hesabı (yalnızca gösterim): son ~35 günün kartlı, ödemesi alınmış siparişleri; ayrı hafif sorgu (yalnızca gerekli alanlar)
+  const payoutOrders = await prisma.order
+    .findMany({
+      where: { paymentMethod: "CREDIT_CARD", status: { notIn: PAYOUT_EXCLUDED_STATUSES }, createdAt: { gte: new Date(Date.now() - PAYOUT_WINDOW_DAYS * 24 * 3600_000) } },
+      select: { id: true, createdAt: true, totalAmount: true, paymentMethod: true, status: true },
+    })
+    .catch(() => []);
+  const payout = buildPayouts(payoutOrders);
   const pendingReviews = reviews.filter((r) => r.status === "PENDING").length;
   const sortedReviews = [...reviews].sort(
     (a, b) => Number(b.status === "PENDING") - Number(a.status === "PENDING") || b.createdAt.getTime() - a.createdAt.getTime()
@@ -170,13 +180,15 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         </AdminSection>
 
         {/* 1. Özet İstatistik Kartları */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-flow-dense grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm">
             <span className="text-xs text-neutral-500 font-medium block">Toplam Ciro</span>
             <span className="text-2xl font-bold text-neutral-900 mt-1 block">
               {totalRevenue.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺
             </span>
           </div>
+
+          <AdminPayoutCard summary={payout} />
 
           <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm">
             <span className="text-xs text-neutral-500 font-medium block">Geçerli Sipariş</span>
