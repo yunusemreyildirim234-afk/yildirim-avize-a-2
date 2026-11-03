@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
 import { cartPriceLines, useCart, type ItemRules } from "@/context/CartContext";
+import { shippingProgress } from "@/lib/shipping-progress";
 import { FREE_SHIPPING_THRESHOLD, SHIPPING_COST, SHIPPING_LABELS, type CouponRule } from "@/lib/pricing";
 import { discountsApplied, priceCart, type CapInfo } from "@/lib/cart-pricing";
 import { lineNotices } from "@/lib/cart-notices";
@@ -229,6 +230,7 @@ export default function CartPage() {
   const { shipping: shippingCost, couponDiscount, pickupDiscount, bankDiscount, total: finalTotal } = fresh ? quote.totals : localTotals;
   const couponUnverifiable = appliedCoupon !== null && ((fresh && quote.coupon?.limited === true) || quoteFailed);
   const itemsShown = fresh ? quote.totals.itemsTotal : totalPrice;
+  const shipProgress = shippingProgress(itemsShown, FREE_SHIPPING_THRESHOLD);
 
   const handleApplyCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -893,6 +895,28 @@ export default function CartPage() {
                   </>
                 )}
               </fieldset>
+
+              {/* Ücretsiz kargo ilerlemesi (yalnızca gösterim; adrese teslimde) */}
+              {shippingType === "STANDART_KARGO" && !shipProgress.empty && (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-950 space-y-2">
+                  <p role="status" className="font-semibold">
+                    {shipProgress.reached
+                      ? "Ücretsiz kargo kazandınız 🎉"
+                      : `Ücretsiz kargoya ${shipProgress.remaining.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺ kaldı`}
+                  </p>
+                  <div
+                    role="progressbar"
+                    aria-label="Ücretsiz kargo ilerlemesi"
+                    aria-valuemin={0}
+                    aria-valuemax={FREE_SHIPPING_THRESHOLD}
+                    aria-valuenow={Math.min(FREE_SHIPPING_THRESHOLD, Math.floor(itemsShown))}
+                    aria-valuetext={`%${shipProgress.percent}`}
+                    className="h-2 rounded-full bg-emerald-200 overflow-hidden"
+                  >
+                    <div className="h-full bg-emerald-700 rounded-full motion-safe:transition-all" style={{ width: `${shipProgress.percent}%` }} />
+                  </div>
+                </div>
+              )}
 
               {/* Fiyat Dökümü */}
               <div className="space-y-2 pt-4 border-t border-neutral-100 text-xs">
