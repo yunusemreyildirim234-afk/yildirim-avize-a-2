@@ -3,16 +3,19 @@ import { prisma } from "@/lib/db";
 import { DISCOUNTED, FEATURED, getBestSellers, getProducts } from "@/lib/products";
 import { resolveConfig, type ResolvedConfig } from "@/lib/homepage-compose";
 
-/** Ana sayfa yapılandırması: istek başına bir kez okunur; hata/boş → varsayılan (ana sayfa asla bozulmaz). */
-export const getHomepageConfig = cache(async (): Promise<ResolvedConfig> => {
+/** Ham ana sayfa JSON'u: istek başına bir kez okunur (bölümler ve avantaj kartları aynı okumayı paylaşır); hata → null. */
+export const getHomepageRaw = cache(async (): Promise<unknown> => {
   try {
     const row = await prisma.siteConfig.findUnique({ where: { id: 1 }, select: { homepageConfig: true } });
-    return resolveConfig(row?.homepageConfig);
+    return row?.homepageConfig ?? null;
   } catch (e) {
     console.error("[homepage] yapılandırma okunamadı:", (e as Error).message);
-    return resolveConfig(null);
+    return null;
   }
 });
+
+/** Ana sayfa yapılandırması; hata/boş → varsayılan (ana sayfa asla bozulmaz). */
+export const getHomepageConfig = cache(async (): Promise<ResolvedConfig> => resolveConfig(await getHomepageRaw()));
 
 const POOL = 100;
 

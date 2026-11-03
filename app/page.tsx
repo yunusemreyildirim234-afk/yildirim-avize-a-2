@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import AnnouncementBars from "@/components/AnnouncementBars";
 import FaqSection from "@/components/FaqSection";
 import Hero from "@/components/Hero";
+import PromoStrip from "@/components/PromoStrip";
 import JsonLd from "@/components/JsonLd";
 import ProductCard from "@/components/ProductCard";
 import { getProducts } from "@/lib/products";
@@ -85,10 +85,12 @@ export default async function Home() {
   return (
     <main>
       <JsonLd data={localBusiness} />
-      <AnnouncementBars />
 
       {/* 1. Ferah beyaz zemin: merkezi marka + arama */}
       <Hero />
+
+      {/* Avantajlar: kupon, ücretsiz kargo, mağazadan teslim (yönetim panelinden düzenlenir) */}
+      <PromoStrip />
 
       {/* 2. Beyaz -> açık gri: koleksiyonlar ve öne çıkanlar */}
       <section className="bg-gradient-to-b from-white via-zinc-50 to-zinc-100 px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
