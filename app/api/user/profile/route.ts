@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSessionUserId } from "@/lib/account";
 import { rateLimit, tooMany } from "@/lib/rate-limit";
+import { cleanDisplayName } from "@/lib/validation";
 
 // Giriş yapmış üyenin görünen adını günceller
 export async function PATCH(req: Request) {
@@ -12,10 +13,9 @@ export async function PATCH(req: Request) {
   if (!userId) return NextResponse.json({ error: "Oturum açmanız gerekiyor." }, { status: 401 });
 
   const body = await req.json().catch(() => ({}));
-  const name = typeof body.name === "string" ? body.name.replace(/\s+/g, " ").trim() : "";
-  if (name.length < 2) return NextResponse.json({ error: "Ad en az 2 karakter olmalıdır." }, { status: 400 });
-  if (name.length > 60) return NextResponse.json({ error: "Ad en fazla 60 karakter olabilir." }, { status: 400 });
-  if (/[<>]/.test(name)) return NextResponse.json({ error: "Ad geçersiz karakter içeriyor." }, { status: 400 });
+  const checked = cleanDisplayName(body.name);
+  if (!checked.ok) return NextResponse.json({ error: checked.error }, { status: 400 });
+  const name = checked.name;
 
   const user = await prisma.user.update({ where: { id: userId }, data: { name }, select: { name: true } });
   return NextResponse.json({ success: true, name: user.name });

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import type { ActivityRow } from "@/lib/activity";
 import AdminDeleteButton from "@/components/AdminDeleteButton";
 
@@ -8,7 +10,28 @@ const fmt = (iso: string | null) => (iso ? new Date(iso).toLocaleString("tr-TR",
 const dur = (m: number) => (m < 1 ? "1 dakikadan az" : m < 60 ? `${m} dk` : `${Math.floor(m / 60)} sa ${m % 60} dk`);
 
 function Row({ r, guest }: { r: ActivityRow; guest: boolean }) {
+  const router = useRouter();
   const quiet = !r.lastAt;
+  // Üye adını düzenle: önce "eski ad → yeni ad" gösterilip onay alınır
+  const editName = async () => {
+    const input = window.prompt(`"${r.name ?? ""}" için yeni ad (2-60 karakter):`, r.name ?? "");
+    if (input === null) return;
+    const next = input.replace(/\s+/g, " ").trim();
+    if (next === (r.name ?? "")) return;
+    if (!confirm(`Ad değiştirilecek:
+${r.name ?? "—"} → ${next}
+
+E-posta, şifre ve rol değişmez. Onaylıyor musunuz?`)) return;
+    try {
+      const res = await fetch(`/api/admin/users/${r.userId}/name`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: next }) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Ad güncellenemedi.");
+      toast.success(`Ad güncellendi: ${data.oldName} → ${data.name}`);
+      router.refresh();
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
+  };
   return (
     <li className="p-5 space-y-2 text-xs">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -16,13 +39,18 @@ function Row({ r, guest }: { r: ActivityRow; guest: boolean }) {
         <span className="text-neutral-600 break-all">{r.email ?? "E-posta bilinmiyor (anonim oturum)"}</span>
         {r.isAdmin && <span className="bg-neutral-900 text-white font-bold text-[10px] px-2 py-0.5 rounded-full">Yönetici hesabı</span>}
         {r.errors.length > 0 && <span className="bg-red-100 text-red-800 font-bold text-[10px] px-2 py-0.5 rounded-full">{r.errors.length} hata</span>}
+        {r.userId && (
+          <button type="button" onClick={editName} className="ml-auto text-[11px] font-semibold text-amber-800 hover:underline">
+            Düzenle
+          </button>
+        )}
         <AdminDeleteButton
           endpoint="/api/admin/activity"
           payload={{ keys: [r.key] }}
           label="Kaydı Sil"
           confirmText={guest ? "Bu misafirin 3 günlük hareket kayıtları silinecek." : "Bu üyenin 3 günlük hareket kayıtları silinecek (üye hesabı silinmez)."}
           disabled={quiet}
-          className="ml-auto"
+          className={r.userId ? "" : "ml-auto"}
         />
       </div>
       <p className="text-neutral-500">

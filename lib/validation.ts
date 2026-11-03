@@ -23,3 +23,12 @@ export function invoiceError(i: { invoiceType?: string; taxNumber?: string; taxO
   if (tax && !/^\d{11}$/.test(tax)) return "T.C. Kimlik Numarası 11 haneli olmalıdır.";
   return null;
 }
+
+/** Görünen ad doğrulaması (üye profili ve admin düzenlemesi ortak): kontrol karakterleri temizlenir, boşluklar sadeleşir, 2-60 karakter. */
+export function cleanDisplayName(raw: unknown): { ok: true; name: string } | { ok: false; error: string } {
+  const name = typeof raw === "string" ? raw.replace(/[\u0000-\u001F\u007F-\u009F]/g, " ").replace(/\s+/g, " ").trim() : "";
+  if (name.length < 2) return { ok: false, error: "Ad en az 2 karakter olmalıdır." };
+  if (name.length > 60) return { ok: false, error: "Ad en fazla 60 karakter olabilir." };
+  if (/[<>]/.test(name)) return { ok: false, error: "Ad geçersiz karakter içeriyor." };
+  return { ok: true, name };
+}

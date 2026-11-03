@@ -16,6 +16,7 @@ export async function purgeOldEvents() {
 
 export interface ActivityRow {
   key: string;
+  userId: string | null; // yalnızca üyeler
   email: string | null;
   name: string | null;
   registeredAt: string | null; // yalnızca üyeler
@@ -30,7 +31,7 @@ export interface ActivityRow {
 }
 
 const empty = (key: string, email: string | null): ActivityRow => ({
-  key, email, name: null, registeredAt: null, isAdmin: false, firstAt: null, lastAt: null, activeMinutes: 0, searches: [], cartAdds: [], checkoutStarts: 0, errors: [],
+  key, userId: null, email, name: null, registeredAt: null, isAdmin: false, firstAt: null, lastAt: null, activeMinutes: 0, searches: [], cartAdds: [], checkoutStarts: 0, errors: [],
 });
 
 /** Son 3 günün olaylarını müşteri (e-posta) veya anonim oturum bazında gruplar. */
@@ -38,14 +39,14 @@ export async function getActivity(): Promise<{ registered: ActivityRow[]; guests
   try {
     await purgeOldEvents();
     const [users, events] = await Promise.all([
-      prisma.user.findMany({ where: { password: { not: "guest_checkout" } }, select: { name: true, email: true, role: true, createdAt: true }, orderBy: { createdAt: "desc" } }),
+      prisma.user.findMany({ where: { password: { not: "guest_checkout" } }, select: { id: true, name: true, email: true, role: true, createdAt: true }, orderBy: { createdAt: "desc" } }),
       prisma.clientEvent.findMany({ orderBy: { createdAt: "asc" }, take: 5000 }),
     ]);
 
     const rows = new Map<string, ActivityRow>();
     for (const u of users) {
       const key = u.email.toLowerCase();
-      rows.set(key, { ...empty(key, u.email), name: u.name, registeredAt: u.createdAt.toISOString(), isAdmin: u.role !== "USER" || ADMIN_EMAILS.includes(u.email.toLowerCase()) });
+      rows.set(key, { ...empty(key, u.email), userId: u.id, name: u.name, registeredAt: u.createdAt.toISOString(), isAdmin: u.role !== "USER" || ADMIN_EMAILS.includes(u.email.toLowerCase()) });
     }
     const registeredKeys = new Set(rows.keys());
 
