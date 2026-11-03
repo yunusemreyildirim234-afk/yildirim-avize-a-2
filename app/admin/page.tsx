@@ -272,7 +272,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                 endpoint="/api/admin/orders"
                 ids={visibleOrders.map((o) => o.id)}
                 label={`Listelenen ${visibleOrders.length} siparişi sil`}
-                confirmText={`Listelenen ${visibleOrders.length} sipariş ve bağlı fatura/dekont kayıtları silinecek.`}
+                confirmText={`Listelenen ${visibleOrders.length} sipariş ve bağlı fatura/dekont kayıtları silinecek; ayrılmış stok iade edilir.`}
               />
             )}
             <AdminShipmentSync />
@@ -382,7 +382,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                         {order.status === "DELIVERED" && (
                           <AdminInvoice orderId={order.id} state={invoices.state} meta={invoices.byOrder[order.id] ?? null} />
                         )}
-                        <AdminDeleteButton endpoint="/api/admin/orders" ids={[order.id]} label="Siparişi Sil" confirmText="Bu sipariş ve bağlı fatura/dekont kayıtları silinecek." className="mt-2" />
+                        <AdminDeleteButton endpoint="/api/admin/orders" ids={[order.id]} label="Siparişi Sil" confirmText="Bu sipariş ve bağlı fatura/dekont kayıtları silinecek; ayrılmış stok iade edilir." className="mt-2" />
                         <AdminOrderRequest
                           orderId={order.id}
                           type={order.cancelReturnType}
