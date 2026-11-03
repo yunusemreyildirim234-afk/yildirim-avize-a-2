@@ -110,7 +110,7 @@ function DiscountBadges({ product, onRemove, disabled }: { product: Product; onR
 
 const norm = (v?: string | null) => (v ?? "").toLocaleLowerCase("tr").trim();
 
-export default function AdminProductList({ products, maxTotalDiscountPct, showcase }: { products: Product[]; maxTotalDiscountPct?: number | null; showcase: { featured: string[]; bestSellers: string[] } }) {
+export default function AdminProductList({ products, maxTotalDiscountPct, showcase }: { products: Product[]; maxTotalDiscountPct?: number | null; showcase: { featured: string[]; bestSellers: string[]; manualFeatured: number } }) {
   const sets = useMemo<ChipSets>(() => ({ featured: new Set(showcase.featured), bestseller: new Set(showcase.bestSellers) }), [showcase]);
   const router = useRouter();
   const [loadingId, setLoadingId] = useState<string | null>(null);
@@ -124,6 +124,24 @@ export default function AdminProductList({ products, maxTotalDiscountPct, showca
   // Son işlem öncesi durum (Geri Al)
   const [undo, setUndo] = useState<{ snapshot: unknown; label: string } | null>(null);
   const [undoing, setUndoing] = useState(false);
+
+  // Tüm elle Öne Çıkan işaretlerini kaldırır (sunucu "zaten bu durumda" kontrolü ve Geri Al kaydı aynı yolu kullanır)
+  const backToAuto = async () => {
+    if (!confirm("Tüm elle işaretler kaldırılacak; öne çıkanlar otomatik seçime dönecek.")) return;
+    try {
+      const res = await fetch("/api/admin/product/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: products.filter((p) => p.isFeatured).map((p) => p.id), action: "showcase", field: "isFeatured", value: false }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "İşlem başarısız.");
+      if (data.snapshot) setUndo({ snapshot: data.snapshot, label: "Otomatik seçime dönüş" });
+      router.refresh();
+    } catch (e) {
+      alert((e as Error).message);
+    }
+  };
 
   const doUndo = async (force = false) => {
     if (!undo) return;
@@ -330,6 +348,19 @@ Yine de geri alınsın mı?`)) await doUndo(true);
               { key: "bestseller", label: "Çok Satanlar", count: products.filter((p) => chipTest("bestseller", p, sets)).length },
             ]}
           />
+          {/* Öne Çıkanlar modu: elle işaret varsa site yalnızca onları gösterir; yoksa otomatik seçim */}
+          <p className="mt-2 text-[11px] text-neutral-600 flex flex-wrap items-center gap-x-3 gap-y-1">
+            {showcase.manualFeatured > 0 ? (
+              <>
+                <span>Sitede yalnızca elle işaretlenen {showcase.manualFeatured} ürün öne çıkarılıyor.</span>
+                <button type="button" onClick={backToAuto} className="font-semibold text-amber-800 hover:underline">
+                  Otomatik seçime dön
+                </button>
+              </>
+            ) : (
+              <span>Öne çıkanlar şu an otomatik seçiliyor (hiçbir üründe elle işaret yok).</span>
+            )}
+          </p>
         </div>
         {(q || chips.length > 0) && (
           <p className="text-[11px] text-neutral-500 mt-2">

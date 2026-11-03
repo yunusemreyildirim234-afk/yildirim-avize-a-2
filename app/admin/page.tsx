@@ -82,7 +82,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   // Vitrin çipleri için sitedeki kümeler: Öne Çıkanlar = işaretliler (yoksa otomatik seçim), Çok Satanlar = kategori sayfasındaki liste
   const flaggedFeatured = await prisma.product.findMany({ where: { active: true, isFeatured: true }, select: { id: true } });
   const featuredIds = flaggedFeatured.length > 0 ? flaggedFeatured : await prisma.product.findMany({ where: { active: true, ...FEATURED }, select: { id: true } });
-  const showcase = { featured: featuredIds.map((p) => p.id), bestSellers: (await getBestSellers(48)).map((p) => p.id) };
+  const showcase = { featured: featuredIds.map((p) => p.id), bestSellers: (await getBestSellers(48)).map((p) => p.id), manualFeatured: flaggedFeatured.length };
   const discountCap = (await prisma.siteConfig.findUnique({ where: { id: 1 }, select: { maxTotalDiscountPct: true } }))?.maxTotalDiscountPct ?? null;
   const activity = await getActivity();
   const pendingReviews = reviews.filter((r) => r.status === "PENDING").length;
