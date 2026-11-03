@@ -7,7 +7,7 @@ import OrderStatusSelector from "@/components/OrderStatusSelector";
 import AdminKargonomiHeader from "@/components/AdminKargonomiHeader";
 import AdminTrendyolSync from "@/components/AdminTrendyolSync";
 import AdminKargonomiOrderActions from "@/components/AdminKargonomiOrderActions";
-import { FEATURED, getBestSellers } from "@/lib/products";
+import { FEATURED } from "@/lib/products";
 import { getHomepageConfig, getHomepageRaw, getSectionPools } from "@/lib/homepage";
 import { resolvePromoCards } from "@/lib/promo-cards";
 import AdminDiscountSettings from "@/components/AdminDiscountSettings";
@@ -92,9 +92,10 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   // Vitrin çipleri için sitedeki kümeler: Öne Çıkanlar = işaretliler (yoksa otomatik seçim), Çok Satanlar = kategori sayfasındaki liste
   const flaggedFeatured = await prisma.product.findMany({ where: { active: true, isFeatured: true }, select: { id: true } });
   const featuredIds = flaggedFeatured.length > 0 ? flaggedFeatured : await prisma.product.findMany({ where: { active: true, ...FEATURED }, select: { id: true } });
-  const showcase = { featured: featuredIds.map((p) => p.id), bestSellers: (await getBestSellers(48)).map((p) => p.id), manualFeatured: flaggedFeatured.length };
   // Ana Sayfayı Düzenle: bölüm havuzları (yalnızca ilgili kümeden seçilebilir) ve kayıtlı ayar
   const [homeConfig, homePools, homeRaw] = await Promise.all([getHomepageConfig(), getSectionPools(), getHomepageRaw()]);
+  // Çok Satanlar: bölüm havuzu (100) aynı sıralamanın uzun hâlidir; ilk 48 = getBestSellers(48) (ikinci sorgu yapılmaz)
+  const showcase = { featured: featuredIds.map((p) => p.id), bestSellers: homePools.bestsellers.slice(0, 48).map((p) => p.id), manualFeatured: flaggedFeatured.length };
   const slim = (list: { id: string; title: string; modelCode: string | null }[]) => list.map((p) => ({ id: p.id, title: p.title, modelCode: p.modelCode }));
   const discountCap = (await prisma.siteConfig.findUnique({ where: { id: 1 }, select: { maxTotalDiscountPct: true } }))?.maxTotalDiscountPct ?? null;
   const activity = await getActivity();
