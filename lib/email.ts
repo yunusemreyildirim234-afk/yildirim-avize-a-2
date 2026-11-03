@@ -305,6 +305,7 @@ const CODE_COPY: Record<string, { subject: string; lead: string }> = {
   RESET_PASSWORD: { subject: "Şifre Sıfırlama Kodunuz", lead: "Şifrenizi sıfırlamak için doğrulama kodunuz:" },
   CHANGE_PASSWORD: { subject: "Şifre Değiştirme Kodunuz", lead: "Şifrenizi değiştirmek için doğrulama kodunuz:" },
   TWO_FACTOR_ENABLE: { subject: "İki Aşamalı Doğrulama Onay Kodunuz", lead: "İki aşamalı doğrulamayı etkinleştirmek için onay kodunuz:" },
+  TWO_FACTOR_DISABLE: { subject: "İki Aşamalı Doğrulamayı Kapatma Kodunuz", lead: "İki aşamalı doğrulamayı kapatmak için onay kodunuz:" },
   TWO_FACTOR_LOGIN: { subject: "Giriş Doğrulama Kodunuz", lead: "Hesabınıza giriş yapmak için doğrulama kodunuz:" },
 };
 

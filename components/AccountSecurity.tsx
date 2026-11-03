@@ -11,7 +11,7 @@ async function post(url: string, body: object) {
   return { ok: res.ok, data: await res.json().catch(() => ({})) };
 }
 
-type Flow = null | "pw-code" | "pw-new" | "2fa-code";
+type Flow = null | "pw-code" | "pw-new" | "2fa-code" | "2fa-off-code";
 
 /** Profil: kodla şifre değiştirme ve e-posta ile iki aşamalı doğrulama (2FA) yönetimi. */
 export default function AccountSecurity({ email, twoFactorEnabled, onChanged }: { email: string; twoFactorEnabled: boolean; onChanged: () => void }) {
@@ -21,7 +21,7 @@ export default function AccountSecurity({ email, twoFactorEnabled, onChanged }: 
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
 
-  const start = async (type: "CHANGE_PASSWORD" | "TWO_FACTOR_ENABLE", next: Flow): Promise<number | null> => {
+  const start = async (type: "CHANGE_PASSWORD" | "TWO_FACTOR_ENABLE" | "TWO_FACTOR_DISABLE", next: Flow): Promise<number | null> => {
     setBusy(true);
     try {
       const { ok, data } = await post("/api/auth/send-code", { type });
@@ -74,15 +74,16 @@ export default function AccountSecurity({ email, twoFactorEnabled, onChanged }: 
     } else toast.error(data.error || "Kod doğrulanamadı.");
   };
 
-  const disable2fa = async () => {
-    if (!window.confirm("İki aşamalı doğrulamayı kapatmak istediğinize emin misiniz?")) return;
+  // Kapatmak için de e-postaya gelen kod gerekir (çalınmış oturumla 2FA'nın kapatılmasını önler)
+  const verify2faOff = async (code: string) => {
     setBusy(true);
-    const { ok, data } = await post("/api/auth", { action: "disable-2fa" }).catch(() => ({ ok: false, data: {} as Record<string, string> }));
+    const { ok, data } = await post("/api/auth/verify-code", { type: "TWO_FACTOR_DISABLE", code }).catch(() => ({ ok: false, data: {} as Record<string, string> }));
     setBusy(false);
     if (ok && data.success) {
       toast.success("İki aşamalı doğrulama kapatıldı");
+      setFlow(null);
       onChanged();
-    } else toast.error(data.error || "İşlem başarısız.");
+    } else toast.error(data.error || "Kod doğrulanamadı.");
   };
 
   return (
@@ -102,8 +103,8 @@ export default function AccountSecurity({ email, twoFactorEnabled, onChanged }: 
           role="switch"
           aria-checked={twoFactorEnabled}
           aria-label="İki aşamalı doğrulama"
-          disabled={busy || flow === "2fa-code"}
-          onClick={() => (twoFactorEnabled ? disable2fa() : start("TWO_FACTOR_ENABLE", "2fa-code"))}
+          disabled={busy || flow === "2fa-code" || flow === "2fa-off-code"}
+          onClick={() => (twoFactorEnabled ? start("TWO_FACTOR_DISABLE", "2fa-off-code") : start("TWO_FACTOR_ENABLE", "2fa-code"))}
           className={`shrink-0 w-12 h-7 rounded-full transition-colors relative disabled:opacity-60 ${twoFactorEnabled ? "bg-emerald-500" : "bg-neutral-300"}`}
         >
           <span className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow transition-all ${twoFactorEnabled ? "left-6" : "left-1"}`} />
@@ -114,6 +115,12 @@ export default function AccountSecurity({ email, twoFactorEnabled, onChanged }: 
           Etkinleştir
         </button>
       )}
+      {flow === "2fa-off-code" && (
+        <div className="max-w-sm">
+          <p className="text-xs text-neutral-600 mb-2">İki aşamalı doğrulamayı kapatmak için e-postanıza gönderilen kodu girin.</p>
+          <CodeStep email={email} busy={busy} onSubmit={verify2faOff} onResend={() => start("TWO_FACTOR_DISABLE", "2fa-off-code")} submitLabel="Kapatmayı Onayla" />
+        </div>
+      )}
       {flow === "2fa-code" && (
         <div className="max-w-sm">
           <CodeStep email={email} busy={busy} onSubmit={verify2fa} onResend={() => start("TWO_FACTOR_ENABLE", "2fa-code")} submitLabel="Etkinleştirmeyi Onayla" />
@@ -123,7 +130,7 @@ export default function AccountSecurity({ email, twoFactorEnabled, onChanged }: 
       {/* Şifre değiştir */}
       <div className="border-t border-neutral-100 pt-6 space-y-3">
         <p className="font-bold text-neutral-900 text-sm">Şifre Değiştir</p>
-        {flow === null || flow === "2fa-code" ? (
+        {flow === null || flow === "2fa-code" || flow === "2fa-off-code" ? (
           <button type="button" disabled={busy} onClick={() => start("CHANGE_PASSWORD", "pw-code")} className="text-xs font-semibold border border-neutral-300 hover:bg-neutral-50 text-neutral-800 px-4 py-2 rounded-xl transition-colors">
             E-posta ile Kod Gönder
           </button>

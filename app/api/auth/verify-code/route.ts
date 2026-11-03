@@ -25,14 +25,15 @@ export async function POST(req: Request) {
     }
 
     case "CHANGE_PASSWORD":
-    case "TWO_FACTOR_ENABLE": {
+    case "TWO_FACTOR_ENABLE":
+    case "TWO_FACTOR_DISABLE": {
       const uid = await getSessionUserId();
       const user = uid ? await prisma.user.findUnique({ where: { id: uid }, select: { id: true, email: true } }) : null;
       if (!user) return NextResponse.json({ error: "Lütfen giriş yapın." }, { status: 401 });
       email = user.email.toLowerCase();
       if (!(await consumeCode(email, type, code))) return BAD();
-      if (type === "TWO_FACTOR_ENABLE") {
-        await prisma.user.update({ where: { id: user.id }, data: { twoFactorEnabled: true } });
+      if (type === "TWO_FACTOR_ENABLE" || type === "TWO_FACTOR_DISABLE") {
+        await prisma.user.update({ where: { id: user.id }, data: { twoFactorEnabled: type === "TWO_FACTOR_ENABLE" } });
         return NextResponse.json({ success: true });
       }
       return NextResponse.json({ success: true, proof: await issueProof(email, type, user.id) });

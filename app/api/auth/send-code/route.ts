@@ -9,7 +9,7 @@ import { clientIp, createCode, rateLimitRemaining, type CodeType } from "@/lib/v
 const GUEST_PASSWORD = "guest_checkout";
 // Oturum gerektirmeyenler; TWO_FACTOR_LOGIN kodunu yalnızca şifre doğrulanınca /api/auth gönderir
 const PUBLIC_TYPES: CodeType[] = ["REGISTER", "RESET_PASSWORD"];
-const SESSION_TYPES: CodeType[] = ["CHANGE_PASSWORD", "TWO_FACTOR_ENABLE"];
+const SESSION_TYPES: CodeType[] = ["CHANGE_PASSWORD", "TWO_FACTOR_ENABLE", "TWO_FACTOR_DISABLE"];
 
 export async function POST(req: Request) {
   // IP bazlı: 10 dakikada en fazla 5 kod gönderimi (e-posta kotası koruması)

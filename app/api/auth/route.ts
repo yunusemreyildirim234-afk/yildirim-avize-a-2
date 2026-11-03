@@ -115,13 +115,7 @@ export async function POST(req: Request) {
       return revokeOthers(user.id, true);
     }
 
-    // 2FA'yı kapat (oturum açık kullanıcı)
-    if (action === "disable-2fa") {
-      const uid = await getSessionUserId();
-      if (!uid) return NextResponse.json({ error: "Lütfen giriş yapın." }, { status: 401 });
-      await prisma.user.update({ where: { id: uid }, data: { twoFactorEnabled: false } });
-      return NextResponse.json({ success: true });
-    }
+    // 2FA kapatma yalnızca e-posta koduyla: /api/auth/verify-code (TWO_FACTOR_DISABLE)
 
     return NextResponse.json({ error: "Geçersiz işlem" }, { status: 400 });
   } catch (error) {
