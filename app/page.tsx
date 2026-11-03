@@ -6,7 +6,10 @@ import FaqSection from "@/components/FaqSection";
 import Hero from "@/components/Hero";
 import JsonLd from "@/components/JsonLd";
 import ProductCard from "@/components/ProductCard";
-import { DISCOUNTED, getBestSellers, getFeatured, getProducts } from "@/lib/products";
+import { getProducts } from "@/lib/products";
+import { composeSection } from "@/lib/homepage-compose";
+import { getHomepageConfig, getSectionPools } from "@/lib/homepage";
+import type { ProductWithVariations } from "@/lib/products";
 import { ADDRESS_LINE, CATEGORIES, LAT, LNG, PHONE_TEL, SITE_URL } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
@@ -47,17 +50,37 @@ const localBusiness = {
   ],
 };
 
+/** Bölümde ilk `count` ürünün altındaki "Daha fazla göster" (yerel <details>; kapalıyken kart görselleri yüklenmez). */
+function MoreCards({ products, cols, dark = false }: { products: ProductWithVariations[]; cols: string; dark?: boolean }) {
+  if (products.length === 0) return null;
+  return (
+    <details className="group mt-6 sm:mt-8">
+      <summary
+        className={`list-none cursor-pointer mx-auto w-fit text-xs font-semibold px-6 py-3 rounded-full transition-colors group-open:hidden focus-visible:outline-2 focus-visible:outline-amber-600 ${
+          dark ? "text-white border border-white/40 hover:bg-white hover:text-zinc-900" : "text-zinc-800 border border-zinc-300 hover:border-amber-600 hover:text-amber-800"
+        }`}
+      >
+        Daha fazla göster ({products.length})
+      </summary>
+      <div className={`grid ${cols} gap-4 sm:gap-6`}>
+        {products.map((p) => (
+          <ProductCard key={p.id} product={p} dark={dark} />
+        ))}
+      </div>
+    </details>
+  );
+}
+
 export default async function Home() {
-  const [featured, allFeatured, discounted, bestSellers, ...categoryCovers] = await Promise.all([
-    getFeatured(8),
-    getProducts({ isFeatured: true }, 100), // ilk 8'den sonrası "Daha fazla göster" ile açılır
-    getProducts(DISCOUNTED, 4),
-    getBestSellers(8),
+  // Bölüm havuzları ve yönetici ayarı (istek başına bir kez); ayar yoksa/bozuksa bugünkü sıralama ve sayılar
+  const [config, pools, ...categoryCovers] = await Promise.all([
+    getHomepageConfig(),
+    getSectionPools(),
     ...CATEGORIES.slice(0, 4).map((c) => getProducts({ category: c.dbCategory, imageUrl: { not: null } }, 1)),
   ]);
-
-  const shownIds = new Set(featured.map((p) => p.id));
-  const moreFeatured = allFeatured.filter((p) => !shownIds.has(p.id));
+  const { shown: featured, more: moreFeatured } = composeSection(pools.featured, config.featured, pools.featuredManual);
+  const { shown: discounted, more: moreDiscounted } = composeSection(pools.discounted, config.discounted);
+  const { shown: bestSellers, more: moreBestSellers } = composeSection(pools.bestsellers, config.bestsellers);
 
   return (
     <main>
@@ -123,19 +146,7 @@ export default async function Home() {
                 ))}
               </div>
             )}
-            {moreFeatured.length > 0 && (
-              // Sade yöntem: yerel <details>; kapalıyken kart görselleri yüklenmez (lazy)
-              <details className="group mt-6 sm:mt-8">
-                <summary className="list-none cursor-pointer mx-auto w-fit text-xs font-semibold text-zinc-800 border border-zinc-300 hover:border-amber-600 hover:text-amber-800 px-6 py-3 rounded-full transition-colors group-open:hidden focus-visible:outline-2 focus-visible:outline-amber-600">
-                  Daha fazla göster ({moreFeatured.length})
-                </summary>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-                  {moreFeatured.map((p) => (
-                    <ProductCard key={p.id} product={p} />
-                  ))}
-                </div>
-              </details>
-            )}
+            <MoreCards products={moreFeatured} cols="grid-cols-2 md:grid-cols-3 lg:grid-cols-4" />
           </div>
         </div>
       </section>
@@ -156,6 +167,7 @@ export default async function Home() {
               ))}
             </div>
           )}
+          <MoreCards products={moreDiscounted} cols="grid-cols-2 lg:grid-cols-4" />
           <div className="text-center mt-10">
             <Link
               href="/kategori/indirimli"
@@ -180,6 +192,7 @@ export default async function Home() {
                 <ProductCard key={p.id} product={p} dark />
               ))}
             </div>
+            <MoreCards products={moreBestSellers} cols="grid-cols-2 lg:grid-cols-4" dark />
             <div className="text-center mt-10">
               <Link
                 href="/kategori/cok-satanlar"
