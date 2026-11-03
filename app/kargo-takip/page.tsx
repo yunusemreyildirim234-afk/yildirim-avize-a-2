@@ -16,12 +16,28 @@ function maskName(name: string) {
 }
 
 export default async function TrackingPage({ searchParams }: { searchParams: Promise<{ code?: string }> }) {
-  const code = (await searchParams).code?.trim();
+  const code = (await searchParams).code?.trim().slice(0, 100);
 
   const order = code
     ? await prisma.order.findFirst({
         where: { OR: [{ id: code }, { shippingTrackingCode: code }, { shippingBarcode: code }] },
-        include: { user: { select: { name: true } } },
+        // Yalnızca sayfanın ve takip çubuğunun kullandığı alanlar (adres, telefon, fatura bilgileri istemciye gitmez)
+        select: {
+          id: true,
+          status: true,
+          shippingType: true,
+          kargonomiStatus: true,
+          kargonomiStatusLabel: true,
+          cancelReturnType: true,
+          cancelReturnStatus: true,
+          createdAt: true,
+          updatedAt: true,
+          kargonomiShipmentId: true,
+          shippingProviderName: true,
+          shippingTrackingCode: true,
+          shippingBarcode: true,
+          user: { select: { name: true } },
+        },
       })
     : null;
 
