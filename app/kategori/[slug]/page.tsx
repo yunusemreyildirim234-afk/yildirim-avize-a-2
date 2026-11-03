@@ -1,16 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import ProductCard from "@/components/ProductCard";
 import { prisma } from "@/lib/db";
-import { DISCOUNTED, FEATURED, getBestSellers, getProducts } from "@/lib/products";
+import Pagination from "@/components/Pagination";
+import { DISCOUNTED, FEATURED, countProducts, getBestSellers, getProducts } from "@/lib/products";
+import { PAGE_SIZE, canonicalPage, pageHref, parsePage, rangeOf, totalPages } from "@/lib/pagination";
 import { CATEGORIES, COLLECTIONS } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
 interface Props {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
 const slugify = (v: string) =>
@@ -44,24 +47,45 @@ async function resolve(slug: string) {
   return null;
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { slug } = await params;
   const current = await resolve(slug);
   if (!current) return {};
+  // Her sayfanın kendi kanonik adresi vardır (sayfa=1 parametresiz)
+  const page = parsePage((await searchParams).sayfa);
+  const path = `/kategori/${slug}`;
+  const url = pageHref(path, page);
   return {
-    title: current.title,
+    title: page > 1 ? `${current.title} - Sayfa ${page}` : current.title,
     description: current.desc,
-    alternates: { canonical: `/kategori/${slug}` },
-    openGraph: { title: current.title, description: current.desc, url: `/kategori/${slug}` },
+    alternates: { canonical: url },
+    openGraph: { title: current.title, description: current.desc, url },
+    // "next" burada yazılmaz (toplam sayı metadata'da okunmuyor); sayfadaki Sonraki bağlantısı rel="next" taşır
+    ...(page > 1 ? { pagination: { previous: pageHref(path, page - 1) } } : {}),
   };
 }
 
-export default async function CategoryPage({ params }: Props) {
+export default async function CategoryPage({ params, searchParams }: Props) {
   const { slug } = await params;
+  const query = await searchParams;
   const current = await resolve(slug);
   if (!current) notFound();
 
-  const products = current.where ? await getProducts(current.where) : await getBestSellers(48);
+  // Sunucu tarafı sayfalama: Çok Satanlar listesi (48, kendi mantığı) bellekte dilimlenir; diğerleri take/skip + ayrı sayım
+  const path = `/kategori/${slug}`;
+  let total: number;
+  let all: Awaited<ReturnType<typeof getBestSellers>> | null = null;
+  if (current.where) total = await countProducts(current.where);
+  else {
+    all = await getBestSellers(48);
+    total = all.length;
+  }
+  const fix = canonicalPage(query.sayfa, total);
+  if (fix !== null) redirect(pageHref(path, fix, query)); // geçersiz → 1, sınır dışı → son sayfa (404 yok)
+  const page = parsePage(query.sayfa);
+  const pages = totalPages(total);
+  const range = rangeOf(page, total);
+  const products = all ? all.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE) : await getProducts(current.where!, PAGE_SIZE, (page - 1) * PAGE_SIZE);
 
   return (
     <main className="min-h-screen bg-white pb-20">
@@ -78,7 +102,7 @@ export default async function CategoryPage({ params }: Props) {
 
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10">
         <div className="flex items-center justify-between border-b border-zinc-200 pb-4 mb-8 text-xs text-zinc-500">
-          <span>{products.length} ürün listeleniyor</span>
+          <span>{range ? `${range.from}-${range.to} / ${range.total} ürün gösteriliyor` : "0 ürün listeleniyor"}</span>
           <span className="text-amber-700 font-medium hidden sm:inline">📍 Beyoğlu Mağazasında Sergilenen Modeller</span>
         </div>
 
@@ -100,6 +124,7 @@ export default async function CategoryPage({ params }: Props) {
             ))}
           </div>
         )}
+        <Pagination path={path} page={page} pages={pages} params={query} />
       </section>
     </main>
   );
