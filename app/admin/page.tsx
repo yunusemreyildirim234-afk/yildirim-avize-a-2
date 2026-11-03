@@ -11,6 +11,7 @@ import { getHomepageConfig, getHomepageRaw, getSectionPools } from "@/lib/homepa
 import { resolvePromoCards } from "@/lib/promo-cards";
 import AdminDiscountSettings from "@/components/AdminDiscountSettings";
 import AdminSessions from "@/components/AdminSessions";
+import AdminTwoFactor, { AdminTwoFactorBanner } from "@/components/AdminTwoFactor";
 import AdminLiveAlerts from "@/components/AdminLiveAlerts";
 import AdminSection from "@/components/AdminSection";
 import AdminReceiptActions from "@/components/AdminReceiptActions";
@@ -95,6 +96,8 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const slim = (list: { id: string; title: string; modelCode: string | null }[]) => list.map((p) => ({ id: p.id, title: p.title, modelCode: p.modelCode }));
   const discountCap = (await prisma.siteConfig.findUnique({ where: { id: 1 }, select: { maxTotalDiscountPct: true } }))?.maxTotalDiscountPct ?? null;
   const activity = await getActivity();
+  // 2FA kapalı yönetici hesabı sayısı (uyarı bandı için); okunamazsa band gösterilmez
+  const adminsWithout2fa = await prisma.user.count({ where: { role: "ADMIN", twoFactorEnabled: false } }).catch(() => 0);
   const pendingReviews = reviews.filter((r) => r.status === "PENDING").length;
   const sortedReviews = [...reviews].sort(
     (a, b) => Number(b.status === "PENDING") - Number(a.status === "PENDING") || b.createdAt.getTime() - a.createdAt.getTime()
@@ -126,6 +129,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
     <main className="min-h-screen bg-neutral-100 py-10 px-4 sm:px-6 lg:px-8">
       <AdminLiveAlerts />
       <div className="max-w-7xl mx-auto space-y-8">
+        <AdminTwoFactorBanner missing={adminsWithout2fa} />
         {/* Üst Başlık */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-neutral-200 pb-6">
           <div>
@@ -205,6 +209,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
 
         <AdminDiscountSettings initial={discountCap} />
         <AdminSessions />
+        <AdminTwoFactor />
 
         <AdminHomepage
           initial={homeConfig}
