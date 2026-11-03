@@ -48,12 +48,16 @@ const localBusiness = {
 };
 
 export default async function Home() {
-  const [featured, discounted, bestSellers, ...categoryCovers] = await Promise.all([
+  const [featured, allFeatured, discounted, bestSellers, ...categoryCovers] = await Promise.all([
     getFeatured(8),
+    getProducts({ isFeatured: true }, 100), // ilk 8'den sonrası "Daha fazla göster" ile açılır
     getProducts(DISCOUNTED, 4),
     getBestSellers(8),
     ...CATEGORIES.slice(0, 4).map((c) => getProducts({ category: c.dbCategory, imageUrl: { not: null } }, 1)),
   ]);
+
+  const shownIds = new Set(featured.map((p) => p.id));
+  const moreFeatured = allFeatured.filter((p) => !shownIds.has(p.id));
 
   return (
     <main>
@@ -118,6 +122,19 @@ export default async function Home() {
                   <ProductCard key={p.id} product={p} priority={i < 2} />
                 ))}
               </div>
+            )}
+            {moreFeatured.length > 0 && (
+              // Sade yöntem: yerel <details>; kapalıyken kart görselleri yüklenmez (lazy)
+              <details className="group mt-6 sm:mt-8">
+                <summary className="list-none cursor-pointer mx-auto w-fit text-xs font-semibold text-zinc-800 border border-zinc-300 hover:border-amber-600 hover:text-amber-800 px-6 py-3 rounded-full transition-colors group-open:hidden focus-visible:outline-2 focus-visible:outline-amber-600">
+                  Daha fazla göster ({moreFeatured.length})
+                </summary>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+                  {moreFeatured.map((p) => (
+                    <ProductCard key={p.id} product={p} />
+                  ))}
+                </div>
+              </details>
             )}
           </div>
         </div>
