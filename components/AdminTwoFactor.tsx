@@ -122,12 +122,9 @@ export default function AdminTwoFactor({ admins }: { admins: AdminRow[] }) {
   };
 
   return (
-    <div id="guvenlik" className="bg-white border border-neutral-200 rounded-2xl p-5 space-y-4 scroll-mt-24">
+    <div className="p-6 space-y-4">
       <div>
-        <h3 className="font-bold text-neutral-900 text-sm flex items-center gap-2">
-          <ShieldCheck aria-hidden="true" className="w-4 h-4 text-amber-600" /> İki Aşamalı Doğrulama (Yönetici Hesapları)
-        </h3>
-        <p className="text-xs text-neutral-500 mt-0.5">
+        <p className="text-xs text-neutral-500">
           Açıkken girişte şifreye ek olarak e-postaya gelen 6 haneli kod istenir. Açma ve kapatma için hesabın e-postası, şifresi ve e-postaya gelen kod gerekir.
         </p>
       </div>

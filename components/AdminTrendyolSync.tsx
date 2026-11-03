@@ -143,10 +143,10 @@ export default function AdminTrendyolSync() {
     ));
 
   return (
-    <section aria-labelledby="ty-title" className="rounded-2xl border border-orange-200 bg-orange-50/50 p-4 sm:p-5 space-y-4 shadow-sm">
-      <div>
-        <h2 id="ty-title" className="text-sm font-bold text-neutral-900">Trendyol Ürünleri</h2>
-        <p className="text-xs text-neutral-600 mt-0.5">Önce &quot;Önizle&quot; ile değişecekleri görün, sonra seçtiklerinizi uygulayın. Önizleme hiçbir şey yazmaz. Bu sürümde Geri Al yoktur.</p>
+    <div className="p-6 space-y-4">
+      <div className="space-y-1">
+        <p className="text-xs text-neutral-600">Önce &quot;Önizle&quot; ile değişecekleri görün, sonra seçtiklerinizi uygulayın. Önizleme hiçbir şey yazmaz. Bu sürümde Geri Al yoktur.</p>
+        <p className="text-xs text-amber-900 font-semibold">İlk &quot;Elle değiştirdiklerimi koru&quot; çalıştırması çoğunlukla yalnızca karşılaştırma kaydı kurar; stok/fiyatı ilk kez Trendyol&apos;a eşitlemek için o satırı &quot;Ezerek&quot; seçin.</p>
       </div>
 
       <fieldset className="space-y-2">
@@ -258,6 +258,6 @@ export default function AdminTrendyolSync() {
           </button>
         </div>
       )}
-    </section>
+    </div>
   );
 }

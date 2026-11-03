@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { KeyRound } from "lucide-react";
 import { toast } from "sonner";
 import CodeStep from "@/components/CodeStep";
 import PasswordInput from "@/components/PasswordInput";
@@ -67,12 +66,9 @@ export default function AdminPasswordChange() {
   };
 
   return (
-    <div className="bg-white border border-neutral-200 rounded-2xl p-5 space-y-4">
+    <div className="p-6 space-y-4">
       <div>
-        <h3 className="font-bold text-neutral-900 text-sm flex items-center gap-2">
-          <KeyRound aria-hidden="true" className="w-4 h-4 text-amber-600" /> Yönetici Şifresini Değiştir
-        </h3>
-        <p className="text-xs text-neutral-500 mt-0.5">Ortak .env kimliği Vercel ortam değişkenlerinden değiştirilir. Bu bölüm yalnızca veritabanındaki yönetici hesapları içindir.</p>
+        <p className="text-xs text-neutral-500">Ortak .env kimliği Vercel ortam değişkenlerinden değiştirilir. Bu bölüm yalnızca veritabanındaki yönetici hesapları içindir.</p>
         <p className="text-xs text-amber-800 font-semibold mt-1">Şifre değişince tüm yönetici oturumları kapanır; diğer yöneticiler yeniden giriş yapmalıdır (bu oturum açık kalır).</p>
       </div>
 

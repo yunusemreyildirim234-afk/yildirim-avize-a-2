@@ -163,8 +163,10 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         {/* Kargonomi API v1 Canlı Kontrol & Bakiye Barı */}
         <AdminKargonomiHeader />
 
-        {/* Trendyol ürün senkronizasyonu */}
-        <AdminTrendyolSync />
+        {/* Trendyol ürün senkronizasyonu (varsayılan kapalı; bileşen state'i gövde gizliyken de korunur) */}
+        <AdminSection id="trendyol" title="Trendyol Ürünleri" description="Mağazadaki ürünleri, fiyat ve stokları Trendyol'dan önizleyip seçerek güncelleyin.">
+          <AdminTrendyolSync />
+        </AdminSection>
 
         {/* 1. Özet İstatistik Kartları */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -213,8 +215,12 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
 
         <AdminDiscountSettings initial={discountCap} />
         <AdminSessions />
-        <AdminTwoFactor admins={adminRows} />
-        <AdminPasswordChange />
+        <AdminSection id="guvenlik" title="İki Aşamalı Doğrulama (Yönetici Hesapları)" description="Yönetici girişine e-posta kodu ekleyin veya kapatın.">
+          <AdminTwoFactor admins={adminRows} />
+        </AdminSection>
+        <AdminSection id="yonetici-sifre" title="Yönetici Şifresini Değiştir" description="E-posta kodu ile yönetici hesabının şifresini yenileyin.">
+          <AdminPasswordChange />
+        </AdminSection>
 
         <AdminHomepage
           initial={homeConfig}
