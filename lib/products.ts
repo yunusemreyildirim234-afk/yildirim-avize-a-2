@@ -57,7 +57,7 @@ export const getProductDetail = unstable_cache(
   async (id: string) => {
     const p = await prisma.product.findUnique({
       where: { id },
-      include: { variations: true, reviews: { where: { status: "APPROVED" }, orderBy: { createdAt: "desc" }, include: { user: { select: { name: true } } } } },
+      omit: { syncSnapshot: true, lastSyncedAt: true }, include: { variations: { omit: { syncSnapshot: true, syncStock: true } }, reviews: { where: { status: "APPROVED" }, orderBy: { createdAt: "desc" }, include: { user: { select: { name: true } } } } },
     });
     if (!p) return null;
     return {
