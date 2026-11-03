@@ -3,10 +3,11 @@ import { prisma } from "@/lib/db";
 import { rateLimit, tooMany } from "@/lib/rate-limit";
 import { finalizeOrder } from "@/lib/orders";
 import { getPaytrToken } from "@/lib/paytr";
-import { computeTotals, couponDiscountFor, SHIPPING_LABELS } from "@/lib/pricing";
+import { SHIPPING_LABELS } from "@/lib/pricing";
 import { getSessionUserId } from "@/lib/account";
 import { invoiceError } from "@/lib/validation";
-import { bulkTiersOf, unitPriceFor } from "@/lib/bulk-pricing";
+import { bulkTiersOf } from "@/lib/bulk-pricing";
+import { priceCart } from "@/lib/cart-pricing";
 import { releaseCoupon, reserveCoupon, validateCoupon } from "@/lib/coupons";
 
 interface CartLine {
@@ -64,29 +65,39 @@ export async function POST(req: Request) {
       if (variation.stock < quantity) {
         return NextResponse.json({ error: `"${variation.product.title}" için yeterli stok yok.` }, { status: 400 });
       }
-      // Adet indirimi: kural ürüne tanımlıysa ve adet yeterliyse birim fiyat sunucuda düşürülür
-      const unitPrice = unitPriceFor(variation.product.basePrice + variation.extraPrice, quantity, bulkTiersOf(variation.product));
-      orderLines.push({ variation, quantity, unitPrice });
+      orderLines.push({ variation, quantity, unitPrice: variation.product.basePrice + variation.extraPrice });
     }
 
-    const itemsTotal = orderLines.reduce((sum, l) => sum + l.unitPrice * l.quantity, 0);
+    // Tek hesaplama (lib/cart-pricing.ts): kademe aynı ürünün tüm renklerinin toplam adedine göre, kupon yalnızca uygun kalemlere,
+    // mağaza/Havale indirimi ürünün oranına göre. Sepet ve /api/cart/quote aynı fonksiyonu çağırır.
+    const priceLines = orderLines.map((l) => ({
+      variationId: l.variation.id,
+      productId: l.variation.productId,
+      price: l.variation.product.basePrice + l.variation.extraPrice,
+      quantity: l.quantity,
+      tiers: bulkTiersOf(l.variation.product),
+      couponAllowed: l.variation.product.couponAllowed,
+      pickupPct: l.variation.product.pickupDiscountPct,
+      transferPct: l.variation.product.transferDiscountPct,
+    }));
+    let priced = priceCart({ lines: priceLines, shippingType, paymentMethod });
     // Kupon: kişiye/ürüne özel şartlar ve kullanım limiti sunucuda doğrulanır
-    let couponDiscount = 0;
     let appliedCouponCode: string | null = null;
     if (typeof couponCode === "string" && couponCode.trim()) {
       const check = await validateCoupon({
         code: couponCode,
         email: String(email).toLowerCase(),
-        lines: orderLines.map((l) => ({ productId: l.variation.productId, lineTotal: l.unitPrice * l.quantity })),
+        lines: priced.lines.map((l) => ({ productId: l.productId, lineTotal: l.lineTotal })),
       });
       if (!check.ok) return NextResponse.json({ error: check.error }, { status: 400 });
-      couponDiscount = couponDiscountFor(
-        check.rule,
-        orderLines.map((l) => ({ productId: l.variation.productId, lineTotal: l.unitPrice * l.quantity }))
-      );
+      priced = priceCart({ lines: priceLines, shippingType, paymentMethod, coupon: check.rule });
+      if (priced.couponError) return NextResponse.json({ error: priced.couponError }, { status: 400 });
       appliedCouponCode = check.rule.code;
     }
-    const totals = computeTotals({ itemsTotal, shippingType, couponDiscount, paymentMethod });
+    orderLines.forEach((l, i) => {
+      l.unitPrice = priced.lines[i].unitPrice;
+    });
+    const totals = priced;
 
     // 2. Müşteriyi bul veya oluştur
     // Sipariş yalnızca geçerli bir oturum varsa mevcut hesaba bağlanır; misafir, e-postayla başkasının hesabına bağlanamaz

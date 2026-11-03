@@ -6,14 +6,16 @@ import { ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
-import { useCart } from "@/context/CartContext";
-import { computeTotals, couponDiscountFor, FREE_SHIPPING_THRESHOLD, SHIPPING_COST, SHIPPING_LABELS, type CouponRule } from "@/lib/pricing";
+import { cartPriceLines, useCart, type ItemRules } from "@/context/CartContext";
+import { FREE_SHIPPING_THRESHOLD, SHIPPING_COST, SHIPPING_LABELS, type CouponRule } from "@/lib/pricing";
+import { priceCart, ruleNotes } from "@/lib/cart-pricing";
 import BankTransferCard from "@/components/BankTransferCard";
 import ContractModal from "@/components/ContractModal";
 import { invoiceError } from "@/lib/validation";
 import { ADDRESS_LINE } from "@/lib/site";
 import { rememberEmail, track } from "@/lib/track";
-import { activeTier, bulkLabel, unitPriceFor, type BulkRule } from "@/lib/bulk-pricing";
+import { activeTier, bulkLabel, type BulkRule } from "@/lib/bulk-pricing";
+import { PICKUP_DISCOUNT, BANK_TRANSFER_DISCOUNT } from "@/lib/pricing";
 
 interface LocationItem {
   id: number;
@@ -131,20 +133,12 @@ export default function CartPage() {
   const effectiveAddress = isPickup ? ADDRESS_LINE : address;
 
   // Yerel hesap (sunucuyla birebir: satır yuvarlanmaz, birim fiyat × adet). Sunucu teklifi gelene kadar yedek olarak kullanılır.
-  const lineTotal = (i: { price: number; quantity: number; bulk?: BulkRule[] | null }) => unitPriceFor(i.price, i.quantity, i.bulk) * i.quantity;
-  const localTotals = computeTotals({
-    itemsTotal: totalPrice,
-    shippingType,
-    couponDiscount: couponDiscountFor(
-      appliedCoupon,
-      cart.map((i) => ({ productId: i.productId, lineTotal: lineTotal(i) }))
-    ),
-    paymentMethod,
-  });
+  const localTotals = priceCart({ lines: cartPriceLines(cart), shippingType, paymentMethod, coupon: appliedCoupon });
+  const pricedOf = (variationId: string) => localTotals.lines.find((l) => l.variationId === variationId);
 
   // Sunucu fiyat teklifi (/api/cart/quote, salt okunur): gösterilen tutar buradan gelir
   interface Quote {
-    lines: { variationId: string; available: boolean; stockShort?: boolean; title?: string; price?: number; bulk?: BulkRule[] }[];
+    lines: { variationId: string; available: boolean; stockShort?: boolean; title?: string; price?: number; bulk?: BulkRule[]; rules?: ItemRules }[];
     totals: { itemsTotal: number; shipping: number; couponDiscount: number; pickupDiscount: number; bankDiscount: number; total: number };
     coupon: { ok: boolean; error?: string } | null;
   }
@@ -177,7 +171,7 @@ export default function CartPage() {
   const kurus = (n: number) => Math.round(n * 100);
   // Teklifi uygular: bayat fiyat/kademeler güncellenir, fark varsa kullanıcıya bildirilir ve onayı istenir
   const absorbQuote = (q: Quote, shownTotal: number) => {
-    applyServerPrices(q.lines.filter((l) => l.available && typeof l.price === "number").map((l) => ({ variationId: l.variationId, price: l.price as number, bulk: l.bulk ?? [] })));
+    applyServerPrices(q.lines.filter((l) => l.available && typeof l.price === "number").map((l) => ({ variationId: l.variationId, price: l.price as number, bulk: l.bulk ?? [], rules: l.rules })));
     setIssues(q.lines.flatMap((l) => (!l.available ? ["Sepetinizdeki bir ürün artık satışta değil."] : l.stockShort ? [`"${l.title}" için yeterli stok yok.`] : [])));
     if (appliedCoupon && q.coupon && !q.coupon.ok) {
       setAppliedCoupon(null);
@@ -222,7 +216,7 @@ export default function CartPage() {
         body: JSON.stringify({
           code: couponInput,
           email,
-          lines: cart.map((i) => ({ productId: i.productId, lineTotal: lineTotal(i) })),
+          lines: localTotals.lines.map((l) => ({ productId: l.productId, lineTotal: l.lineTotal })),
         }),
       });
       const data = await res.json();
@@ -474,15 +468,21 @@ export default function CartPage() {
                       </span>
                     </span>
                     <div className="text-sm font-bold text-neutral-900 mt-2">
-                      {unitPriceFor(item.price, item.quantity, item.bulk).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺
-                      {unitPriceFor(item.price, item.quantity, item.bulk) < item.price && (
+                      {(pricedOf(item.variationId)?.unitPrice ?? item.price).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺
+                      {(pricedOf(item.variationId)?.unitPrice ?? item.price) < item.price && (
                         <span className="ml-2 text-xs font-medium text-neutral-400 line-through">{item.price.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
                       )}
                     </div>
                     {item.bulk?.map((t) => (
                       <p key={t.minQty} className="text-[11px] text-emerald-800 mt-1">
-                        {activeTier(item.bulk, item.quantity)?.minQty === t.minQty ? "✓ " : ""}
+                        {activeTier(item.bulk, pricedOf(item.variationId)?.tierQty ?? item.quantity)?.minQty === t.minQty ? "✓ " : ""}
                         {bulkLabel(t)}
+                      </p>
+                    ))}
+                    {item.bulk && item.bulk.length > 0 && <p className="text-[11px] text-neutral-500 mt-0.5">Aynı ürünün farklı renkleri toplam adede sayılır.</p>}
+                    {ruleNotes(item.rules).map((n) => (
+                      <p key={n} className="text-[11px] text-neutral-600 mt-0.5">
+                        {n}
                       </p>
                     ))}
                     </div>
@@ -929,7 +929,7 @@ export default function CartPage() {
             address: effectiveAddress,
             isPickup,
             region: [cities.find((c) => Number(c.id) === Number(buyerCityId))?.name, states.find((st) => Number(st.id) === Number(buyerStateId))?.name].filter(Boolean).join(" / "),
-            items: cart.map((i) => ({ title: i.title, variation: i.variationName, quantity: i.quantity, price: unitPriceFor(i.price, i.quantity, i.bulk) })),
+            items: cart.map((i) => ({ title: i.title, variation: i.variationName, quantity: i.quantity, price: pricedOf(i.variationId)?.unitPrice ?? i.price })),
             itemsTotal: itemsShown,
             shippingLabel: SHIPPING_LABELS[shippingType] ?? shippingType,
             shippingCost,

@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { rateLimit, tooMany } from "@/lib/rate-limit";
-import { bulkTiersOf, unitPriceFor } from "@/lib/bulk-pricing";
-import { computeTotals, couponDiscountFor, SHIPPING_LABELS, type CouponRule } from "@/lib/pricing";
+import { bulkTiersOf } from "@/lib/bulk-pricing";
+import { priceCart } from "@/lib/cart-pricing";
+import { SHIPPING_LABELS, type CouponRule } from "@/lib/pricing";
 import { validateCoupon } from "@/lib/coupons";
 
-// SALT OKUNUR fiyat teklifi: sepet kalemleri için güncel birim fiyat/kademe/stok ve toplamları döndürür.
-// Sipariş oluşturmaz, stok düşmez, kupon hakkı rezerve etmez. Hesap /api/order ile aynı fonksiyonlarla yapılır
-// (unitPriceFor + lib/pricing.ts); satırlar /api/order gibi YUVARLANMAZ (birim fiyat × adet toplamı).
+// SALT OKUNUR fiyat teklifi: sepet kalemleri için güncel birim fiyat/kademe/kurallar/stok ve toplamları döndürür.
+// Sipariş oluşturmaz, stok düşmez, kupon hakkı rezerve etmez. Hesap /api/order ile AYNI fonksiyonla yapılır (lib/cart-pricing.ts).
 export async function POST(req: Request) {
   const rl = rateLimit(req, "cart-quote", 120, 10 * 60_000);
   if (rl.limited) return tooMany(rl.retryAfter);
@@ -24,47 +24,75 @@ export async function POST(req: Request) {
 
   const variations = await prisma.productVariation.findMany({
     where: { id: { in: [...wanted.keys()] } },
-    select: { id: true, productId: true, variationValue: true, extraPrice: true, stock: true, product: { select: { title: true, active: true, basePrice: true, bulkTiers: true } } },
+    select: {
+      id: true, productId: true, variationValue: true, extraPrice: true, stock: true,
+      product: { select: { title: true, active: true, basePrice: true, bulkTiers: true, couponAllowed: true, pickupDiscountPct: true, transferDiscountPct: true } },
+    },
   });
   const byId = new Map(variations.map((v) => [v.id, v]));
 
-  const lines = [...wanted.entries()].map(([variationId, quantity]) => {
+  const missing: { variationId: string; available: false }[] = [];
+  const usable = [...wanted.entries()].flatMap(([variationId, quantity]) => {
     const v = byId.get(variationId);
-    if (!v || !v.product.active) return { variationId, quantity, available: false as const };
-    const tiers = bulkTiersOf(v.product);
-    const price = v.product.basePrice + v.extraPrice;
-    const unitPrice = unitPriceFor(price, quantity, tiers);
-    return {
-      variationId,
-      productId: v.productId,
-      title: v.product.title,
-      variationName: v.variationValue,
-      quantity,
-      available: true as const,
-      stockShort: v.stock < quantity,
-      stock: v.stock,
-      price,
-      bulk: tiers,
-      unitPrice,
-      lineTotal: unitPrice * quantity,
-    };
+    if (!v || !v.product.active) {
+      missing.push({ variationId, available: false });
+      return [];
+    }
+    return [{ v, quantity }];
   });
-  const ok = lines.filter((l): l is Extract<(typeof lines)[number], { available: true }> => l.available);
-  const itemsTotal = ok.reduce((sum, l) => sum + l.lineTotal, 0);
+  const priceLines = usable.map(({ v, quantity }) => ({
+    variationId: v.id,
+    productId: v.productId,
+    price: v.product.basePrice + v.extraPrice,
+    quantity,
+    tiers: bulkTiersOf(v.product),
+    couponAllowed: v.product.couponAllowed,
+    pickupPct: v.product.pickupDiscountPct,
+    transferPct: v.product.transferDiscountPct,
+  }));
 
   // Kupon (yalnızca doğrulama ve hesap; rezervasyon yok)
+  let priced = priceCart({ lines: priceLines, shippingType, paymentMethod });
   let coupon: { ok: boolean; rule?: CouponRule; error?: string } | null = null;
-  let couponDiscount = 0;
   const code = typeof body.coupon === "string" ? body.coupon.trim() : "";
   if (code) {
-    const priceLines = ok.map((l) => ({ productId: l.productId, lineTotal: l.lineTotal }));
-    const check = await validateCoupon({ code, email: typeof body.email === "string" ? body.email : null, lines: priceLines });
+    const check = await validateCoupon({
+      code,
+      email: typeof body.email === "string" ? body.email : null,
+      lines: priced.lines.map((l) => ({ productId: l.productId, lineTotal: l.lineTotal })),
+    });
     if (check.ok) {
-      coupon = { ok: true, rule: check.rule };
-      couponDiscount = couponDiscountFor(check.rule, priceLines);
+      const withCoupon = priceCart({ lines: priceLines, shippingType, paymentMethod, coupon: check.rule });
+      if (withCoupon.couponError) coupon = { ok: false, error: withCoupon.couponError };
+      else {
+        priced = withCoupon;
+        coupon = { ok: true, rule: check.rule };
+      }
     } else coupon = { ok: false, error: check.error };
   }
 
-  const totals = computeTotals({ itemsTotal, shippingType, couponDiscount, paymentMethod });
-  return NextResponse.json({ lines, itemsTotal, totals: { itemsTotal, ...totals }, coupon }, { headers: { "Cache-Control": "no-store" } });
+  const lines = [
+    ...priced.lines.map((l, i) => ({
+      variationId: l.variationId,
+      productId: l.productId,
+      title: usable[i].v.product.title,
+      variationName: usable[i].v.variationValue,
+      quantity: l.quantity,
+      available: true as const,
+      stockShort: usable[i].v.stock < l.quantity,
+      stock: usable[i].v.stock,
+      price: l.price,
+      bulk: l.tiers,
+      tierQty: l.tierQty,
+      unitPrice: l.unitPrice,
+      lineTotal: l.lineTotal,
+      rules: { couponAllowed: l.couponAllowed, pickupPct: l.pickupPct, transferPct: l.transferPct },
+    })),
+    ...missing,
+  ];
+  const { itemsTotal, shipping, couponDiscount, pickupDiscount, bankDiscount, total } = priced;
+  return NextResponse.json(
+    { lines, itemsTotal, totals: { itemsTotal, shipping, couponDiscount, pickupDiscount, bankDiscount, total }, coupon },
+    { headers: { "Cache-Control": "no-store" } }
+  );
 }

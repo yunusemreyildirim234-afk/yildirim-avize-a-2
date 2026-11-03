@@ -27,6 +27,7 @@ export async function GET() {
       variationName: r.variation.variationValue,
       price: r.variation.product.basePrice + r.variation.extraPrice,
       bulk: bulkTiersOf(r.variation.product),
+      rules: { couponAllowed: r.variation.product.couponAllowed, pickupPct: r.variation.product.pickupDiscountPct, transferPct: r.variation.product.transferDiscountPct },
       quantity: Math.min(r.quantity, r.variation.stock),
     }));
   return NextResponse.json({ items });

@@ -42,6 +42,9 @@ model Product {
   bulkDiscountType String? // "PERCENT" | "FIXED" (adet başı ₺)
   bulkDiscountValue Float?
   bulkTiers        Json? // Adet kademeleri: [{ minQty, type: "PERCENT"|"FIXED", value }] (bulk* alanlarının yerine geçer)
+  couponAllowed    Boolean            @default(true) // false: kupon bu üründe geçmez
+  pickupDiscountPct Float? // Mağazadan teslim indirimi % (boş: varsayılan, 0: yok)
+  transferDiscountPct Float? // Havale/EFT indirimi % (boş: varsayılan, 0: yok)
   trendyolMainId   String?            @unique // productMainId
   modelCode        String?            @unique // Site içi model kodu (1-236, yönetici değiştirebilir)
   coupons          Coupon[]
@@ -173,6 +176,7 @@ model SiteConfig {
   headquartersAddress String   @default("Emekyemez Mah. İskender Cad, Nazlı Hanım Sk. No:6 D:11, Şişhane Beyoğlu / İstanbul")
   etbisUrl            String?  @default("https://www.eticaret.gov.tr")
   etbisQrImage        String? // ETBİS karekod görseli (data URL veya bağlantı)
+  maxTotalDiscountPct Float? // Toplam indirim üst sınırı % (boş: sınırsız)
   updatedAt           DateTime @updatedAt
 }
 

@@ -4,7 +4,8 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { useAccountSync } from "@/context/useAccountSync";
 import { toast } from "sonner";
 import { track } from "@/lib/track";
-import { bulkTiersOf, unitPriceFor, type BulkRule } from "@/lib/bulk-pricing";
+import { bulkTiersOf, type BulkRule } from "@/lib/bulk-pricing";
+import { priceCart, type CartPriceLine } from "@/lib/cart-pricing";
 
 export interface CartItem {
   productId: string;
@@ -14,8 +15,28 @@ export interface CartItem {
   variationName: string;
   price: number;
   quantity: number;
-  bulk?: BulkRule[] | null; // adet kademeleri (sunucu yeniden hesaplar)
+  bulk?: BulkRule[] | null; // adet kademeleri
+  rules?: ItemRules; // ürüne özel indirim kuralları (sunucu teklifinden gelir; yoksa varsayılan)
 }
+
+export interface ItemRules {
+  couponAllowed: boolean;
+  pickupPct: number | null;
+  transferPct: number | null;
+}
+
+/** Sepet kalemlerini ortak fiyat hesabı (lib/cart-pricing.ts) girdisine çevirir. */
+export const cartPriceLines = (cart: CartItem[]): CartPriceLine[] =>
+  cart.map((i) => ({
+    variationId: i.variationId,
+    productId: i.productId,
+    price: i.price,
+    quantity: i.quantity,
+    tiers: i.bulk ?? [],
+    couponAllowed: i.rules?.couponAllowed ?? true,
+    pickupPct: i.rules?.pickupPct ?? null,
+    transferPct: i.rules?.transferPct ?? null,
+  }));
 
 interface CartContextType {
   cart: CartItem[];
@@ -24,7 +45,7 @@ interface CartContextType {
   emptyCart: () => void; // kullanıcı eylemi: geri alınabilir
   updateQuantity: (variationId: string, quantity: number) => void;
   /** Sunucunun güncel birim fiyat/kademe bilgisini sepet kalemlerine yazar (bayat tarayıcı fiyatı korunmaz). */
-  applyServerPrices: (updates: { variationId: string; price: number; bulk: BulkRule[] }[]) => void;
+  applyServerPrices: (updates: { variationId: string; price: number; bulk: BulkRule[]; rules?: ItemRules }[]) => void;
   clearCart: () => void;
   totalItems: number;
   totalPrice: number;
@@ -134,22 +155,22 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const clearCart = () => setCart([]);
 
-  const applyServerPrices = (updates: { variationId: string; price: number; bulk: BulkRule[] }[]) => {
+  const applyServerPrices = (updates: { variationId: string; price: number; bulk: BulkRule[]; rules?: ItemRules }[]) => {
     const map = new Map(updates.map((u) => [u.variationId, u]));
     setCart((prev) => {
       let changed = false;
       const next = prev.map((i) => {
         const u = map.get(i.variationId);
-        if (!u || (u.price === i.price && JSON.stringify(u.bulk) === JSON.stringify(i.bulk ?? []))) return i;
+        if (!u || (u.price === i.price && JSON.stringify(u.bulk) === JSON.stringify(i.bulk ?? []) && JSON.stringify(u.rules ?? null) === JSON.stringify(i.rules ?? null))) return i;
         changed = true;
-        return { ...i, price: u.price, bulk: u.bulk };
+        return { ...i, price: u.price, bulk: u.bulk, rules: u.rules ?? i.rules };
       });
       return changed ? next : prev;
     });
   };
 
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const totalPrice = cart.reduce((sum, item) => sum + unitPriceFor(item.price, item.quantity, item.bulk) * item.quantity, 0);
+  const totalPrice = priceCart({ lines: cartPriceLines(cart), shippingType: "STANDART_KARGO", paymentMethod: "CREDIT_CARD" }).itemsTotal;
 
   return (
     <CartContext.Provider

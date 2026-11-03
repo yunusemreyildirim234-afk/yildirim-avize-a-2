@@ -4,7 +4,8 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { HoverMagnifier, ImageLightbox } from "@/components/ImageZoom";
 import { useCart } from "@/context/CartContext";
-import { BANK_TRANSFER_DISCOUNT, FREE_SHIPPING_THRESHOLD, PICKUP_DISCOUNT, SHIPPING_TYPES, computeTotals } from "@/lib/pricing";
+import { BANK_TRANSFER_DISCOUNT, FREE_SHIPPING_THRESHOLD, PICKUP_DISCOUNT, SHIPPING_TYPES } from "@/lib/pricing";
+import { priceCart, ruleNotes } from "@/lib/cart-pricing";
 import { SITE_URL, WHATSAPP_NUMBER } from "@/lib/site";
 import { activeTier, bulkLabel, bulkTiersOf, unitPriceFor } from "@/lib/bulk-pricing";
 
@@ -27,6 +28,9 @@ interface Product {
   images?: string[];
   listPrice?: number | null;
   bulkTiers?: unknown;
+  couponAllowed?: boolean;
+  pickupDiscountPct?: number | null;
+  transferDiscountPct?: number | null;
   variations: Variation[];
 }
 
@@ -47,9 +51,17 @@ export default function ProductDetailClient({ product }: { product: Product }) {
   const listShown = product.listPrice && product.listPrice > product.basePrice ? product.listPrice + (selectedVariation?.extraPrice || 0) : null;
   const bulk = bulkTiersOf(product);
   const unitNow = unitPriceFor(currentPrice, quantity, bulk);
-  // Sepet/sunucuyla aynı hesap: satır toplamı yuvarlanmaz; Havale indirimi computeTotals'tan gelir
-  const lineNow = unitNow * quantity;
-  const bankDiscountNow = computeTotals({ itemsTotal: lineNow, shippingType: SHIPPING_TYPES.HOME, paymentMethod: "BANK_TRANSFER" }).bankDiscount;
+  // Sepet/sunucuyla AYNI fonksiyon (lib/cart-pricing.ts): satır toplamı yuvarlanmaz; Havale indirimi ürünün oranından gelir
+  const rules = { couponAllowed: product.couponAllowed ?? true, pickupPct: product.pickupDiscountPct ?? null, transferPct: product.transferDiscountPct ?? null };
+  const priced = priceCart({
+    lines: [{ variationId: selectedVariation?.id ?? "v", productId: product.id, price: currentPrice, quantity, tiers: bulk, ...rules }],
+    shippingType: SHIPPING_TYPES.HOME,
+    paymentMethod: "BANK_TRANSFER",
+  });
+  const lineNow = priced.itemsTotal;
+  const bankDiscountNow = priced.bankDiscount;
+  const bankPct = rules.transferPct ?? Math.round(BANK_TRANSFER_DISCOUNT * 100);
+  const notes = ruleNotes(rules);
   const maxQty = selectedVariation ? Math.max(0, selectedVariation.stock) : 0;
   const outOfStock = !selectedVariation || maxQty <= 0;
   const freeShipping = currentPrice >= FREE_SHIPPING_THRESHOLD;
@@ -177,11 +189,23 @@ export default function ProductDetailClient({ product }: { product: Product }) {
                     {bulkLabel(t)}
                   </li>
                 ))}
+                <li className="text-[11px] text-neutral-500">Aynı ürünün farklı renkleri toplam adede sayılır.</li>
               </ul>
             )}
+            {bankPct > 0 && (
             <p className="mt-2 text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-1.5 w-fit">
-              Havale/EFT ile %{Math.round(BANK_TRANSFER_DISCOUNT * 100)} İndirimli: <strong>{(lineNow - bankDiscountNow).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</strong> <span className="text-emerald-700/80">(kupon, kargo ve mağaza indirimi hariç; diğer indirimlerle değişebilir)</span>
+              Havale/EFT ile %{bankPct.toLocaleString("tr-TR")} İndirimli: <strong>{(lineNow - bankDiscountNow).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</strong> <span className="text-emerald-700/80">(kupon, kargo ve mağaza indirimi hariç; diğer indirimlerle değişebilir)</span>
             </p>
+            )}
+            {notes.length > 0 && (
+              <ul className="mt-2 space-y-0.5">
+                {notes.map((n) => (
+                  <li key={n} className="text-[11px] text-neutral-600">
+                    {n}
+                  </li>
+                ))}
+              </ul>
+            )}
             {freeShipping && (
               <p className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-emerald-600 rounded-full px-3 py-1">
                 <span aria-hidden="true">🚚</span> Ücretsiz &amp; Sigortalı Kargo
