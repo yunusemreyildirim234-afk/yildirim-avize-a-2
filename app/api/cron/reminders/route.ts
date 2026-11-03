@@ -1,4 +1,5 @@
 import { cleanGuestEmail } from "@/lib/guest-email";
+import { safeCompare } from "@/lib/session";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { sendAbandonedCartEmail, sendCartReminderEmail, sendReceiptReminderEmail } from "@/lib/email";
@@ -13,7 +14,7 @@ const HOUR = 60 * 60 * 1000;
 // Vercel Cron her çağrıda "Authorization: Bearer $CRON_SECRET" gönderir. CRON_SECRET tanımlı değilse uç nokta kapalıdır.
 export async function GET(req: Request) {
   const secret = process.env.CRON_SECRET;
-  if (!secret || req.headers.get("authorization") !== `Bearer ${secret}`) {
+  if (!secret || !safeCompare(req.headers.get("authorization") ?? "", `Bearer ${secret}`)) {
     return NextResponse.json({ error: "Yetkisiz" }, { status: 401 });
   }
 

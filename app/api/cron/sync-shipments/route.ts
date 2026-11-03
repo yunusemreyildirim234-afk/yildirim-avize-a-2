@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { safeCompare } from "@/lib/session";
 import { syncShippedOrders } from "@/lib/shipment-sync";
 
 export const maxDuration = 60;
@@ -6,7 +7,7 @@ export const maxDuration = 60;
 // Vercel Cron her çağrıda "Authorization: Bearer $CRON_SECRET" gönderir (reminders ucuyla aynı yetkilendirme). CRON_SECRET tanımlı değilse uç nokta kapalıdır.
 export async function GET(req: Request) {
   const secret = process.env.CRON_SECRET;
-  if (!secret || req.headers.get("authorization") !== `Bearer ${secret}`) {
+  if (!secret || !safeCompare(req.headers.get("authorization") ?? "", `Bearer ${secret}`)) {
     return NextResponse.json({ error: "Yetkisiz" }, { status: 401 });
   }
   try {
