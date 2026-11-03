@@ -1,35 +1,38 @@
 import { cleanGuestEmail } from "@/lib/guest-email";
 import Link from "next/link";
+import nextDynamic from "next/dynamic";
 import { prisma } from "@/lib/db";
-import AdminAddProduct from "@/components/AdminAddProduct";
-import AdminProductList from "@/components/AdminProductList";
 import OrderStatusSelector from "@/components/OrderStatusSelector";
 import AdminKargonomiHeader from "@/components/AdminKargonomiHeader";
 import AdminTrendyolSync from "@/components/AdminTrendyolSync";
 import AdminKargonomiOrderActions from "@/components/AdminKargonomiOrderActions";
-import AdminMessages from "@/components/AdminMessages";
 import { FEATURED, getBestSellers } from "@/lib/products";
-import AdminHomepage from "@/components/AdminHomepage";
 import { getHomepageConfig, getHomepageRaw, getSectionPools } from "@/lib/homepage";
 import { resolvePromoCards } from "@/lib/promo-cards";
-import AdminCoupons from "@/components/AdminCoupons";
 import AdminDiscountSettings from "@/components/AdminDiscountSettings";
 import AdminSessions from "@/components/AdminSessions";
 import AdminLiveAlerts from "@/components/AdminLiveAlerts";
 import AdminSection from "@/components/AdminSection";
 import AdminReceiptActions from "@/components/AdminReceiptActions";
 import AdminOrderRequest from "@/components/AdminOrderRequest";
-import AdminReviews from "@/components/AdminReviews";
 import AdminCompany from "@/components/AdminCompany";
 import AdminOrderFilters from "@/components/AdminOrderFilters";
 import AdminInvoice from "@/components/AdminInvoice";
 import AdminShipmentSync from "@/components/AdminShipmentSync";
 import AdminDeleteButton from "@/components/AdminDeleteButton";
-import AdminActivity from "@/components/AdminActivity";
 import { getActivity } from "@/lib/activity";
 import { getCompanyInfo } from "@/lib/company";
 import { ORDER_GROUPS, isCountedOrder, matchesGroups, parseGroupParam, type OrderGroupKey } from "@/lib/orderStatus";
 import { getInvoiceMeta } from "@/lib/invoice";
+
+// Büyük ve ilk görünümde kapalı bölümlerde duran bileşenler ayrı parçada yüklenir (davranış aynı)
+const AdminProductList = nextDynamic(() => import("@/components/AdminProductList"));
+const AdminAddProduct = nextDynamic(() => import("@/components/AdminAddProduct"));
+const AdminHomepage = nextDynamic(() => import("@/components/AdminHomepage"));
+const AdminCoupons = nextDynamic(() => import("@/components/AdminCoupons"));
+const AdminActivity = nextDynamic(() => import("@/components/AdminActivity"));
+const AdminMessages = nextDynamic(() => import("@/components/AdminMessages"));
+const AdminReviews = nextDynamic(() => import("@/components/AdminReviews"));
 
 export const dynamic = "force-dynamic";
 
