@@ -6,11 +6,12 @@ import Hero from "@/components/Hero";
 import PromoStrip from "@/components/PromoStrip";
 import JsonLd from "@/components/JsonLd";
 import ProductCard from "@/components/ProductCard";
-import { getProducts } from "@/lib/products";
+import CollectionsRow from "@/components/CollectionsRow";
+import { getHomeCollections } from "@/lib/home-collections";
 import { composeSection } from "@/lib/homepage-compose";
 import { getHomepageConfig, getSectionPools } from "@/lib/homepage";
 import type { ProductWithVariations } from "@/lib/products";
-import { ADDRESS_LINE, CATEGORIES, LAT, LNG, PHONE_TEL, SITE_URL } from "@/lib/site";
+import { ADDRESS_LINE, LAT, LNG, PHONE_TEL, SITE_URL } from "@/lib/site";
 
 export const revalidate = 60; // Genel (kişiselleştirmesiz) sayfa: 60 sn önbellek; yönetici işlemleri revalidateStorefront() ile anında yeniler
 
@@ -73,11 +74,7 @@ function MoreCards({ products, cols, dark = false }: { products: ProductWithVari
 
 export default async function Home() {
   // Bölüm havuzları ve yönetici ayarı (istek başına bir kez); ayar yoksa/bozuksa bugünkü sıralama ve sayılar
-  const [config, pools, ...categoryCovers] = await Promise.all([
-    getHomepageConfig(),
-    getSectionPools(),
-    ...CATEGORIES.slice(0, 4).map((c) => getProducts({ category: c.dbCategory, imageUrl: { not: null } }, 1)),
-  ]);
+  const [config, pools, collections] = await Promise.all([getHomepageConfig(), getSectionPools(), getHomeCollections()]);
   const { shown: featured, more: moreFeatured } = composeSection(pools.featured, config.featured, pools.featuredManual);
   const { shown: discounted, more: moreDiscounted } = composeSection(pools.discounted, config.discounted);
   const { shown: bestSellers, more: moreBestSellers } = composeSection(pools.bestsellers, config.bestsellers);
@@ -100,14 +97,15 @@ export default async function Home() {
               <span className="text-xs uppercase tracking-widest text-amber-700 font-semibold">Koleksiyonlar</span>
               <h2 className="text-2xl sm:text-3xl font-serif font-bold text-zinc-900">Aydınlatma Koleksiyonları</h2>
             </div>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              {CATEGORIES.slice(0, 4).map((c, i) => {
-                const cover = categoryCovers[i]?.[0]?.imageUrl;
+            <CollectionsRow count={collections.length}>
+              {collections.map((c) => {
+                const cover = c.cover;
                 return (
                   <Link
                     key={c.slug}
+                    role="listitem"
                     href={`/kategori/${c.slug}`}
-                    className="group relative aspect-[4/5] rounded-2xl overflow-hidden bg-zinc-200 border border-zinc-200"
+                    className="group relative aspect-[4/5] rounded-2xl overflow-hidden bg-zinc-200 border border-zinc-200 shrink-0 snap-start w-[calc(50%-8px)] lg:w-[calc(25%-12px)]"
                   >
                     {cover && (
                       <Image
@@ -126,7 +124,7 @@ export default async function Home() {
                   </Link>
                 );
               })}
-            </div>
+            </CollectionsRow>
           </div>
 
           <div>
