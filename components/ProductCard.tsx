@@ -5,6 +5,7 @@ import { bulkTiersOf } from "@/lib/bulk-pricing";
 import PriceLadder from "@/components/PriceLadder";
 import { getLadderContext } from "@/lib/showcase";
 import { priceLadder } from "@/lib/price-ladder";
+import { coverImageOf } from "@/lib/variation-input";
 import { CartStepper, FavoriteButton } from "@/components/ProductQuickActions";
 
 export default async function ProductCard({
@@ -25,6 +26,8 @@ export default async function ProductCard({
       : 0;
 
   const bulk = bulkTiersOf(product);
+  // Kapak: varsayılan (ilk stoklu) rengin fotoğrafı varsa o, yoksa ürün kapağı
+  const cover = coverImageOf(product);
 
   // İstemci bileşenlerine yalnızca gereken alanlar geçirilir
   const quick = {
@@ -32,13 +35,14 @@ export default async function ProductCard({
     title: product.title,
     category: product.category,
     basePrice: product.basePrice,
-    imageUrl: product.imageUrl,
+    imageUrl: cover,
     bulk,
     variations: product.variations.map((v) => ({
       id: v.id,
       variationValue: v.variationValue,
       extraPrice: v.extraPrice,
       stock: v.stock,
+      images: v.images.slice(0, 1),
     })),
   };
 
@@ -50,9 +54,9 @@ export default async function ProductCard({
     >
       <Link href={`/urun/${product.id}`} className="flex flex-col flex-1">
         <div className="relative aspect-square bg-zinc-100 overflow-hidden rounded-t-2xl">
-          {product.imageUrl ? (
+          {cover ? (
             <Image
-              src={product.imageUrl}
+              src={cover}
               alt={product.title}
               fill
               priority={priority}

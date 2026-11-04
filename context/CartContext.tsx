@@ -97,7 +97,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const addToCart = (newItem: CartItem) => {
     track("CART_ADD", `${newItem.title} (${newItem.variationName}) x${newItem.quantity}`);
-    gtmPush(addToCartEvent([gaItem({ id: newItem.productId, name: newItem.title, price: newItem.price, quantity: newItem.quantity, variant: newItem.variationName })]));
+    gtmPush(addToCartEvent([gaItem({ id: newItem.productId, name: newItem.title, price: newItem.price, quantity: newItem.quantity, variant: newItem.variationName.replace(/^[^:]+:\s*/, "") })]));
     setCart((prev) => {
       const existing = prev.find((item) => item.variationId === newItem.variationId);
       if (existing) {

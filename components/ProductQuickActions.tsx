@@ -18,7 +18,7 @@ export interface QuickProduct {
   modelCode?: string | null;
   bulk?: BulkRule[] | null;
   ladder?: LadderStep[]; // fiyat merdiveni (API'den)
-  variations: { id: string; variationValue: string; extraPrice: number; stock: number }[];
+  variations: { id: string; variationValue: string; extraPrice: number; stock: number; images?: string[] }[];
 }
 
 /** Favorilere ekle/çıkar kalbi. Eklenince yanında kapatılabilir "Favorilere Git" balonu açılır. */
@@ -95,7 +95,7 @@ export function CartStepper({ product, inlineToast = false }: { product: QuickPr
         productId: product.id,
         variationId: variation.id,
         title: product.title,
-        imageUrl: product.imageUrl,
+        imageUrl: variation.images?.[0] || product.imageUrl,
         variationName: variation.variationValue,
         price: product.basePrice + variation.extraPrice,
         bulk: product.bulk,

@@ -12,6 +12,7 @@ export interface FeedVariation {
   extraPrice: number;
   stock: number;
   barcode?: string | null;
+  images?: string[];
 }
 export interface FeedProduct {
   id: string;
@@ -106,7 +107,8 @@ const tag = (name: string, value: string) => `<g:${name}>${xmlEscape(value)}</g:
 export function feedItemXml(p: FeedProduct, site: string): string | null {
   const offer = defaultOffer(p);
   const shown = feedPrice(offer.price);
-  const images = [...new Set([p.imageUrl, ...p.images].map((u) => absoluteHttps(u, site)).filter((u): u is string => Boolean(u)))];
+  // Kapak: varsayılan (ilk stoklu) varyasyonun görseli varsa o, yoksa ürün kapağı (ürün sayfası JsonLd'i ile aynı kural)
+  const images = [...new Set([offer.variation?.images?.[0], p.imageUrl, ...p.images].map((u) => absoluteHttps(u, site)).filter((u): u is string => Boolean(u)))];
   if (!shown || images.length === 0) return null;
   const regular = offer.list ? feedPrice(offer.list) : null;
   const title = cleanText(p.title, FEED_TITLE_MAX) || FEED_BRAND_FALLBACK;

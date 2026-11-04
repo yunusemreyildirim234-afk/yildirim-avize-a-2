@@ -18,6 +18,7 @@ interface Variation {
   variationValue: string;
   extraPrice: number;
   stock: number;
+  images?: string[];
 }
 
 interface Product {
@@ -45,7 +46,9 @@ export default function ProductDetailClient({ product, ladderCtx }: { product: P
   const [selectedVariation, setSelectedVariation] = useState<Variation | null>(
     product.variations.find((v) => v.stock > 0) || product.variations[0] || null
   );
-  const gallery = Array.from(new Set([product.imageUrl, ...(product.images ?? [])].filter((u): u is string => Boolean(u))));
+  // Seçili rengin kendi fotoğrafları varsa galeri onlara geçer; yoksa ürün fotoğrafları
+  const colorImages = selectedVariation?.images ?? [];
+  const gallery = Array.from(new Set((colorImages.length > 0 ? colorImages : [product.imageUrl, ...(product.images ?? [])]).filter((u): u is string => Boolean(u))));
   const [activeImage, setActiveImage] = useState(0);
   const mainImage = gallery[activeImage] ?? null;
   const [quantity, setQuantity] = useState(1);
@@ -84,7 +87,7 @@ export default function ProductDetailClient({ product, ladderCtx }: { product: P
       productId: product.id,
       variationId: selectedVariation.id,
       title: product.title,
-      imageUrl: product.imageUrl,
+      imageUrl: colorImages[0] || product.imageUrl,
       variationName: `${selectedVariation.variationType}: ${selectedVariation.variationValue}`,
       price: currentPrice,
       bulk,
@@ -237,6 +240,7 @@ export default function ProductDetailClient({ product, ladderCtx }: { product: P
                     disabled={v.stock <= 0}
                     onClick={() => {
                       setSelectedVariation(v);
+                      setActiveImage(0);
                       setQuantity((q) => Math.max(1, Math.min(q, v.stock)));
                     }}
                     className={`min-h-[56px] p-3 rounded-xl border text-left transition-all disabled:opacity-50 disabled:cursor-not-allowed ${

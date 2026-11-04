@@ -71,7 +71,7 @@ export default async function ProductDetailPage({ params }: Props) {
   const category = CATEGORIES.find((c) => c.dbCategory === product.category);
   // Fiyat/stok/marka Google feed'iyle (lib/feed.ts) ve sayfadaki varsayılan seçimle AYNI kaynaktan gelir
   const offer = defaultOffer(product);
-  const productImages = [product.imageUrl, ...product.images].filter((u): u is string => Boolean(u)).map((u) => (u.startsWith("/") ? `${SITE_URL}${u}` : u));
+  const productImages = [...new Set([offer.variation?.images?.[0], product.imageUrl, ...product.images])].filter((u): u is string => Boolean(u)).map((u) => (u.startsWith("/") ? `${SITE_URL}${u}` : u));
   const productSchema = {
     "@context": "https://schema.org",
     "@type": "Product",
