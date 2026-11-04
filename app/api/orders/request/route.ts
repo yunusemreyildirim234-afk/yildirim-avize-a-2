@@ -4,6 +4,8 @@ import { getSessionUserId } from "@/lib/account";
 import { sendRequestAdminEmail } from "@/lib/email";
 import { requestTypeFor } from "@/lib/orderStatus";
 import { rateLimit, tooMany } from "@/lib/rate-limit";
+import { notifyAdmins } from "@/lib/notifications";
+import { requestNoticeTitle } from "@/lib/request-notice";
 
 // Teslim edilmemiş siparişte iptal, teslim edilmiş siparişte iade talebi
 
@@ -36,6 +38,14 @@ export async function POST(req: Request) {
       cancelReturnAt: new Date(),
     },
   });
+
+  // Panel bildirimi best-effort: hata talebi ve e-postayı engellemez
+  await notifyAdmins({
+    title: requestNoticeTitle(type, order.id),
+    message: `${order.user.name}${reason ? ` • ${reason.slice(0, 120)}` : ""}`,
+    type: "ORDER",
+    link: "/admin#siparisler",
+  }).catch((e) => console.error("[talep] panel bildirimi yazılamadı:", (e as Error).message));
 
   await sendRequestAdminEmail({
     type,
