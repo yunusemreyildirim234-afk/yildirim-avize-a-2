@@ -12,7 +12,7 @@ const CHANNELS = [
   { label: "Trendyol Mağazamız", href: "https://www.trendyol.com/magaza/yildirimavize-m-379320?sst=0", icon: "🛒", highlight: true },
 ];
 
-export default function Footer() {
+export default function Footer({ extraCategories = [] }: { extraCategories?: { href: string; label: string }[] }) {
   return (
     <footer className="keep-theme bg-zinc-950 text-white pt-16 pb-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-10 pb-12 border-b border-zinc-800">
@@ -60,6 +60,13 @@ export default function Footer() {
               <li key={c.slug}>
                 <Link href={`/kategori/${c.slug}`} className="inline-block py-1.5 hover:text-amber-400">
                   {c.title}
+                </Link>
+              </li>
+            ))}
+            {extraCategories.map((c) => (
+              <li key={c.href}>
+                <Link href={c.href} className="inline-block py-1.5 hover:text-amber-400">
+                  {c.label}
                 </Link>
               </li>
             ))}

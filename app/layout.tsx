@@ -8,6 +8,7 @@ import WhatsAppButton from "@/components/WhatsAppButton";
 import CookieBanner from "@/components/CookieBanner";
 import GoogleTagManager from "@/components/GoogleTagManager";
 import ToastLinkRouter from "@/components/ToastLinkRouter";
+import { getExtraCategoryLinks } from "@/lib/category-list";
 import { CartProvider } from "@/context/CartContext";
 import { WishlistProvider } from "@/context/WishlistContext";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
@@ -60,11 +61,13 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Yönetim panelinden eklenen koleksiyonlar (60 sn önbellek; hata olursa sabit menü)
+  const extraCategories = await getExtraCategoryLinks();
   return (
     <html lang="tr" suppressHydrationWarning>
       <head>
@@ -79,9 +82,9 @@ export default function RootLayout({
       <body className={`${inter.className} bg-gray-50 text-gray-900 antialiased`}>
         <CartProvider>
           <WishlistProvider>
-            <Navbar />
+            <Navbar extraCategories={extraCategories} />
             {children}
-            <Footer />
+            <Footer extraCategories={extraCategories} />
             <WhatsAppButton />
             <CookieBanner />
             <GoogleTagManager />

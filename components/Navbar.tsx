@@ -66,7 +66,9 @@ const CORPORATE_LINKS = [
 const itemClass =
   "flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 transition-colors w-full text-left";
 
-export default function Navbar() {
+export default function Navbar({ extraCategories = [] }: { extraCategories?: { href: string; label: string }[] }) {
+  // Sabit bağlantılar aynen; sonradan eklenen koleksiyonlar arkasına (masaüstü menü, mobil şerit ve çekmece aynı listeyi kullanır)
+  const categoryLinks = [...CATEGORY_LINKS, ...extraCategories];
   const { totalItems } = useCart();
   const pathname = usePathname();
   const router = useRouter();
@@ -165,11 +167,13 @@ export default function Navbar() {
               <div className="grid grid-cols-2 gap-4 p-1">
                 <div>
                   <h2 className="px-3 pb-2 text-[11px] font-bold uppercase tracking-wider text-zinc-400">Kategoriler</h2>
-                  {CATEGORY_LINKS.map((l) => (
-                    <Link key={l.href} href={l.href} role="menuitem" onClick={close} className={itemClass}>
-                      {l.label}
-                    </Link>
-                  ))}
+                  <div className="max-h-[60vh] overflow-y-auto">
+                    {categoryLinks.map((l) => (
+                      <Link key={l.href} href={l.href} role="menuitem" onClick={close} className={itemClass}>
+                        {l.label}
+                      </Link>
+                    ))}
+                  </div>
                 </div>
                 <div className="border-l border-zinc-100 pl-4">
                   <h2 className="px-3 pb-2 text-[11px] font-bold uppercase tracking-wider text-zinc-400">Keşfet</h2>
@@ -286,7 +290,7 @@ export default function Navbar() {
 
       {/* Mobil: kaydırılabilir koleksiyon hapları */}
       <nav aria-label="Koleksiyonlar" className="md:hidden border-t border-zinc-100 flex gap-2 overflow-x-auto px-4 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {CATEGORY_LINKS.map((l) => {
+        {categoryLinks.map((l) => {
           const active = pathname === l.href;
           return (
             <Link
@@ -319,7 +323,7 @@ export default function Navbar() {
             <div className="flex-1 overflow-y-auto p-3 space-y-5">
               <div>
                 <h2 className="px-3 pb-1 text-[11px] font-bold uppercase tracking-wider text-zinc-400">Koleksiyonlar</h2>
-                {CATEGORY_LINKS.map((l) => (
+                {categoryLinks.map((l) => (
                   <Link key={l.href} href={l.href} onClick={() => setDrawerOpen(false)} className={itemClass}>
                     {l.label}
                   </Link>
