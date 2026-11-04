@@ -11,6 +11,9 @@ import SmartFilterChips from "@/components/SmartFilterChips";
 import { bulkTiersOf, tierBadgeLabel, tierValueLabel } from "@/lib/bulk-pricing";
 import { CATEGORIES } from "@/lib/site";
 import { buildCategoryList, productInCategory } from "@/lib/categories";
+import { uncategorizedCount } from "@/lib/category-settings";
+
+const NONE_KEY = "__kategorisiz__"; // "Kategorisiz (N)" çipi
 import { coverImageOf } from "@/lib/variation-input";
 
 interface Variation {
@@ -209,7 +212,9 @@ Yine de geri alınsın mı?`)) await doUndo(true);
   // Kategori çipleri: seçili kategorilerden biri (büyük/küçük harf ve boşluk varyantları dahil) VE yukarıdaki vitrin çipleri
   const catEntries = useMemo(() => buildCategoryList(products.map((p) => ({ category: p.category, count: 1 })), CATEGORIES), [products]);
   const selectedCats = catEntries.filter((c) => catChips.includes(c.key));
-  const chipFiltered = selectedCats.length ? chipFiltered0.filter((p) => selectedCats.some((c) => productInCategory(p.category, c))) : chipFiltered0;
+  const noneCount = uncategorizedCount(products); // kategorisiz ürün sayısı (boş / yalnız boşluk)
+  const noneOn = catChips.includes(NONE_KEY);
+  const chipFiltered = selectedCats.length || noneOn ? chipFiltered0.filter((p) => (noneOn && !p.category.trim()) || selectedCats.some((c) => productInCategory(p.category, c))) : chipFiltered0;
   const filtered = q
     ? chipFiltered.filter(
         (p) =>
@@ -383,7 +388,7 @@ Yine de geri alınsın mı?`)) await doUndo(true);
               onChange={(c) => { setCatChips(c); setShown(PAGE); }}
               total={products.length}
               allLabel="Tüm kategoriler"
-              options={catEntries.filter((c) => c.count > 0).map((c) => ({ key: c.key, label: c.title, count: c.count }))}
+              options={[...catEntries.filter((c) => c.count > 0).map((c) => ({ key: c.key, label: c.title, count: c.count })), ...(noneCount > 0 ? [{ key: NONE_KEY, label: "Kategorisiz", count: noneCount }] : [])]}
             />
           </div>
           {/* Öne Çıkanlar modu: elle işaret varsa site yalnızca onları gösterir; yoksa otomatik seçim */}

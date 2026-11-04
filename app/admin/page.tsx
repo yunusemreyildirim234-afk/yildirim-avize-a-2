@@ -16,7 +16,8 @@ import { FEATURED } from "@/lib/products";
 import { getHomepageConfig, getHomepageRaw, getSectionPools } from "@/lib/homepage";
 import { resolvePromoCards } from "@/lib/promo-cards";
 import { resolveCollectionKeys } from "@/lib/collections";
-import { getCategoryList } from "@/lib/category-list";
+import { getCategoryList, getCategorySettings } from "@/lib/category-list";
+import { uncategorizedCount } from "@/lib/category-settings";
 import AdminDiscountSettings from "@/components/AdminDiscountSettings";
 import AdminSessions from "@/components/AdminSessions";
 import AdminTwoFactor, { AdminTwoFactorBanner } from "@/components/AdminTwoFactor";
@@ -39,6 +40,7 @@ import { getInvoiceMeta } from "@/lib/invoice";
 const AdminProductList = nextDynamic(() => import("@/components/AdminProductList"));
 const AdminAddProduct = nextDynamic(() => import("@/components/AdminAddProduct"));
 const AdminHomepage = nextDynamic(() => import("@/components/AdminHomepage"));
+const AdminCategories = nextDynamic(() => import("@/components/AdminCategories"));
 const AdminCoupons = nextDynamic(() => import("@/components/AdminCoupons"));
 const AdminActivity = nextDynamic(() => import("@/components/AdminActivity"));
 const AdminMessages = nextDynamic(() => import("@/components/AdminMessages"));
@@ -104,6 +106,9 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const featuredIds = flaggedFeatured.length > 0 ? flaggedFeatured : await prisma.product.findMany({ where: { active: true, ...FEATURED }, select: { id: true } });
   // Ana Sayfayı Düzenle: bölüm havuzları (yalnızca ilgili kümeden seçilebilir) ve kayıtlı ayar
   const [homeConfig, homePools, homeRaw] = await Promise.all([getHomepageConfig(), getSectionPools(), getHomepageRaw()]);
+  const categoryList = await getCategoryList().catch(() => []);
+  const categorySettings = await getCategorySettings();
+  const categoryEntries = categoryList.map((c) => ({ key: c.key, slug: c.slug, title: c.title, count: c.count, fixed: c.fixed }));
   const collectionOptions = (await getCategoryList().catch(() => [])).map((c) => ({ key: c.key, title: c.title, count: c.count })); // ana sayfa koleksiyon seçenekleri
   // Çok Satanlar: bölüm havuzu (100) aynı sıralamanın uzun hâlidir; ilk 48 = getBestSellers(48) (ikinci sorgu yapılmaz)
   const showcase = { featured: featuredIds.map((p) => p.id), bestSellers: homePools.bestsellers.slice(0, 48).map((p) => p.id), manualFeatured: flaggedFeatured.length };
@@ -243,6 +248,12 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         <AdminSection id="yonetici-sifre" title="Yönetici Şifresini Değiştir" description="E-posta kodu ile yönetici hesabının şifresini yenileyin.">
           <AdminPasswordChange />
         </AdminSection>
+
+        <AdminCategories
+          entries={categoryEntries}
+          settings={categorySettings}
+          uncategorized={uncategorizedCount(products)}
+        />
 
         <AdminHomepage
           initial={homeConfig}
