@@ -9,6 +9,7 @@ import { maskName } from "@/lib/mask-name";
 import { GtmAwaitPayment, GtmEvent } from "@/components/GtmEvent";
 import { gaItem, isPurchasable, purchaseEvent, purchaseOnceKey } from "@/lib/gtm-events";
 import { feedBrand } from "@/lib/feed";
+import { coverImageOf } from "@/lib/variation-input";
 import { FREE_SHIPPING_THRESHOLD, SHIPPING_COST } from "@/lib/pricing";
 
 export const metadata: Metadata = {
@@ -20,7 +21,7 @@ export default async function OrderConfirmationPage({ params }: { params: Promis
   const { id } = await params;
   const order = await prisma.order.findUnique({
     where: { id },
-    include: { user: { select: { name: true } }, items: { include: { variation: { include: { product: true } } } } },
+    include: { user: { select: { name: true } }, items: { include: { variation: { include: { product: { include: { variations: { orderBy: { position: "asc" }, select: { images: true } } } } } } } } },
   });
   if (!order) notFound();
 
@@ -77,8 +78,8 @@ export default async function OrderConfirmationPage({ params }: { params: Promis
                   aria-label={`${item.variation.product.title} ürün sayfası`}
                   className="w-[72px] h-[72px] rounded-xl bg-neutral-100 overflow-hidden shrink-0 border border-neutral-200 flex items-center justify-center"
                 >
-                  {item.variation.product.imageUrl && (
-                    <img src={item.variation.product.imageUrl} alt={item.variation.product.title} width={64} height={64} loading="lazy" decoding="async" className="w-full h-full object-cover" />
+                  {coverImageOf(item.variation.product) && (
+                    <img src={coverImageOf(item.variation.product)!} alt={item.variation.product.title} width={64} height={64} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                   )}
                 </Link>
                 <span>

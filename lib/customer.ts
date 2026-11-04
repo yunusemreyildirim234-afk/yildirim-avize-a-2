@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { coverImageOf } from "@/lib/variation-input";
 
 /** Hafif profil: sipariş, varyasyon ve dekont yüklemeden (varsayılan /api/auth/me yanıtı). */
 export async function getCustomerProfile(id: string) {
@@ -16,8 +17,26 @@ export async function getCustomerWithOrders(id: string) {
       // Ödeme ekranını terk eden denemeler müşteri geçmişinde görünmez
       status: { notIn: ["AWAITING_PAYMENT", "PAYMENT_FAILED"] },
     },
-    include: { items: { include: { variation: { select: { id: true, variationValue: true, product: { select: { id: true, title: true, imageUrl: true } } } } } } },
+    include: {
+      items: {
+        include: {
+          variation: {
+            select: { id: true, variationValue: true, product: { select: { id: true, title: true, imageUrl: true, images: true, variations: { orderBy: { position: "asc" }, select: { images: true } } } } },
+          },
+        },
+      },
+    },
     orderBy: { createdAt: "desc" },
   });
-  return { ...user, orders };
+  // Küçük resim: tek kapak kuralı (genel fotoğrafın ilki, yoksa ilk rengin fotoğrafı); istemciye yalnızca id/başlık/kapak gider
+  return {
+    ...user,
+    orders: orders.map((o) => ({
+      ...o,
+      items: o.items.map((i) => {
+        const p = i.variation.product;
+        return { ...i, variation: { ...i.variation, product: { id: p.id, title: p.title, imageUrl: coverImageOf(p) } } };
+      }),
+    })),
+  };
 }
