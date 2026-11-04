@@ -1,5 +1,6 @@
 import { createHmac } from "node:crypto";
 import { SITE_URL } from "@/lib/site";
+import { PAYTR_TIMEOUT_MINUTES } from "@/lib/stock-rules";
 
 const merchantId = () => (process.env.PAYTR_MERCHANT_ID || process.env.MERCHANT_ID || "").trim();
 const merchantKey = () => (process.env.PAYTR_MERCHANT_KEY || process.env.MERCHANT_KEY || "").trim();
@@ -62,7 +63,7 @@ export async function getPaytrToken(input: PaytrTokenInput): Promise<string> {
       user_phone: input.userPhone.slice(0, 20),
       merchant_ok_url: `${SITE_URL}/siparis-onay/${input.orderId}`,
       merchant_fail_url: `${SITE_URL}/sepet?odeme=basarisiz`,
-      timeout_limit: "30",
+      timeout_limit: String(PAYTR_TIMEOUT_MINUTES),
       currency,
       test_mode: testMode,
       lang: "tr",

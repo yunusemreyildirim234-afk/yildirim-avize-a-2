@@ -6,6 +6,7 @@ import { priceCart } from "@/lib/cart-pricing";
 import { SHIPPING_LABELS, type CouponRule } from "@/lib/pricing";
 import { COUPON_FAIL_LIMIT, COUPON_LIMITED_ERROR, validateCoupon } from "@/lib/coupons";
 import { getSessionUserId } from "@/lib/account";
+import { releaseStaleReservations } from "@/lib/orders";
 import { priceLadder } from "@/lib/price-ladder";
 import { getLadderContext } from "@/lib/showcase";
 
@@ -27,6 +28,8 @@ export async function POST(req: Request) {
   const shippingType = typeof body.deliveryMethod === "string" && body.deliveryMethod in SHIPPING_LABELS ? body.deliveryMethod : "STANDART_KARGO";
   const paymentMethod: "CREDIT_CARD" | "BANK_TRANSFER" = body.paymentMethod === "BANK_TRANSFER" ? "BANK_TRANSFER" : "CREDIT_CARD";
 
+  // Stok okunmadan önce süresi dolmuş ödeme bekleyen rezervasyonlar serbest bırakılır
+  await releaseStaleReservations([...wanted.keys()]).catch(() => 0);
   const variations = await prisma.productVariation.findMany({
     where: { id: { in: [...wanted.keys()] } },
     select: {

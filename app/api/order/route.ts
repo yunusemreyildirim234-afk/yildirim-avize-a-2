@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { serverError, badRequest } from "@/lib/api-error";
 import { prisma } from "@/lib/db";
 import { rateLimit, tooMany } from "@/lib/rate-limit";
-import { finalizeOrder, releasePreviousCardOrder, releaseStaleReservations, restoreOrderStock } from "@/lib/orders";
+import { enforcePendingLimits, finalizeOrder, releasePreviousCardOrder, releaseStaleReservations, restoreOrderStock } from "@/lib/orders";
 import { getPaytrToken } from "@/lib/paytr";
 import { SHIPPING_LABELS } from "@/lib/pricing";
 import { getSessionUserId } from "@/lib/account";
@@ -12,6 +12,7 @@ import { isShort, mergeByVariation } from "@/lib/stock-rules";
 import { priceCart } from "@/lib/cart-pricing";
 import { releaseCoupon, reserveCouponLocked, validateCoupon } from "@/lib/coupons";
 import { reserveLines, StockShortError } from "@/lib/stock-reserve";
+import { PENDING_LIMIT_ERROR } from "@/lib/pending-orders";
 import { bestEffort, createOrFindGuest } from "@/lib/best-effort";
 
 interface CartLine {
@@ -85,6 +86,17 @@ export async function POST(req: Request) {
     // kendi bekleyen kartlı siparişi (stok + kupon) yeni rezervasyondan ÖNCE serbest bırakılır; geçersiz kimlik sessizce yok sayılır.
     if (paymentMethod === "CREDIT_CARD" && body.previousOrderId !== undefined) {
       await releasePreviousCardOrder(body.previousOrderId, { email: String(email).trim().toLowerCase(), sessionUserId: await getSessionUserId() }).catch((e) => console.error("[siparis] önceki sipariş serbest bırakılamadı:", (e as Error).message));
+    }
+
+    // Süresi (15 dk) dolmuş bekleyen kartlı rezervasyonlar tembel serbest bırakılır (cron günde bir kez çalışır)
+    await releaseStaleReservations().catch((e) => console.error("[siparis] süresi dolan rezervasyonlar serbest bırakılamadı:", (e as Error).message));
+    // Kartlı: aynı e-postalı eski bekleyen sipariş iptal edilir; aynı telefon/e-posta için bekleyen sınırı doluysa yeni sipariş açılmaz
+    if (paymentMethod === "CREDIT_CARD") {
+      const pending = await enforcePendingLimits({ email: String(email), phone, sessionUserId: await getSessionUserId() }).catch((e) => {
+        console.error("[siparis] bekleyen sipariş denetimi başarısız:", (e as Error).message);
+        return { blocked: false, cancelled: 0 };
+      });
+      if (pending.blocked) return NextResponse.json({ error: PENDING_LIMIT_ERROR }, { status: 429 });
     }
 
     // 1. Fiyatlar istemciden değil veritabanından hesaplanır

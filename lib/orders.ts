@@ -3,6 +3,7 @@ import { sendOrderNotificationEmails, sendStockShortageEmail } from "@/lib/email
 import { mergeByVariation, RESERVATION_RELEASE_MINUTES } from "@/lib/stock-rules";
 import { releaseCoupon } from "@/lib/coupons";
 import { canReleasePrevious, isOrderId } from "@/lib/previous-order";
+import { planPendingCleanup, type PendingRow } from "@/lib/pending-orders";
 import { createShipmentForOrder } from "@/lib/kargonomi";
 import { notifyAdmins, notifyCustomer } from "@/lib/notifications";
 import { cleanGuestEmail } from "@/lib/guest-email";
@@ -85,18 +86,19 @@ export async function releasePreviousCardOrder(previousOrderId: unknown, who: { 
 }
 
 /**
- * Yeni kartlı sipariş stok yetersizliği görünce, aynı varyasyonları tutan ve token ömrü + 15 dk (45 dk) geçmiş
- * AWAITING_PAYMENT kartlı rezervasyonları serbest bırakır (cron günde bir çalıştığı için beklemesin). Serbest bırakılan sayısı döner.
+ * Tutma süresi (15 dk) dolmuş AWAITING_PAYMENT kartlı rezervasyonları tembel serbest bırakır (cron günde bir çalıştığı için
+ * stok okunurken ve sipariş oluşturulurken çağrılır). variationIds verilirse yalnızca o varyasyonları tutanlar. Serbest bırakılan sayısı döner.
+ * Her sipariş failAwaitingCardOrder ile kapanır: durum koşullu geçiş + bayrak koşullu iade; tekrar çağrı stoğu ikinci kez artırmaz.
  */
-export async function releaseStaleReservations(variationIds: string[], now: number = Date.now()): Promise<number> {
-  if (variationIds.length === 0) return 0;
+export async function releaseStaleReservations(variationIds?: string[], now: number = Date.now()): Promise<number> {
+  if (variationIds && variationIds.length === 0) return 0;
   const stale = await prisma.order.findMany({
     where: {
       status: "AWAITING_PAYMENT",
       paymentMethod: "CREDIT_CARD",
       stockDeducted: true,
       createdAt: { lt: new Date(now - RESERVATION_RELEASE_MINUTES * 60_000) },
-      items: { some: { variationId: { in: variationIds } } },
+      ...(variationIds ? { items: { some: { variationId: { in: variationIds } } } } : {}),
     },
     select: { id: true },
     take: 50,
@@ -104,6 +106,23 @@ export async function releaseStaleReservations(variationIds: string[], now: numb
   let n = 0;
   for (const o of stale) if (await failAwaitingCardOrder(o.id).catch(() => false)) n++;
   return n;
+}
+
+/**
+ * Yeni kartlı sipariş öncesi: aynı e-postalı eski bekleyen kartlı siparişleri iptal eder (stok + kupon iade) ve
+ * aynı telefon/e-posta için bekleyen sayısı sınırdaysa blocked=true (yeni sipariş reddedilmeli) döner.
+ * Yalnızca tutma süresi içindeki bekleyenler taranır (süresi dolanlar zaten serbest bırakılır).
+ */
+export async function enforcePendingLimits(who: { email: string; phone: string; sessionUserId?: string | null }, now: number = Date.now()): Promise<{ blocked: boolean; cancelled: number }> {
+  const rows: PendingRow[] = await prisma.order.findMany({
+    where: { status: "AWAITING_PAYMENT", paymentMethod: "CREDIT_CARD", createdAt: { gte: new Date(now - RESERVATION_RELEASE_MINUTES * 60_000) } },
+    select: { id: true, phone: true, userId: true, user: { select: { email: true, password: true } } },
+    take: 500,
+  });
+  const plan = planPendingCleanup(rows, who);
+  let cancelled = 0;
+  for (const id of plan.cancelIds) if (await failAwaitingCardOrder(id).catch(() => false)) cancelled++;
+  return { blocked: plan.blocked, cancelled };
 }
 
 type FullOrder = Awaited<ReturnType<typeof loadOrder>>;
