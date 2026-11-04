@@ -57,12 +57,13 @@ test("yüklenmiş görsel kimliği çıkarma", () => {
   assert.equal(uploadedImageId("https://cdn.dsmcdn.com/a.jpg"), null);
   assert.deepEqual(uploadedIdsOf([`/api/product-images/${UUID}`, "https://x.com/a.jpg"], [`/api/product-images/${UUID}`]), [UUID]);
 });
-test("varsayılan varyasyon = ilk stoklu; yoksa ilki; kapak buna göre", () => {
+test("varsayılan varyasyon = ilk stoklu; yoksa ilki; kapak GENEL fotoğraftan (renk yalnız genel yoksa)", () => {
   const vs = [{ stock: 0, images: ["/k.jpg"] }, { stock: 3, images: ["/m.jpg"] }, { stock: 9, images: [] }];
   assert.equal(pickDefaultVariation(vs), vs[1]);
   assert.equal(pickDefaultVariation([{ stock: 0 }, { stock: 0 }]).stock, 0);
   assert.equal(pickDefaultVariation([]), null);
-  assert.equal(coverImageOf({ imageUrl: "/p.jpg", variations: vs }), "/m.jpg");
+  assert.equal(coverImageOf({ imageUrl: "/p.jpg", variations: vs }), "/p.jpg"); // genel kapak renk fotoğrafından önce gelir
+  assert.equal(coverImageOf({ imageUrl: null, variations: vs }), "/k.jpg"); // genel yoksa İLK rengin ilk fotoğrafı (stoklu olması aranmaz)
   assert.equal(coverImageOf({ imageUrl: "/p.jpg", variations: [{ stock: 2, images: [] }] }), "/p.jpg");
   assert.equal(coverImageOf({ imageUrl: null, variations: [] }), null);
 });

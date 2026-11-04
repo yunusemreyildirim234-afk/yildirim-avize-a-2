@@ -1,3 +1,5 @@
+import { imageListOf } from "./variation-input.ts"; // göreli + .ts: node --test bu dosyayı doğrudan yükler (@/ takma adı çözülmez)
+
 // Google Merchant Center ürün feed'i için SAF yardımcılar (veritabanı/ağ yok). Fiyat ve stok, ürün sayfasındaki
 // (components/ProductDetailClient.tsx) varsayılan seçimle birebir aynıdır: kupon, Havale, mağaza ve adet indirimleri YOK.
 
@@ -107,8 +109,8 @@ const tag = (name: string, value: string) => `<g:${name}>${xmlEscape(value)}</g:
 export function feedItemXml(p: FeedProduct, site: string): string | null {
   const offer = defaultOffer(p);
   const shown = feedPrice(offer.price);
-  // Kapak: varsayılan (ilk stoklu) varyasyonun görseli varsa o, yoksa ürün kapağı (ürün sayfası JsonLd'i ile aynı kural)
-  const images = [...new Set([offer.variation?.images?.[0], p.imageUrl, ...p.images].map((u) => absoluteHttps(u, site)).filter((u): u is string => Boolean(u)))];
+  // Kapak: genel fotoğrafların ilki; yoksa ilk rengin fotoğrafı (lib/variation-input.ts coverImageOf; kart, JSON-LD, og:image ile aynı kural)
+  const images = [...new Set(imageListOf(p).map((u) => absoluteHttps(u, site)).filter((u): u is string => Boolean(u)))];
   if (!shown || images.length === 0) return null;
   const regular = offer.list ? feedPrice(offer.list) : null;
   const title = cleanText(p.title, FEED_TITLE_MAX) || FEED_BRAND_FALLBACK;

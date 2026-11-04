@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSessionUserId } from "@/lib/account";
 import type { Prisma } from "@/generated/prisma/client";
+import { coverImageOf } from "@/lib/variation-input";
 
-type FavoriteRow = Prisma.FavoriteGetPayload<{ include: { product: true } }>;
+type FavoriteRow = Prisma.FavoriteGetPayload<{ include: { product: { include: { variations: { select: { images: true } } } } } }>;
 
 // Giriş yapmış müşterinin kalıcı favorileri
 export async function GET() {
@@ -12,7 +13,7 @@ export async function GET() {
 
   const rows = await prisma.favorite.findMany({
     where: { userId, product: { active: true } },
-    include: { product: true },
+    include: { product: { include: { variations: { select: { images: true }, orderBy: [{ position: "asc" }, { id: "asc" }] } } } },
     orderBy: { createdAt: "asc" },
   });
   const items = rows.map((r: FavoriteRow) => ({
@@ -20,7 +21,7 @@ export async function GET() {
     title: r.product.title,
     category: r.product.category,
     basePrice: r.product.basePrice,
-    imageUrl: r.product.imageUrl,
+    imageUrl: coverImageOf(r.product), // kapak kuralı: genel fotoğrafların ilki, yoksa ilk rengin fotoğrafı
   }));
   return NextResponse.json({ items });
 }

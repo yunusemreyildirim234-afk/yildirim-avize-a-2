@@ -94,9 +94,47 @@ export function pickDefaultVariation<V extends { stock: number }>(variations: V[
   return variations.find((v) => v.stock > 0) ?? variations[0] ?? null;
 }
 
-/** Kart/feed/JsonLd kapak görseli: varsayılan varyasyonun ilk görseli, yoksa ürün kapağı. */
-export function coverImageOf(p: { imageUrl: string | null; variations: { stock: number; images?: string[] }[] }): string | null {
-  return pickDefaultVariation(p.variations)?.images?.[0] || p.imageUrl || null;
+type ImgProduct = { imageUrl?: string | null; images?: string[] | null; variations: { images?: string[] | null }[] };
+const clean = (l: (string | null | undefined)[]) => [...new Set(l.filter((u): u is string => typeof u === "string" && u.length > 0))];
+
+/** Genel (ürün) fotoğrafları: images; boşsa eski kayıtlardaki imageUrl. Renk fotoğraflarından bağımsızdır. */
+export function generalImagesOf(p: Pick<ImgProduct, "imageUrl" | "images">): string[] {
+  const g = clean(p.images ?? []);
+  return g.length > 0 ? g : clean([p.imageUrl]);
+}
+
+/** İlk fotoğrafı olan ilk rengin (sıra korunur) fotoğrafları; hiçbirinde yoksa []. */
+function firstColorImages(variations: ImgProduct["variations"]): string[] {
+  for (const v of variations) {
+    const l = clean(v.images ?? []);
+    if (l.length > 0) return l;
+  }
+  return [];
+}
+
+/**
+ * TEK kapak kuralı (kart, liste, arama, favori, sepet, feed image_link, JSON-LD, og:image hep bunu kullanır):
+ * kapak = genel fotoğrafların ilki; genel fotoğraf yoksa ilk rengin ilk fotoğrafı; ikisi de yoksa null.
+ * Genel alandan yüklenen fotoğraf renk fotoğraflarını, renk fotoğrafı genel galeriyi ve kapağı değiştirmez.
+ */
+export function coverImageOf(p: ImgProduct): string | null {
+  return generalImagesOf(p)[0] ?? firstColorImages(p.variations)[0] ?? null;
+}
+
+/** Feed / JSON-LD görsel listesi: kapak önde, sonra genel fotoğraflar, sonra renk fotoğrafları (tekil). */
+export function imageListOf(p: ImgProduct): string[] {
+  return clean([coverImageOf(p), ...generalImagesOf(p), ...p.variations.flatMap((v) => v.images ?? [])]);
+}
+
+/**
+ * Ürün sayfası galerisi: renk SEÇİLMEDİYSE genel fotoğraflar (yoksa ilk rengin fotoğrafları); renk seçilince o rengin fotoğrafları,
+ * rengin fotoğrafı yoksa genel galeri.
+ */
+export function galleryOf(p: ImgProduct, selected: { images?: string[] | null } | null, colorChosen: boolean): string[] {
+  const color = clean(selected?.images ?? []);
+  if (colorChosen && color.length > 0) return color;
+  const general = generalImagesOf(p);
+  return general.length > 0 ? general : firstColorImages(p.variations);
 }
 
 /** Ürünün (kapak + ürün + renk) tüm yüklenmiş görsel kimlikleri; silme geri alınırken satırlar yeniden bağlanır. */

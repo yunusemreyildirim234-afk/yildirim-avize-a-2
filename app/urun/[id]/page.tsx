@@ -12,6 +12,7 @@ import { reviewEligibility, type ReviewEligibility } from "@/lib/reviews";
 import JsonLd from "@/components/JsonLd";
 import { CATEGORIES, SITE_URL } from "@/lib/site";
 import { defaultOffer, feedBrand } from "@/lib/feed";
+import { coverImageOf, imageListOf } from "@/lib/variation-input";
 import { GtmEvent } from "@/components/GtmEvent";
 import { gaItem, viewItemEvent } from "@/lib/gtm-events";
 
@@ -34,7 +35,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: product.title,
       description,
       url: `/urun/${id}`,
-      images: product.imageUrl ? [{ url: product.imageUrl, alt: product.title }] : undefined,
+      images: coverImageOf(product) ? [{ url: coverImageOf(product)!, alt: product.title }] : undefined,
     },
   };
 }
@@ -71,7 +72,7 @@ export default async function ProductDetailPage({ params }: Props) {
   const category = CATEGORIES.find((c) => c.dbCategory === product.category);
   // Fiyat/stok/marka Google feed'iyle (lib/feed.ts) ve sayfadaki varsayılan seçimle AYNI kaynaktan gelir
   const offer = defaultOffer(product);
-  const productImages = [...new Set([offer.variation?.images?.[0], product.imageUrl, ...product.images])].filter((u): u is string => Boolean(u)).map((u) => (u.startsWith("/") ? `${SITE_URL}${u}` : u));
+  const productImages = imageListOf(product).map((u) => (u.startsWith("/") ? `${SITE_URL}${u}` : u)); // kapak önde (og:image/kart/feed ile aynı kural)
   const productSchema = {
     "@context": "https://schema.org",
     "@type": "Product",

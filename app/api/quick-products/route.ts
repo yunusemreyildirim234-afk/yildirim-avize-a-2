@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { getLadderContext } from "@/lib/showcase";
 import { priceLadder } from "@/lib/price-ladder";
 import { rateLimit, tooMany } from "@/lib/rate-limit";
+import { coverImageOf } from "@/lib/variation-input";
 
 // Sepet/favoriler gibi istemci listeleri için güncel görsel, fiyat ve stok bilgisi
 export async function GET(req: Request) {
@@ -23,6 +24,7 @@ export async function GET(req: Request) {
       category: true,
       basePrice: true,
       imageUrl: true,
+      images: true,
       couponAllowed: true,
       pickupDiscountPct: true,
       transferDiscountPct: true,
@@ -30,5 +32,5 @@ export async function GET(req: Request) {
     },
   });
   const ctx = await getLadderContext();
-  return NextResponse.json({ products: products.map((p) => ({ ...p, ladder: priceLadder(p, ctx) })) });
+  return NextResponse.json({ products: products.map(({ images, ...p }) => ({ ...p, imageUrl: coverImageOf({ ...p, images }), ladder: priceLadder(p, ctx) })) });
 }

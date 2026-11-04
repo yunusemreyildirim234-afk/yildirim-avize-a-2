@@ -96,7 +96,7 @@ export function CartStepper({ product, inlineToast = false }: { product: QuickPr
         productId: product.id,
         variationId: variation.id,
         title: product.title,
-        imageUrl: variation.images?.[0] || product.imageUrl,
+        imageUrl: product.imageUrl, // kapak (ProductCard coverImageOf ile verir)
         variationName: variation.variationValue,
         price: product.basePrice + variation.extraPrice,
         bulk: product.bulk,

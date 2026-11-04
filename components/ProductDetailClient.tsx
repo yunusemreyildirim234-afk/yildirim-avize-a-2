@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { toastHref } from "@/lib/toast-link";
+import { coverImageOf, galleryOf } from "@/lib/variation-input";
 import { HoverMagnifier, ImageLightbox } from "@/components/ImageZoom";
 import { useCart } from "@/context/CartContext";
 import { FREE_SHIPPING_THRESHOLD, PICKUP_DISCOUNT, SHIPPING_TYPES } from "@/lib/pricing";
@@ -47,9 +48,9 @@ export default function ProductDetailClient({ product, ladderCtx }: { product: P
   const [selectedVariation, setSelectedVariation] = useState<Variation | null>(
     product.variations.find((v) => v.stock > 0) || product.variations[0] || null
   );
-  // Seçili rengin kendi fotoğrafları varsa galeri onlara geçer; yoksa ürün fotoğrafları
-  const colorImages = selectedVariation?.images ?? [];
-  const gallery = Array.from(new Set((colorImages.length > 0 ? colorImages : [product.imageUrl, ...(product.images ?? [])]).filter((u): u is string => Boolean(u))));
+  // Sayfa genel fotoğraflarla açılır; kullanıcı bir renk seçince o rengin fotoğrafları (varsa) öne gelir (lib/variation-input.ts galleryOf)
+  const [colorChosen, setColorChosen] = useState(false);
+  const gallery = galleryOf(product, selectedVariation, colorChosen);
   const [activeImage, setActiveImage] = useState(0);
   const mainImage = gallery[activeImage] ?? null;
   const [quantity, setQuantity] = useState(1);
@@ -89,7 +90,7 @@ export default function ProductDetailClient({ product, ladderCtx }: { product: P
       productId: product.id,
       variationId: selectedVariation.id,
       title: product.title,
-      imageUrl: colorImages[0] || product.imageUrl,
+      imageUrl: coverImageOf(product), // sepet küçük resmi = ürün kapağı (kart ile aynı kural)
       variationName: `${selectedVariation.variationType}: ${selectedVariation.variationValue}`,
       price: currentPrice,
       bulk,
@@ -242,6 +243,7 @@ export default function ProductDetailClient({ product, ladderCtx }: { product: P
                     disabled={v.stock <= 0}
                     onClick={() => {
                       setSelectedVariation(v);
+                      setColorChosen(true);
                       setActiveImage(0);
                       setQuantity((q) => Math.max(1, Math.min(q, v.stock)));
                     }}

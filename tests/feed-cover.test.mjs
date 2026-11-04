@@ -6,10 +6,12 @@ const base = { id: "p1", title: "Avize", description: "x", category: "Kristal", 
 const SITE = "https://www.yildirimavize.com.tr";
 const link = (xml) => xml.match(/<g:image_link>(.*?)<\/g:image_link>/)[1];
 
-test("feed image_link: varsayılan (ilk stoklu) varyasyonun görseli, yoksa ürün kapağı", () => {
+test("feed image_link: genel fotoğrafın ilki; genel yoksa ilk rengin fotoğrafı", () => {
   const withColor = feedItemXml({ ...base, variations: [{ extraPrice: 0, stock: 0, images: ["/k.jpg"] }, { extraPrice: 50, stock: 4, images: ["/m.jpg", "/m2.jpg"] }] }, SITE);
-  assert.equal(link(withColor), `${SITE}/m.jpg`);
-  assert.match(withColor, /<g:additional_image_link>https:\/\/www\.yildirimavize\.com\.tr\/api\/product-images\/aaa/);
+  assert.equal(link(withColor), `${SITE}/api/product-images/aaa`);
+  assert.match(withColor, /<g:additional_image_link>https:\/\/www\.yildirimavize\.com\.tr\/m\.jpg/);
+  const noGeneral = feedItemXml({ ...base, imageUrl: null, images: [], variations: [{ extraPrice: 0, stock: 0, images: ["/k.jpg"] }, { extraPrice: 50, stock: 4, images: ["/m.jpg"] }] }, SITE);
+  assert.equal(link(noGeneral), `${SITE}/k.jpg`);
   const noColorImg = feedItemXml({ ...base, variations: [{ extraPrice: 0, stock: 2, images: [] }] }, SITE);
   assert.equal(link(noColorImg), `${SITE}/api/product-images/aaa`);
   const legacy = feedItemXml({ ...base, variations: [{ extraPrice: 0, stock: 2 }] }, SITE);

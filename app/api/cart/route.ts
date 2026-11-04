@@ -3,8 +3,9 @@ import { prisma } from "@/lib/db";
 import { getSessionUserId } from "@/lib/account";
 import type { Prisma } from "@/generated/prisma/client";
 import { bulkTiersOf } from "@/lib/bulk-pricing";
+import { coverImageOf } from "@/lib/variation-input";
 
-type CartRow = Prisma.CartItemGetPayload<{ include: { variation: { include: { product: true } } } }>;
+type CartRow = Prisma.CartItemGetPayload<{ include: { variation: { include: { product: { include: { variations: { select: { images: true } } } } } } } }>;
 
 // Giriş yapmış müşterinin kalıcı sepeti (fiyat ve stok her seferinde veritabanından okunur)
 export async function GET() {
@@ -13,7 +14,7 @@ export async function GET() {
 
   const rows = await prisma.cartItem.findMany({
     where: { userId },
-    include: { variation: { include: { product: true } } },
+    include: { variation: { include: { product: { include: { variations: { select: { images: true }, orderBy: [{ position: "asc" }, { id: "asc" }] } } } } } },
     orderBy: { updatedAt: "asc" },
   });
 
@@ -23,7 +24,7 @@ export async function GET() {
       productId: r.variation.productId,
       variationId: r.variationId,
       title: r.variation.product.title,
-      imageUrl: r.variation.product.imageUrl,
+      imageUrl: coverImageOf(r.variation.product),
       variationName: r.variation.variationValue,
       price: r.variation.product.basePrice + r.variation.extraPrice,
       bulk: bulkTiersOf(r.variation.product),
