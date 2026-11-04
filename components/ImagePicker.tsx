@@ -27,6 +27,10 @@ export default function ImagePicker({
     [next[i], next[j]] = [next[j], next[i]];
     onChange(next);
   };
+  const makeCover = (i: number) => {
+    if (i <= 0 || i >= items.length) return;
+    onChange([items[i], ...items.filter((_, j) => j !== i)]);
+  };
   const full = items.length >= max;
   return (
     <div className="space-y-2">
@@ -39,12 +43,17 @@ export default function ImagePicker({
                 <img src={it.src} alt={`${label} ${i + 1}`} width={96} height={96} className="w-full h-full object-cover" />
                 {i === 0 && <span className="absolute left-1 top-1 rounded bg-amber-600 px-1.5 py-0.5 text-[10px] font-semibold text-white">Kapak</span>}
               </div>
-              <div className="flex items-center justify-between gap-1">
-                <button type="button" onClick={() => move(i, -1)} disabled={disabled || i === 0} aria-label="Öne al" className="min-w-8 min-h-8 rounded border border-neutral-300 bg-white disabled:opacity-30">
-                  ←
+              {i > 0 && (
+                <button type="button" onClick={() => makeCover(i)} disabled={disabled} className="w-full min-h-8 rounded border border-amber-600 bg-white text-[11px] font-semibold text-amber-800 hover:bg-amber-50 disabled:opacity-30">
+                  Kapak yap
                 </button>
-                <button type="button" onClick={() => move(i, 1)} disabled={disabled || i === items.length - 1} aria-label="Sona al" className="min-w-8 min-h-8 rounded border border-neutral-300 bg-white disabled:opacity-30">
-                  →
+              )}
+              <div className="flex items-center justify-between gap-1">
+                <button type="button" onClick={() => move(i, -1)} disabled={disabled || i === 0} aria-label={`${i + 1}. fotoğrafı öne al`} className="min-w-8 min-h-8 rounded border border-neutral-300 bg-white disabled:opacity-30">
+                  ▲
+                </button>
+                <button type="button" onClick={() => move(i, 1)} disabled={disabled || i === items.length - 1} aria-label={`${i + 1}. fotoğrafı sona al`} className="min-w-8 min-h-8 rounded border border-neutral-300 bg-white disabled:opacity-30">
+                  ▼
                 </button>
                 <button type="button" onClick={() => onChange(items.filter((x) => x.key !== it.key))} disabled={disabled} aria-label="Fotoğrafı sil" className="min-w-8 min-h-8 rounded border border-red-300 bg-white font-bold text-red-700 disabled:opacity-30">
                   ×

@@ -4,7 +4,7 @@ import { serverError } from "@/lib/api-error";
 import { adminGuard } from "@/lib/admin-guard";
 import { prisma } from "@/lib/db";
 import { attachUploads, pruneUploads } from "@/lib/product-images";
-import { MAX_VARIATIONS, MAX_VARIATION_IMAGES, colorKey, parseImageUrls, parseVariations, uploadedIdsOf } from "@/lib/variation-input";
+import { MAX_VARIATIONS, MAX_VARIATION_IMAGES, colorKey, isCompleteOrder, parseImageUrls, parseVariations, uploadedIdsOf } from "@/lib/variation-input";
 
 class UploadMissing extends Error {}
 
@@ -43,12 +43,20 @@ async function POSTHandler(req: Request) {
   }
 }
 
-// Rengin fotoğraflarını değiştirir (sıra korunur; ilk fotoğraf kapak olur)
+// Rengin fotoğraflarını değiştirir (sıra korunur; ilk fotoğraf kapak olur) ya da ürünün renk sırasını kaydeder ({ productId, order })
 async function PATCHHandler(req: Request) {
   const denied = await adminGuard();
   if (denied) return denied;
   try {
     const body = await req.json().catch(() => ({}));
+    // Renk sırası: tek istekte position = dizideki sıra (0..n-1)
+    if (typeof body.productId === "string" && "order" in body) {
+      const rows = await prisma.productVariation.findMany({ where: { productId: body.productId }, select: { id: true } });
+      if (!isCompleteOrder(body.order, rows.map((r: { id: string }) => r.id))) return NextResponse.json({ error: "Renk sırası geçersiz: ürünün tüm renkleri bir kez yer almalı." }, { status: 400 });
+      const order: string[] = body.order;
+      await prisma.$transaction(order.map((id, position) => prisma.productVariation.update({ where: { id }, data: { position } })));
+      return NextResponse.json({ success: true });
+    }
     if (typeof body.variationId !== "string") return NextResponse.json({ error: "Eksik parametre" }, { status: 400 });
     const images = parseImageUrls(body.images, MAX_VARIATION_IMAGES, "Renk fotoğrafları");
     if (!images.ok) return NextResponse.json({ error: images.error }, { status: 400 });

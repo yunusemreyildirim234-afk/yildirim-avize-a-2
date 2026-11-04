@@ -52,6 +52,18 @@ export default function AdminProductEditor({ product, onSaved }: { product: Edit
     Object.fromEntries(product.variations.map((v) => [v.id, { stock: String(v.stock), extraPrice: String(v.extraPrice) }]))
   );
   const [varImages, setVarImages] = useState<Record<string, PickerItem[]>>(Object.fromEntries(product.variations.map((v) => [v.id, itemsFromUrls(v.images ?? [])])));
+  const [colorOrder, setColorOrder] = useState<string[]>(product.variations.map((v) => v.id)); // renk sırası (ProductVariation.position)
+  const orderedVariations = colorOrder.map((id) => product.variations.find((v) => v.id === id)).filter((v): v is EditorVariation => Boolean(v));
+  const orderDirty = colorOrder.some((id, i) => id !== product.variations[i]?.id);
+  const moveColor = (i: number, d: -1 | 1) =>
+    setColorOrder((o) => {
+      const j = i + d;
+      if (j < 0 || j >= o.length) return o;
+      const next = [...o];
+      [next[i], next[j]] = [next[j], next[i]];
+      return next;
+    });
+  const saveColorOrder = () => run(() => api("PATCH", "/api/admin/product/variation", { productId: product.id, order: colorOrder }), "✓ Renk sırası kaydedildi.");
   const [newColorImages, setNewColorImages] = useState<PickerItem[]>([]);
   const [colorName, setColorName] = useState("");
   const [colorStock, setColorStock] = useState("10");
@@ -164,7 +176,7 @@ export default function AdminProductEditor({ product, onSaved }: { product: Edit
 
       {/* Görseller */}
       <section className="space-y-2">
-        <h4 className="font-semibold text-neutral-700">Fotoğraflar (ilk görsel ana görsel olur)</h4>
+        <h4 className="font-semibold text-neutral-700">Genel fotoğraflar (ilk görsel kapak olur; renk fotoğraflarından bağımsızdır)</h4>
         <ImagePicker label="Ürün fotoğrafı" items={images} max={20} disabled={busy} onAddFiles={uploadInto(setImages, 20)} onChange={setImages} />
         <div className="flex gap-2">
           <input
@@ -192,9 +204,25 @@ export default function AdminProductEditor({ product, onSaved }: { product: Edit
       {/* Renk / stok */}
       <section className="space-y-2 border-t border-neutral-200 pt-4">
         <h4 className="font-semibold text-neutral-700">Renk varyasyonları</h4>
+        {orderDirty && (
+          <p className="flex flex-wrap items-center gap-2 text-amber-900">
+            Renk sırası değişti (ilk stoklu renk sitede varsayılan seçilir).
+            <button type="button" disabled={busy} onClick={saveColorOrder} className="bg-neutral-900 hover:bg-amber-600 disabled:opacity-60 text-white font-semibold px-3 py-1.5 rounded-lg">
+              Renk Sırasını Kaydet
+            </button>
+          </p>
+        )}
         <ul className="space-y-2">
-          {product.variations.map((v) => (
+          {orderedVariations.map((v, i) => (
             <li key={v.id} className="flex flex-wrap items-center gap-2">
+              <span className="flex flex-col">
+                <button type="button" disabled={busy || i === 0} onClick={() => moveColor(i, -1)} aria-label={`${v.variationValue} rengini yukarı al`} className="min-w-8 min-h-5 text-[10px] leading-none rounded border border-neutral-300 bg-white disabled:opacity-30">
+                  ▲
+                </button>
+                <button type="button" disabled={busy || i === orderedVariations.length - 1} onClick={() => moveColor(i, 1)} aria-label={`${v.variationValue} rengini aşağı al`} className="min-w-8 min-h-5 text-[10px] leading-none rounded border border-neutral-300 bg-white disabled:opacity-30">
+                  ▼
+                </button>
+              </span>
               <span className="font-medium text-neutral-800 w-40 truncate" title={v.variationValue}>
                 {v.variationValue}
               </span>

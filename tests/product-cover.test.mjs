@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { coverImageOf, generalImagesOf, imageListOf, galleryOf } from "../lib/variation-input.ts";
+import { coverImageOf, generalImagesOf, imageListOf, galleryOf, isCompleteOrder } from "../lib/variation-input.ts";
 
 const red = { stock: 3, images: ["/red1.jpg", "/red2.jpg"] };
 const blue = { stock: 5, images: ["/blue1.jpg"] };
@@ -51,4 +51,14 @@ test("feed/JSON-LD listesi: kapak önde, tekil", () => {
   const p = { imageUrl: "/g1.jpg", images: ["/g1.jpg", "/g2.jpg"], variations: [red, blue] };
   assert.deepEqual(imageListOf(p), ["/g1.jpg", "/g2.jpg", "/red1.jpg", "/red2.jpg", "/blue1.jpg"]);
   assert.equal(imageListOf(p)[0], coverImageOf(p));
+});
+
+test("renk sırası isteği: tüm renkler bir kez; eksik/fazla/yinelenen/yabancı kimlik reddedilir", () => {
+  const ids = ["a", "b", "c"];
+  assert.equal(isCompleteOrder(["c", "a", "b"], ids), true);
+  assert.equal(isCompleteOrder(["a", "b"], ids), false);
+  assert.equal(isCompleteOrder(["a", "b", "b"], ids), false);
+  assert.equal(isCompleteOrder(["a", "b", "x"], ids), false);
+  assert.equal(isCompleteOrder("abc", ids), false);
+  assert.equal(isCompleteOrder([1, 2, 3], ids), false);
 });

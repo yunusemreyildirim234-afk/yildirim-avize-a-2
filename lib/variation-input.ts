@@ -146,3 +146,11 @@ export function productUploadIds(p: { images?: string[]; imageUrl?: string | nul
 export function nextPosition(existing: { position: number }[]): number {
   return existing.reduce((m, e) => Math.max(m, e.position), -1) + 1;
 }
+
+/** Renk sırası isteği geçerli mi? order, ürünün TÜM renk kimliklerinin (tekil) bir permütasyonu olmalı. */
+export function isCompleteOrder(order: unknown, existingIds: string[]): order is string[] {
+  if (!Array.isArray(order) || order.some((x) => typeof x !== "string")) return false;
+  if (new Set(order).size !== order.length || order.length !== existingIds.length) return false;
+  const have = new Set(existingIds);
+  return order.every((id) => have.has(id));
+}
