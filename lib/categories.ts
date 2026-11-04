@@ -22,8 +22,8 @@ export interface CategoryEntry {
 /** Kategori sayfası olarak ayrılmış slug'lar (dinamik kategoriler bunlarla çakışmaz). */
 export const RESERVED_SLUGS = ["tum", "one-cikanlar", "indirimli", "cok-satanlar"];
 
-/** Birleştirme anahtarı: boşlukları sadeleştirir, tr-TR küçük harf ("YEMEK MASASI" = "Yemek Masası"; İ→i, I→ı). */
-export const categoryKey = (s: string) => s.trim().replace(/\s+/g, " ").toLocaleLowerCase("tr-TR");
+/** Birleştirme anahtarı: boşlukları sadeleştirir, tr-TR küçük harf, ı→i ("YEMEK MASASI" = "Yemek Masası" = "yemek masasi"). */
+export const categoryKey = (s: string) => s.trim().replace(/\s+/g, " ").toLocaleLowerCase("tr-TR").replace(/ı/g, "i"); // ı→i: "KRISTAL" (ASCII büyük I) = "Kristal"
 
 const TR_MAP: Record<string, string> = { ç: "c", ğ: "g", ı: "i", ö: "o", ş: "s", ü: "u" };
 

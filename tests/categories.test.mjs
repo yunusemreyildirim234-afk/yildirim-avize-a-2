@@ -22,7 +22,8 @@ test("slug: Türkçe karakterler, & ve özel karakterler", () => {
 
 test("anahtar: büyük/küçük harf ve boşluk farkı tek kategori (İ/ı doğru)", () => {
   assert.equal(categoryKey("YEMEK MASASI"), categoryKey("Yemek  Masası "));
-  assert.equal(categoryKey("ISIK"), "ısık");
+  assert.equal(categoryKey("ISIK"), "isik"); // ı→i katlama: ASCII büyük harf yazım da eşleşir
+  assert.equal(categoryKey("KRISTAL"), categoryKey("Kristal"));
   assert.equal(categoryKey("İŞ"), "iş");
 });
 
@@ -35,7 +36,7 @@ test("birleştirme: en sık yazım görünen ad, tüm yazımlar korunur", () => 
     { category: "  ", count: 9 },
   ]);
   assert.equal(m.length, 2);
-  const y = m.find((x) => x.key === "yemek masası");
+  const y = m.find((x) => x.key === "yemek masasi");
   assert.equal(y.name, "Yemek Masası");
   assert.equal(y.count, 8);
   assert.deepEqual(y.spellings, ["Yemek Masası", "YEMEK MASASI", "yemek masası"]);
@@ -71,14 +72,14 @@ test("slug çakışması: sayı eklenir; sabit/ayrılmış slug'larla çakışma
   const list = buildCategoryList(
     [
       { category: "Led Aydınlatma", count: 3 },
-      { category: "Led Aydinlatma", count: 2 },
+      { category: "Led-Aydınlatma", count: 2 },
       { category: "Tüm", count: 1 },
       { category: "Kristal!", count: 1 },
     ],
     FIXED
   );
   const dyn = list.filter((c) => !c.fixed);
-  assert.deepEqual(dyn.map((c) => [c.title, c.slug]), [["Led Aydınlatma", "led-aydinlatma"], ["Led Aydinlatma", "led-aydinlatma-2"], ["Kristal!", "kristal-2"], ["Tüm", "tum-2"]]);
+  assert.deepEqual(dyn.map((c) => [c.title, c.slug]), [["Led Aydınlatma", "led-aydinlatma"], ["Led-Aydınlatma", "led-aydinlatma-2"], ["Kristal!", "kristal-2"], ["Tüm", "tum-2"]]);
   assert.equal(new Set(list.map((c) => c.slug)).size, list.length);
 });
 
