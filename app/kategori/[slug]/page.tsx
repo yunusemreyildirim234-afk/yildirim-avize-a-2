@@ -10,6 +10,8 @@ import { DISCOUNTED, FEATURED, countProductsCached, getBestSellers, getProductsC
 import PageSizeLinks from "@/components/PageSizeLinks";
 import { canonicalListing, pageHref, parseAdet, parsePage, rangeOf, totalPages } from "@/lib/pagination";
 import { CATEGORIES, COLLECTIONS } from "@/lib/site";
+import { getCategoryList } from "@/lib/category-list";
+import { findDynamicCategory } from "@/lib/categories";
 
 export const dynamic = "force-dynamic";
 
@@ -17,18 +19,6 @@ interface Props {
   params: Promise<{ slug: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
-
-const slugify = (v: string) =>
-  v
-    .toLocaleLowerCase("tr")
-    .replace(/ı/g, "i")
-    .replace(/ğ/g, "g")
-    .replace(/ü/g, "u")
-    .replace(/ş/g, "s")
-    .replace(/ö/g, "o")
-    .replace(/ç/g, "c")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
 
 // generateMetadata ve sayfa aynı istekte aynı çözümü paylaşır (tekrar sayım/groupBy sorgusu yok)
 const resolve = cache(async (slug: string) => {
@@ -43,10 +33,12 @@ const resolve = cache(async (slug: string) => {
   if (slug === "cok-satanlar") return { ...COLLECTIONS["cok-satanlar"], where: null };
   if (slug === "indirimli") return { ...COLLECTIONS.indirimli, where: DISCOUNTED };
 
-  // Yönetim panelinden eklenen yeni koleksiyonlar
-  const rows = await prisma.product.groupBy({ by: ["category"], where: { active: true } });
-  const match = rows.find((r: { category: string }) => slugify(r.category) === slug);
-  if (match) return { title: match.category, desc: `${match.category} koleksiyonundaki avize ve aydınlatma modelleri.`, where: { category: match.category } };
+  // Yönetim panelinden eklenen yeni koleksiyonlar: tek kaynak lib/category-list.ts (büyük/küçük harf birleştirilmiş; yazımlar IN ile aranır)
+  const match = findDynamicCategory(await getCategoryList(), slug);
+  if (match) {
+    const where = match.spellings.length === 1 ? { category: match.spellings[0] } : { category: { in: match.spellings } };
+    return { title: match.title, desc: `${match.title} koleksiyonundaki avize ve aydınlatma modelleri.`, where };
+  }
   return null;
 });
 

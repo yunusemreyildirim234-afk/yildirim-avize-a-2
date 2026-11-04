@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/db";
 import { CATEGORIES, COLLECTIONS, SITE_URL } from "@/lib/site";
+import { getCategoryList } from "@/lib/category-list";
 
 export const dynamic = "force-dynamic";
 
@@ -11,9 +12,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .findMany({ where: { active: true }, select: { id: true, updatedAt: true } })
     .catch(() => []);
 
+  // Yönetim panelinden eklenen kategoriler (sabit olanlar CATEGORIES ile zaten var)
+  const extra = await getCategoryList().then((l) => l.filter((c) => !c.fixed)).catch(() => []);
+
   return [
     { url: SITE_URL, changeFrequency: "weekly", priority: 1 },
     ...CATEGORIES.map((c) => ({
+      url: `${SITE_URL}/kategori/${c.slug}`,
+      changeFrequency: "weekly" as const,
+      priority: 0.8,
+    })),
+    ...extra.map((c) => ({
       url: `${SITE_URL}/kategori/${c.slug}`,
       changeFrequency: "weekly" as const,
       priority: 0.8,
