@@ -433,6 +433,11 @@ export async function sendStockShortageEmail(data: { orderId: string; items: { p
   });
 }
 
+/** Geç PayTR "success" (sipariş artık ödeme beklemiyor) için yöneticilere uyarı. Konu/gövde lib/late-payment.ts'te üretilir. */
+export async function sendLatePaymentAdminEmail(data: { subject: string; html: string }) {
+  return sendViaResend(process.env.RESEND_API_KEY, { to: ADMIN_EMAILS, subject: data.subject, html: data.html });
+}
+
 const REQUEST_LABEL: Record<string, string> = { CANCEL: "İptal", RETURN: "İade" };
 
 /** Müşteri iptal/iade talebi açınca yöneticilere bildirim. */
