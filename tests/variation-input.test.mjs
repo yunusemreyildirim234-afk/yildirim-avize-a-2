@@ -77,3 +77,23 @@ test("Trendyol eşitlemesi elle eklenen renk/fotoğraflara dokunmaz (kaynak dene
   assert.ok(/ex\.variations\.filter\(\(v\) => v\.barcode && !incCodes\.has\(v\.barcode\)\)/.test(plan));
   assert.ok(/for \(const v of ex\.variations\) if \(v\.barcode\) byBarcode/.test(plan));
 });
+
+import { productUploadIds, nextPosition } from "../lib/variation-input.ts";
+test("silme geri alma: ürün + renk görsel kimlikleri tekil toplanır", () => {
+  const A = "123e4567-e89b-42d3-a456-426614174000", B = "223e4567-e89b-42d3-a456-426614174000";
+  const ids = productUploadIds({ images: [`/api/product-images/${A}`, "https://x.com/a.jpg"], imageUrl: `/api/product-images/${A}` }, [{ images: [`/api/product-images/${B}`] }, {}]);
+  assert.deepEqual(ids.sort(), [A, B]);
+  assert.deepEqual(productUploadIds({}, []), []);
+});
+test("toplu renk ekleme: position = mevcut en büyük + 1", () => {
+  assert.equal(nextPosition([]), 0);
+  assert.equal(nextPosition([{ position: 0 }, { position: 0 }]), 1);
+  assert.equal(nextPosition([{ position: 3 }, { position: 1 }]), 4);
+});
+test("undo/bulk/silme kaynak denetimi: position ve görsel bağlama var", () => {
+  const rd = (f) => readFileSync(new URL(f, import.meta.url), "utf8");
+  assert.match(rd("../lib/admin-undo.ts"), /position/);
+  assert.match(rd("../lib/admin-undo.ts"), /productUploadIds/);
+  assert.match(rd("../app/api/admin/product/bulk/route.ts"), /nextPosition/);
+  assert.match(rd("../app/api/admin/product/route.ts"), /productImage\.updateMany/);
+});

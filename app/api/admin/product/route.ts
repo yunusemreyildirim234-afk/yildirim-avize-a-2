@@ -188,14 +188,12 @@ async function DELETEHandler(req: Request) {
       return NextResponse.json({ success: true, snapshot: await buildUndoToken(before), deactivated: true, message: "Ürünün geçmiş siparişleri olduğu için silinmedi; pasife alındı." });
     }
 
-    await prisma.productVariation.deleteMany({
-      where: { productId },
-    });
-
-    // Avizeyi veritabanından tamamen sil
-    await prisma.product.delete({
-      where: { id: productId },
-    });
+    // Yüklenmiş görseller cascade ile silinmesin: ürüne bağsız bırakılır (Geri Al 30 dk içinde yeniden bağlar, 24 saat sonra yetim temizliği siler)
+    await prisma.$transaction([
+      prisma.productImage.updateMany({ where: { productId }, data: { productId: null } }),
+      prisma.productVariation.deleteMany({ where: { productId } }),
+      prisma.product.delete({ where: { id: productId } }),
+    ]);
 
     return NextResponse.json({ success: true, snapshot: await buildUndoToken(before, fullCopy) });
   } catch (error) {

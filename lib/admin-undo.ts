@@ -2,6 +2,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { signSession, verifySession } from "@/lib/session";
 import { bulkTiersOf } from "@/lib/bulk-pricing";
+import { productUploadIds } from "@/lib/variation-input";
 
 // Yönetici "Geri Al" altyapısı.
 //  - Sunucu işlemden SONRA, işlemin gerçekten değiştirdiği alanları (önceki değerleriyle) ve stok FARKLARINI (delta) hesaplar
@@ -200,6 +201,8 @@ function cleanRecreate(raw: unknown) {
         stockCode: str(v.stockCode ?? null, 100, "stockCode", true),
         salePrice: num(v.salePrice ?? null, "salePrice", true),
         listPrice: num(v.listPrice ?? null, "listPrice", true),
+        images: images(v.images ?? []),
+        position: num(v.position ?? 0, "position", false, true) as number,
       };
     });
     return { product, variations };
@@ -285,6 +288,9 @@ export async function restoreFromToken(token: unknown, force: boolean): Promise<
       if (exists) continue;
       await tx.product.create({ data: r.product });
       if (r.variations.length) await tx.productVariation.createMany({ data: r.variations });
+      // Silinirken ProductImage satırları ürüne bağsız bırakıldı (cascade'den kurtarıldı); geri alınca yeniden bağlanır
+      const uploadIds = productUploadIds({ images: r.product.images as string[], imageUrl: r.product.imageUrl as string | null }, r.variations.map((v) => ({ images: v.images as string[] })));
+      if (uploadIds.length) await tx.productImage.updateMany({ where: { id: { in: uploadIds }, productId: null }, data: { productId: r.product.id as string } });
       restored++;
     }
   });

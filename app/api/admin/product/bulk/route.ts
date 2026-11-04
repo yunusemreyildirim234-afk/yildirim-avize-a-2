@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import { buildUndoToken, snapshotProducts, type UndoExtra } from "@/lib/admin-undo";
 import { bulkTiersOf, upsertTier } from "@/lib/bulk-pricing";
 import { FEATURED, getBestSellers } from "@/lib/products";
+import { nextPosition } from "@/lib/variation-input";
 import { planAddVariation, planBestSeller, planCategory, planFeatured } from "@/lib/bulk-plan";
 
 interface Plan {
@@ -173,7 +174,7 @@ async function POSTHandler(req: Request) {
       // Aynı renge sahip ürünler atlanır
       const existing = await prisma.productVariation.findMany({
         where: { productId: { in: ids } },
-        select: { productId: true, variationValue: true },
+        select: { productId: true, variationValue: true, position: true },
       });
       const has = new Set<string>(
         existing
@@ -182,7 +183,7 @@ async function POSTHandler(req: Request) {
       );
       const targets = ids.filter((id) => !has.has(id));
       await prisma.productVariation.createMany({
-        data: targets.map((productId) => ({ productId, variationType: "Renk", variationValue: value, stock, extraPrice })),
+        data: targets.map((productId) => ({ productId, variationType: "Renk", variationValue: value, stock, extraPrice, position: nextPosition(existing.filter((v: { productId: string }) => v.productId === productId)) })),
       });
       const created = await prisma.productVariation.findMany({ where: { productId: { in: targets }, variationType: "Renk", variationValue: value }, select: { id: true } });
       extra.deleteVariationIds = created.map((v) => v.id);

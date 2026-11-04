@@ -98,3 +98,13 @@ export function pickDefaultVariation<V extends { stock: number }>(variations: V[
 export function coverImageOf(p: { imageUrl: string | null; variations: { stock: number; images?: string[] }[] }): string | null {
   return pickDefaultVariation(p.variations)?.images?.[0] || p.imageUrl || null;
 }
+
+/** Ürünün (kapak + ürün + renk) tüm yüklenmiş görsel kimlikleri; silme geri alınırken satırlar yeniden bağlanır. */
+export function productUploadIds(p: { images?: string[]; imageUrl?: string | null }, variations: { images?: string[] }[]): string[] {
+  return uploadedIdsOf(p.images ?? [], p.imageUrl ? [p.imageUrl] : [], ...variations.map((v) => v.images ?? []));
+}
+
+/** Toplu renk eklemede yeni sıra: ürünün mevcut en büyük position değeri + 1 (varsayılan renk kaymasın). */
+export function nextPosition(existing: { position: number }[]): number {
+  return existing.reduce((m, e) => Math.max(m, e.position), -1) + 1;
+}
