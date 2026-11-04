@@ -118,7 +118,7 @@ export async function POST(req: Request) {
   ];
   const { itemsTotal, shipping, couponDiscount, pickupDiscount, bankDiscount, total } = priced;
   return NextResponse.json(
-    { lines, maxTotalDiscountPct: cap, itemsTotal, totals: { itemsTotal, shipping, couponDiscount, pickupDiscount, bankDiscount, total }, coupon },
+    { lines, showcaseCode: ladderCtx?.coupon?.code ?? null, maxTotalDiscountPct: cap, itemsTotal, totals: { itemsTotal, shipping, couponDiscount, pickupDiscount, bankDiscount, total }, coupon },
     { headers: { "Cache-Control": "no-store" } }
   );
 }

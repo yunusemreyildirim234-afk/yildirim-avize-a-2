@@ -19,6 +19,7 @@ import { invoiceError } from "@/lib/validation";
 import { ADDRESS_LINE } from "@/lib/site";
 import { rememberEmail, track } from "@/lib/track";
 import { gtmPush } from "@/lib/gtm";
+import { COUPON_GENERIC_ERROR, couponPlaceholder, staleCouponMessage } from "@/lib/coupon-code";
 import { beginCheckoutEvent, gaItem } from "@/lib/gtm-events";
 import { activeTier, bulkLabel, type BulkRule } from "@/lib/bulk-pricing";
 import { forgetCardOrder, previousCardOrderId, rememberCardOrder } from "@/lib/pending-card-order";
@@ -152,6 +153,7 @@ export default function CartPage() {
     totals: { itemsTotal: number; shipping: number; couponDiscount: number; pickupDiscount: number; bankDiscount: number; total: number };
     coupon: { ok: boolean; error?: string; limited?: boolean } | null;
     maxTotalDiscountPct?: number | null;
+    showcaseCode?: string | null; // vitrin kuponunun güncel adı
   }
   const quoteSig = JSON.stringify([cart.map((i) => [i.variationId, i.quantity]), appliedCoupon?.code ?? "", shippingType, paymentMethod, appliedCoupon ? email : ""]);
   const [quote, setQuote] = useState<(Quote & { sig: string }) | null>(null);
@@ -190,8 +192,10 @@ export default function CartPage() {
       // Deneme sınırı: kupon düşürülmez, kod ve durum korunur; mesaj gösterilir
       setCouponError(q.coupon.error || "Çok fazla deneme, lütfen sonra tekrar deneyin");
     } else if (appliedCoupon && q.coupon && !q.coupon.ok) {
+      // Kod artık yok/pasif/yeniden adlandırılmış: sessizce temizlenir, net mesaj gösterilir (hata sayfası yok)
+      // (şart/ürün hataları kendi mesajını korur; genel "yok/pasif/süresi dolmuş" hatası net mesaja çevrilir)
+      setCouponError(!q.coupon.error || q.coupon.error === COUPON_GENERIC_ERROR ? staleCouponMessage(appliedCoupon.code) : q.coupon.error);
       setAppliedCoupon(null);
-      setCouponError(q.coupon.error || "Kupon artık geçerli değil.");
     }
     if (kurus(q.totals.total) !== kurus(shownTotal)) {
       setPriceNotice({ from: shownTotal, to: q.totals.total });
@@ -623,7 +627,7 @@ export default function CartPage() {
                 <form onSubmit={handleApplyCoupon} className="flex gap-2">
                   <input aria-label="Kupon kodu"
                     type="text"
-                    placeholder="Promosyon kodu (YILDIRIM5)"
+                    placeholder={couponPlaceholder(quote?.showcaseCode)}
                     value={couponInput}
                     onChange={(e) => setCouponInput(e.target.value)}
                     className="flex-1 text-xs p-3 rounded-xl border border-neutral-300 font-mono uppercase focus:outline-none focus:border-amber-600"

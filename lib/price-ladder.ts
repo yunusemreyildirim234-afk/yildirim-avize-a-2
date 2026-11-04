@@ -1,12 +1,12 @@
 import type { BulkRule } from "@/lib/bulk-pricing";
 import { priceCart } from "@/lib/cart-pricing";
 import { BANK_TRANSFER_DISCOUNT, PICKUP_DISCOUNT, SHIPPING_TYPES, type CouponRule } from "@/lib/pricing";
-import { SHOWCASE_COUPON_CODE } from "@/lib/site";
+import { ladderCouponLabel } from "@/lib/coupon-code";
 
 export interface LadderStep {
   key: "coupon" | "bank" | "pickup";
-  label: string; // "YILDIRIM5 kuponuyla" / "+ Havale/EFT ile (%5)"
-  short: string; // dar (mobil) kart etiketi: "YILDIRIM5" / "Havale/EFT %5" / "Mağaza %3"
+  label: string; // "<vitrin kodu> kuponuyla" / "+ Havale/EFT ile (%5)"
+  short: string; // dar (mobil) kart etiketi: "<vitrin kodu>" / "Havale/EFT %5" / "Mağaza %3"
   hint: string;
   price: number;
 }
@@ -51,7 +51,7 @@ export function priceLadder(p: LadderProduct, ctx: LadderContext, price: number 
     const c = net(SHIPPING_TYPES.HOME, "CREDIT_CARD", ctx.coupon);
     if (c.couponOk && c.price < prev) {
       coupon = ctx.coupon;
-      steps.push({ key: "coupon", label: `${SHOWCASE_COUPON_CODE} kuponuyla`, short: SHOWCASE_COUPON_CODE, hint: "Sepette kodu girin", price: c.price });
+      steps.push({ key: "coupon", label: ladderCouponLabel(ctx.coupon.code), short: ctx.coupon.code, hint: "Sepette kodu girin", price: c.price });
       prev = c.price;
     }
   }

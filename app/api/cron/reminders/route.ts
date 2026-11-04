@@ -7,7 +7,6 @@ import { buildCampaignFooter, hasActiveConsent } from "@/lib/marketing";
 import { releaseCoupon } from "@/lib/coupons";
 import { restoreOrderStock } from "@/lib/orders";
 import { ABANDONED_CARD_MINUTES, shouldCloseAbandonedCard } from "@/lib/stock-rules";
-import { SHOWCASE_COUPON_CODE } from "@/lib/site";
 import { couponValueLabel, loadShowcaseCoupon } from "@/lib/showcase";
 
 const HOUR = 60 * 60 * 1000;
@@ -44,7 +43,7 @@ export async function GET(req: Request) {
     // Ticari ileti onayı kontrolü (hata/tablo yoksa "onay yok" sayılır): onaylıya kampanya, diğerlerine indirimsiz sade hatırlatma
     const footerHtml = showcase && (await hasActiveConsent(to)) ? await buildCampaignFooter(to) : null;
     const ok = await (footerHtml && showcase
-      ? sendAbandonedCartEmail({ to, name: o.user.name, orderId: o.id, couponCode: SHOWCASE_COUPON_CODE, discountLabel: couponValueLabel(showcase), items, footerHtml })
+      ? sendAbandonedCartEmail({ to, name: o.user.name, orderId: o.id, couponCode: showcase.code, discountLabel: couponValueLabel(showcase), items, footerHtml })
       : sendCartReminderEmail({ to, name: o.user.name, items })
     ).catch(() => false);
     if (ok) abandoned++;
