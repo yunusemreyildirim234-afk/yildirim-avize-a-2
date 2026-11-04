@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { toast } from "sonner";
+import { toastHref } from "@/lib/toast-link";
 import { useAccountSync } from "@/context/useAccountSync";
 
 export interface WishlistItem {
@@ -69,6 +70,7 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
   const removeFavoriteUndoable = (product: WishlistItem) => {
     setFavorites((prev) => prev.filter((i) => i.id !== product.id));
     toast("Favorilerden çıkarıldı", {
+      ...toastHref("/favorilerim"),
       description: product.title,
       duration: 6000,
       action: { label: "↩ Geri Al", onClick: () => setFavorites((prev) => (prev.some((i) => i.id === product.id) ? prev : [...prev, product])) },
@@ -80,6 +82,7 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
     if (removed.length === 0) return;
     setFavorites([]);
     toast("Favoriler temizlendi", {
+      ...toastHref("/favorilerim"),
       description: `${removed.length} ürün çıkarıldı`,
       duration: 6000,
       action: { label: "↩ Geri Al", onClick: () => setFavorites((prev) => (prev.length === 0 ? removed : prev)) },

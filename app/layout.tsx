@@ -7,6 +7,7 @@ import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import CookieBanner from "@/components/CookieBanner";
 import GoogleTagManager from "@/components/GoogleTagManager";
+import ToastLinkRouter from "@/components/ToastLinkRouter";
 import { CartProvider } from "@/context/CartContext";
 import { WishlistProvider } from "@/context/WishlistContext";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
@@ -85,6 +86,7 @@ export default function RootLayout({
             <CookieBanner />
             <GoogleTagManager />
             <Toaster position="top-right" richColors closeButton />
+            <ToastLinkRouter />
           </WishlistProvider>
         </CartProvider>
       </body>

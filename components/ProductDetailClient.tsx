@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { toastHref } from "@/lib/toast-link";
 import { HoverMagnifier, ImageLightbox } from "@/components/ImageZoom";
 import { useCart } from "@/context/CartContext";
 import { FREE_SHIPPING_THRESHOLD, PICKUP_DISCOUNT, SHIPPING_TYPES } from "@/lib/pricing";
@@ -95,7 +96,7 @@ export default function ProductDetailClient({ product, ladderCtx }: { product: P
       quantity: quantity,
     });
 
-    toast.success("Sepete eklendi", { description: `${quantity}x ${product.title}`, action: { label: "Sepete Git", onClick: () => router.push("/sepet") } });
+    toast.success("Sepete eklendi", { ...toastHref("/sepet"), description: `${quantity}x ${product.title}`, action: { label: "Sepete Git", onClick: () => router.push("/sepet") } });
     setAddedToCart(true);
     setTimeout(() => setAddedToCart(false), 2500);
   };

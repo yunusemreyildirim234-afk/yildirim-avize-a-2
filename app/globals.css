@@ -270,3 +270,7 @@ body {
     overflow-x: clip;
   }
 }
+
+/* Bağlantı taşıyan toast (lib/toast-link.ts): tıklanabilir imleç; odak halkası sonner'ın kendi :focus-visible stilinde */
+[data-sonner-toast][data-testid^="href:"] { cursor: pointer; }
+[data-sonner-toast][data-testid^="href:"] button { cursor: pointer; }

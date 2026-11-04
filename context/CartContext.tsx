@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useAccountSync } from "@/context/useAccountSync";
 import { toast } from "sonner";
+import { toastHref } from "@/lib/toast-link";
 import { track } from "@/lib/track";
 import { gtmPush } from "@/lib/gtm";
 import { addToCartEvent, gaItem } from "@/lib/gtm-events";
@@ -118,6 +119,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     const removed = cart[index];
     setCart((prev) => prev.filter((item) => item.variationId !== variationId));
     toast("Ürün sepetten çıkarıldı", {
+      ...toastHref("/sepet"),
       description: removed.title,
       duration: 6000,
       action: {
@@ -138,6 +140,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     const removed = cart;
     setCart([]);
     toast("Sepet boşaltıldı", {
+      ...toastHref("/sepet"),
       description: `${removed.length} ürün çıkarıldı`,
       duration: 6000,
       action: { label: "↩ Geri Al", onClick: () => setCart((prev) => (prev.length === 0 ? removed : prev)) },

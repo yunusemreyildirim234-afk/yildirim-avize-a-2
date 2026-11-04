@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { resolveLinkAction } from "@/lib/toast-link";
+import { goToHash } from "@/components/ToastLinkRouter";
 import { Bell, CheckCheck, Package, Sparkles, Ticket, MessageSquare, Trash2 } from "lucide-react";
 
 interface Item {
@@ -49,7 +51,9 @@ export default function NotificationBell() {
           if (seen.current.has(n.id) || n.read) continue;
           seen.current.add(n.id);
           const go = () => {
-            if (n.link) router.push(n.link);
+            const a = resolveLinkAction(window.location.pathname, n.link);
+            if (a.kind === "navigate") router.push(a.href);
+            else if (a.kind === "hash") goToHash(a.hash);
             fetch("/api/notifications", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: n.id }) }).catch(() => {});
           };
           toast.info(
@@ -174,7 +178,19 @@ export default function NotificationBell() {
                 return (
                   <li key={n.id}>
                     {n.link ? (
-                      <Link href={n.link} onClick={() => readOne(n)} className={cls}>
+                      <Link
+                        href={n.link}
+                        onClick={(e) => {
+                          readOne(n);
+                          // Aynı sayfadaki #bölüm bağlantısı: Next hashchange tetiklemez; bölümü biz açtırırız
+                          const a = resolveLinkAction(pathname, n.link);
+                          if (a.kind === "hash") {
+                            e.preventDefault();
+                            goToHash(a.hash);
+                          } else if (a.kind === "none") e.preventDefault();
+                        }}
+                        className={cls}
+                      >
                         {body}
                       </Link>
                     ) : (
