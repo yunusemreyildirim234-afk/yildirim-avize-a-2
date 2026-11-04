@@ -88,7 +88,7 @@ export async function POST(req: Request) {
       await releasePreviousCardOrder(body.previousOrderId, { email: String(email).trim().toLowerCase(), sessionUserId: await getSessionUserId() }).catch((e) => console.error("[siparis] önceki sipariş serbest bırakılamadı:", (e as Error).message));
     }
 
-    // Süresi (15 dk) dolmuş bekleyen kartlı rezervasyonlar tembel serbest bırakılır (cron günde bir kez çalışır)
+    // Süresi (RESERVATION_HOLD_MINUTES, lib/stock-rules.ts) dolmuş bekleyen kartlı rezervasyonlar tembel serbest bırakılır (cron günde bir kez çalışır)
     await releaseStaleReservations().catch((e) => console.error("[siparis] süresi dolan rezervasyonlar serbest bırakılamadı:", (e as Error).message));
     // Kartlı: aynı e-postalı eski bekleyen sipariş iptal edilir; aynı telefon/e-posta için bekleyen sınırı doluysa yeni sipariş açılmaz
     if (paymentMethod === "CREDIT_CARD") {

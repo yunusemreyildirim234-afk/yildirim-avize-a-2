@@ -86,7 +86,7 @@ export async function releasePreviousCardOrder(previousOrderId: unknown, who: { 
 }
 
 /**
- * Tutma süresi (15 dk) dolmuş AWAITING_PAYMENT kartlı rezervasyonları tembel serbest bırakır (cron günde bir çalıştığı için
+ * Tutma süresi (RESERVATION_HOLD_MINUTES, lib/stock-rules.ts) dolmuş AWAITING_PAYMENT kartlı rezervasyonları tembel serbest bırakır (cron günde bir çalıştığı için
  * stok okunurken ve sipariş oluşturulurken çağrılır). variationIds verilirse yalnızca o varyasyonları tutanlar. Serbest bırakılan sayısı döner.
  * Her sipariş failAwaitingCardOrder ile kapanır: durum koşullu geçiş + bayrak koşullu iade; tekrar çağrı stoğu ikinci kez artırmaz.
  */
