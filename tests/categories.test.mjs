@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { slugifyTr, categoryKey, mergeCategories, buildCategoryList, findDynamicCategory } from "../lib/categories.ts";
+import { slugifyTr, categoryKey, mergeCategories, buildCategoryList, findDynamicCategory, categoryWhere, productInCategory, titleCaseTr, resolveCategoryName } from "../lib/categories.ts";
 
 // lib/site.ts CATEGORIES ile aynı (sıra, slug, ad): sabit liste değişirse bu test de bilinçli güncellenmeli
 const FIXED = [
@@ -94,4 +94,48 @@ test("kanıt: lib/site.ts CATEGORIES ile test içindeki sabit liste birebir ayn�
   assert.deepEqual(CATEGORIES.map((c) => ({ slug: c.slug, title: c.title, dbCategory: c.dbCategory })), FIXED);
   const list = buildCategoryList([{ category: "Yeni", count: 1 }], CATEGORIES);
   assert.deepEqual(list.slice(0, CATEGORIES.length).map((c) => c.slug), CATEGORIES.map((c) => c.slug));
+});
+
+test("sabit kategori varyant yazımları (MODERN, ' modern ') dahil eder; dinamik listede ayrı kayıt ÇIKMAZ", () => {
+  const list = buildCategoryList(
+    [
+      { category: "Modern", count: 4 },
+      { category: "MODERN", count: 2 },
+      { category: "modern ", count: 1 },
+      { category: "Sarkıt", count: 3 },
+      { category: "SARKIT", count: 1 },
+      { category: "Led", count: 1 },
+    ],
+    FIXED
+  );
+  const modern = list.find((c) => c.slug === "modern");
+  assert.deepEqual(modern.spellings, ["Modern", "MODERN", "modern "]);
+  assert.equal(modern.count, 7);
+  assert.equal(list.find((c) => c.slug === "sarkit").count, 4);
+  assert.deepEqual(list.slice(0, 5).map((c) => c.slug), FIXED.map((f) => f.slug));
+  assert.deepEqual(list.slice(5).map((c) => c.title), ["Led"]); // çift kayıt yok
+  assert.deepEqual(categoryWhere(modern.spellings), { category: { in: ["Modern", "MODERN", "modern "] } });
+  assert.deepEqual(categoryWhere(["Kristal"]), { category: "Kristal" });
+  // kayıt yoksa kanonik yazım yine de aranır
+  assert.deepEqual(list.find((c) => c.slug === "kristal").spellings, ["Kristal"]);
+});
+
+test("yönetim çipi eşleşmesi: büyük/küçük harf ve boşluk farkı aynı kategori", () => {
+  const list = buildCategoryList([{ category: "Modern", count: 1 }], FIXED);
+  const modern = list.find((c) => c.slug === "modern");
+  assert.equal(productInCategory(" MODERN ", modern), true);
+  assert.equal(productInCategory("Klasik", modern), false);
+});
+
+test("yeni kategori adı: başlık biçimi; mevcutla harf farkı varsa mevcut yazım; sabit değerler aynen", () => {
+  const list = buildCategoryList([{ category: "Yemek Masası Üstü Avizeler", count: 3 }, { category: "Sarkıt", count: 1 }], FIXED);
+  assert.equal(titleCaseTr("  yemek  MASASI üstü "), "Yemek Masası Üstü");
+  assert.equal(titleCaseTr("ışık"), "Işık");
+  assert.equal(titleCaseTr("iyi"), "İyi");
+  assert.equal(resolveCategoryName("YEMEK MASASI ÜSTÜ AVİZELER", list), "Yemek Masası Üstü Avizeler");
+  assert.equal(resolveCategoryName("sarkıt", list), "Sarkıt");
+  assert.equal(resolveCategoryName("KRISTAL", list), "Kristal");
+  assert.equal(resolveCategoryName("modern", list), "Modern");
+  assert.equal(resolveCategoryName("led aydınlatma", list), "Led Aydınlatma");
+  assert.equal(resolveCategoryName("   ", list), "");
 });

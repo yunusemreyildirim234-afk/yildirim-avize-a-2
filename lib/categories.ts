@@ -8,9 +8,11 @@ export interface FixedCategory {
 }
 
 export interface CategoryEntry {
+  /** categoryKey(ad): ürünün kategorisiyle eşleştirme anahtarı. */
+  key: string;
   slug: string;
   title: string;
-  /** Aktif ürün sayısı (sabit kategoride aynı yazımın büyük/küçük harf varyantları da sayılır). */
+  /** Aktif ürün sayısı (varyant yazımlar dahil; sayfadaki sayıyla aynı kümeden gelir). */
   count: number;
   /** Veritabanındaki gerçek yazımlar (kategori IN sorgusu için; harf duyarsız karşılaştırmaya güvenilmez). */
   spellings: string[];
@@ -67,13 +69,18 @@ export function buildCategoryList(rows: { category: string; count: number }[], f
   const byKey = new Map(merged.map((m) => [m.key, m]));
   const fixedKeys = new Set(fixed.map((f) => categoryKey(f.dbCategory)));
 
-  const head: CategoryEntry[] = fixed.map((f) => ({
-    slug: f.slug,
-    title: f.title,
-    count: byKey.get(categoryKey(f.dbCategory))?.count ?? 0,
-    spellings: [f.dbCategory], // sabit sayfa davranışı değişmez: tam eşleşme
-    fixed: true,
-  }));
+  // Sabit kategori: ad/slug/sıra aynen; büyük/küçük harf ve boşluk varyantları da aynı kategoriye dahildir (ayrı kayıt çıkmaz)
+  const head: CategoryEntry[] = fixed.map((f) => {
+    const m = byKey.get(categoryKey(f.dbCategory));
+    return {
+      key: categoryKey(f.dbCategory),
+      slug: f.slug,
+      title: f.title,
+      count: m?.count ?? 0,
+      spellings: [f.dbCategory, ...(m?.spellings ?? []).filter((s) => s !== f.dbCategory)], // kanonik yazım önde
+      fixed: true,
+    };
+  });
 
   const used = new Set<string>([...fixed.map((f) => f.slug), ...RESERVED_SLUGS]);
   const tail = merged
@@ -84,7 +91,7 @@ export function buildCategoryList(rows: { category: string; count: number }[], f
       let slug = base;
       for (let n = 2; used.has(slug); n++) slug = `${base}-${n}`;
       used.add(slug);
-      return { slug, title: m.name, count: m.count, spellings: m.spellings, fixed: false };
+      return { key: m.key, slug, title: m.name, count: m.count, spellings: m.spellings, fixed: false };
     });
 
   return [...head, ...tail];
@@ -92,3 +99,31 @@ export function buildCategoryList(rows: { category: string; count: number }[], f
 
 /** Sabit olmayan (dinamik) kategoriyi slug ile bulur; yoksa null (sayfa 404). */
 export const findDynamicCategory = (list: readonly CategoryEntry[], slug: string) => list.find((c) => !c.fixed && c.slug === slug) ?? null;
+
+/** Kategori sayfası için ürün koşulu: tek yazım → eşitlik, birden çok yazım → IN (Postgres harf duyarsızlığına güvenilmez). */
+export const categoryWhere = (spellings: readonly string[]) => (spellings.length === 1 ? { category: spellings[0] } : { category: { in: [...spellings] } });
+
+/** Ürünün kategorisi bu kayda ait mi? (yönetim listesi çipleri) */
+export const productInCategory = (productCategory: string, entry: Pick<CategoryEntry, "key">) => categoryKey(productCategory) === entry.key;
+
+/** "yemek masası  üstü" → "Yemek Masası Üstü" (tr-TR başlık biçimi; kelime ilk harfi büyük, kalanı küçük). */
+export function titleCaseTr(s: string): string {
+  return s
+    .trim()
+    .replace(/\s+/g, " ")
+    .split(" ")
+    .map((w) => (w ? w.charAt(0).toLocaleUpperCase("tr-TR") + w.slice(1).toLocaleLowerCase("tr-TR") : w))
+    .join(" ");
+}
+
+/**
+ * Elle yazılan/seçilen kategori adını kaydedilecek yazıma çevirir: mevcut bir kategoriyle (tr-TR küçük harf + boşluk) eşleşiyorsa mevcut görünen yazım,
+ * değilse başlık biçimi. Sabit kategorilerin veritabanı değerleri (Kristal, Modern, ...) mevcut listeden gelir ve aynen kalır.
+ */
+export function resolveCategoryName(input: string, list: readonly Pick<CategoryEntry, "key" | "fixed" | "spellings" | "title">[]): string {
+  const key = categoryKey(input);
+  if (!key) return "";
+  const hit = list.find((c) => c.key === key);
+  if (hit) return hit.fixed ? hit.spellings[0] : hit.title;
+  return titleCaseTr(input);
+}
