@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ChevronDown, ChevronUp, Home, Plus, X } from "lucide-react";
 import { DEFAULT_PROMO_CARDS, MAX_CODE, MAX_HREF, MAX_PROMO_CARDS, MAX_TEXT, MAX_TITLE, PROMO_THEMES, validHref, type PromoCard, type PromoTheme } from "@/lib/promo-cards";
+import { editorSelection, moveKey } from "@/lib/collections";
 import { DEFAULT_COUNTS, MAX_COUNT, MAX_PINNED, SECTION_KEYS, composeSection, type ResolvedConfig, type SectionKey } from "@/lib/homepage-compose";
 
 export interface PoolItem {
@@ -13,9 +14,17 @@ export interface PoolItem {
   modelCode: string | null;
 }
 
+export interface CollectionOption {
+  key: string;
+  title: string;
+  count: number;
+}
+
 interface Props {
   initial: ResolvedConfig;
   promoCards: PromoCard[];
+  collectionOptions: CollectionOption[];
+  savedCollections: string[];
   pools: Record<SectionKey, PoolItem[]>;
 }
 
@@ -36,13 +45,30 @@ interface SectionState {
   reset: boolean; // kayıtta varsayılana dönecek (bölüm ayarı silinir)
 }
 
-export default function AdminHomepage({ initial, pools, promoCards }: Props) {
+export default function AdminHomepage({ initial, pools, promoCards, collectionOptions, savedCollections }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [state, setState] = useState<Record<SectionKey, SectionState>>(() =>
     Object.fromEntries(SECTION_KEYS.map((k) => [k, { count: String(initial[k].count), pinned: initial[k].pinnedIds, reset: false }])) as Record<SectionKey, SectionState>
   );
+  // Koleksiyonlar: seçili kategoriler (sıralı). Kayıt yoksa hepsi seçili görünür; değiştirilmeden kaydedilirse varsayılan davranış sürer.
+  const initialSel = useMemo(() => editorSelection(collectionOptions, savedCollections), [collectionOptions, savedCollections]);
+  const [colSel, setColSel] = useState<string[]>(initialSel.selected);
+  const [colCustom, setColCustom] = useState(initialSel.custom); // false: varsayılan (kayıtsız)
+  const [colReset, setColReset] = useState(false);
+  const usable = collectionOptions.filter((c) => c.count > 0); // ürünsüz kategori seçilemez
+  const colTitle = (k: string) => collectionOptions.find((c) => c.key === k)?.title ?? k;
+  const changeSel = (next: string[]) => {
+    setColSel(next);
+    setColCustom(true);
+    setColReset(false);
+  };
+  const resetCollections = () => {
+    setColSel(usable.map((c) => c.key));
+    setColCustom(false);
+    setColReset(true);
+  };
   const [cards, setCards] = useState<PromoCard[]>(promoCards);
   const [cardsReset, setCardsReset] = useState(false); // kayıtta varsayılan kartlara dönülecek
   const [queries, setQueries] = useState<Record<SectionKey, string>>({ featured: "", discounted: "", bestsellers: "" });
@@ -116,12 +142,17 @@ export default function AdminHomepage({ initial, pools, promoCards }: Props) {
     try {
       const body: Record<string, unknown> = Object.fromEntries(SECTION_KEYS.map((k) => [k, state[k].reset ? null : { count: Number(state[k].count), pinnedIds: state[k].pinned }]));
       body.promoCards = cardsReset ? null : cards.map((c) => ({ ...c, title: c.title.trim(), text: c.text.trim(), ...(c.kind === "COUPON" ? { code: (c.code ?? "").trim() } : {}), ...(c.href ? { href: c.href.trim() } : {}) }));
+      if (colCustom && colSel.length === 0) return toast.error("Koleksiyonlar: en az bir kategori seçin veya varsayılana dönün.");
+      // Varsayılan (kayıtsız) durumda dokunulmamış liste gönderilmez; sıfırlama null gönderir
+      if (colReset) body.collections = null;
+      else if (colCustom) body.collections = colSel;
       const res = await fetch("/api/admin/homepage", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "Kaydedilemedi.");
       toast.success("Kaydedildi. Değişiklik sitede geçerli.");
       for (const w of (data.warnings as string[] | undefined) ?? []) toast.warning("Kupon uyarısı", { description: w, duration: 15000 });
       setCardsReset(false);
+      setColReset(false);
       setState((s) => Object.fromEntries(SECTION_KEYS.map((k) => [k, { ...s[k], reset: false }])) as Record<SectionKey, SectionState>);
       router.refresh();
     } catch (e) {
@@ -264,6 +295,43 @@ export default function AdminHomepage({ initial, pools, promoCards }: Props) {
               </section>
             );
           })}
+
+          <section aria-labelledby="hp-collections" className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h3 id="hp-collections" className="font-bold text-neutral-900 text-sm">Aydınlatma Koleksiyonları (kategori satırı)</h3>
+              <button type="button" onClick={resetCollections} className="text-xs font-semibold text-amber-800 hover:underline">
+                Varsayılana dön
+              </button>
+            </div>
+            <p className="text-xs text-neutral-500">
+              {colCustom ? "Yalnızca seçili kategoriler, aşağıdaki sırayla gösterilir." : "Varsayılan: tüm kategoriler (sabit olanlar + yeni eklenenler) kendi sırasıyla gösterilir."} Ürünü olmayan kategori ana sayfada görünmez. İlk 4 kart ızgarada, kalanlar yatay kaydırmayla açılır.
+            </p>
+            {colSel.length > 0 && (
+              <ol className="space-y-1">
+                {colSel.map((k, i) => (
+                  <li key={k} className="flex items-center gap-2 rounded-lg border border-neutral-200 px-3 py-1.5 text-xs">
+                    <span className="w-5 text-neutral-400 tabular-nums">{i + 1}.</span>
+                    <span className="flex-1 min-w-0 truncate text-neutral-900">{colTitle(k)}</span>
+                    <button type="button" aria-label={`${colTitle(k)} yukarı taşı`} disabled={i === 0} onClick={() => changeSel(moveKey(colSel, i, -1))} className="p-1 text-neutral-500 hover:text-neutral-900 disabled:opacity-30">
+                      <ChevronUp aria-hidden="true" className="w-4 h-4" />
+                    </button>
+                    <button type="button" aria-label={`${colTitle(k)} aşağı taşı`} disabled={i === colSel.length - 1} onClick={() => changeSel(moveKey(colSel, i, 1))} className="p-1 text-neutral-500 hover:text-neutral-900 disabled:opacity-30">
+                      <ChevronDown aria-hidden="true" className="w-4 h-4" />
+                    </button>
+                  </li>
+                ))}
+              </ol>
+            )}
+            <fieldset className="grid sm:grid-cols-2 gap-1">
+              <legend className="text-xs font-semibold text-neutral-700 mb-1">Gösterilecek kategoriler</legend>
+              {usable.map((c) => (
+                <label key={c.key} className="flex items-center gap-2 text-xs text-neutral-800">
+                  <input type="checkbox" checked={colSel.includes(c.key)} onChange={(e) => changeSel(e.target.checked ? [...colSel, c.key] : colSel.filter((x) => x !== c.key))} />
+                  {c.title} <span className="text-neutral-400">({c.count} ürün)</span>
+                </label>
+              ))}
+            </fieldset>
+          </section>
 
           <section aria-labelledby="hp-promo" className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">

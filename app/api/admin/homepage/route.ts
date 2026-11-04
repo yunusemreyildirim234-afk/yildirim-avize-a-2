@@ -4,9 +4,10 @@ import { adminGuard } from "@/lib/admin-guard";
 import { prisma } from "@/lib/db";
 import { rateLimit, tooMany } from "@/lib/rate-limit";
 import { MAX_COUNT, MAX_PINNED, SECTION_KEYS } from "@/lib/homepage-compose";
+import { validateCollectionKeys } from "@/lib/collections";
 import { couponCodesOf, couponWarnings, validatePromoCards, type CouponRow } from "@/lib/promo-cards";
 
-// Ana sayfa ayarları (yalnızca yönetici). Gövde: { featured|discounted|bestsellers: { count, pinnedIds[] }, promoCards: [...] | null }
+// Ana sayfa ayarları (yalnızca yönetici). Gövde: { featured|discounted|bestsellers: { count, pinnedIds[] }, promoCards: [...] | null, collections: [kategoriAnahtarı...] | null }
 async function PUTHandler(req: Request) {
   const denied = await adminGuard();
   if (denied) return denied;
@@ -15,7 +16,7 @@ async function PUTHandler(req: Request) {
 
   const body = await req.json().catch(() => null);
   if (!body || typeof body !== "object" || Array.isArray(body)) return NextResponse.json({ error: "Geçersiz istek." }, { status: 400 });
-  const unknownTop = Object.keys(body).filter((k) => !(SECTION_KEYS as readonly string[]).includes(k) && k !== "promoCards");
+  const unknownTop = Object.keys(body).filter((k) => !(SECTION_KEYS as readonly string[]).includes(k) && k !== "promoCards" && k !== "collections");
   if (unknownTop.length) return NextResponse.json({ error: `Bilinmeyen alan: ${unknownTop[0]}` }, { status: 400 });
 
   const config: Record<string, { count: number; pinnedIds: string[] }> = {};
@@ -51,7 +52,17 @@ async function PUTHandler(req: Request) {
     cards = validatePromoCards(rawCards);
     if (!cards.ok) return NextResponse.json({ error: cards.error }, { status: 400 });
   }
-  if (Object.keys(config).length === 0 && reset.length === 0 && !cards) return NextResponse.json({ error: "Kaydedilecek bölüm yok." }, { status: 400 });
+  // Koleksiyonlar (kategori anahtarları, sıralı): null varsayılana döner; boş liste de varsayılandır
+  const rawCollections = (body as Record<string, unknown>).collections;
+  let collections: string[] | null = null;
+  if (rawCollections === null) reset.push("collections");
+  else if (rawCollections !== undefined) {
+    const v = validateCollectionKeys(rawCollections);
+    if (!v.ok) return NextResponse.json({ error: v.error }, { status: 400 });
+    if (v.keys.length === 0) reset.push("collections");
+    else collections = v.keys;
+  }
+  if (Object.keys(config).length === 0 && reset.length === 0 && !cards && !collections) return NextResponse.json({ error: "Kaydedilecek bölüm yok." }, { status: 400 });
 
   // Sabitlenen ürünler mevcut ve aktif olmalı
   if (allPinned.size) {
@@ -63,6 +74,7 @@ async function PUTHandler(req: Request) {
   const current = (await prisma.siteConfig.findUnique({ where: { id: 1 }, select: { homepageConfig: true } }))?.homepageConfig;
   const merged: Record<string, unknown> = { ...(current && typeof current === "object" && !Array.isArray(current) ? current : {}), ...config };
   if (cards?.ok) merged.promoCards = cards.cards;
+  if (collections) merged.collections = collections;
   for (const key of reset) delete merged[key];
   await prisma.siteConfig.upsert({ where: { id: 1 }, create: { id: 1, homepageConfig: merged as object }, update: { homepageConfig: merged as object } });
   // Kupon kartlarında kod geçerli değilse UYARI (kaydı engellemez)

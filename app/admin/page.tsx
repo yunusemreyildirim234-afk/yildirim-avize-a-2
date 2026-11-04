@@ -15,6 +15,8 @@ import AdminKargonomiOrderActions from "@/components/AdminKargonomiOrderActions"
 import { FEATURED } from "@/lib/products";
 import { getHomepageConfig, getHomepageRaw, getSectionPools } from "@/lib/homepage";
 import { resolvePromoCards } from "@/lib/promo-cards";
+import { resolveCollectionKeys } from "@/lib/collections";
+import { getCategoryList } from "@/lib/category-list";
 import AdminDiscountSettings from "@/components/AdminDiscountSettings";
 import AdminSessions from "@/components/AdminSessions";
 import AdminTwoFactor, { AdminTwoFactorBanner } from "@/components/AdminTwoFactor";
@@ -102,6 +104,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const featuredIds = flaggedFeatured.length > 0 ? flaggedFeatured : await prisma.product.findMany({ where: { active: true, ...FEATURED }, select: { id: true } });
   // Ana Sayfayı Düzenle: bölüm havuzları (yalnızca ilgili kümeden seçilebilir) ve kayıtlı ayar
   const [homeConfig, homePools, homeRaw] = await Promise.all([getHomepageConfig(), getSectionPools(), getHomepageRaw()]);
+  const collectionOptions = (await getCategoryList().catch(() => [])).map((c) => ({ key: c.key, title: c.title, count: c.count })); // ana sayfa koleksiyon seçenekleri
   // Çok Satanlar: bölüm havuzu (100) aynı sıralamanın uzun hâlidir; ilk 48 = getBestSellers(48) (ikinci sorgu yapılmaz)
   const showcase = { featured: featuredIds.map((p) => p.id), bestSellers: homePools.bestsellers.slice(0, 48).map((p) => p.id), manualFeatured: flaggedFeatured.length };
   const slim = (list: { id: string; title: string; modelCode: string | null }[]) => list.map((p) => ({ id: p.id, title: p.title, modelCode: p.modelCode }));
@@ -244,6 +247,8 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         <AdminHomepage
           initial={homeConfig}
           promoCards={resolvePromoCards(homeRaw)}
+          collectionOptions={collectionOptions}
+          savedCollections={resolveCollectionKeys(homeRaw)}
           pools={{ featured: slim(homePools.featured), discounted: slim(homePools.discounted), bestsellers: slim(homePools.bestsellers) }}
         />
 
