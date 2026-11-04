@@ -59,7 +59,7 @@ async function getAdminData() {
       include: {
         variations: {
           omit: { syncSnapshot: true, syncStock: true },
-          orderBy: { id: "asc" },
+          orderBy: [{ position: "asc" }, { id: "asc" }],
         },
       },
       orderBy: { createdAt: "desc" },

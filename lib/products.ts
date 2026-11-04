@@ -23,7 +23,7 @@ export const CARD_SELECT = {
   couponAllowed: true,
   pickupDiscountPct: true,
   transferDiscountPct: true,
-  variations: { select: { id: true, variationValue: true, extraPrice: true, stock: true }, orderBy: { id: "asc" } },
+  variations: { select: { id: true, variationValue: true, extraPrice: true, stock: true, images: true }, orderBy: [{ position: "asc" }, { id: "asc" }] },
 } satisfies Prisma.ProductSelect;
 
 export async function getProducts(where: Prisma.ProductWhereInput = {}, take?: number, skip?: number) {
@@ -57,7 +57,7 @@ export const getProductDetail = unstable_cache(
   async (id: string) => {
     const p = await prisma.product.findUnique({
       where: { id },
-      omit: { syncSnapshot: true, lastSyncedAt: true }, include: { variations: { omit: { syncSnapshot: true, syncStock: true } }, reviews: { where: { status: "APPROVED" }, orderBy: { createdAt: "desc" }, include: { user: { select: { name: true } } } } },
+      omit: { syncSnapshot: true, lastSyncedAt: true }, include: { variations: { omit: { syncSnapshot: true, syncStock: true }, orderBy: [{ position: "asc" }, { id: "asc" }] }, reviews: { where: { status: "APPROVED" }, orderBy: { createdAt: "desc" }, include: { user: { select: { name: true } } } } },
     });
     if (!p) return null;
     return {

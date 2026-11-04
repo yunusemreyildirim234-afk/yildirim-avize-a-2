@@ -3,51 +3,82 @@ import { withStorefrontRevalidate } from "@/lib/revalidate";
 import { serverError } from "@/lib/api-error";
 import { adminGuard } from "@/lib/admin-guard";
 import { prisma } from "@/lib/db";
+import { attachUploads, pruneUploads } from "@/lib/product-images";
+import { MAX_PRODUCT_IMAGES, parseImageUrls, parseVariations, uploadedIdsOf } from "@/lib/variation-input";
 import { buildUndoToken, snapshotForDelete, snapshotProducts } from "@/lib/admin-undo";
 
-// 1. Yeni Avize Ekleme (POST)
+// 1. Yeni Avize Ekleme (POST): ürün + tüm renkler TEK transaction'da; fotoğraflar önceden /api/admin/product-images ile yüklenir
+const isUniqueError = (e: unknown) => typeof e === "object" && e !== null && (e as { code?: string }).code === "P2002";
+
 async function POSTHandler(req: Request) {
   const denied = await adminGuard();
   if (denied) return denied;
   try {
-    const body = await req.json();
-    const { title, description, category, basePrice, imageUrl, variationType, variationValue, stock } = body;
-    let modelCode: string | null = typeof body.modelCode === "string" ? body.modelCode.trim().slice(0, 40) : "";
-    if (!modelCode) {
-      // Boş bırakılırsa mevcut en büyük sayısal koddan sonraki numara verilir
-      const codes = await prisma.product.findMany({ where: { modelCode: { not: null } }, select: { modelCode: true } });
-      const max = codes.reduce((m: number, c: { modelCode: string | null }) => Math.max(m, Number(c.modelCode) || 0), 0);
-      modelCode = String(max + 1);
-    } else if (await prisma.product.findUnique({ where: { modelCode } })) {
-      return NextResponse.json({ error: `"${modelCode}" model kodu başka bir üründe kullanılıyor.` }, { status: 409 });
+    const body = await req.json().catch(() => null);
+    if (!body || typeof body !== "object") return NextResponse.json({ error: "Geçersiz istek." }, { status: 400 });
+
+    const title = typeof body.title === "string" ? body.title.trim().slice(0, 300) : "";
+    if (!title) return NextResponse.json({ error: "Avize adı boş olamaz." }, { status: 400 });
+    const category = typeof body.category === "string" ? body.category.trim().slice(0, 60) : "";
+    if (!category) return NextResponse.json({ error: "Kategori seçiniz." }, { status: 400 });
+    const basePrice = Number(body.basePrice);
+    if (!Number.isFinite(basePrice) || basePrice <= 0 || basePrice > 10_000_000) return NextResponse.json({ error: "Geçerli bir satış fiyatı giriniz." }, { status: 400 });
+    const description = typeof body.description === "string" ? body.description.trim().slice(0, 10_000) || null : null;
+
+    const images = parseImageUrls(body.images, MAX_PRODUCT_IMAGES, "Ürün fotoğrafları");
+    if (!images.ok) return NextResponse.json({ error: images.error }, { status: 400 });
+    const variations = parseVariations(body.variations);
+    if (!variations.ok) return NextResponse.json({ error: variations.error }, { status: 400 });
+
+    const manualCode = typeof body.modelCode === "string" ? body.modelCode.trim().slice(0, 40) : "";
+    if (manualCode && (await prisma.product.findUnique({ where: { modelCode: manualCode }, select: { id: true } }))) {
+      return NextResponse.json({ error: `"${manualCode}" model kodu başka bir üründe kullanılıyor.` }, { status: 409 });
     }
+    const uploadIds = uploadedIdsOf(images.value, ...variations.value.map((v) => v.images));
 
-    const newProduct = await prisma.product.create({
-      data: {
-        title,
-        description,
-        category,
-        basePrice: parseFloat(basePrice) || 0,
-        imageUrl: imageUrl || null,
-        modelCode,
-        variations: {
-          create: [
-            {
-              variationType: variationType || "Seçenek",
-              variationValue: variationValue || "Standart",
-              extraPrice: 0,
-              stock: parseInt(stock) || 10,
+    // Otomatik model kodu: aynı anda iki ürün eklenirse unique çakışması olur; çakışmada kodu yeniden hesaplayıp tekrar dener
+    for (let attempt = 0; attempt < 5; attempt++) {
+      let modelCode = manualCode;
+      if (!modelCode) {
+        const codes = await prisma.product.findMany({ where: { modelCode: { not: null } }, select: { modelCode: true } });
+        modelCode = String(codes.reduce((m: number, c: { modelCode: string | null }) => Math.max(m, Number(c.modelCode) || 0), 0) + 1);
+      }
+      try {
+        const created = await prisma.$transaction(async (tx) => {
+          const product = await tx.product.create({
+            data: {
+              title,
+              description,
+              category,
+              basePrice,
+              imageUrl: images.value[0] ?? null,
+              images: images.value,
+              modelCode,
+              variations: {
+                create: variations.value.map((v, i) => ({ variationType: "Renk", variationValue: v.name, extraPrice: v.extraPrice, stock: v.stock, images: v.images, position: i })),
+              },
             },
-          ],
-        },
-      },
-    });
-
-    return NextResponse.json({ success: true, product: newProduct });
+          });
+          if (!(await attachUploads(tx, product.id, uploadIds))) throw new UploadMissing();
+          return product;
+        });
+        return NextResponse.json({ success: true, product: created });
+      } catch (e) {
+        if (e instanceof UploadMissing) return NextResponse.json({ error: "Yüklenen fotoğraflardan biri bulunamadı veya süresi doldu. Lütfen fotoğrafları yeniden ekleyin." }, { status: 400 });
+        if (isUniqueError(e)) {
+          if (manualCode) return NextResponse.json({ error: `"${manualCode}" model kodu başka bir üründe kullanılıyor.` }, { status: 409 });
+          continue;
+        }
+        throw e;
+      }
+    }
+    return NextResponse.json({ error: "Model kodu üretilemedi, lütfen tekrar deneyin." }, { status: 409 });
   } catch (error) {
     return serverError("admin/product", error);
   }
 }
+
+class UploadMissing extends Error {}
 
 // 2. Stok Adedini Güncelleme (PATCH)
 async function PATCHHandler(req: Request) {
@@ -72,13 +103,12 @@ async function PATCHHandler(req: Request) {
       if (typeof body.isFeatured === "boolean") data.isFeatured = body.isFeatured;
       if (typeof body.isBestSeller === "boolean") data.isBestSeller = body.isBestSeller;
       if (Array.isArray(body.images)) {
-        const images: string[] = body.images
-          .filter((u: unknown): u is string => typeof u === "string")
-          .map((u: string) => u.trim())
-          .filter((u: string) => /^(https?:\/\/|\/)/.test(u))
-          .slice(0, 20);
-        data.images = images;
-        data.imageUrl = images[0] ?? null;
+        // Trendyol'dan gelen ürünlerde 10'dan çok görsel olabilir (eski üst sınır 20); yüklenen görseller en fazla 10
+        const parsed = parseImageUrls(body.images, 20, "Ürün fotoğrafları");
+        if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: 400 });
+        if (uploadedIdsOf(parsed.value).length > MAX_PRODUCT_IMAGES) return NextResponse.json({ error: `Yüklenen ürün fotoğrafı en fazla ${MAX_PRODUCT_IMAGES} olabilir.` }, { status: 400 });
+        data.images = parsed.value;
+        data.imageUrl = parsed.value[0] ?? null;
       }
       if ("modelCode" in body) {
         const modelCode = typeof body.modelCode === "string" ? body.modelCode.trim().slice(0, 40) : "";
@@ -91,7 +121,18 @@ async function PATCHHandler(req: Request) {
         data.modelCode = modelCode || null;
       }
       const before = await snapshotProducts([body.productId]);
-      const product = await prisma.product.update({ where: { id: body.productId }, data });
+      const product = await prisma.$transaction(async (tx) => {
+        const updated = await tx.product.update({ where: { id: body.productId }, data });
+        if (data.images) {
+          if (!(await attachUploads(tx, body.productId, uploadedIdsOf(data.images)))) throw new UploadMissing();
+          await pruneUploads(tx, body.productId);
+        }
+        return updated;
+      }).catch((e) => {
+        if (e instanceof UploadMissing) return null;
+        throw e;
+      });
+      if (!product) return NextResponse.json({ error: "Yüklenen fotoğraflardan biri bulunamadı veya başka bir ürüne ait." }, { status: 400 });
       return NextResponse.json({ success: true, product, snapshot: await buildUndoToken(before) });
     }
 

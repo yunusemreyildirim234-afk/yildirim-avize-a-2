@@ -19,7 +19,7 @@ const getBatch = unstable_cache(
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       select: {
         id: true, title: true, description: true, category: true, basePrice: true, listPrice: true, imageUrl: true, images: true, brand: true,
-        variations: { select: { extraPrice: true, stock: true, barcode: true }, orderBy: { id: "asc" } },
+        variations: { select: { extraPrice: true, stock: true, barcode: true, images: true }, orderBy: [{ position: "asc" }, { id: "asc" }] },
       },
     });
     return {

@@ -2,12 +2,16 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import ImagePicker from "@/components/ImagePicker";
+import { itemsFromUrls, newKey, uploadFile, type PickerItem } from "@/lib/client-upload";
+import { MAX_VARIATION_IMAGES } from "@/lib/variation-input";
 
 export interface EditorVariation {
   id: string;
   variationValue: string;
   extraPrice: number;
   stock: number;
+  images?: string[];
 }
 
 export interface EditorProduct {
@@ -39,7 +43,7 @@ export default function AdminProductEditor({ product, onSaved }: { product: Edit
   const [title, setTitle] = useState(product.title);
   const [basePrice, setBasePrice] = useState(String(product.basePrice));
   const [modelCode, setModelCode] = useState(product.modelCode ?? "");
-  const [images, setImages] = useState<string[]>(product.images?.length ? product.images : product.imageUrl ? [product.imageUrl] : []);
+  const [images, setImages] = useState<PickerItem[]>(itemsFromUrls(product.images?.length ? product.images : product.imageUrl ? [product.imageUrl] : []));
   const [newImage, setNewImage] = useState("");
   const [isFeatured, setIsFeatured] = useState(Boolean(product.isFeatured));
   const [isBestSeller, setIsBestSeller] = useState(Boolean(product.isBestSeller));
@@ -47,6 +51,8 @@ export default function AdminProductEditor({ product, onSaved }: { product: Edit
   const [varEdits, setVarEdits] = useState<Record<string, { stock: string; extraPrice: string }>>(
     Object.fromEntries(product.variations.map((v) => [v.id, { stock: String(v.stock), extraPrice: String(v.extraPrice) }]))
   );
+  const [varImages, setVarImages] = useState<Record<string, PickerItem[]>>(Object.fromEntries(product.variations.map((v) => [v.id, itemsFromUrls(v.images ?? [])])));
+  const [newColorImages, setNewColorImages] = useState<PickerItem[]>([]);
   const [colorName, setColorName] = useState("");
   const [colorStock, setColorStock] = useState("10");
   const [colorExtra, setColorExtra] = useState("0");
@@ -66,7 +72,7 @@ export default function AdminProductEditor({ product, onSaved }: { product: Edit
 
   const saveInfo = () =>
     run(async () => {
-      const data = await api("PATCH", "/api/admin/product", { productId: product.id, title, basePrice: Number(basePrice), modelCode, images, isFeatured, isBestSeller });
+      const data = await api("PATCH", "/api/admin/product", { productId: product.id, title, basePrice: Number(basePrice), modelCode, images: images.map((i) => i.src), isFeatured, isBestSeller });
       onSaved?.(data.snapshot);
     }, "✓ Ürün bilgileri kaydedildi. Alttaki çubuktan geri alabilirsiniz.");
 
@@ -93,17 +99,37 @@ export default function AdminProductEditor({ product, onSaved }: { product: Edit
         variationValue: colorName,
         stock: Number(colorStock),
         extraPrice: Number(colorExtra),
+        images: newColorImages.map((i) => i.src),
       })
     );
     setColorName("");
+    setNewColorImages([]);
   };
 
   const addImage = () => {
     const url = newImage.trim();
-    if (!/^(https?:\/\/|\/)/.test(url)) return alert("Geçerli bir görsel URL'si girin (https://...).");
-    setImages((list) => [...list, url]);
+    if (!/^(https:\/\/|\/(?!\/))/.test(url)) return alert("Geçerli bir görsel URL'si girin (https://...).");
+    setImages((list) => (list.length >= 20 ? list : [...list, { key: newKey(), src: url }]));
     setNewImage("");
   };
+
+  // Seçilen dosyalar hemen tek tek yüklenir; yüklenen adres listeye eklenir (kaydedilmezse 24 saat sonra silinir)
+  const uploadInto = (set: (fn: (l: PickerItem[]) => PickerItem[]) => void, max: number) => async (files: File[]) => {
+    setBusy(true);
+    try {
+      for (const f of files) {
+        const src = await uploadFile(f);
+        set((l) => (l.length >= max ? l : [...l, { key: newKey(), src }]));
+      }
+    } catch (err) {
+      alert((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const saveVariationImages = (v: EditorVariation) =>
+    run(() => api("PATCH", "/api/admin/product/variation", { variationId: v.id, images: (varImages[v.id] ?? []).map((i) => i.src) }), "✓ Renk fotoğrafları kaydedildi.");
 
   return (
     <div className="bg-neutral-50 border-t border-neutral-100 p-5 space-y-6 text-xs">
@@ -139,28 +165,7 @@ export default function AdminProductEditor({ product, onSaved }: { product: Edit
       {/* Görseller */}
       <section className="space-y-2">
         <h4 className="font-semibold text-neutral-700">Fotoğraflar (ilk görsel ana görsel olur)</h4>
-        {images.length === 0 && <p className="text-neutral-400">Görsel yok.</p>}
-        <ul className="space-y-2">
-          {images.map((url, i) => (
-            <li key={i} className="flex items-center gap-2">
-              <img src={url} alt="" width={48} height={48} loading="lazy" decoding="async" className="w-12 h-12 rounded-lg object-cover border border-neutral-200 bg-white shrink-0" />
-              <input
-                aria-label={`Görsel ${i + 1} adresi`}
-                value={url}
-                onChange={(e) => setImages((list) => list.map((u, j) => (j === i ? e.target.value : u)))}
-                className={`${field} flex-1 min-w-0`}
-              />
-              {i > 0 && (
-                <button type="button" onClick={() => setImages((list) => [url, ...list.filter((_, j) => j !== i)])} className="text-amber-700 font-semibold shrink-0">
-                  Ana yap
-                </button>
-              )}
-              <button type="button" onClick={() => setImages((list) => list.filter((_, j) => j !== i))} className="text-red-600 font-semibold shrink-0">
-                Sil
-              </button>
-            </li>
-          ))}
-        </ul>
+        <ImagePicker label="Ürün fotoğrafı" items={images} max={20} disabled={busy} onAddFiles={uploadInto(setImages, 20)} onChange={setImages} />
         <div className="flex gap-2">
           <input
             aria-label="Yeni görsel URL"
@@ -219,6 +224,20 @@ export default function AdminProductEditor({ product, onSaved }: { product: Edit
               <button type="button" disabled={busy} onClick={() => deleteVariation(v)} className="font-semibold text-red-600 hover:underline">
                 Sil
               </button>
+              <div className="basis-full space-y-1.5 pl-1">
+                <span className="text-neutral-500">Bu renge özel fotoğraflar (en fazla {MAX_VARIATION_IMAGES})</span>
+                <ImagePicker
+                  label={`${v.variationValue} fotoğrafı`}
+                  items={varImages[v.id] ?? []}
+                  max={MAX_VARIATION_IMAGES}
+                  disabled={busy}
+                  onAddFiles={uploadInto((fn) => setVarImages((m) => ({ ...m, [v.id]: fn(m[v.id] ?? []) })), MAX_VARIATION_IMAGES)}
+                  onChange={(next) => setVarImages((m) => ({ ...m, [v.id]: next }))}
+                />
+                <button type="button" disabled={busy} onClick={() => saveVariationImages(v)} className="font-semibold text-emerald-700 hover:underline">
+                  Fotoğrafları Kaydet
+                </button>
+              </div>
             </li>
           ))}
         </ul>
@@ -230,6 +249,9 @@ export default function AdminProductEditor({ product, onSaved }: { product: Edit
           <button type="submit" disabled={busy} className="bg-white border border-neutral-300 hover:border-amber-600 font-semibold px-3 py-2 rounded-lg">
             Renk Ekle
           </button>
+          <div className="basis-full">
+            <ImagePicker label="Yeni renk fotoğrafı" items={newColorImages} max={MAX_VARIATION_IMAGES} disabled={busy} onAddFiles={uploadInto(setNewColorImages, MAX_VARIATION_IMAGES)} onChange={setNewColorImages} />
+          </div>
         </form>
       </section>
     </div>

@@ -26,7 +26,7 @@ export async function GET(req: Request) {
       couponAllowed: true,
       pickupDiscountPct: true,
       transferDiscountPct: true,
-      variations: { select: { id: true, variationValue: true, extraPrice: true, stock: true }, orderBy: { id: "asc" } },
+      variations: { select: { id: true, variationValue: true, extraPrice: true, stock: true, images: true }, orderBy: [{ position: "asc" }, { id: "asc" }] },
     },
   });
   const ctx = await getLadderContext();

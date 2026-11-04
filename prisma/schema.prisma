@@ -53,6 +53,7 @@ model Product {
   trendyolUrl      String?
   syncSnapshot     Json? // Trendyol içe aktarma: son uygulanan Trendyol değerleri (elle değişiklik tespiti)
   lastSyncedAt     DateTime?
+  uploadedImages   ProductImage[]
   variations       ProductVariation[]
   reviews          Review[]
   favorites        Favorite[]
@@ -61,6 +62,20 @@ model Product {
   updatedAt        DateTime           @updatedAt
 
   @@index([active, category])
+}
+
+// Yöneticinin yüklediği ürün/renk fotoğrafı (/api/product-images/{id}); productId boşsa henüz bir ürüne bağlanmamıştır (24 saat sonra silinir)
+model ProductImage {
+  id        String   @id @default(uuid())
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
+  mime      String
+  size      Int
+  data      Bytes
+  createdAt DateTime @default(now())
+
+  @@index([productId])
+  @@index([createdAt])
 }
 
 // Avize Varyasyonları (Örn: Duy Sayısı, Renk/Kaplama)
@@ -78,6 +93,8 @@ model ProductVariation {
   listPrice      Float?
   syncSnapshot   Json? // Trendyol içe aktarma: son uygulanan değerler
   syncStock      Int? // Trendyol'un son bildirdiği miktar (site satışlarını/elle düzeltmeyi korumak için)
+  images         String[]    @default([]) // Renge özel fotoğraflar (elle girilir; Trendyol eşitlemesi yazmaz/silmez)
+  position       Int         @default(0) // Gösterim/varsayılan seçim sırası (eşitlikte id)
   orderItems     OrderItem[]
   cartItems      CartItem[]
 }
