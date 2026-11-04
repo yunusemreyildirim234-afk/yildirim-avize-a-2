@@ -42,7 +42,7 @@ export default async function ProductCard({
       variationValue: v.variationValue,
       extraPrice: v.extraPrice,
       stock: v.stock,
-      images: v.images.slice(0, 1),
+      images: (v.images ?? []).slice(0, 1), // eski önbellek kayıtlarında alan olmayabilir
     })),
   };
 
