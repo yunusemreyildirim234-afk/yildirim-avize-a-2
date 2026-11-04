@@ -37,6 +37,34 @@ const LABELS: Record<SectionKey, { title: string; hint: string }> = {
 const THEME_LABELS: Record<PromoTheme, string> = { kirmizi: "Kırmızı", turuncu: "Turuncu", sari: "Sarı", yesil: "Yeşil", mavi: "Mavi", mor: "Mor" };
 const KIND_LABELS: Record<PromoCard["kind"], string> = { COUPON: "Kupon", TEXT: "Serbest metin", SHIPPING: "Ücretsiz kargo (otomatik)", PICKUP: "Mağazadan teslim (otomatik)" };
 
+/** Açılır alt bölüm: varsayılan kapalı, başlıkta tek satırlık özet. İçerik sökülmez (grid-rows + inert), böylece alan durumu ve odak mantığı bozulmaz. */
+function Sub({ id, title, summary, children }: { id: string; title: string; summary: string; children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <section aria-labelledby={`${id}-h`} className="rounded-xl border border-neutral-200 bg-white">
+      <button
+        type="button"
+        id={`${id}-h`}
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-controls={`${id}-panel`}
+        className="w-full min-h-[52px] px-4 py-3 flex items-center justify-between gap-3 text-left rounded-xl hover:bg-neutral-50/60 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-600"
+      >
+        <span className="min-w-0">
+          <span className="block font-bold text-neutral-900 text-sm">{title}</span>
+          <span className="block text-xs text-neutral-500 truncate">{summary}</span>
+        </span>
+        <ChevronDown aria-hidden="true" className={`w-5 h-5 text-neutral-500 shrink-0 transition-transform duration-300 ${open ? "rotate-180" : ""}`} />
+      </button>
+      <div id={`${id}-panel`} className={`grid transition-[grid-template-rows] duration-300 ease-out ${open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
+        <div className="overflow-hidden" inert={!open}>
+          <div className="border-t border-neutral-100 p-4 space-y-4">{children}</div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 const norm = (v?: string | null) => (v ?? "").toLocaleLowerCase("tr").trim();
 
 interface SectionState {
@@ -192,9 +220,8 @@ export default function AdminHomepage({ initial, pools, promoCards, collectionOp
             const n = countOk(k) ? Number(st.count) : DEFAULT_COUNTS[k];
             const preview = composeSection(pools[k], { count: n, pinnedIds: st.pinned, saved: true }).shown;
             return (
-              <section key={k} aria-labelledby={`hp-${k}`} className="space-y-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <h3 id={`hp-${k}`} className="font-bold text-neutral-900 text-sm">{LABELS[k].title}</h3>
+              <Sub key={k} id={`hp-${k}`} title={LABELS[k].title} summary={`ilk ${n} ürün${st.pinned.length ? `, ${st.pinned.length} sabit` : ""}`}>
+                <div className="flex justify-end">
                   <button type="button" onClick={() => resetSection(k)} className="text-xs font-semibold text-amber-800 hover:underline">
                     Varsayılana dön
                   </button>
@@ -292,13 +319,12 @@ export default function AdminHomepage({ initial, pools, promoCards, collectionOp
                     </ol>
                   )}
                 </div>
-              </section>
+              </Sub>
             );
           })}
 
-          <section aria-labelledby="hp-collections" className="space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h3 id="hp-collections" className="font-bold text-neutral-900 text-sm">Aydınlatma Koleksiyonları (kategori satırı)</h3>
+          <Sub id="hp-collections" title="Aydınlatma Koleksiyonları (kategori satırı)" summary={`${colSel.length} kategori${colCustom ? "" : " (varsayılan)"}`}>
+            <div className="flex justify-end">
               <button type="button" onClick={resetCollections} className="text-xs font-semibold text-amber-800 hover:underline">
                 Varsayılana dön
               </button>
@@ -331,11 +357,10 @@ export default function AdminHomepage({ initial, pools, promoCards, collectionOp
                 </label>
               ))}
             </fieldset>
-          </section>
+          </Sub>
 
-          <section aria-labelledby="hp-promo" className="space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h3 id="hp-promo" className="font-bold text-neutral-900 text-sm">Avantaj kartları (ana sayfada Hero altı)</h3>
+          <Sub id="hp-promo" title="Avantaj kartları (ana sayfada Hero altı)" summary={`${cards.length} kart${cards.some((c) => !c.active) ? `, ${cards.filter((c) => !c.active).length} pasif` : ""}`}>
+            <div className="flex justify-end">
               <button type="button" onClick={resetCards} className="text-xs font-semibold text-amber-800 hover:underline">
                 Varsayılan kartlara dön
               </button>
@@ -419,7 +444,7 @@ export default function AdminHomepage({ initial, pools, promoCards, collectionOp
                 <Plus aria-hidden="true" className="w-3.5 h-3.5" /> Metin kartı ekle
               </button>
             </div>
-          </section>
+          </Sub>
 
           <div className="flex items-center gap-3">
             <button type="button" onClick={save} disabled={saving} className="bg-neutral-900 hover:bg-amber-600 disabled:opacity-60 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors">
