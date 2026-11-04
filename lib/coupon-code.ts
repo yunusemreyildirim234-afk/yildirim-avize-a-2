@@ -38,6 +38,9 @@ export const couponNotAllowedNote = (code: string | null | undefined) => (code ?
 /** Sepet kutusu yer tutucusu */
 export const couponPlaceholder = (code: string | null | undefined) => (code ? `Promosyon kodu (${code})` : "Promosyon kodu");
 
+/** Kod yok/pasif/süresi dolmuş/yeniden adlandırılmış için tek genel hata (sızıntı önlemek için ayrım yapılmaz). */
+export const COUPON_GENERIC_ERROR = "Geçersiz veya süresi dolmuş kupon kodu.";
+
 /** Sepette saklanan kod artık geçerli değilse (silindi/yeniden adlandırıldı/pasif) gösterilen net mesaj. */
 export const staleCouponMessage = (code: string) => `"${code}" kodu artık geçerli değil; sepetinizden kaldırıldı. Güncel kodu girebilir veya kuponsuz devam edebilirsiniz.`;
 

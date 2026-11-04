@@ -1,9 +1,10 @@
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { isExpired } from "@/lib/coupon-expiry";
+import { COUPON_GENERIC_ERROR } from "@/lib/coupon-code";
 import { DEFAULT_COUPON_CODE, type CouponRule, type PriceLine } from "@/lib/pricing";
 
-export const COUPON_GENERIC_ERROR = "Geçersiz veya süresi dolmuş kupon kodu.";
+export { COUPON_GENERIC_ERROR };
 export const COUPON_PRODUCT_ERROR = "Bu kupon yalnızca belirli bir üründe geçerlidir; ürün sepetinizde bulunmuyor.";
 /** Kupon denemesi sınırı: IP başına 10 dakikada en fazla 10 BAŞARISIZ doğrulama */
 export const COUPON_FAIL_LIMIT = { name: "coupon-fail", max: 10, windowMs: 10 * 60_000 };
@@ -11,8 +12,10 @@ export const COUPON_LIMITED_ERROR = "Çok fazla deneme, lütfen sonra tekrar den
 
 export type CouponResult = { ok: true; rule: CouponRule; couponId: string } | { ok: false; error: string };
 
-/** Varsayılan genel kod yoksa oluşturur (%5, herkese açık, yüksek limit). */
+/** Varsayılan genel kod yoksa oluşturur (%5, herkese açık, yüksek limit). Vitrin kuponu yeniden adlandırıldıysa (bağ kayıtlıysa) eski kodu yeniden OLUŞTURMAZ. */
 export async function ensureDefaultCoupon() {
+  const cfg = await prisma.siteConfig.findUnique({ where: { id: 1 }, select: { showcaseCouponId: true } }).catch(() => null);
+  if (cfg?.showcaseCouponId) return;
   await prisma.coupon.upsert({
     where: { code: DEFAULT_COUPON_CODE },
     update: {},

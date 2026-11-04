@@ -44,8 +44,9 @@ export default function AdminCoupons({ coupons, customers, products }: Props) {
   const [minCart, setMinCart] = useState("");
   const [perUserOnce, setPerUserOnce] = useState(false);
   const [expires, setExpires] = useState(""); // YYYY-MM-DD, boş = süresiz
-  // Düzenleme paneli (kod değişmez; yalnızca yeni siparişleri etkiler)
+  // Düzenleme paneli (yalnızca yeni siparişleri etkiler; kod adı da değiştirilebilir)
   const [editId, setEditId] = useState<string | null>(null);
+  const [eCode, setECode] = useState("");
   const [eType, setEType] = useState<"PERCENT" | "FIXED">("PERCENT");
   const [eValue, setEValue] = useState("");
   const [eMin, setEMin] = useState("");
@@ -391,6 +392,7 @@ export default function AdminCoupons({ coupons, customers, products }: Props) {
                           disabled={busy}
                           onClick={() => {
                             setEditId(editId === c.id ? null : c.id);
+                            setECode(c.code);
                             setEType(c.discountType === "FIXED" ? "FIXED" : "PERCENT");
                             setEValue(String(c.discountType === "FIXED" ? c.discountAmount ?? "" : c.discountPercent));
                             setEMin(c.minCartTotal ? String(c.minCartTotal) : "");
@@ -421,6 +423,7 @@ export default function AdminCoupons({ coupons, customers, products }: Props) {
                               if (!pastOk(eExpires)) return;
                               const ok = await call("PATCH", {
                                 id: c.id,
+                                code: eCode,
                                 discountType: eType,
                                 discountPercent: eType === "PERCENT" ? Number(eValue) : undefined,
                                 discountAmount: eType === "FIXED" ? Number(eValue) : undefined,
@@ -431,6 +434,10 @@ export default function AdminCoupons({ coupons, customers, products }: Props) {
                               if (ok) setEditId(null);
                             }}
                           >
+                            <div>
+                              <label className="font-semibold text-neutral-700 block mb-1">Kod Adı</label>
+                              <input required value={eCode} onChange={(e) => setECode(e.target.value)} maxLength={40} className={`${inputCls} font-mono uppercase`} />
+                            </div>
                             <div>
                               <label className="font-semibold text-neutral-700 block mb-1">Tür</label>
                               <select value={eType} onChange={(e) => setEType(e.target.value as "PERCENT" | "FIXED")} className={inputCls}>
@@ -464,7 +471,7 @@ export default function AdminCoupons({ coupons, customers, products }: Props) {
                             <button type="submit" disabled={busy} className="bg-neutral-900 hover:bg-amber-600 disabled:opacity-60 text-white font-semibold px-4 py-2.5 rounded-xl transition-colors">
                               Kaydet
                             </button>
-                            <p className="basis-full text-[10px] text-neutral-500">Kod değişmez. Mevcut siparişlerin tutarları değişmez; değişiklik yalnızca yeni siparişlerde geçerlidir.</p>
+                            <p className="basis-full text-[10px] text-neutral-500">Kod adı değişirse kullanım sayısı ve ayarlar korunur; kartlardaki, sepetteki ve ana sayfadaki kod metinleri yeni adı gösterir. Mevcut siparişlerin kodu ve tutarları değişmez; değişiklik yalnızca yeni siparişlerde geçerlidir.</p>
                           </form>
                         </td>
                       </tr>

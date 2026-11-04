@@ -6,6 +6,8 @@ import { prisma } from "@/lib/db";
 import { sendCampaignCouponEmail } from "@/lib/email";
 import { buildCampaignFooter, hasActiveConsent } from "@/lib/marketing";
 import { notifyCustomer } from "@/lib/notifications";
+import { COUPON_CODE_TAKEN_ERROR, couponCodeFormatError, isShowcaseCoupon, normalizeCouponCode, renamePromoCardCodes } from "@/lib/coupon-code";
+import type { Prisma } from "@/generated/prisma/client";
 
 const MAX_FIXED_AMOUNT = 100_000;
 const MAX_MIN_CART = 1_000_000;
@@ -52,19 +54,18 @@ async function POSTHandler(req: Request) {
   const denied = await adminGuard();
   if (denied) return denied;
   const body = await req.json().catch(() => ({}));
-  const code = typeof body.code === "string" ? body.code.trim().toUpperCase().replace(/\s+/g, "") : "";
+  const code = normalizeCouponCode(body.code);
   const maxUses = Math.floor(Number(body.maxUses));
   const userEmail = typeof body.userEmail === "string" && body.userEmail.trim() ? body.userEmail.trim().toLowerCase() : null;
   const productId = typeof body.productId === "string" && body.productId ? body.productId : null;
 
-  if (!/^[A-Z0-9_-]{3,32}$/.test(code)) {
-    return NextResponse.json({ error: "Kod 3-32 karakter olmalı (harf, rakam, - veya _)." }, { status: 400 });
-  }
+  const formatError = couponCodeFormatError(code);
+  if (formatError) return NextResponse.json({ error: formatError }, { status: 400 });
   const terms = parseTerms(body);
   if ("error" in terms) return NextResponse.json({ error: terms.error }, { status: 400 });
   const { discountPercent } = terms;
   if (!(maxUses >= 1)) return NextResponse.json({ error: "Kullanım limiti en az 1 olmalı." }, { status: 400 });
-  if (await prisma.coupon.findUnique({ where: { code } })) {
+  if (await prisma.coupon.findFirst({ where: { code: { equals: code, mode: "insensitive" } }, select: { id: true } })) {
     return NextResponse.json({ error: "Bu kod zaten mevcut." }, { status: 409 });
   }
   if (productId && !(await prisma.product.findUnique({ where: { id: productId }, select: { id: true } }))) {
@@ -98,11 +99,45 @@ async function PATCHHandler(req: Request) {
   const body = await req.json().catch(() => ({}));
   const { id, active } = body;
   if (typeof id !== "string") return NextResponse.json({ error: "Eksik parametre" }, { status: 400 });
-  // Kod değişmez; indirim türü/tutarı ve şartlar düzenlenir. Mevcut siparişler kendi kayıtlı tutarını korur (yalnızca yeni siparişler etkilenir).
+  // İndirim türü/tutarı, şartlar ve (isteğe bağlı) kod adı düzenlenir. Mevcut siparişler kendi kayıtlı tutarını ve kodunu korur (yalnızca yeni siparişler etkilenir).
   if (body.discountType !== undefined) {
     const terms = parseTerms(body);
     if ("error" in terms) return NextResponse.json({ error: terms.error }, { status: 400 });
-    await prisma.coupon.update({ where: { id }, data: terms });
+    const newCode = typeof body.code === "string" ? normalizeCouponCode(body.code) : null;
+    if (newCode !== null) {
+      const formatError = couponCodeFormatError(newCode);
+      if (formatError) return NextResponse.json({ error: formatError }, { status: 400 });
+    }
+    // Yeniden adlandırma + şartlar TEK transaction: kullanım sayısı (usedCount) ve diğer ayarlar korunur; vitrin bağı ve ana sayfa kartları aynı işlemde güncellenir
+    try {
+      const out = await prisma.$transaction(async (tx) => {
+        const cur = await tx.coupon.findUnique({ where: { id } });
+        if (!cur) return { status: 404, error: "Kod bulunamadı." };
+        const data: Prisma.CouponUpdateInput = { ...terms };
+        if (newCode && newCode !== cur.code) {
+          if (await tx.coupon.findFirst({ where: { id: { not: id }, code: { equals: newCode, mode: "insensitive" } }, select: { id: true } })) {
+            return { status: 409, error: COUPON_CODE_TAKEN_ERROR(newCode) };
+          }
+          // Siparişler kuponu kod metniyle saklar; kişi başı limit eski koda bağlı siparişlerle sayıldığı için bu durumda yeniden adlandırma engellenir
+          if (terms.perUserLimit && (await tx.order.count({ where: { couponCode: cur.code } })) > 0) {
+            return { status: 409, error: "Kişi başı limitli bu kodla daha önce sipariş verilmiş; limit sayımı bozulmaması için adı değiştirilemez. Yeni bir kod oluşturup bunu pasife alabilirsiniz." };
+          }
+          data.code = newCode;
+          const cfg = await tx.siteConfig.findUnique({ where: { id: 1 }, select: { showcaseCouponId: true, homepageConfig: true } });
+          if (isShowcaseCoupon(cur, cfg?.showcaseCouponId)) {
+            await tx.siteConfig.upsert({ where: { id: 1 }, update: { showcaseCouponId: id }, create: { id: 1, showcaseCouponId: id } });
+          }
+          const cards = renamePromoCardCodes(cfg?.homepageConfig, cur.code, newCode);
+          if (cards) await tx.siteConfig.update({ where: { id: 1 }, data: { homepageConfig: cards as Prisma.InputJsonValue } });
+        }
+        await tx.coupon.update({ where: { id }, data });
+        return { status: 200 as const };
+      });
+      if (out.status !== 200) return NextResponse.json({ error: out.error }, { status: out.status });
+    } catch (e) {
+      if ((e as { code?: string }).code === "P2002" && newCode) return NextResponse.json({ error: COUPON_CODE_TAKEN_ERROR(newCode) }, { status: 409 });
+      throw e;
+    }
     return NextResponse.json({ success: true });
   }
   if (typeof active !== "boolean") return NextResponse.json({ error: "Eksik parametre" }, { status: 400 });

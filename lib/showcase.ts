@@ -1,13 +1,26 @@
 import { cache } from "react";
 import { prisma } from "@/lib/db";
-import { SHOWCASE_COUPON_CODE } from "@/lib/site";
+import { LEGACY_SHOWCASE_CODE } from "@/lib/coupon-code";
 import { isExpired } from "@/lib/coupon-expiry";
 import type { CouponRule } from "@/lib/pricing";
 import type { LadderContext } from "@/lib/price-ladder";
 
+/**
+ * Vitrin kuponunun kaydı: SiteConfig.showcaseCouponId ile kimliğe bağlıdır (kod adı değişse de aynı kupon); bağ yoksa (veya kayıt/sütun okunamazsa)
+ * eski varsayılan koda (YILDIRIM5) düşer.
+ */
+async function findShowcaseCoupon() {
+  const cfg = await prisma.siteConfig.findUnique({ where: { id: 1 }, select: { showcaseCouponId: true } }).catch(() => null);
+  if (cfg?.showcaseCouponId) {
+    const bound = await prisma.coupon.findUnique({ where: { id: cfg.showcaseCouponId } });
+    if (bound) return bound;
+  }
+  return prisma.coupon.findUnique({ where: { code: LEGACY_SHOWCASE_CODE } });
+}
+
 /** Vitrin kuponu geçerliyse kuralı döner: aktif + süresi geçmemiş + limiti dolmamış + herkese açık + tüm ürünlerde geçerli. */
 export async function loadShowcaseCoupon(): Promise<CouponRule | null> {
-  const coupon = await prisma.coupon.findUnique({ where: { code: SHOWCASE_COUPON_CODE } });
+  const coupon = await findShowcaseCoupon();
   const usable = coupon && coupon.active && !isExpired(coupon.expiresAt) && coupon.usedCount < coupon.maxUses && !coupon.userEmail && !coupon.productId;
   if (!usable) return null;
   return {

@@ -210,6 +210,7 @@ model SiteConfig {
   maxTotalDiscountPct Float? // Toplam indirim üst sınırı % (boş: sınırsız)
   adminSessionVersion Int @default(0) // Artınca tüm eski yönetici oturum çerezleri geçersiz olur
   homepageConfig      Json? // Ana sayfa bölümleri: { featured|discounted|bestsellers: { count, pinnedIds[] } } (boş: varsayılan)
+  showcaseCouponId    String? // Kartlarda/sepette gösterilen vitrin kuponunun Coupon.id değeri (boş: eski varsayılan kod YILDIRIM5)
   updatedAt           DateTime @updatedAt
 }
 

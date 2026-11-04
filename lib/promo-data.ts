@@ -4,17 +4,17 @@ import { getHomepageRaw } from "@/lib/homepage";
 import { getLadderContext } from "@/lib/showcase";
 import { FREE_SHIPPING_THRESHOLD, PICKUP_DISCOUNT } from "@/lib/pricing";
 import { MAP_LINK } from "@/lib/site";
+import { defaultCardsWithCode } from "@/lib/coupon-code";
 import { buildPromoViews, couponCodesOf, resolvePromoCards, type CouponRow, type PromoView } from "@/lib/promo-cards";
 
 /** Ana sayfa avantaj kartları (istek başına bir kez). Kupon kayıtları tek sorguyla, üst sınır mevcut vitrin bağlamından gelir. Hata → kart yok (sayfa bozulmaz). */
 export const getPromoViews = cache(async (): Promise<PromoView[]> => {
   try {
-    const cards = resolvePromoCards(await getHomepageRaw());
+    const ctx = await getLadderContext();
+    // Kayıtlı kart yoksa varsayılan kupon kartı vitrin kuponunun güncel adını gösterir (kaydedilmiş kartlar yeniden adlandırmada güncellenir)
+    const cards = defaultCardsWithCode(resolvePromoCards(await getHomepageRaw()), ctx.coupon?.code);
     const codes = couponCodesOf(cards);
-    const [rows, ctx] = await Promise.all([
-      codes.length ? prisma.coupon.findMany({ where: { code: { in: codes } } }) : Promise.resolve([]),
-      getLadderContext(),
-    ]);
+    const rows = codes.length ? await prisma.coupon.findMany({ where: { code: { in: codes } } }) : [];
     const coupons: Record<string, CouponRow | undefined> = {};
     for (const r of rows) coupons[r.code.toUpperCase()] = r;
     return buildPromoViews(cards, {
