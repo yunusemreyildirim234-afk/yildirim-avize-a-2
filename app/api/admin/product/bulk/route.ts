@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { withStorefrontRevalidate } from "@/lib/revalidate";
+import { resolveCategoryForSave } from "@/lib/category-list";
 import { adminGuard } from "@/lib/admin-guard";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
@@ -49,7 +50,8 @@ async function planBulk(body: Record<string, unknown>, selected: string[]): Prom
       return { targets: planAddVariation(selected, vars, value).targets, markFirst: [] };
     }
     case "category": {
-      const category = typeof body.category === "string" ? body.category.trim().slice(0, 80) : "";
+      const categoryInput = typeof body.category === "string" ? body.category.trim().slice(0, 80) : "";
+      const category = categoryInput ? await resolveCategoryForSave(categoryInput) : "";
       if (!category) return all;
       return { targets: planCategory(selected, rows, category).targets, markFirst: [] };
     }
@@ -191,7 +193,8 @@ async function POSTHandler(req: Request) {
     }
 
     case "category": {
-      const category = typeof body.category === "string" ? body.category.trim().slice(0, 80) : "";
+      const categoryInput = typeof body.category === "string" ? body.category.trim().slice(0, 80) : "";
+      const category = categoryInput ? await resolveCategoryForSave(categoryInput) : "";
       if (!category) return NextResponse.json({ error: "Koleksiyon adı zorunludur." }, { status: 400 });
       await prisma.product.updateMany({ where: { id: { in: ids } }, data: { category } });
       return NextResponse.json({ snapshot: await done(), success: true, updated: ids.length, skipped });

@@ -1,6 +1,6 @@
 import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/db";
-import { buildCategoryList } from "@/lib/categories";
+import { buildCategoryList, resolveCategoryName } from "@/lib/categories";
 import { CATEGORIES } from "@/lib/site";
 
 /**
@@ -24,6 +24,28 @@ export const getCategoryList = unstable_cache(
 export async function getExtraCategoryLinks(): Promise<{ href: string; label: string }[]> {
   try {
     return (await getCategoryList()).filter((c) => !c.fixed).map((c) => ({ href: `/kategori/${c.slug}`, label: c.title }));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Yönetim panelinden gelen kategori adını kaydedilecek yazıma çevirir (taze okuma, önbelleksiz; pasif ürünler dahil):
+ * mevcut bir kategoriyle büyük/küçük harf-boşluk farkıyla çakışırsa mevcut yazım, yeniyse başlık biçimi. Boşsa "".
+ */
+export async function resolveCategoryForSave(input: string): Promise<string> {
+  const rows = await prisma.product.groupBy({ by: ["category"], _count: { _all: true } });
+  const list = buildCategoryList(
+    rows.map((r) => ({ category: r.category, count: r._count._all })),
+    CATEGORIES
+  );
+  return resolveCategoryName(input, list);
+}
+
+/** Yönetim formları için sonradan eklenen (sabit olmayan) kategori adları; hata olursa boş. */
+export async function getExtraCategoryNames(): Promise<string[]> {
+  try {
+    return (await getCategoryList()).filter((c) => !c.fixed).map((c) => c.title);
   } catch {
     return [];
   }

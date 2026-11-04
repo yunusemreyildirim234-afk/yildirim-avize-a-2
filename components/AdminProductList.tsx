@@ -9,7 +9,8 @@ import { addAll, chipLabel, nextLastId, removeAll, removeId, toggleId } from "@/
 import AdminProductEditor from "@/components/AdminProductEditor";
 import SmartFilterChips from "@/components/SmartFilterChips";
 import { bulkTiersOf, tierBadgeLabel, tierValueLabel } from "@/lib/bulk-pricing";
-import { COLLECTION_OPTIONS } from "@/lib/site";
+import { CATEGORIES } from "@/lib/site";
+import { buildCategoryList, productInCategory } from "@/lib/categories";
 
 interface Variation {
   id: string;
@@ -116,7 +117,7 @@ function DiscountBadges({ product, onRemove, disabled }: { product: Product; onR
 
 const norm = (v?: string | null) => (v ?? "").toLocaleLowerCase("tr").trim();
 
-export default function AdminProductList({ products, maxTotalDiscountPct, showcase }: { products: Product[]; maxTotalDiscountPct?: number | null; showcase: { featured: string[]; bestSellers: string[]; manualFeatured: number } }) {
+export default function AdminProductList({ products, maxTotalDiscountPct, showcase, extraCategories = [] }: { products: Product[]; maxTotalDiscountPct?: number | null; extraCategories?: string[]; showcase: { featured: string[]; bestSellers: string[]; manualFeatured: number } }) {
   const sets = useMemo<ChipSets>(() => ({ featured: new Set(showcase.featured), bestseller: new Set(showcase.bestSellers) }), [showcase]);
   const router = useRouter();
   const [loadingId, setLoadingId] = useState<string | null>(null);
@@ -130,6 +131,7 @@ export default function AdminProductList({ products, maxTotalDiscountPct, showca
   useEffect(() => () => { if (flashTimer.current) clearTimeout(flashTimer.current); }, []);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [chips, setChips] = useState<string[]>([]);
+  const [catChips, setCatChips] = useState<string[]>([]); // kategori çipleri (anahtar: categoryKey); diğer çiplerle KESİŞİR
   const PAGE = 8;
   const [shown, setShown] = useState(PAGE); // listede gösterilen ürün sayısı (8'er artar)
   // Son işlem öncesi durum (Geri Al)
@@ -202,7 +204,11 @@ Yine de geri alınsın mı?`)) await doUndo(true);
 
   // Ürün adı, stok kodu, barkod veya Trendyol ana kodu ile anlık filtre
   const q = norm(query);
-  const chipFiltered = chips.length ? products.filter((p) => chips.some((c) => chipTest(c, p, sets))) : products;
+  const chipFiltered0 = chips.length ? products.filter((p) => chips.some((c) => chipTest(c, p, sets))) : products;
+  // Kategori çipleri: seçili kategorilerden biri (büyük/küçük harf ve boşluk varyantları dahil) VE yukarıdaki vitrin çipleri
+  const catEntries = useMemo(() => buildCategoryList(products.map((p) => ({ category: p.category, count: 1 })), CATEGORIES), [products]);
+  const selectedCats = catEntries.filter((c) => catChips.includes(c.key));
+  const chipFiltered = selectedCats.length ? chipFiltered0.filter((p) => selectedCats.some((c) => productInCategory(p.category, c))) : chipFiltered0;
   const filtered = q
     ? chipFiltered.filter(
         (p) =>
@@ -212,13 +218,6 @@ Yine de geri alınsın mı?`)) await doUndo(true);
           p.variations.some((v) => norm(v.stockCode).includes(q) || norm(v.barcode).includes(q))
       )
     : chipFiltered;
-
-  const defaultCollections: string[] = COLLECTION_OPTIONS.map((c) => c.value);
-  const extraCategories = useMemo(
-    () => [...new Set(products.map((p) => p.category))].filter((c) => c && !defaultCollections.includes(c)).sort(),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [products]
-  );
 
   const allFilteredSelected = filtered.length > 0 && filtered.every((p) => selected.has(p.id));
   const toggleOne = (id: string) => {
@@ -376,6 +375,16 @@ Yine de geri alınsın mı?`)) await doUndo(true);
               { key: "bestseller", label: "Çok Satanlar", count: products.filter((p) => chipTest("bestseller", p, sets)).length },
             ]}
           />
+          <div className="mt-2">
+            <SmartFilterChips
+              label="Ürün kategori filtreleri"
+              selected={catChips}
+              onChange={(c) => { setCatChips(c); setShown(PAGE); }}
+              total={products.length}
+              allLabel="Tüm kategoriler"
+              options={catEntries.filter((c) => c.count > 0).map((c) => ({ key: c.key, label: c.title, count: c.count }))}
+            />
+          </div>
           {/* Öne Çıkanlar modu: elle işaret varsa site yalnızca onları gösterir; yoksa otomatik seçim */}
           <p className="mt-2 text-[11px] text-neutral-600 flex flex-wrap items-center gap-x-3 gap-y-1">
             {showcase.manualFeatured > 0 ? (
@@ -390,7 +399,7 @@ Yine de geri alınsın mı?`)) await doUndo(true);
             )}
           </p>
         </div>
-        {(q || chips.length > 0) && (
+        {(q || chips.length > 0 || catChips.length > 0) && (
           <p className="text-[11px] text-neutral-500 mt-2">
             {filtered.length} / {products.length} model gösteriliyor
           </p>

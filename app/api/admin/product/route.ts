@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { withStorefrontRevalidate } from "@/lib/revalidate";
+import { resolveCategoryForSave } from "@/lib/category-list";
 import { serverError } from "@/lib/api-error";
 import { adminGuard } from "@/lib/admin-guard";
 import { prisma } from "@/lib/db";
@@ -19,7 +20,8 @@ async function POSTHandler(req: Request) {
 
     const title = typeof body.title === "string" ? body.title.trim().slice(0, 300) : "";
     if (!title) return NextResponse.json({ error: "Avize adı boş olamaz." }, { status: 400 });
-    const category = typeof body.category === "string" ? body.category.trim().slice(0, 60) : "";
+    const categoryInput = typeof body.category === "string" ? body.category.trim().slice(0, 60) : "";
+    const category = categoryInput ? await resolveCategoryForSave(categoryInput) : ""; // mevcut kategoriyle harf farkı varsa mevcut yazım; yeniyse başlık biçimi
     if (!category) return NextResponse.json({ error: "Kategori seçiniz." }, { status: 400 });
     const basePrice = Number(body.basePrice);
     if (!Number.isFinite(basePrice) || basePrice <= 0 || basePrice > 10_000_000) return NextResponse.json({ error: "Geçerli bir satış fiyatı giriniz." }, { status: 400 });

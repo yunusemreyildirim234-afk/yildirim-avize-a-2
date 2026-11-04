@@ -1,5 +1,6 @@
 import { reservationExpiresAt } from "@/lib/stock-rules";
 import { istanbulDateTimeParts } from "@/lib/format-date";
+import { getExtraCategoryNames } from "@/lib/category-list";
 import { cleanGuestEmail } from "@/lib/guest-email";
 import { maskEmail } from "@/lib/admin-password";
 import AdminPayoutCard from "@/components/AdminPayoutCard";
@@ -95,6 +96,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const durumParam = (await searchParams).durum;
   const selectedGroups = parseGroupParam(durumParam);
   const { orders, products, messages, coupons, customers, reviews, company } = await getAdminData();
+  const extraCategories = await getExtraCategoryNames(); // yönetim panelinden eklenen kategoriler (form/toplu işlem seçenekleri)
   // Vitrin çipleri için sitedeki kümeler: Öne Çıkanlar = işaretliler (yoksa otomatik seçim), Çok Satanlar = kategori sayfasındaki liste
   const flaggedFeatured = await prisma.product.findMany({ where: { active: true, isFeatured: true }, select: { id: true } });
   const featuredIds = flaggedFeatured.length > 0 ? flaggedFeatured : await prisma.product.findMany({ where: { active: true, ...FEATURED }, select: { id: true } });
@@ -228,7 +230,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         </div>
 
         {/* 2. Hızlı Avize Ekleme Modülü */}
-        <AdminAddProduct />
+        <AdminAddProduct extraCategories={extraCategories} />
 
         <AdminDiscountSettings initial={discountCap} />
         <AdminSessions />
@@ -269,7 +271,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         />
 
         {/* 3. Canlı Avize Kataloğu & Stok Yönetimi */}
-        <AdminProductList products={products} maxTotalDiscountPct={discountCap} showcase={showcase} />
+        <AdminProductList products={products} maxTotalDiscountPct={discountCap} showcase={showcase} extraCategories={extraCategories} />
 
         {/* 4. Canlı Siparişler & Kargonomi Operasyon Tablosu */}
         <AdminSection

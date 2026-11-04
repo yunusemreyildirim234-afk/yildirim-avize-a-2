@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import ImagePicker from "@/components/ImagePicker";
 import { discardUploaded, itemsFromFiles, releaseItem, uploadFile, type PickerItem } from "@/lib/client-upload";
 import { MAX_PRODUCT_IMAGES, MAX_VARIATIONS, MAX_VARIATION_IMAGES } from "@/lib/variation-input";
+import { COLLECTION_OPTIONS } from "@/lib/site";
+
+const NEW_CATEGORY = "__new__";
 
 interface ColorRow {
   key: number;
@@ -16,13 +19,14 @@ interface ColorRow {
 const firstRow = (): ColorRow => ({ key: 1, name: "Parlak Gold", stock: "10", extraPrice: "0", items: [] });
 const field = "w-full p-2.5 rounded-lg border border-neutral-300 focus:outline-none focus:border-amber-600 focus-visible:ring-2 focus-visible:ring-amber-600/30";
 
-export default function AdminAddProduct() {
+export default function AdminAddProduct({ extraCategories = [] }: { extraCategories?: string[] }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("Kristal");
+  const [newCategory, setNewCategory] = useState("");
   const [basePrice, setBasePrice] = useState("");
   const [description, setDescription] = useState("");
   const [modelCode, setModelCode] = useState("");
@@ -50,6 +54,7 @@ export default function AdminAddProduct() {
     rows.forEach((r) => r.items.forEach(releaseItem));
     setTitle("");
     setBasePrice("");
+    setNewCategory("");
     setModelCode("");
     setDescription("");
     setPhotos([]);
@@ -78,11 +83,13 @@ export default function AdminAddProduct() {
         for (const it of r.items) rowImages.push(await urlOf(it, `${r.name.trim() || "Renk"} fotoğrafı`));
         variations.push({ name: r.name, stock: r.stock, extraPrice: r.extraPrice, images: rowImages });
       }
+      const categoryValue = category === NEW_CATEGORY ? newCategory.trim() : category;
+      if (!categoryValue) throw new Error("Yeni kategori adını yazın.");
       setStatus("Ürün kaydediliyor...");
       const res = await fetch("/api/admin/product", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, category, basePrice, description, modelCode, images, variations }),
+        body: JSON.stringify({ title, category: categoryValue, basePrice, description, modelCode, images, variations }),
       });
       const data = await res.json().catch(() => ({}));
       if (data.success) {
@@ -133,12 +140,32 @@ export default function AdminAddProduct() {
           <div>
             <label className="font-semibold text-neutral-700 block mb-1">Kategori</label>
             <select value={category} onChange={(e) => setCategory(e.target.value)} className={`${field} bg-white`}>
-              <option value="Kristal">Kristal</option>
-              <option value="Modern">Modern</option>
-              <option value="Klasik">Klasik</option>
-              <option value="Sarkıt">Sarkıt & Aplik</option>
-              <option value="Aksesuar">Aksesuar & Yedek Parça</option>
+              {/* Sabit kategoriler (veritabanı değerleri aynen) + yönetim panelinden eklenenler */}
+              {COLLECTION_OPTIONS.map((c) => (
+                <option key={c.value} value={c.value}>
+                  {c.label}
+                </option>
+              ))}
+              {extraCategories.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+              <option value={NEW_CATEGORY}>Yeni kategori yaz…</option>
             </select>
+            {category === NEW_CATEGORY && (
+              <input
+                aria-label="Yeni kategori adı"
+                autoFocus
+                type="text"
+                maxLength={60}
+                placeholder="Örn: Yemek Masası Üstü Avizeler"
+                value={newCategory}
+                onChange={(e) => setNewCategory(e.target.value)}
+                className={`${field} mt-2`}
+              />
+            )}
+            {category === NEW_CATEGORY && <p className="mt-1 text-[11px] text-neutral-500">Ad başlık biçimine çevrilir; mevcut bir kategoriyle yalnızca harf farkı varsa mevcut yazım kullanılır.</p>}
           </div>
 
           <div>
