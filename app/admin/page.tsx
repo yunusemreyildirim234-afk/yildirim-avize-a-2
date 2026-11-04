@@ -1,3 +1,4 @@
+import { reservationExpiresAt } from "@/lib/stock-rules";
 import { cleanGuestEmail } from "@/lib/guest-email";
 import { maskEmail } from "@/lib/admin-password";
 import AdminPayoutCard from "@/components/AdminPayoutCard";
@@ -394,6 +395,11 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                           <span className="inline-block mb-2 bg-yellow-100 text-yellow-900 border border-yellow-300 text-[11px] font-bold px-2.5 py-1 rounded-full">
                             Sipariş Denemesi (Ödeme Tamamlanmadı)
                           </span>
+                        )}
+                        {order.status === "AWAITING_PAYMENT" && order.paymentMethod === "CREDIT_CARD" && (
+                          <p className="mb-2 text-[11px] text-neutral-600">
+                            Stok tutma bitişi: {reservationExpiresAt(order.createdAt).toLocaleTimeString("tr-TR", { timeZone: "Europe/Istanbul", hour: "2-digit", minute: "2-digit" })}
+                          </p>
                         )}
                         {order.status === "PAYMENT_FAILED" && (
                           <span className="inline-block mb-2 bg-red-100 text-red-800 border border-red-200 text-[11px] font-bold px-2.5 py-1 rounded-full">
