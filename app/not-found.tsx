@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CATEGORIES } from "@/lib/site";
+import { getFixedCategoryOverrides } from "@/lib/category-list";
 
 export const metadata: Metadata = {
   title: "Sayfa Bulunamadı",
   robots: { index: false },
 };
 
-export default function NotFound() {
+export default async function NotFound() {
+  const overrides = await getFixedCategoryOverrides();
   return (
     <main className="min-h-[70vh] bg-neutral-50 flex items-center justify-center px-4 py-20">
       <div className="max-w-md text-center space-y-6">
@@ -18,13 +20,13 @@ export default function NotFound() {
           dönebilirsiniz.
         </p>
         <div className="flex flex-wrap justify-center gap-2">
-          {CATEGORIES.map((c) => (
+          {CATEGORIES.filter((c) => !overrides[c.slug]?.hidden).map((c) => (
             <Link
               key={c.slug}
               href={`/kategori/${c.slug}`}
               className="text-xs font-medium bg-white border border-neutral-300 text-neutral-700 px-4 py-2 rounded-xl hover:border-amber-500 hover:text-amber-700 transition-colors"
             >
-              {c.title}
+              {overrides[c.slug]?.title ?? c.title}
             </Link>
           ))}
         </div>

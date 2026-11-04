@@ -1,6 +1,7 @@
 import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/db";
-import { buildCategoryList, resolveCategoryName } from "@/lib/categories";
+import { buildCategoryList, categoryKey, resolveCategoryName } from "@/lib/categories";
+import { resolveCategoryRedirects, resolveCategorySettings, type CategoryRedirects, type CategorySettings } from "@/lib/category-settings";
 import { CATEGORIES } from "@/lib/site";
 
 /**
@@ -19,6 +20,40 @@ export const getCategoryList = unstable_cache(
   ["sf-category-list"],
   { revalidate: 60, tags: ["storefront"] }
 );
+
+/**
+ * Yönetim panelinden verilen kategori ayarları (sabit kategorilerin görünen adı / menüden gizleme) ve yeniden adlandırma yönlendirmeleri.
+ * SiteConfig.homepageConfig içinde saklanır; 60 sn önbellek, "storefront" etiketi. Hata/boş → varsayılan (ayar yok).
+ */
+export const getCategoryConfig = unstable_cache(
+  async (): Promise<{ settings: CategorySettings; redirects: CategoryRedirects }> => {
+    const row = await prisma.siteConfig.findUnique({ where: { id: 1 }, select: { homepageConfig: true } });
+    return { settings: resolveCategorySettings(row?.homepageConfig), redirects: resolveCategoryRedirects(row?.homepageConfig) };
+  },
+  ["sf-category-config"],
+  { revalidate: 60, tags: ["storefront"] }
+);
+
+export async function getCategorySettings(): Promise<CategorySettings> {
+  try {
+    return (await getCategoryConfig()).settings;
+  } catch {
+    return {};
+  }
+}
+
+export type FixedOverrides = Record<string, { title?: string; hidden?: boolean }>;
+
+/** Sabit kategorilerin slug'a göre görünen ad / gizleme ayarı (menü, mobil şerit, alt bilgi). Ayar yoksa boş nesne. */
+export async function getFixedCategoryOverrides(): Promise<FixedOverrides> {
+  const settings = await getCategorySettings();
+  const out: FixedOverrides = {};
+  for (const c of CATEGORIES) {
+    const s = settings[categoryKey(c.dbCategory)];
+    if (s) out[c.slug] = { ...(s.title ? { title: s.title } : {}), ...(s.hidden ? { hidden: true } : {}) };
+  }
+  return out;
+}
 
 /** Menü/alt bilgi için yalnızca sonradan eklenen (sabit olmayan) kategoriler; veritabanı hatasında boş (menü sabit listeyle çalışır). */
 export async function getExtraCategoryLinks(): Promise<{ href: string; label: string }[]> {

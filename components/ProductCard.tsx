@@ -87,9 +87,11 @@ export default async function ProductCard({
 
         <div className="p-2.5 pb-2 sm:p-5 sm:pb-3 flex-1 flex flex-col justify-between gap-1.5 sm:gap-3">
           <div>
-            <span className={`text-[11px] font-semibold uppercase tracking-[0.08em] ${dark ? "text-amber-400" : "text-amber-800"}`}>
-              {product.category}
-            </span>
+            {product.category.trim() && (
+              <span className={`block text-[11px] font-semibold uppercase tracking-[0.08em] ${dark ? "text-amber-400" : "text-amber-800"}`}>
+                {product.category}
+              </span>
+            )}
             <h3 className="font-serif text-sm sm:text-[15px] font-semibold leading-snug tracking-tight line-clamp-2 mt-0.5 sm:mt-1 sm:min-h-[2.6em]">{product.title}</h3>
           </div>
           <div className="flex items-baseline gap-2">

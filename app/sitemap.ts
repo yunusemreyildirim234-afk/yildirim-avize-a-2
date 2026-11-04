@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/db";
 import { CATEGORIES, COLLECTIONS, SITE_URL } from "@/lib/site";
-import { getCategoryList } from "@/lib/category-list";
+import { getCategoryList, getFixedCategoryOverrides } from "@/lib/category-list";
 
 export const dynamic = "force-dynamic";
 
@@ -13,11 +13,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .catch(() => []);
 
   // Yönetim panelinden eklenen kategoriler (sabit olanlar CATEGORIES ile zaten var)
+  const overrides = await getFixedCategoryOverrides();
   const extra = await getCategoryList().then((l) => l.filter((c) => !c.fixed)).catch(() => []);
 
   return [
     { url: SITE_URL, changeFrequency: "weekly", priority: 1 },
-    ...CATEGORIES.map((c) => ({
+    ...CATEGORIES.filter((c) => !overrides[c.slug]?.hidden).map((c) => ({
       url: `${SITE_URL}/kategori/${c.slug}`,
       changeFrequency: "weekly" as const,
       priority: 0.8,

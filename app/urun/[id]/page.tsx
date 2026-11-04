@@ -11,6 +11,9 @@ import { getUserSession } from "@/lib/account";
 import { reviewEligibility, type ReviewEligibility } from "@/lib/reviews";
 import JsonLd from "@/components/JsonLd";
 import { CATEGORIES, SITE_URL } from "@/lib/site";
+import { getCategorySettings } from "@/lib/category-list";
+import { categoryKey } from "@/lib/categories";
+import { categoryDisplayTitle } from "@/lib/category-settings";
 import { defaultOffer, feedBrand } from "@/lib/feed";
 import { coverImageOf, imageListOf } from "@/lib/variation-input";
 import { GtmEvent } from "@/components/GtmEvent";
@@ -52,7 +55,8 @@ export default async function ProductDetailPage({ params }: Props) {
     notFound();
   }
 
-  const similar = await getProductsCached({ category: product.category, id: { not: product.id } }, 4).catch(() => []);
+  const hasCategory = product.category.trim().length > 0; // kategorisiz ürün: benzer ürün / kategori yolu / kategori alanı yok
+  const similar = hasCategory ? await getProductsCached({ category: product.category, id: { not: product.id } }, 4).catch(() => []) : [];
 
   const userSession = await getUserSession();
   const eligibility: ReviewEligibility | "guest" = userSession?.uid ? await reviewEligibility(userSession.uid, product.id) : "guest";
@@ -69,7 +73,8 @@ export default async function ProductDetailPage({ params }: Props) {
     };
   });
   const ratingAvg = reviews.length ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length : 0;
-  const category = CATEGORIES.find((c) => c.dbCategory === product.category);
+  const category = hasCategory ? CATEGORIES.find((c) => c.dbCategory === product.category) : undefined;
+  const categorySettings = await getCategorySettings();
   // Fiyat/stok/marka Google feed'iyle (lib/feed.ts) ve sayfadaki varsayılan seçimle AYNI kaynaktan gelir
   const offer = defaultOffer(product);
   const productImages = imageListOf(product).map((u) => (u.startsWith("/") ? `${SITE_URL}${u}` : u)); // kapak önde (og:image/kart/feed ile aynı kural)
@@ -78,7 +83,7 @@ export default async function ProductDetailPage({ params }: Props) {
     "@type": "Product",
     name: product.title,
     description: product.description || product.title,
-    category: product.category,
+    ...(hasCategory ? { category: product.category } : {}),
     brand: { "@type": "Brand", name: feedBrand(product.brand) },
     url: `${SITE_URL}/urun/${id}`,
     ...(productImages.length ? { image: productImages.slice(0, 6) } : {}),
@@ -116,8 +121,10 @@ export default async function ProductDetailPage({ params }: Props) {
           items={[
             { name: "Ana Sayfa", href: "/" },
             ...(category
-              ? [{ name: category.title, href: `/kategori/${category.slug}` }]
-              : [{ name: `${product.category} Avizeler` }]),
+              ? [{ name: categoryDisplayTitle(categorySettings, categoryKey(category.dbCategory), category.title), href: `/kategori/${category.slug}` }]
+              : hasCategory
+                ? [{ name: `${product.category} Avizeler` }]
+                : []),
             { name: product.title },
           ]}
         />

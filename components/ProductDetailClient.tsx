@@ -150,9 +150,11 @@ export default function ProductDetailClient({ product, ladderCtx }: { product: P
       {/* Sağ: Ürün Bilgileri ve Seçenekler */}
       <div className="p-5 sm:p-8 lg:p-12 flex flex-col justify-between space-y-8">
         <div className="space-y-4">
-          <span className="text-xs font-semibold text-amber-600 uppercase tracking-wider">
-            {product.category} Serisi
-          </span>
+          {product.category.trim() && (
+            <span className="text-xs font-semibold text-amber-600 uppercase tracking-wider">
+              {product.category} Serisi
+            </span>
+          )}
           {product.modelCode && (
             <span className="inline-block text-[11px] font-mono font-semibold text-neutral-700 bg-neutral-100 border border-neutral-200 px-2.5 py-1 rounded-md">
               Model Kodu: #{product.modelCode}

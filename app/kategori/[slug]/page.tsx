@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { cache } from "react";
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound, permanentRedirect, redirect } from "next/navigation";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import ProductCard from "@/components/ProductCard";
 import { prisma } from "@/lib/db";
@@ -10,8 +10,9 @@ import { DISCOUNTED, FEATURED, countProductsCached, getBestSellers, getProductsC
 import PageSizeLinks from "@/components/PageSizeLinks";
 import { canonicalListing, pageHref, parseAdet, parsePage, rangeOf, totalPages } from "@/lib/pagination";
 import { CATEGORIES, COLLECTIONS } from "@/lib/site";
-import { getCategoryList } from "@/lib/category-list";
-import { categoryWhere, findDynamicCategory } from "@/lib/categories";
+import { getCategoryConfig, getCategoryList } from "@/lib/category-list";
+import { RESERVED_SLUGS, categoryKey, categoryWhere, findDynamicCategory } from "@/lib/categories";
+import { categoryDisplayTitle, resolveRedirect } from "@/lib/category-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +27,9 @@ const resolve = cache(async (slug: string) => {
   if (category) {
     // Sabit kategori: ad/slug aynen; büyük/küçük harf ve boşluk varyantı yazımlar da (category IN) dahil. Liste alınamazsa eski tam eşleşme.
     const entry = await getCategoryList().then((l) => l.find((c) => c.fixed && c.slug === slug)).catch(() => undefined);
-    return { title: category.title, desc: category.desc, where: categoryWhere(entry?.spellings ?? [category.dbCategory]) };
+    // Görünen ad ayarı varsa yeni ad (sayfa başlığı, metadata, breadcrumb); yoksa mevcut başlık aynen. Gizli kategorinin adresi çalışmaya devam eder.
+    const settings = await getCategoryConfig().then((c) => c.settings).catch(() => ({}));
+    return { title: categoryDisplayTitle(settings, categoryKey(category.dbCategory), category.title), desc: category.desc, where: categoryWhere(entry?.spellings ?? [category.dbCategory]) };
   }
   if (slug === "tum") return { ...COLLECTIONS.tum, where: {} };
   if (slug === "one-cikanlar") {
@@ -80,7 +83,14 @@ export default async function CategoryPage({ params, searchParams }: Props) {
   const { slug } = await params;
   const query = await searchParams;
   const current = await resolve(slug);
-  if (!current) notFound();
+  if (!current) {
+    // Yeniden adlandırılmış kategorinin eski adresi kalıcı olarak yeni adrese yönlenir (canlı slug her zaman önceliklidir); silinen/bilinmeyen → 404
+    const live = new Set<string>([...CATEGORIES.map((c) => c.slug), ...RESERVED_SLUGS, ...Object.keys(COLLECTIONS), ...((await getCategoryList().catch(() => [])).map((c) => c.slug))]);
+    const cfg = await getCategoryConfig().catch(() => null);
+    const to = cfg ? resolveRedirect(cfg.redirects, slug, live) : null;
+    if (to) permanentRedirect(`/kategori/${to}`);
+    notFound();
+  }
 
   // Sunucu tarafı sayfalama: Çok Satanlar listesi (48, kendi mantığı) bellekte dilimlenir; diğerleri take/skip + ayrı sayım
   const path = `/kategori/${slug}`;

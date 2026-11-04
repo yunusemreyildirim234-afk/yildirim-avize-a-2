@@ -12,7 +12,7 @@ const CHANNELS = [
   { label: "Trendyol Mağazamız", href: "https://www.trendyol.com/magaza/yildirimavize-m-379320?sst=0", icon: "🛒", highlight: true },
 ];
 
-export default function Footer({ extraCategories = [] }: { extraCategories?: { href: string; label: string }[] }) {
+export default function Footer({ extraCategories = [], fixedOverrides = {} }: { extraCategories?: { href: string; label: string }[]; fixedOverrides?: Record<string, { title?: string; hidden?: boolean }> }) {
   return (
     <footer className="keep-theme bg-zinc-950 text-white pt-16 pb-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-10 pb-12 border-b border-zinc-800">
@@ -56,10 +56,10 @@ export default function Footer({ extraCategories = [] }: { extraCategories?: { h
         <div className="space-y-3">
           <h2 className="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-100 mb-1">Koleksiyonlar</h2>
           <ul className="text-xs text-neutral-400 space-y-1">
-            {CATEGORIES.map((c) => (
+            {CATEGORIES.filter((c) => !fixedOverrides[c.slug]?.hidden).map((c) => (
               <li key={c.slug}>
                 <Link href={`/kategori/${c.slug}`} className="inline-block py-1.5 hover:text-amber-400">
-                  {c.title}
+                  {fixedOverrides[c.slug]?.title ?? c.title}
                 </Link>
               </li>
             ))}

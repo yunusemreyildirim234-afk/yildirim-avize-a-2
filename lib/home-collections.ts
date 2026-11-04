@@ -1,5 +1,6 @@
-import { getCategoryList } from "@/lib/category-list";
-import { categoryWhere, type CategoryEntry } from "@/lib/categories";
+import { getCategoryList, getCategorySettings } from "@/lib/category-list";
+import { categoryDisplayTitle, isCategoryHidden } from "@/lib/category-settings";
+import { categoryKey, categoryWhere, type CategoryEntry } from "@/lib/categories";
 import { pickCollections, resolveCollectionKeys } from "@/lib/collections";
 import { getHomepageRaw } from "@/lib/homepage";
 import { getProducts } from "@/lib/products";
@@ -14,17 +15,19 @@ export interface HomeCollection {
 
 /** Hata olursa (veritabanı) sabit kategoriler: ana sayfa asla bozulmaz. */
 const fixedFallback = (): CategoryEntry[] =>
-  CATEGORIES.map((c) => ({ key: c.dbCategory.toLocaleLowerCase("tr-TR"), slug: c.slug, title: c.title, count: 1, spellings: [c.dbCategory], fixed: true }));
+  CATEGORIES.map((c) => ({ key: categoryKey(c.dbCategory), slug: c.slug, title: c.title, count: 1, spellings: [c.dbCategory], fixed: true }));
 
 /** Ana sayfa koleksiyon kartları: yönetici seçimi (yoksa tüm kategoriler, listedeki sırayla); ürünsüz kategori yok; kapak = kategorinin ilk kapaklı ürünü. */
 export async function getHomeCollections(): Promise<HomeCollection[]> {
-  const [list, raw] = await Promise.all([getCategoryList().catch(fixedFallback), getHomepageRaw()]);
-  const picked = pickCollections(list, resolveCollectionKeys(raw));
+  const [list, raw, settings] = await Promise.all([getCategoryList().catch(fixedFallback), getHomepageRaw(), getCategorySettings()]);
+  // Menüden gizlenen kategori ana sayfa satırından da çıkar; görünen ad ayarı varsa o kullanılır
+  const visible = list.filter((c) => !isCategoryHidden(settings, c.key));
+  const picked = pickCollections(visible, resolveCollectionKeys(raw));
   return Promise.all(
     picked.map(async (c) => {
       const products = await getProducts({ ...categoryWhere(c.spellings), active: true }, 6).catch(() => []);
       const cover = products.map((p) => coverImageOf(p)).find((u): u is string => Boolean(u)) ?? null;
-      return { slug: c.slug, title: c.title, cover };
+      return { slug: c.slug, title: categoryDisplayTitle(settings, c.key, c.title), cover };
     })
   );
 }
