@@ -7,7 +7,7 @@ import { HoverMagnifier, ImageLightbox } from "@/components/ImageZoom";
 import { useCart } from "@/context/CartContext";
 import { FREE_SHIPPING_THRESHOLD, PICKUP_DISCOUNT, SHIPPING_TYPES } from "@/lib/pricing";
 import { priceCart, ruleNotes } from "@/lib/cart-pricing";
-import PriceLadder from "@/components/PriceLadder";
+import PriceLadder, { priceTone } from "@/components/PriceLadder";
 import { priceLadder, type LadderContext } from "@/lib/price-ladder";
 import { SITE_URL, WHATSAPP_NUMBER } from "@/lib/site";
 import { activeTier, bulkLabel, bulkTiersOf, unitPriceFor } from "@/lib/bulk-pricing";
@@ -68,6 +68,7 @@ export default function ProductDetailClient({ product, ladderCtx }: { product: P
     maxTotalDiscountPct,
   });
   const lineNow = priced.itemsTotal;
+  const hasDiscount = Boolean(listShown && listShown > currentPrice) || unitNow < currentPrice;
   const notes = ruleNotes(rules);
   const maxQty = selectedVariation ? Math.max(0, selectedVariation.stock) : 0;
   const outOfStock = !selectedVariation || maxQty <= 0;
@@ -185,7 +186,7 @@ export default function ProductDetailClient({ product, ladderCtx }: { product: P
             {unitNow < currentPrice && (
               <span className="block text-sm text-neutral-500 line-through">{(currentPrice * quantity).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
             )}
-            <span className="text-3xl font-bold tabular-nums text-neutral-900">
+            <span className={`text-3xl font-bold tabular-nums ${hasDiscount ? priceTone(false).sale : "text-neutral-900"}`}>
               {lineNow.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺
             </span>
             {bulk.length > 0 && (

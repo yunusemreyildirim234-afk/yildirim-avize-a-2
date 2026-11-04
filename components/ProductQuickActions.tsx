@@ -131,11 +131,11 @@ export function CartStepper({ product, inlineToast = false }: { product: QuickPr
           onClick={decrease}
           disabled={quantity === 0}
           aria-label="Adedi azalt"
-          className="px-3 py-2 hover:bg-zinc-100 disabled:opacity-30 disabled:hover:bg-transparent"
+          className={`px-3 py-2 hover:bg-zinc-100 disabled:opacity-30 disabled:hover:bg-transparent ${quantity === 0 ? "max-sm:hidden" : ""}`}
         >
           <Minus aria-hidden="true" className="w-3.5 h-3.5" />
         </button>
-        <span className="text-xs font-bold tabular-nums" aria-live="polite">
+        <span className="flex-1 text-center whitespace-nowrap text-[11px] sm:text-xs font-bold tabular-nums" aria-live="polite">
           {quantity === 0 ? "Sepete Ekle" : quantity}
         </span>
         <button
@@ -143,7 +143,7 @@ export function CartStepper({ product, inlineToast = false }: { product: QuickPr
           onClick={increase}
           disabled={quantity >= variation.stock}
           aria-label="Adedi artır"
-          className="px-3 py-2 hover:bg-zinc-100 disabled:opacity-30 disabled:hover:bg-transparent"
+          className="px-2.5 sm:px-3 py-2 hover:bg-zinc-100 disabled:opacity-30 disabled:hover:bg-transparent"
         >
           <Plus aria-hidden="true" className="w-3.5 h-3.5" />
         </button>

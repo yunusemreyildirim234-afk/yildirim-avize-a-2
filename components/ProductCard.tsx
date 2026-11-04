@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { ProductWithVariations } from "@/lib/products";
 import { bulkTiersOf } from "@/lib/bulk-pricing";
-import PriceLadder from "@/components/PriceLadder";
+import PriceLadder, { priceTone } from "@/components/PriceLadder";
 import { getLadderContext } from "@/lib/showcase";
 import { priceLadder } from "@/lib/price-ladder";
 import { coverImageOf } from "@/lib/variation-input";
@@ -85,26 +85,26 @@ export default async function ProductCard({
           )}
         </div>
 
-        <div className="p-4 pb-3 sm:p-5 sm:pb-3 flex-1 flex flex-col justify-between gap-3">
+        <div className="p-2.5 pb-2 sm:p-5 sm:pb-3 flex-1 flex flex-col justify-between gap-1.5 sm:gap-3">
           <div>
             <span className={`text-[11px] font-semibold uppercase tracking-[0.08em] ${dark ? "text-amber-400" : "text-amber-800"}`}>
               {product.category}
             </span>
-            <h3 className="font-serif text-[15px] font-semibold leading-snug tracking-tight line-clamp-2 mt-1 min-h-[2.6em]">{product.title}</h3>
+            <h3 className="font-serif text-sm sm:text-[15px] font-semibold leading-snug tracking-tight line-clamp-2 mt-0.5 sm:mt-1 sm:min-h-[2.6em]">{product.title}</h3>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-lg font-bold tabular-nums">{product.basePrice.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
+            <span className={`text-base sm:text-lg font-bold tabular-nums ${discount > 0 ? priceTone(dark).sale : ""}`}>{product.basePrice.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
             {discount > 0 && product.listPrice && (
               <span className="text-xs line-through text-zinc-500">{product.listPrice.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
             )}
           </div>
-          <PriceLadder steps={ladder} size="sm" dark={dark} />
+          <PriceLadder steps={ladder} size="card" dark={dark} />
         </div>
       </Link>
 
       {/* Link dışında: hızlı aksiyonlar kartın bağlantısını tetiklemez */}
       <FavoriteButton product={quick} className="absolute top-3 right-3 z-10" />
-      <div className="px-4 pb-4 sm:px-5 sm:pb-5">
+      <div className="px-2.5 pb-2.5 sm:px-5 sm:pb-5">
         <CartStepper product={quick} />
       </div>
     </div>

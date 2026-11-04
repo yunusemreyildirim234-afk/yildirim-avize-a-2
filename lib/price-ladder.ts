@@ -6,6 +6,7 @@ import { SHOWCASE_COUPON_CODE } from "@/lib/site";
 export interface LadderStep {
   key: "coupon" | "bank" | "pickup";
   label: string; // "YILDIRIM5 kuponuyla" / "+ Havale/EFT ile (%5)"
+  short: string; // dar (mobil) kart etiketi: "YILDIRIM5" / "Havale/EFT %5" / "Mağaza %3"
   hint: string;
   price: number;
 }
@@ -50,18 +51,20 @@ export function priceLadder(p: LadderProduct, ctx: LadderContext, price: number 
     const c = net(SHIPPING_TYPES.HOME, "CREDIT_CARD", ctx.coupon);
     if (c.couponOk && c.price < prev) {
       coupon = ctx.coupon;
-      steps.push({ key: "coupon", label: `${SHOWCASE_COUPON_CODE} kuponuyla`, hint: "Sepette kodu girin", price: c.price });
+      steps.push({ key: "coupon", label: `${SHOWCASE_COUPON_CODE} kuponuyla`, short: SHOWCASE_COUPON_CODE, hint: "Sepette kodu girin", price: c.price });
       prev = c.price;
     }
   }
   const b = net(SHIPPING_TYPES.HOME, "BANK_TRANSFER", coupon);
   if (b.price < prev) {
-    steps.push({ key: "bank", label: `+ Havale/EFT ile (%${pctText(line.transferPct ?? BANK_TRANSFER_DISCOUNT * 100)})`, hint: "Havale/EFT ödemede", price: b.price });
+    const t = pctText(line.transferPct ?? BANK_TRANSFER_DISCOUNT * 100);
+    steps.push({ key: "bank", label: `+ Havale/EFT ile (%${t})`, short: `Havale/EFT %${t}`, hint: "Havale/EFT ödemede", price: b.price });
     prev = b.price;
   }
   const m = net(SHIPPING_TYPES.PICKUP, "BANK_TRANSFER", coupon);
   if (m.price < prev) {
-    steps.push({ key: "pickup", label: `+ Mağazadan teslimle (%${pctText(line.pickupPct ?? PICKUP_DISCOUNT * 100)})`, hint: "Beyoğlu mağazadan teslimde", price: m.price });
+    const t = pctText(line.pickupPct ?? PICKUP_DISCOUNT * 100);
+    steps.push({ key: "pickup", label: `+ Mağazadan teslimle (%${t})`, short: `Mağaza %${t}`, hint: "Beyoğlu mağazadan teslimde", price: m.price });
   }
   return steps;
 }
