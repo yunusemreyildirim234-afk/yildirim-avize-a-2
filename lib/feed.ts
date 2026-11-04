@@ -129,7 +129,7 @@ export function feedItemXml(p: FeedProduct, site: string): string | null {
     tag("brand", feedBrand(p.brand)),
     tag("condition", "new"),
     tag("google_product_category", googleCategory(p.category)),
-    tag("product_type", p.category),
+    ...(p.category.trim() ? [tag("product_type", p.category)] : []), // kategorisiz üründe alan hiç yazılmaz (google_product_category değişmez)
     ...(gtin ? [tag("gtin", gtin)] : [tag("identifier_exists", "no")]),
   ];
   return `<item>${lines.join("")}</item>`;
