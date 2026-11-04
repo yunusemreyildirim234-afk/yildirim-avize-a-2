@@ -7,16 +7,17 @@ import { restoreStockInTx } from "../lib/stock-restore.ts";
 const T0 = Date.parse("2026-11-04T10:00:00Z");
 const min = (m) => m * 60_000;
 
-test("tutma süresi 15 dk; PayTR ödeme sayfası ondan kısa kapanır", () => {
-  assert.equal(RESERVATION_HOLD_MINUTES, 15);
+test("tutma süresi 31 dk; PayTR ödeme süresi 30 dk ve tutma süresinden kısa", () => {
+  assert.equal(RESERVATION_HOLD_MINUTES, 31);
+  assert.equal(PAYTR_TIMEOUT_MINUTES, 30);
   assert.ok(PAYTR_TIMEOUT_MINUTES < RESERVATION_HOLD_MINUTES);
-  assert.equal(ABANDONED_CARD_MINUTES, 15);
-  assert.equal(reservationExpiresAt(new Date(T0)).getTime(), T0 + min(15));
+  assert.equal(ABANDONED_CARD_MINUTES, RESERVATION_HOLD_MINUTES);
+  assert.equal(reservationExpiresAt(new Date(T0)).getTime(), T0 + min(RESERVATION_HOLD_MINUTES));
 });
 
 test("süresi dolan bekleyen sipariş serbest kalır, süresi içindeki kalmaz", () => {
-  assert.equal(isStaleReservation(new Date(T0), T0 + min(15)), false); // tam 15. dk hâlâ ayrılı
-  assert.equal(isStaleReservation(new Date(T0), T0 + min(15) + 1), true);
+  assert.equal(isStaleReservation(new Date(T0), T0 + min(RESERVATION_HOLD_MINUTES)), false); // tam sınırda hâlâ ayrılı
+  assert.equal(isStaleReservation(new Date(T0), T0 + min(RESERVATION_HOLD_MINUTES) + 1), true);
   assert.equal(isStaleReservation(new Date(T0), T0 + min(5)), false);
 });
 

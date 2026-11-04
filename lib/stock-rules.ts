@@ -1,7 +1,7 @@
 /** Saf yardımcılar: stok birleştirme/karşılaştırma ve terk edilmiş kartlı ödeme eşiği (test edilebilir). */
 
 /** Kartlı ödeme stok tutma süresi (dakika): sipariş anından itibaren. Süre dolunca ödeme bekleyen sipariş serbest bırakılır. */
-export const RESERVATION_HOLD_MINUTES = 15;
+export const RESERVATION_HOLD_MINUTES = 31;
 /** lib/paytr.ts `timeout_limit` (dakika): tutma süresinden 1 dk kısa; ödeme sayfası, stok serbest kalmadan önce kapanır (geç ödeme çakışması olmaz). */
 export const PAYTR_TIMEOUT_MINUTES = RESERVATION_HOLD_MINUTES - 1;
 /** Bu süreyi (dakika) geçen AWAITING_PAYMENT + kartlı siparişler PAYMENT_FAILED yapılır (günlük cron'un eşiği = tutma süresi). */
@@ -30,7 +30,7 @@ export function reservationExpiresAt(createdAt: Date): Date {
   return new Date(createdAt.getTime() + RESERVATION_HOLD_MINUTES * 60_000);
 }
 
-/** Rezervasyon bayatladı mı (serbest bırakılabilir)? Sınır dahil değil: tam 15. dakikada hâlâ ayrılı. */
+/** Rezervasyon bayatladı mı (serbest bırakılabilir)? Sınır dahil değil: tam tutma süresinin sonunda (31. dk) hâlâ ayrılı. */
 export function isStaleReservation(createdAt: Date, now: number): boolean {
   return createdAt.getTime() < now - RESERVATION_RELEASE_MINUTES * 60_000;
 }
