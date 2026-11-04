@@ -1,4 +1,5 @@
 import { reservationExpiresAt } from "@/lib/stock-rules";
+import { istanbulDateTimeParts } from "@/lib/format-date";
 import { cleanGuestEmail } from "@/lib/guest-email";
 import { maskEmail } from "@/lib/admin-password";
 import AdminPayoutCard from "@/components/AdminPayoutCard";
@@ -319,9 +320,19 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                     <tr key={order.id} className="hover:bg-neutral-50/80 transition-colors">
                       <td className="p-4 font-mono text-[11px] text-neutral-500">
                         {order.id.slice(0, 8)}...
-                        <span className="block text-[10px] text-neutral-400 mt-0.5">
-                          {new Date(order.createdAt).toLocaleDateString("tr-TR")}
-                        </span>
+                        <time dateTime={order.createdAt.toISOString()} className="block text-[10px] text-neutral-400 mt-0.5">
+                          {(() => {
+                            const dt = istanbulDateTimeParts(order.createdAt);
+                            // Dar ekranda tarih ve saat alt alta gelebilir (her parça kendi içinde bölünmez)
+                            return dt ? (
+                              <>
+                                <span className="inline-block whitespace-nowrap">{dt.date}</span> <span className="inline-block whitespace-nowrap">{dt.time}</span>
+                              </>
+                            ) : (
+                              "—"
+                            );
+                          })()}
+                        </time>
                       </td>
                       <td className="p-4">
                         <span className="font-bold text-neutral-900 block">{order.user.name}</span>
