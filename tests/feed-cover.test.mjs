@@ -19,3 +19,10 @@ test("feed: yüklenen görseller mutlak https adrese çevrilir", () => {
   const xml = feedItemXml({ ...base, variations: [{ extraPrice: 0, stock: 1 }] }, SITE);
   assert.ok(!/<g:image_link>\//.test(xml));
 });
+
+import { readFileSync } from "node:fs";
+test("robots.txt: /api/ kapalı ama yüklenen ürün görselleri taranabilir (Merchant/Googlebot-Image)", () => {
+  const src = readFileSync(new URL("../app/robots.ts", import.meta.url), "utf8");
+  assert.match(src, /allow: \["\/", "\/api\/product-images\/"\]/);
+  assert.match(src, /disallow: \[[^\]]*"\/api\/"/);
+});
