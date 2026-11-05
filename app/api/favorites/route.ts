@@ -9,7 +9,8 @@ type FavoriteRow = Prisma.FavoriteGetPayload<{ include: { product: { include: { 
 // Giriş yapmış müşterinin kalıcı favorileri
 export async function GET() {
   const userId = await getSessionUserId();
-  if (!userId) return NextResponse.json({ error: "Oturum yok" }, { status: 401 });
+  // Oturum yok: 401 yerine 200 (tarayıcı konsoluna hata düşmesin); istemci `anon` ile ayırt eder
+  if (!userId) return NextResponse.json({ items: [], anon: true });
 
   const rows = await prisma.favorite.findMany({
     where: { userId, product: { active: true } },

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 interface Options<T> {
-  /** GET (401 = oturum yok) ve PUT için API yolu */
+  /** GET (401 veya `anon: true` = oturum yok) ve PUT için API yolu */
   endpoint: string;
   list: T[];
   setList: (updater: (prev: T[]) => T[]) => void;
@@ -32,7 +32,9 @@ export function useAccountSync<T>({ endpoint, list, setList, merge, serialize, r
       try {
         const res = await fetch(endpoint, { cache: "no-store" });
         if (!active) return;
-        if (res.status === 401) {
+        const body: { items?: T[]; anon?: boolean } | null = res.ok ? await res.json() : null;
+        if (!active) return;
+        if (res.status === 401 || body?.anon) {
           setSynced(false);
           if (localStorage.getItem(flagKey)) {
             localStorage.removeItem(flagKey);
@@ -41,7 +43,7 @@ export function useAccountSync<T>({ endpoint, list, setList, merge, serialize, r
           return;
         }
         if (!res.ok) return;
-        const remote: T[] = (await res.json()).items ?? [];
+        const remote: T[] = body?.items ?? [];
         if (!active) return;
         const returning = Boolean(localStorage.getItem(flagKey));
         localStorage.setItem(flagKey, "1");

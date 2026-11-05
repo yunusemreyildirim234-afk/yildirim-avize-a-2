@@ -10,7 +10,8 @@ type CartRow = Prisma.CartItemGetPayload<{ include: { variation: { include: { pr
 // Giriş yapmış müşterinin kalıcı sepeti (fiyat ve stok her seferinde veritabanından okunur)
 export async function GET() {
   const userId = await getSessionUserId();
-  if (!userId) return NextResponse.json({ error: "Oturum yok" }, { status: 401 });
+  // Oturum yok: 401 yerine 200 (tarayıcı konsoluna hata düşmesin); istemci `anon` ile ayırt eder
+  if (!userId) return NextResponse.json({ items: [], anon: true });
 
   const rows = await prisma.cartItem.findMany({
     where: { userId },

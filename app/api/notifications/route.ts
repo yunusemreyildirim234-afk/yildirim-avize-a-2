@@ -23,7 +23,7 @@ async function scope(): Promise<Prisma.NotificationWhereInput | null> {
 
 export async function GET() {
   const where = await scope();
-  if (!where) return NextResponse.json({ items: [], unread: 0 }, { status: 401 });
+  if (!where) return NextResponse.json({ items: [], unread: 0 });
   const [items, unread] = await Promise.all([
     prisma.notification.findMany({ where, orderBy: { createdAt: "desc" }, take: 40 }),
     prisma.notification.count({ where: { AND: [where, { read: false }] } }),
