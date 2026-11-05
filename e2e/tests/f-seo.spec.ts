@@ -16,6 +16,9 @@ async function parseXml(page: Page, xml: string): Promise<{ error: string | null
   }, xml);
 }
 
+// Vitrin önbelleği 60 sn: admin testlerinin geçici kategori değişikliklerinden sonra bayat veri görülebilir.
+const POLL = { timeout: 30_000, intervals: [1000, 2000, 3000] };
+
 test.describe("f) SEO", () => {
   test("/sitemap.xml geçerli XML ve kategori adreslerini içerir", async ({ page, request }) => {
     await openOk(page, "/");
@@ -28,18 +31,23 @@ test.describe("f) SEO", () => {
     for (const l of locs) expect(l, "sitemap adresi mutlak olmalı").toMatch(/^https?:\/\//);
     const paths = new Set(locs.map((l) => new URL(l).pathname));
     expect(paths.has("/kategori/tum")).toBe(true);
-    // Menüde görünen her kategori sitemap'te de olmalı
-    for (const m of await menuLinks(page)) expect(paths.has(m.href), `${m.href} sitemap'te yok`).toBe(true);
+    // Menüde görünen her kategori sitemap'te de olmalı (vitrin önbelleği tazelenene dek bekler)
+    await expect.poll(async () => {
+      await page.goto("/", { waitUntil: "domcontentloaded" });
+      const p = new Set((await parseXml(page, await (await request.get("/sitemap.xml")).text())).locs.map((l) => new URL(l).pathname));
+      return (await menuLinks(page)).map((m) => m.href).filter((h) => !p.has(h));
+    }, { message: "menüde olup sitemap'te olmayan kategori", ...POLL }).toEqual([]);
   });
 
   test("sitemap'te görünür ürünü olmayan (menüde olmayan) sabit kategori yok", async ({ page, request }) => {
     await openOk(page, "/");
-    const inMenu = new Set((await menuLinks(page)).map((m) => m.href));
-    const { locs } = await parseXml(page, await (await request.get("/sitemap.xml")).text());
-    const paths = new Set(locs.map((l) => new URL(l).pathname));
-    for (const s of ["kristal", "modern", "klasik", "sarkit", "aksesuar"]) {
-      expect(paths.has(`/kategori/${s}`), `/kategori/${s}: sitemap ile menü tutarlı olmalı`).toBe(inMenu.has(`/kategori/${s}`));
-    }
+    await expect.poll(async () => {
+      await page.goto("/", { waitUntil: "domcontentloaded" });
+      const inMenu = new Set((await menuLinks(page)).map((m) => m.href));
+      const { locs } = await parseXml(page, await (await request.get("/sitemap.xml")).text());
+      const paths = new Set(locs.map((l) => new URL(l).pathname));
+      return ["kristal", "modern", "klasik", "sarkit", "aksesuar"].filter((s) => paths.has(`/kategori/${s}`) !== inMenu.has(`/kategori/${s}`));
+    }, { message: "sitemap ile menü tutarsız (sabit kategori)", ...POLL }).toEqual([]);
   });
 
   test('/robots.txt "Allow: /api/product-images/" içerir', async ({ request }) => {

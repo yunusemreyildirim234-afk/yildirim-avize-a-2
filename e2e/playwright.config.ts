@@ -96,7 +96,7 @@ export default defineConfig({
     {
       name: "admin",
       testMatch: /admin[\/][a-z]-.*\.spec\.ts$/,
-      dependencies: ["admin-setup"],
+      dependencies: ["admin-setup", "desktop", "mobile"], // admin testleri geçici veri yazar: herkese açık testlerden sonra
       timeout: 180_000, // yönetim sayfası ~240 ürünü yükler; uzak (Neon) veritabanı + çok adımlı akışlar
       use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 }, storageState: ADMIN_STATE },
     },
