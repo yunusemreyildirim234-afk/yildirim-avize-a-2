@@ -109,6 +109,18 @@ test.describe("Ödeme doğrulamaları (sipariş oluşmaz)", () => {
     await done(g);
   });
 
+  test("sunucu: geçersiz telefon /api/order'da 400 verir ve sipariş/üye kaydedilmez", async ({ request }) => {
+    // Hız sınırı IP başınadır (x-forwarded-for); ayrı bir sahte IP kullanılır, böylece p-siparis'in 4 istek bütçesi etkilenmez.
+    const email = "e2e-telefon@example.invalid";
+    const res = await request.post("/api/order", {
+      headers: { "x-forwarded-for": "203.0.113.77" },
+      data: { name: "E2E Telefon", email, phone: "abc", address: "E2E Test Mah. No:1", shippingType: "BEYOGLU_MAGAZA_TESLIM", paymentMethod: "BANK_TRANSFER", consent: true, items: [{ variationId: "e2e-yok", quantity: 1 }] },
+    });
+    expect(res.status()).toBe(400);
+    expect((await res.json()).error).toMatch(/telefon/i);
+    expect((await rows<{ n: number }>(`select count(*)::int as n from "User" where email = $1`, [email]))[0].n, "üye/sipariş oluşmadı").toBe(0);
+  });
+
   test.skip("sunucu tarafı doğrulamalar (/api/order 400 yanıtları: eksik alan, geçersiz e-posta, onay yok, boş sepet)", () => {
     // Bilerek atlandı: /api/order hız sınırı (bellek içi, 10 dk'da 5 istek) başarısız istekleri de sayar; p-siparis 4 isteği kullanır.
     // İstemci doğrulaması yukarıda sınanır; sunucu 400'leri hız sınırı yükseltilmeden/ayrı sunucu süreciyle ayrı işte sınanmalıdır.

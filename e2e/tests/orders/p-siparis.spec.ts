@@ -438,13 +438,13 @@ test.describe("Havale siparişi (uçtan uca)", () => {
   test("sipariş sayfası erişimi: yalnızca tahmin edilemez kimlikle; var olmayan kimlik 404; kişisel veri sızmaz", async ({ browser, baseURL }) => {
     await guestFlow(browser, baseURL!, async ({ ctx, page }) => {
       // Var olmayan / geçersiz kimlik
-      // Not: sayfanın loading.tsx'i akışı 200 ile başlattığı için HTTP durumu 200 kalır (soft-404, bulgu); içerik 404 sayfasıdır ve sipariş verisi yoktur.
+      // layout.tsx var olmayan siparişi akıştan önce notFound() ile keser: HTTP 404 ve 404 içeriği; sipariş verisi yoktur.
       for (const id of ["00000000-0000-4000-8000-000000000000", "abc"]) {
         const r = await page.goto(`/siparis-onay/${encodeURIComponent(id)}`, { waitUntil: "domcontentloaded" });
         await expect(page.getByRole("heading", { level: 1 })).toHaveText("Bu Işık Söndü");
         await expect(page.getByText("Hata 404")).toBeVisible();
         await expect(page.getByText("Sipariş Takip Kodu")).toHaveCount(0);
-        test.info().annotations.push({ type: "bulgu", description: `/siparis-onay/${id}: içerik 404 ama HTTP durumu ${r!.status()} (soft-404)` });
+        expect(r!.status(), `/siparis-onay/${id} HTTP durumu`).toBe(404);
       }
       // BULGU (rapor): /siparis-onay/[id] oturum/sahiplik kontrolü yapmaz; kimliği (UUID) bilen herkes görür.
       const res = await page.goto(`/siparis-onay/${mainOrderId}`, { waitUntil: "domcontentloaded" });

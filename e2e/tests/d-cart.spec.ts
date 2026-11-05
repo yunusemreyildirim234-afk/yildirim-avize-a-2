@@ -32,6 +32,17 @@ test.describe("d) Sepet", () => {
     await expect(page.getByText("Ürünler Toplamı")).toBeVisible();
   });
 
+  test("oturumsuz sepet sayfa yenilenince korunur (hesaba eşitleme anonimde sepeti silmez)", async ({ page }) => {
+    await addFirstProduct(page);
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.waitForLoadState("networkidle");
+    const stored = await page.evaluate(() => JSON.parse(localStorage.getItem("yildirim_cart") ?? "[]").length);
+    expect(stored).toBeGreaterThan(0);
+    await openOk(page, "/sepet");
+    await expect(page.getByText("Ürünler Toplamı")).toBeVisible();
+    await expect(page.getByText("Sepetiniz Henüz Boş")).toHaveCount(0);
+  });
+
   test("toast'taki × düğmesi yönlendirmez", async ({ page }) => {
     const { href } = await addFirstProduct(page);
     const t = toast(page).filter({ hasText: "Sepete eklendi" }).first();
