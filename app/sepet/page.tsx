@@ -810,6 +810,9 @@ export default function CartPage() {
               <input aria-label="Telefon Numaranız (Örn: 0555 123 45 67)"
                 required
                 type="tel"
+                inputMode="tel"
+                pattern="\+?[0-9][0-9 \(\)\-]{8,18}[0-9]"
+                title="Geçerli bir telefon numarası girin (Örn: 0555 123 45 67)"
                 placeholder="Telefon Numaranız (Örn: 0555 123 45 67)"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
