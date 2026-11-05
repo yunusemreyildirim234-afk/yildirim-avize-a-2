@@ -22,6 +22,7 @@ import { gtmPush } from "@/lib/gtm";
 import { COUPON_GENERIC_ERROR, couponPlaceholder, staleCouponMessage } from "@/lib/coupon-code";
 import { beginCheckoutEvent, gaItem } from "@/lib/gtm-events";
 import { activeTier, bulkLabel, type BulkRule } from "@/lib/bulk-pricing";
+import { isValidPhone, PHONE_ERROR } from "@/lib/phone";
 import { forgetCardOrder, previousCardOrderId, rememberCardOrder } from "@/lib/pending-card-order";
 
 interface LocationItem {
@@ -811,11 +812,12 @@ export default function CartPage() {
                 required
                 type="tel"
                 inputMode="tel"
-                pattern="\+?[0-9][0-9 \(\)\-]{8,18}[0-9]"
-                title="Geçerli bir telefon numarası girin (Örn: 0555 123 45 67)"
                 placeholder="Telefon Numaranız (Örn: 0555 123 45 67)"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={(e) => {
+                  e.target.setCustomValidity(isValidPhone(e.target.value) ? "" : PHONE_ERROR);
+                  setPhone(e.target.value);
+                }}
                 className="w-full text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
               />
 

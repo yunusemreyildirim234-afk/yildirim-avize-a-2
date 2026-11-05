@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { serverError, badRequest } from "@/lib/api-error";
 import { prisma } from "@/lib/db";
 import { rateLimit, tooMany } from "@/lib/rate-limit";
+import { isValidPhone, PHONE_ERROR } from "@/lib/phone";
 import { enforcePendingLimits, finalizeOrder, releasePreviousCardOrder, releaseStaleReservations, restoreOrderStock } from "@/lib/orders";
 import { getPaytrToken } from "@/lib/paytr";
 import { SHIPPING_LABELS } from "@/lib/pricing";
@@ -58,6 +59,7 @@ export async function POST(req: Request) {
     if (typeof email !== "string" || email.length > 254 || !EMAIL_RE.test(email)) {
       return NextResponse.json({ error: "Geçerli bir e-posta adresi giriniz." }, { status: 400 });
     }
+    if (!isValidPhone(phone)) return NextResponse.json({ error: PHONE_ERROR }, { status: 400 });
     if (buyerStateId !== undefined && buyerStateId !== null && !Number.isInteger(buyerStateId)) {
       return NextResponse.json({ error: "Geçersiz il bilgisi." }, { status: 400 });
     }
