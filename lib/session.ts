@@ -40,7 +40,9 @@ export async function verifySession<T extends Record<string, unknown>>(token?: s
   const [body, sig] = token.split(".");
   if (!body || !sig || !safeEqual(sig, await hmac(body))) return null;
   try {
-    const json = JSON.parse(atob(body.replace(/-/g, "+").replace(/_/g, "/")));
+    // Üretim (signSession) UTF-8 bayt yazar; çözümde de baytlar UTF-8 olarak okunur (ş ğ ı İ ö ü ç bozulmasın). ASCII belirteçler aynen çözülür.
+    const bin = atob(body.replace(/-/g, "+").replace(/_/g, "/"));
+    const json = JSON.parse(new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0))));
     return json.exp > Date.now() ? (json as T) : null;
   } catch {
     return null;

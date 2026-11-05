@@ -34,7 +34,7 @@ test.describe("Admin kategori yönetimi", () => {
 
   test("yeni kategori: görünürlük, otomatik gizleme, yeniden adlandırma (308), silme ve Geri Al", async ({ page, request }) => {
     const u = uniq().toLowerCase();
-    const cap = u[0].toUpperCase() + u.slice(1);
+    const cap = u[0].toLocaleUpperCase("tr-TR") + u.slice(1); // site Türkçe büyük harf kullanır (i → İ)
     const name = `E2e Kat ${cap}`; // titleCaseTr sonucu
     const slug = `e2e-kat-${u}`;
     const newName = `E2e Yeni ${cap}`;
