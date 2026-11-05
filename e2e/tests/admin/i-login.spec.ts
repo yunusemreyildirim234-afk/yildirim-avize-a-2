@@ -61,11 +61,15 @@ test.describe("çıkış", () => {
     await page.getByRole("button", { name: "Yönetim Paneline Gir" }).click();
     await page.waitForURL("**/admin");
     await page.goto("/");
-    // Menü fareyle üzerine gelince açılır, tıklayınca da değişir: önce üzerine gel, açılmadıysa tıkla.
+    // Menü hover'da açılır, tıklamada ters döner (hover+click menüyü kapatabilir): fare kullanmadan odak + Enter ile aç.
+    // "Çıkış Yap" öğesi oturum bilgisi istemciye yüklenince gelir; açık kalan menüde bu beklenir, toPass yeniden dener.
     const trigger = page.getByRole("button", { name: "Hesap menüsünü aç" });
     const logout = page.getByRole("menuitem", { name: "Çıkış Yap" });
-    await trigger.hover();
-    if (!(await logout.isVisible().catch(() => false))) await trigger.click();
+    await expect(async () => {
+      await trigger.focus();
+      if ((await trigger.getAttribute("aria-expanded")) !== "true") await trigger.press("Enter");
+      await expect(logout).toBeVisible({ timeout: 2000 });
+    }).toPass({ timeout: 30_000 });
     await logout.click();
     await expect.poll(async () => (await page.context().cookies()).some((c) => c.name === "ya_admin")).toBe(false);
     await page.goto("/admin");
