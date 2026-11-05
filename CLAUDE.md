@@ -92,4 +92,5 @@
 
 ## 7. Bağımlılık Kuralları
 - Prisma 7'de kal (^7.10.1); `npx prisma@latest` veya sürümsüz `npm install prisma` KULLANMA.
+- `lib/db.ts` sorgu uzantısı Prisma'nın dahili `__internalParams.transaction` alanına dayanır; Prisma güncellenirse `tests/db-retry.test.mjs` ve yeniden deneme davranışını yeniden doğrula.
 
