@@ -106,6 +106,11 @@ export default function Footer({ extraCategories = [], fixedOverrides = {} }: { 
                 Kargo & Sipariş Takibi
               </Link>
             </li>
+            <li>
+              <Link href="/#sss-baslik" className="block py-1.5 hover:text-amber-400 transition-colors">
+                Sık Sorulan Sorular
+              </Link>
+            </li>
           </ul>
         </div>
       </div>

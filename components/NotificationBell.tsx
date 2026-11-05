@@ -69,9 +69,18 @@ export default function NotificationBell() {
   }, [router]);
 
   useEffect(() => {
-    load();
-    const t = setInterval(load, POLL_MS);
-    return () => clearInterval(t);
+    // Sekme gizliyken istek atılmaz; tekrar görünür olunca hemen bir kez yenilenir.
+    const poll = () => {
+      if (!document.hidden) load();
+    };
+    const onVisible = () => poll();
+    poll();
+    const t = setInterval(poll, POLL_MS);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(t);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, [load, pathname]);
 
   useEffect(() => {

@@ -55,7 +55,7 @@ export default function FaqSection() {
       <JsonLd data={schema} />
       <div className="text-center mb-8 space-y-2">
         <span className="text-xs uppercase tracking-widest text-amber-400 font-semibold">Sık Sorulan Sorular</span>
-        <h2 id="sss-baslik" className="text-2xl sm:text-3xl font-serif font-bold text-white">
+        <h2 id="sss-baslik" className="scroll-mt-32 text-2xl sm:text-3xl font-serif font-bold text-white">
           Kargolama, Garanti & Montaj
         </h2>
       </div>
