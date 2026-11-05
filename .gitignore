@@ -45,7 +45,11 @@ next-env.d.ts
 
 # Gelistirme raporlari
 *_RAPORU.md
+*_RAPORU_*.md
 TARAMA_RAPORU.md
+GENEL_TARAMA_ILERLEME.md
+PRISMA8_HAZIRLIK.md
+TRENDYOL_TASARIM.md
 
 # Prisma 7 uretilmis istemci (derlemede "prisma generate" ile olusur)
 /generated/prisma

@@ -45,6 +45,8 @@
 - Commit edilmemiş değişiklikleri etkileyen git komutları yasak: `git stash`, `git reset --hard`, `git checkout -- <dosya>`, `git clean`, `git restore`. Önce/sonra karşılaştırması gerekiyorsa `git worktree` veya dosya kopyası kullan. Commit edilmemiş dosya varsa önce sor.
 - Bu git komutları `.claude/settings.json` içindeki `permissions.deny` kurallarıyla da teknik olarak engellenir.
 
+- Tarama/rapor/ilerleme/tasarım notları (`*_RAPORU*.md`, `GENEL_TARAMA_ILERLEME.md`, `PRISMA8_HAZIRLIK.md`, `TRENDYOL_TASARIM.md`) commit edilmez, `.gitignore` ile dışarıda tutulur. Commit'e her zaman dosya adıyla ekle; `git add -A` / `git add .` kullanma.
+
 
 
 ## 4. UI/UX & Tasarım Prensipleri (Impeccable — Anti-AI Tasarım)
