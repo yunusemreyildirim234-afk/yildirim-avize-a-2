@@ -6,6 +6,8 @@ import { getSessionUserId } from "@/lib/account";
 import { COUPON_FAIL_LIMIT, COUPON_GENERIC_ERROR, COUPON_LIMITED_ERROR, COUPON_PRODUCT_ERROR, validateCoupon } from "@/lib/coupons";
 import type { PriceLine } from "@/lib/pricing";
 
+const COUPON_PER_USER_ERROR = "Bu kuponu daha önce kullandınız."; // lib/coupons.ts kişi başı limit mesajı
+
 // Sepetteki kupon doğrulaması (oturum açıksa hesabın e-postası, değilse formdaki e-posta kullanılır)
 export async function POST(req: Request) {
   const rl = rateLimit(req, "coupon", 10, 60_000);
@@ -32,8 +34,9 @@ export async function POST(req: Request) {
   const result = await validateCoupon({ code, email, lines, userId });
   if (!result.ok) {
     recordFailure(req, COUPON_FAIL_LIMIT.name, COUPON_FAIL_LIMIT.windowMs);
-    // Var/yok, pasif, kişiye özel, limit ve kişi başı ayrımı sızdırılmaz; yalnızca ürün uygunluğu mesajı korunur
-    return NextResponse.json({ error: result.error === COUPON_PRODUCT_ERROR ? result.error : COUPON_GENERIC_ERROR }, { status: 400 });
+    // Var/yok, pasif, kişiye özel ve limit ayrımı sızdırılmaz; yalnızca ürün uygunluğu ve kişi başı limit mesajları korunur
+    const passThrough = result.error === COUPON_PRODUCT_ERROR || result.error === COUPON_PER_USER_ERROR;
+    return NextResponse.json({ error: passThrough ? result.error : COUPON_GENERIC_ERROR }, { status: 400 });
   }
   return NextResponse.json({ rule: result.rule });
 }
