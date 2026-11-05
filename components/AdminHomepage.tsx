@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ChevronDown, ChevronUp, Home, Plus, X } from "lucide-react";
+import { useOpenOnHash } from "@/components/useOpenOnHash";
 import { DEFAULT_PROMO_CARDS, MAX_CODE, MAX_HREF, MAX_PROMO_CARDS, MAX_TEXT, MAX_TITLE, PROMO_THEMES, validHref, type PromoCard, type PromoTheme } from "@/lib/promo-cards";
 import { editorSelection, moveKey } from "@/lib/collections";
 import { DEFAULT_COUNTS, MAX_COUNT, MAX_PINNED, SECTION_KEYS, composeSection, type ResolvedConfig, type SectionKey } from "@/lib/homepage-compose";
@@ -76,6 +77,7 @@ interface SectionState {
 export default function AdminHomepage({ initial, pools, promoCards, collectionOptions, savedCollections }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  useOpenOnHash("ana-sayfa", setOpen);
   const [saving, setSaving] = useState(false);
   const [state, setState] = useState<Record<SectionKey, SectionState>>(() =>
     Object.fromEntries(SECTION_KEYS.map((k) => [k, { count: String(initial[k].count), pinned: initial[k].pinnedIds, reset: false }])) as Record<SectionKey, SectionState>
@@ -193,7 +195,7 @@ export default function AdminHomepage({ initial, pools, promoCards, collectionOp
   const inputCls = "p-2.5 rounded-lg border border-neutral-300 bg-white text-xs focus:outline-none focus:border-amber-600";
 
   return (
-    <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden shadow-sm">
+    <div id="ana-sayfa" className="scroll-mt-[var(--admin-offset,6rem)] bg-white rounded-2xl border border-neutral-200 overflow-hidden shadow-sm">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}

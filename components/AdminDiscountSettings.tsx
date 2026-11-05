@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Percent } from "lucide-react";
 
 export default function AdminDiscountSettings({ initial }: { initial: number | null }) {
   const router = useRouter();
@@ -30,9 +31,9 @@ export default function AdminDiscountSettings({ initial }: { initial: number | n
   };
 
   return (
-    <form onSubmit={save} className="bg-white border border-neutral-200 rounded-2xl p-5 flex flex-wrap items-end gap-3">
+    <form id="indirim" onSubmit={save} className="scroll-mt-[var(--admin-offset,6rem)] bg-white border border-neutral-200 rounded-2xl p-5 flex flex-wrap items-end gap-3">
       <div className="basis-full">
-        <h3 className="font-bold text-neutral-900 text-sm">Genel İndirim Ayarları</h3>
+        <h2 className="text-lg font-serif font-bold text-neutral-900 flex items-center gap-2"><Percent aria-hidden="true" className="w-4 h-4 text-amber-600" /> Genel İndirim Ayarları</h2>
         <p className="text-xs text-neutral-500 mt-0.5">
           Bir üründe adet indirimi + kupon + mağazadan teslim + Havale indirimlerinin toplamı bu yüzdeyi aşmaz. Adet indirimi kısılmaz; kalan pay diğer indirimlere göre verilir. Boş = sınırsız. Yalnızca yeni siparişleri etkiler.
         </p>

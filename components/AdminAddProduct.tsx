@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { PackagePlus } from "lucide-react";
+import { useOpenOnHash } from "@/components/useOpenOnHash";
 import { useRouter } from "next/navigation";
 import ImagePicker from "@/components/ImagePicker";
 import { discardUploaded, itemsFromFiles, releaseItem, uploadFile, type PickerItem } from "@/lib/client-upload";
@@ -22,6 +24,7 @@ const field = "w-full p-2.5 rounded-lg border border-neutral-300 focus:outline-n
 export default function AdminAddProduct({ extraCategories = [] }: { extraCategories?: string[] }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  useOpenOnHash("yeni-avize", setOpen);
   const [loading, setLoading] = useState(false);
 
   const [title, setTitle] = useState("");
@@ -111,11 +114,11 @@ export default function AdminAddProduct({ extraCategories = [] }: { extraCategor
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-neutral-200 p-6 shadow-sm">
+    <div id="yeni-avize" className="scroll-mt-[var(--admin-offset,6rem)] bg-white rounded-2xl border border-neutral-200 p-6 shadow-sm">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-serif font-bold text-neutral-900">
-            Hızlı Ürün & Stok Girişi
+          <h2 className="text-lg font-serif font-bold text-neutral-900 flex items-center gap-2">
+            <PackagePlus aria-hidden="true" className="w-4 h-4 text-amber-600" /> Hızlı Ürün & Stok Girişi
           </h2>
           <p className="text-xs text-neutral-500 mt-0.5">
             Kataloğa yeni avize, renkleri, stokları ve fotoğrafları ekleyin.

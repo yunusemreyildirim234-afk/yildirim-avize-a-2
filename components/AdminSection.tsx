@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ChevronDown } from "lucide-react";
+import { useOpenOnHash } from "@/components/useOpenOnHash";
 
 interface Badge {
   label: string;
@@ -19,31 +20,24 @@ export default function AdminSection({
   id,
   title,
   description,
+  icon,
   badges = [],
   children,
 }: {
   id: string;
   title: string;
   description?: string;
+  icon?: React.ReactNode;
   badges?: Badge[];
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
 
-  // Bildirimden gelen /admin#<id> bağlantısı bölümü açar ve ekrana getirir
-  useEffect(() => {
-    const check = () => {
-      if (window.location.hash !== `#${id}`) return;
-      setOpen(true);
-      setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" }), 120);
-    };
-    check();
-    window.addEventListener("hashchange", check);
-    return () => window.removeEventListener("hashchange", check);
-  }, [id]);
+  // Bildirimden / "bölüme git" çubuğundan gelen /admin#<id> bağlantısı bölümü açar ve ekrana getirir
+  useOpenOnHash(id, setOpen);
 
   return (
-    <section id={id} className="scroll-mt-4 bg-white rounded-2xl border border-neutral-200 overflow-hidden shadow-sm">
+    <section id={id} className="scroll-mt-[var(--admin-offset,6rem)] bg-white rounded-2xl border border-neutral-200 overflow-hidden shadow-sm">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -52,7 +46,7 @@ export default function AdminSection({
         className="w-full p-6 flex items-center justify-between gap-4 text-left hover:bg-neutral-50/60 transition-colors"
       >
         <div>
-          <h2 className="text-lg font-serif font-bold text-neutral-900">{title}</h2>
+          <h2 className="text-lg font-serif font-bold text-neutral-900 flex items-center gap-2">{icon}{title}</h2>
           {description && <p className="text-xs text-neutral-500 mt-0.5">{description}</p>}
         </div>
         <span className="flex items-center gap-2 shrink-0">

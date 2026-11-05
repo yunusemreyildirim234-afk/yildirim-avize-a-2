@@ -4,6 +4,7 @@ import { daysLeft, trDateOf, trToday } from "@/lib/coupon-expiry";
 import { Fragment, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown, Search, Tag, Users } from "lucide-react";
+import { useOpenOnHash } from "@/components/useOpenOnHash";
 
 export interface CouponRow {
   id: string;
@@ -36,6 +37,7 @@ const tl = (n: number) => `${n.toLocaleString("tr-TR", { minimumFractionDigits: 
 export default function AdminCoupons({ coupons, customers, products }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  useOpenOnHash("kuponlar", setOpen);
   const [busy, setBusy] = useState(false);
 
   const [code, setCode] = useState("");
@@ -135,7 +137,7 @@ export default function AdminCoupons({ coupons, customers, products }: Props) {
   const inputCls = "w-full p-2.5 rounded-lg border border-neutral-300 bg-white focus:outline-none focus:border-amber-600";
 
   return (
-    <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden shadow-sm">
+    <div id="kuponlar" className="scroll-mt-[var(--admin-offset,6rem)] bg-white rounded-2xl border border-neutral-200 overflow-hidden shadow-sm">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}

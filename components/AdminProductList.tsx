@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, ExternalLink, Search } from "lucide-react";
+import { Boxes, ChevronDown, ExternalLink, Search } from "lucide-react";
+import { useOpenOnHash } from "@/components/useOpenOnHash";
 import { useRouter } from "next/navigation";
 import AdminBulkBar from "@/components/AdminBulkBar";
 import AdminSelectionPanel, { scrollToRow } from "@/components/AdminSelectionPanel";
@@ -126,6 +127,7 @@ export default function AdminProductList({ products, maxTotalDiscountPct, showca
   const router = useRouter();
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
+  useOpenOnHash("urunler", setOpen);
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set()); // ürün KİMLİKLERİ: süzgeç/arama/sayfalama değişse de korunur
   const [lastId, setLastId] = useState<string | null>(null); // son seçilen ürün ("Seçtiğim yere dön")
@@ -331,7 +333,7 @@ Yine de geri alınsın mı?`)) await doUndo(true);
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-neutral-200 overflow-clip shadow-sm">
+    <div id="urunler" className="scroll-mt-[var(--admin-offset,6rem)] bg-white rounded-2xl border border-neutral-200 overflow-clip shadow-sm">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -340,8 +342,8 @@ Yine de geri alınsın mı?`)) await doUndo(true);
         className="w-full p-6 flex items-center justify-between gap-4 text-left hover:bg-neutral-50/60 transition-colors"
       >
         <div>
-          <h2 className="text-lg font-serif font-bold text-neutral-900">
-            Tüm Ürünler • Avize Kataloğu & Stok Yönetimi
+          <h2 className="text-lg font-serif font-bold text-neutral-900 flex items-center gap-2">
+            <Boxes aria-hidden="true" className="w-4 h-4 text-amber-600" /> Tüm Ürünler • Avize Kataloğu & Stok Yönetimi
           </h2>
           <p className="text-xs text-neutral-500 mt-0.5">
             Mevcut avizelerin varyasyon stoklarını canlı artırıp azaltabilir veya modeli silebilirsiniz.
@@ -440,7 +442,7 @@ Yine de geri alınsın mı?`)) await doUndo(true);
           <div key={product.id} id={`ap-${product.id}`} className={`scroll-mt-40 transition-colors ${flash === product.id ? "bg-amber-100/70 ring-2 ring-inset ring-amber-500" : ""}`}>
           <div className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-neutral-50/50 transition-colors">
             {/* Sol: Seçim, Görsel ve Başlık */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 md:w-96 md:shrink-0">
               <input
                 type="checkbox"
                 aria-label={`${product.title} seç`}
@@ -453,7 +455,7 @@ Yine de geri alınsın mı?`)) await doUndo(true);
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={`${product.title} sayfasını yeni sekmede aç`}
-                className="w-16 h-16 rounded-xl bg-neutral-900 overflow-hidden shrink-0 border border-neutral-200 block"
+                className="w-16 h-16 rounded-xl bg-neutral-200 animate-pulse overflow-hidden shrink-0 border border-neutral-200 block"
               >
                 {coverImageOf(product) ? (
                   <img src={coverImageOf(product)!} alt={product.title} width={64} height={64} loading="lazy" decoding="async" className="w-full h-full object-cover" />
@@ -461,7 +463,7 @@ Yine de geri alınsın mı?`)) await doUndo(true);
                   <div className="w-full h-full flex items-center justify-center text-amber-400 text-xs font-serif">💡</div>
                 )}
               </a>
-              <div>
+              <div className="min-w-0">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600 bg-amber-50 px-2 py-0.5 rounded">
                   {product.category}
                 </span>
@@ -484,12 +486,13 @@ Yine de geri alınsın mı?`)) await doUndo(true);
             </div>
 
             {/* Orta: Varyasyonlar ve Stok Butonları */}
-            <div className="flex flex-wrap items-center gap-3">
+            {/* Sabit genişlikli varyasyon kutuları: başlık uzunluğu yatay hizayı kaydırmaz */}
+            <div className="flex flex-wrap items-center gap-3 md:flex-1 md:min-w-0">
               {product.variations.map((v) => (
-                <div key={v.id} className="bg-white border border-neutral-200 rounded-xl px-3 py-1.5 flex items-center gap-3 text-xs shadow-2xs">
-                  <div>
-                    <span className="font-medium text-neutral-700 block text-[11px]">{v.variationValue}</span>
-                    <span className="text-[10px] text-neutral-400">Stok: <strong className="text-neutral-900">{v.stock}</strong></span>
+                <div key={v.id} className="bg-white border border-neutral-200 rounded-xl px-3 py-1.5 flex w-full sm:w-56 items-center justify-between gap-3 text-xs shadow-2xs">
+                  <div className="min-w-0">
+                    <span className="font-medium text-neutral-800 block text-xs truncate" title={v.variationValue}>{v.variationValue}</span>
+                    <span className="text-[11px] text-neutral-600">Stok: <strong className="text-neutral-900">{v.stock}</strong></span>
                   </div>
 
                   {/* Tek tıkla canlı stok değişir: büyük dokunma alanı (mobilde 40px) ve ayrı, birbirine yapışmayan düğmeler */}
@@ -518,7 +521,7 @@ Yine de geri alınsın mı?`)) await doUndo(true);
             </div>
 
             {/* Sağ: Düzenle ve Sil */}
-            <div className="flex flex-wrap items-center gap-1 self-end md:self-center">
+            <div className="flex flex-wrap items-center gap-1 self-end md:self-center md:shrink-0">
             <a
               href={`/urun/${product.id}`}
               target="_blank"

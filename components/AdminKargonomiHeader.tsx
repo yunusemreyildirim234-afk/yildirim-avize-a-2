@@ -31,7 +31,8 @@ export default function AdminKargonomiHeader() {
 
   return (
     <div
-      className={`rounded-2xl border p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm ${
+      id="kargonomi"
+      className={`scroll-mt-[var(--admin-offset,6rem)] rounded-2xl border p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm ${
         status === null
           ? "bg-white border-neutral-200"
           : status.connected
@@ -46,7 +47,7 @@ export default function AdminKargonomiHeader() {
           }`}
         />
         <div>
-          <h2 className="text-sm font-bold text-neutral-900">Kargonomi API v1</h2>
+          <h2 className="text-lg font-serif font-bold text-neutral-900">Kargonomi API v1</h2>
           <p className="text-xs text-neutral-600 mt-0.5">
             {status === null && "Bağlantı kontrol ediliyor..."}
             {status?.connected &&

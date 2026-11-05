@@ -6,6 +6,8 @@ import { maskEmail } from "@/lib/admin-password";
 import AdminPayoutCard from "@/components/AdminPayoutCard";
 import { PAYOUT_EXCLUDED_STATUSES, buildPayouts, payoutWindowStart } from "@/lib/payout";
 import Link from "next/link";
+import { Building2, KeyRound, MessageSquare, Package, ShieldCheck, ShoppingBag, Star, Users } from "lucide-react";
+import AdminSectionNav from "@/components/AdminSectionNav";
 import nextDynamic from "next/dynamic";
 import { prisma } from "@/lib/db";
 import OrderStatusSelector from "@/components/OrderStatusSelector";
@@ -185,11 +187,33 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           </div>
         </div>
 
+        {/* Yapışkan "bölüme git" çubuğu (tüm bölümlere bağlantı; kapalı bölümü açar) */}
+        <AdminSectionNav
+          items={[
+            { id: "kargonomi", label: "Kargonomi" },
+            { id: "trendyol", label: "Trendyol" },
+            { id: "yeni-avize", label: "Yeni Avize" },
+            { id: "indirim", label: "İndirim Ayarları" },
+            { id: "oturumlar", label: "Oturumlar" },
+            { id: "guvenlik", label: "İki Aşamalı Doğrulama" },
+            { id: "yonetici-sifre", label: "Şifre" },
+            { id: "kategoriler", label: "Kategoriler" },
+            { id: "ana-sayfa", label: "Ana Sayfa" },
+            { id: "kuponlar", label: "Promosyon Kodları" },
+            { id: "urunler", label: "Tüm Ürünler" },
+            { id: "siparisler", label: "Siparişler" },
+            { id: "mesajlar", label: "Mesajlar" },
+            { id: "yorumlar", label: "Yorumlar" },
+            { id: "kurumsal", label: "Kurumsal" },
+            { id: "musteri-hareketleri", label: "Müşteriler" },
+          ]}
+        />
+
         {/* Kargonomi API v1 Canlı Kontrol & Bakiye Barı */}
         <AdminKargonomiHeader />
 
         {/* Trendyol ürün senkronizasyonu (varsayılan kapalı; bileşen state'i gövde gizliyken de korunur) */}
-        <AdminSection id="trendyol" title="Trendyol Ürünleri" description="Mağazadaki ürünleri, fiyat ve stokları Trendyol'dan önizleyip seçerek güncelleyin.">
+        <AdminSection id="trendyol" icon={<ShoppingBag aria-hidden="true" className="w-4 h-4 text-amber-600" />} title="Trendyol Ürünleri" description="Mağazadaki ürünleri, fiyat ve stokları Trendyol'dan önizleyip seçerek güncelleyin.">
           <AdminTrendyolSync />
         </AdminSection>
 
@@ -242,10 +266,10 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
 
         <AdminDiscountSettings initial={discountCap} />
         <AdminSessions />
-        <AdminSection id="guvenlik" title="İki Aşamalı Doğrulama (Yönetici Hesapları)" description="Yönetici girişine e-posta kodu ekleyin veya kapatın.">
+        <AdminSection id="guvenlik" icon={<ShieldCheck aria-hidden="true" className="w-4 h-4 text-amber-600" />} title="İki Aşamalı Doğrulama (Yönetici Hesapları)" description="Yönetici girişine e-posta kodu ekleyin veya kapatın.">
           <AdminTwoFactor admins={adminRows} />
         </AdminSection>
-        <AdminSection id="yonetici-sifre" title="Yönetici Şifresini Değiştir" description="E-posta kodu ile yönetici hesabının şifresini yenileyin.">
+        <AdminSection id="yonetici-sifre" icon={<KeyRound aria-hidden="true" className="w-4 h-4 text-amber-600" />} title="Yönetici Şifresini Değiştir" description="E-posta kodu ile yönetici hesabının şifresini yenileyin.">
           <AdminPasswordChange />
         </AdminSection>
 
@@ -292,6 +316,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         {/* 4. Canlı Siparişler & Kargonomi Operasyon Tablosu */}
         <AdminSection
           id="siparisler"
+          icon={<Package aria-hidden="true" className="w-4 h-4 text-amber-600" />}
           title="Gelen Siparişler, Durum & Kargonomi Yönetimi"
           description="Kargonomi gönderisi oluşturabilir, fiyat tekliflerini onaylayabilir ve PDF barkod çıktısı alabilirsiniz."
           badges={[
@@ -465,6 +490,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         {/* 5. Gelen Mesajlar & Sorular */}
         <AdminSection
           id="mesajlar"
+          icon={<MessageSquare aria-hidden="true" className="w-4 h-4 text-amber-600" />}
           title="Gelen Mesajlar & Ürün Soruları"
           description="İletişim formu mesajları ve ürün soruları. Yanıtınız müşteriye e-posta ile iletilir ve hesabında görünür."
           badges={[{ label: `${pendingMessages} okunmamış`, tone: pendingMessages > 0 ? "amber" : "neutral" }]}
@@ -490,6 +516,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         {/* 6. Müşteri Yorumları & Fotoğraflar */}
         <AdminSection
           id="yorumlar"
+          icon={<Star aria-hidden="true" className="w-4 h-4 text-amber-600" />}
           title="Müşteri Yorumları & Fotoğraflar"
           description="Yorumlar ve fotoğraflar onaylanana kadar sitede görünmez. Yeşil tik yayınlar, kırmızı çarpı reddeder."
           badges={[{ label: `${pendingReviews} onay bekliyor`, tone: pendingReviews > 0 ? "amber" : "neutral" }]}
@@ -512,6 +539,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         {/* 7. Kurumsal & Yasal Bilgiler */}
         <AdminSection
           id="kurumsal"
+          icon={<Building2 aria-hidden="true" className="w-4 h-4 text-amber-600" />}
           title="Kurumsal & Yasal Bilgiler (MERSİS / KEP / ETBİS)"
           description="Footer ve İletişim sayfasında görünen unvan, vergi, MERSİS, KEP, adres ve ETBİS karekodu."
         >
@@ -521,6 +549,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         {/* 8. Müşteriler & Son 3 Gün Hareket/Hata Kaydı */}
         <AdminSection
           id="musteri-hareketleri"
+          icon={<Users aria-hidden="true" className="w-4 h-4 text-amber-600" />}
           title="Müşteriler & Son 3 Gün Hareket / Hata Kaydı"
           description="Arama, sepete ekleme, ödeme adımı ve karşılaşılan hatalar. Kayıtlar 3 gün sonra otomatik silinir."
           badges={[

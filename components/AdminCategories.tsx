@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ChevronDown, FolderTree } from "lucide-react";
+import { useOpenOnHash } from "@/components/useOpenOnHash";
 import { MAX_CATEGORY_NAME, type CategorySettings } from "@/lib/category-settings";
 
 export interface CategoryRowInfo {
@@ -26,6 +27,7 @@ const btnCls = "text-xs font-semibold border border-neutral-300 hover:bg-neutral
 export default function AdminCategories({ entries, settings, uncategorized }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  useOpenOnHash("kategoriler", setOpen);
   const [busy, setBusy] = useState(false);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [undo, setUndo] = useState<{ snapshot: unknown; label: string } | null>(null);
@@ -107,7 +109,7 @@ export default function AdminCategories({ entries, settings, uncategorized }: Pr
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden shadow-sm">
+    <div id="kategoriler" className="scroll-mt-[var(--admin-offset,6rem)] bg-white rounded-2xl border border-neutral-200 overflow-hidden shadow-sm">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
