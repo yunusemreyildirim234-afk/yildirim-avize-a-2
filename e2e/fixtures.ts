@@ -1,4 +1,4 @@
-import { test as base, expect, type Page, type Request } from "@playwright/test";
+import { test as base, expect, type BrowserContext, type Page, type Request } from "@playwright/test";
 
 export { expect };
 
@@ -24,22 +24,29 @@ interface Fixtures {
   gtmRequests: Request[];
 }
 
+/**
+ * Ağ kilidi: yalnızca baseURL kökeni geçer. GTM/GA ve Trendyol CDN görselleri internete GİTMEDEN yerel taslakla karşılanır; geri kalan her harici istek engellenir.
+ * /api/events (istemci olay günlüğü) veritabanına yazdığı için taslaklanır: testler veritabanını değiştirmez.
+ * Testin kendi açtığı ek bağlamlar (ör. misafir müşteri) da bunu çağırmalıdır.
+ */
+export async function lockNetwork(context: BrowserContext, baseURL: string) {
+  const origin = new URL(baseURL).origin;
+  await context.route("**/*", (route) => {
+    const req = route.request();
+    const url = new URL(req.url());
+    if (url.origin === origin) {
+      if (url.pathname === "/api/events") return route.fulfill({ status: 204, body: "" });
+      return route.continue();
+    }
+    if (GTM_HOST.test(url.hostname)) return route.fulfill({ status: 200, contentType: "application/javascript", body: "/* e2e stub */" });
+    if (IMAGE_CDN_HOST.test(url.hostname)) return route.fulfill({ status: 200, contentType: "image/png", body: PNG });
+    return route.abort("blockedbyclient");
+  });
+}
+
 export const test = base.extend<Fixtures>({
-  // Ağ kilidi: yalnızca baseURL kökeni geçer. GTM/GA ve Trendyol CDN görselleri internete GİTMEDEN yerel taslakla karşılanır; geri kalan her harici istek engellenir.
-  // /api/events (istemci olay günlüğü) veritabanına yazdığı için taslaklanır: testler veritabanını değiştirmez.
   context: async ({ context, baseURL }, use) => {
-    const origin = new URL(baseURL!).origin;
-    await context.route("**/*", (route) => {
-      const req = route.request();
-      const url = new URL(req.url());
-      if (url.origin === origin) {
-        if (url.pathname === "/api/events") return route.fulfill({ status: 204, body: "" });
-        return route.continue();
-      }
-      if (GTM_HOST.test(url.hostname)) return route.fulfill({ status: 200, contentType: "application/javascript", body: "/* e2e stub */" });
-      if (IMAGE_CDN_HOST.test(url.hostname)) return route.fulfill({ status: 200, contentType: "image/png", body: PNG });
-      return route.abort("blockedbyclient");
-    });
+    await lockNetwork(context, baseURL!);
     await use(context);
   },
   consoleErrors: async ({ page }, use) => {

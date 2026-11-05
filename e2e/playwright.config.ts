@@ -88,8 +88,8 @@ export default defineConfig({
     serviceWorkers: "block",
   },
   projects: [
-    { name: "desktop", testIgnore: /tests[\/]admin[\/]/, use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 } } },
-    { name: "mobile", testIgnore: /tests[\/]admin[\/]/, use: { ...devices["Desktop Chrome"], viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } },
+    { name: "desktop", testIgnore: /tests[\/](admin|orders)[\/]/, use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 } } },
+    { name: "mobile", testIgnore: /tests[\/](admin|orders)[\/]/, use: { ...devices["Desktop Chrome"], viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } },
     // Admin: gerçek giriş akışı bir kez çalışır (storageState), testler yalnızca masaüstünde ve sırayla. Kalıntı denetimi teardown olarak en sonda.
     { name: "admin-setup", testMatch: /admin[\/]setup\.ts$/, teardown: "admin-audit", timeout: 180_000, use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 } } },
     { name: "admin-audit", testMatch: /admin[\/]audit\.ts$/, timeout: 180_000 },
@@ -98,6 +98,14 @@ export default defineConfig({
       testMatch: /admin[\/][a-z]-.*\.spec\.ts$/,
       dependencies: ["admin-setup", "desktop", "mobile"], // admin testleri geçici veri yazar: herkese açık testlerden sonra
       timeout: 180_000, // yönetim sayfası ~240 ürünü yükler; uzak (Neon) veritabanı + çok adımlı akışlar
+      use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 }, storageState: ADMIN_STATE },
+    },
+    // Sipariş akışı (havale): yönetici oturumuyla E2E ürün/kupon üretir, müşteri bağlamını kendisi açar; sırayla, herkese açık testlerden sonra. Kalıntı denetimi (admin-audit) bunu da kapsar.
+    {
+      name: "orders",
+      testMatch: /orders[\/][a-z]-.*\.spec\.ts$/,
+      dependencies: ["admin-setup", "desktop", "mobile"],
+      timeout: 240_000,
       use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 }, storageState: ADMIN_STATE },
     },
   ],

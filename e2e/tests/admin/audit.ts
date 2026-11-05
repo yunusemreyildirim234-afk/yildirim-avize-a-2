@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { db } from "../../db";
 
-// Kalıntı denetimi (teardown): yalnızca SELECT. "E2E " önekli ürün/kategori/kupon kalıntısı varsa başarısız olur; silme/yazma yapmaz.
+// Kalıntı denetimi (teardown): yalnızca SELECT. "E2E " önekli ürün/kategori/kupon ve sahte e-postalı sipariş/kullanıcı/bildirim kalıntısı varsa başarısız olur; silme/yazma yapmaz.
 test("E2E kalıntı denetimi (yalnızca SELECT)", async () => {
   await db(async (client) => {
     await client.query("BEGIN READ ONLY"); // salt okunur işlem: yazma sorgusu çalışamaz; sonda ROLLBACK
@@ -12,6 +12,15 @@ test("E2E kalıntı denetimi (yalnızca SELECT)", async () => {
     leftovers.push(...coupons.rows.map((r) => `kupon: ${r.code}`));
     const notes = await client.query(`select title from "Notification" where title ilike 'E2E %'`);
     leftovers.push(...notes.rows.map((r) => `bildirim: ${r.title}`));
+    // Sipariş akışı (Aşama 3): sahte e-postalı müşteri, siparişleri, bildirimleri ve E2E kuponuyla verilmiş siparişler
+    const users = await client.query(`select email from "User" where email ilike 'e2e-%@example.invalid'`);
+    leftovers.push(...users.rows.map((r) => `kullanıcı: ${r.email}`));
+    const orders = await client.query(`select o.id from "Order" o join "User" u on u.id = o."userId" where u.email ilike 'e2e-%@example.invalid' or o."couponCode" ilike 'E2E%'`);
+    leftovers.push(...orders.rows.map((r) => `sipariş: ${r.id}`));
+    const orderNotes = await client.query(
+      `select n.title from "Notification" n where n."userEmail" ilike 'e2e-%@example.invalid' or n."userId" in (select id from "User" where email ilike 'e2e-%@example.invalid') or (n."userId" is null and n."userEmail" is null and n.message ilike 'E2E %')`
+    );
+    leftovers.push(...orderNotes.rows.map((r) => `sipariş bildirimi: ${r.title}`));
     const cats = await client.query(`select to_jsonb(s) as j from "SiteConfig" s where id = 1`);
     const cfg = JSON.stringify(cats.rows[0]?.j ?? {});
     for (const m of cfg.match(/e2e[ -][^"\,]*/gi) ?? []) leftovers.push(`kategori/ayar: ${m}`);
