@@ -43,6 +43,7 @@
 - Canlı veritabanına yazma ve dış servise istek yok; `.env` okunmaz.
 
 - Commit edilmemiş değişiklikleri etkileyen git komutları yasak: `git stash`, `git reset --hard`, `git checkout -- <dosya>`, `git clean`, `git restore`. Önce/sonra karşılaştırması gerekiyorsa `git worktree` veya dosya kopyası kullan. Commit edilmemiş dosya varsa önce sor.
+- Bu git komutları `.claude/settings.json` içindeki `permissions.deny` kurallarıyla da teknik olarak engellenir.
 
 
 
