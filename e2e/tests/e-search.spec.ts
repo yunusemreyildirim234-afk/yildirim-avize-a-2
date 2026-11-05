@@ -32,10 +32,13 @@ test.describe("e) Arama (salt okunur)", () => {
   test("arama kutusu sonuç listesini gösterir", async ({ page }, info) => {
     await openOk(page, "/");
     if (info.project.name === "mobile") await page.getByRole("button", { name: "Ürün ara" }).first().click();
-    const input = page.getByLabel("Ürün adı, model kodu veya stok kodu ile ara").last();
-    await input.fill("avize");
+    // Odaklanınca mobil katman da DOM'a eklenir (masaüstünde gizli ikinci kutu): yalnızca görünür olanı seç.
+    const input = page.getByLabel("Ürün adı, model kodu veya stok kodu ile ara").and(page.locator(":visible"));
     const list = page.getByRole("listbox", { name: "Arama sonuçları" });
     const none = page.getByText(/bulunamadı|sonuç yok/i);
+    await expect(input).toBeVisible();
+    await input.fill("avize");
+    await expect(input).toHaveValue("avize");
     await expect(list.or(none).first()).toBeVisible();
   });
 });
