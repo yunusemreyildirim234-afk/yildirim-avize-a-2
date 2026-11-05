@@ -29,7 +29,7 @@ test.describe("j) Giriş/kayıt formu: mobil alan boyutu ve ayırıcı", () => {
 
   test("'veya e-posta ile' ayırıcısı 320-640 px arasında tek satır, yatay taşma yok", async ({ page }) => {
     await openOk(page, "/giris");
-    for (const width of [320, 360, 390, 480, 640]) {
+    for (const width of [320, 360, 390, 480, 640, 1280]) {
       await page.setViewportSize({ width, height: 800 });
       const sep = page.getByText("veya e-posta ile", { exact: true });
       await expect(sep).toBeVisible();
@@ -38,6 +38,13 @@ test.describe("j) Giriş/kayıt formu: mobil alan boyutu ve ayırıcı", () => {
         const lh = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.5;
         return { lines: Math.round(el.getBoundingClientRect().height / lh), overflow: document.documentElement.scrollWidth - window.innerWidth };
       });
+      const lines = await sep.evaluate((el) => {
+        const w = (e: Element | null) => (e ? e.getBoundingClientRect().width : 0);
+        return { left: w(el.previousElementSibling), right: w(el.nextElementSibling) };
+      });
+      expect(lines.left, `sol çizgi görünür @${width}`).toBeGreaterThan(8);
+      expect(lines.right, `sağ çizgi görünür @${width}`).toBeGreaterThan(8);
+      expect(Math.abs(lines.left - lines.right), `çizgiler simetrik @${width}`).toBeLessThanOrEqual(2);
       expect(info.lines, `satır sayısı @${width}`).toBe(1);
       expect(info.overflow, `yatay taşma @${width}`).toBeLessThanOrEqual(0);
     }

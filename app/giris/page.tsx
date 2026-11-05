@@ -375,11 +375,12 @@ export default function AuthPage() {
           <span>Google ile Hızlı Giriş Yap</span>
         </a>
 
-        <div className="relative flex items-center justify-center my-3">
-          <div className="border-t border-neutral-200 w-full" />
-          <span className="bg-white px-3 whitespace-nowrap text-[11px] text-neutral-400 uppercase tracking-wider relative font-medium">
+        <div className="flex items-center gap-2 sm:gap-3 my-3">
+          <div aria-hidden="true" className="flex-1 min-w-0 border-t border-neutral-200" />
+          <span className="shrink-0 whitespace-nowrap text-[10px] sm:text-[11px] text-neutral-400 uppercase tracking-wide sm:tracking-wider font-medium">
             veya e-posta ile
           </span>
+          <div aria-hidden="true" className="flex-1 min-w-0 border-t border-neutral-200" />
         </div>
 
         <AuthForms
