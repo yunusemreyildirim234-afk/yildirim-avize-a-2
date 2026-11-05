@@ -40,7 +40,12 @@
 
 - Bir iş tek push ile bitirilir, her bölüm ayrı commit olur (Vercel Functions Storage sınırı).
 
-- Canlı veritabanına yazma ve dış servise istek yok; `.env` okunmaz.
+- Kod ve testler canlı veritabanına yazmaz, dış servise istek atmaz, `.env` okunmaz. **TEK İSTİSNA:** kullanıcı açıkça isterse VE admin oturumunu kendisi açtıysa, yerleşik tarayıcı panelinde canlı admin paneli üzerinden işlem yapılabilir. Bu durumda:
+  - (a) Okuma serbesttir.
+  - (b) Her yazma işleminden önce ne yapacağını tek cümleyle yaz, uygula, sonra eski → yeni değeri raporla ve `CANLI_ISLEM_GUNLUGU.md`'ye tarih/saat ile ekle.
+  - (c) Sipariş durumu değişikliği, ürün silme, fiyat/stok/kupon değişikliği ve toplu işlemlerde işlemden ÖNCE onay sor.
+  - (d) Admin şifresi sohbete/dosyaya yazılmaz; kullanıcı panelde kendisi girer.
+  - (e) Ödeme (PayTR) ve iade işlemleri hiçbir koşulda tarayıcıdan yapılmaz.
 
 - Commit edilmemiş değişiklikleri etkileyen git komutları yasak: `git stash`, `git reset --hard`, `git checkout -- <dosya>`, `git clean`, `git restore`. Önce/sonra karşılaştırması gerekiyorsa `git worktree` veya dosya kopyası kullan. Commit edilmemiş dosya varsa önce sor.
 - Bu git komutları `.claude/settings.json` içindeki `permissions.deny` kurallarıyla da teknik olarak engellenir.
@@ -95,4 +100,15 @@
 ## 7. Bağımlılık Kuralları
 - Prisma 7'de kal (^7.10.1); `npx prisma@latest` veya sürümsüz `npm install prisma` KULLANMA.
 - `lib/db.ts` sorgu uzantısı Prisma'nın dahili `__internalParams.transaction` alanına dayanır; Prisma güncellenirse `tests/db-retry.test.mjs` ve yeniden deneme davranışını yeniden doğrula.
+
+## 8. e2e Testleri (Playwright)
+- `e2e/` kök projeden bağımsız alt projedir (kendi `package.json`); köke bağımlılık eklenmez. Ayrıntı: `e2e/README.md`.
+- Komutlar (`cd e2e`): `npm test` (hepsi), `npm run test:desktop`, `npm run test:mobile`, `npm run test:admin`, `npm run report`.
+- `E2E_DATABASE_URL` yalnızca `e2e/.env.e2e` içindedir (git'te yok; okunmaz, yazdırılmaz). Neon dalı `e2e-test`'tir.
+- `public.e2e_marker` güvenlik kilidi (`e2e/safety.cjs`) hiçbir koşulda zayıflatılmaz veya atlanmaz.
+- Neon dalı 5 dk boşta uykuya geçer; koşudan önce Neon SQL Editor'de `e2e-test` dalında `select 1` çalıştır.
+- Testler dış servis çağırmaz: Resend/PayTR/Kargonomi anahtarları boştur, GTM isteği engellidir.
+- Admin testleri yalnızca masaüstünde, `workers: 1` ile, herkese açık testlerden sonra çalışır; `E2E ` önekli veri üretir, temizler ve kalıntı denetimi (`audit.ts`) vardır.
+- Tek sunucu süreci çalışır (`next start -p 3100`); bitince kapat (bellek). Kök `.next` paylaşılır.
+- Testlerin bulduğu site hataları düzeltilmez, ayrı iş olarak raporlanır. `a-smoke` anonim 401 testi bilerek `test.fail` işaretlidir.
 

@@ -50,6 +50,7 @@ TARAMA_RAPORU.md
 GENEL_TARAMA_ILERLEME.md
 PRISMA8_HAZIRLIK.md
 TRENDYOL_TASARIM.md
+CANLI_ISLEM_GUNLUGU.md
 
 # Prisma 7 uretilmis istemci (derlemede "prisma generate" ile olusur)
 /generated/prisma
