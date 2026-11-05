@@ -57,7 +57,7 @@ async function call(body: object) {
 
 export default function AdminTrendyolSync() {
   const router = useRouter();
-  const [settings, setSettings] = useState<Settings>(allOf("KEEP"));
+  const [settings, setSettings] = useState<Settings>(STOCK_ONLY);
   const [preview, setPreview] = useState<Preview | null>(null);
   const [previewSettings, setPreviewSettings] = useState<Settings | null>(null);
   const [checked, setChecked] = useState<Set<string>>(new Set());

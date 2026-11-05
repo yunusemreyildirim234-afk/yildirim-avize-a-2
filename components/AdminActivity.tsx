@@ -40,7 +40,7 @@ E-posta, şifre ve rol değişmez. Onaylıyor musunuz?`)) return;
         {r.isAdmin && <span className="bg-neutral-900 text-white font-bold text-[10px] px-2 py-0.5 rounded-full">Yönetici hesabı</span>}
         {r.errors.length > 0 && <span className="bg-red-100 text-red-800 font-bold text-[10px] px-2 py-0.5 rounded-full">{r.errors.length} hata</span>}
         {r.userId && (
-          <button type="button" onClick={editName} className="ml-auto text-[11px] font-semibold text-amber-800 hover:underline">
+          <button type="button" onClick={editName} className="ml-auto inline-flex min-h-9 items-center rounded-lg border border-neutral-300 px-2.5 text-[11px] font-semibold text-amber-800 hover:bg-amber-50 focus-visible:outline-2 focus-visible:outline-amber-600">
             Düzenle
           </button>
         )}
@@ -50,7 +50,7 @@ E-posta, şifre ve rol değişmez. Onaylıyor musunuz?`)) return;
           label="Kaydı Sil"
           confirmText={guest ? "Bu misafirin 3 günlük hareket kayıtları silinecek." : "Bu üyenin 3 günlük hareket kayıtları silinecek (üye hesabı silinmez)."}
           disabled={quiet}
-          className={r.userId ? "" : "ml-auto"}
+          className={`min-h-9 ${r.userId ? "ml-4" : "ml-auto"}`}
         />
       </div>
       <p className="text-neutral-500">

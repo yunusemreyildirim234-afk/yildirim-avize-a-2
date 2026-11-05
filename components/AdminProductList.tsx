@@ -259,7 +259,7 @@ Yine de geri alınsın mı?`)) await doUndo(true);
   });
 
   // Stok Artır / Azalt
-  const handleStockChange = async (variationId: string, newStock: number) => {
+  const handleStockChange = async (variationId: string, newStock: number, oldStock: number) => {
     setLoadingId(variationId);
     try {
       const res = await fetch("/api/admin/product", {
@@ -269,7 +269,7 @@ Yine de geri alınsın mı?`)) await doUndo(true);
       });
       const data = await res.json();
       if (data.success) {
-        if (data.snapshot) setUndo({ snapshot: data.snapshot, label: "Stok değişikliği" });
+        if (data.snapshot) setUndo({ snapshot: data.snapshot, label: `Stok ${oldStock} → ${newStock}` });
         router.refresh();
       } else {
         alert("Stok güncellenemedi: " + data.error);
@@ -492,22 +492,23 @@ Yine de geri alınsın mı?`)) await doUndo(true);
                     <span className="text-[10px] text-neutral-400">Stok: <strong className="text-neutral-900">{v.stock}</strong></span>
                   </div>
 
-                  <div className="flex items-center border border-neutral-200 rounded-lg overflow-hidden">
+                  {/* Tek tıkla canlı stok değişir: büyük dokunma alanı (mobilde 40px) ve ayrı, birbirine yapışmayan düğmeler */}
+                  <div className="flex items-center gap-3">
                     <button
                       type="button"
                       aria-disabled={loadingId === v.id || v.stock <= 0}
-                      onClick={() => { if (loadingId !== v.id && v.stock > 0) handleStockChange(v.id, v.stock - 1); }}
+                      onClick={() => { if (loadingId !== v.id && v.stock > 0) handleStockChange(v.id, v.stock - 1, v.stock); }}
                       aria-label={`${v.variationValue} stoğunu azalt`}
-                      className="px-2 py-0.5 hover:bg-neutral-100 text-neutral-600 font-bold aria-disabled:opacity-40"
+                      className="inline-flex h-10 w-10 sm:h-9 sm:w-9 items-center justify-center rounded-lg border border-neutral-300 text-base hover:bg-neutral-100 text-neutral-700 font-bold aria-disabled:opacity-40"
                     >
-                      -
+                      −
                     </button>
                     <button
                       type="button"
                       aria-disabled={loadingId === v.id}
-                      onClick={() => { if (loadingId !== v.id) handleStockChange(v.id, v.stock + 1); }}
+                      onClick={() => { if (loadingId !== v.id) handleStockChange(v.id, v.stock + 1, v.stock); }}
                       aria-label={`${v.variationValue} stoğunu artır`}
-                      className="px-2 py-0.5 hover:bg-neutral-100 text-neutral-600 font-bold aria-disabled:opacity-40 border-l border-neutral-200"
+                      className="inline-flex h-10 w-10 sm:h-9 sm:w-9 items-center justify-center rounded-lg border border-neutral-300 text-base hover:bg-neutral-100 text-neutral-700 font-bold aria-disabled:opacity-40"
                     >
                       +
                     </button>
@@ -517,12 +518,12 @@ Yine de geri alınsın mı?`)) await doUndo(true);
             </div>
 
             {/* Sağ: Düzenle ve Sil */}
-            <div className="flex items-center gap-1 self-end md:self-center">
+            <div className="flex flex-wrap items-center gap-1 self-end md:self-center">
             <a
               href={`/urun/${product.id}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-neutral-600 hover:text-amber-700 text-xs font-medium p-2 rounded-lg hover:bg-amber-50 transition-colors"
+              className="inline-flex min-h-10 items-center gap-1 text-neutral-600 hover:text-amber-700 text-xs font-medium px-3 rounded-lg hover:bg-amber-50 transition-colors"
             >
               <ExternalLink aria-hidden="true" className="w-3.5 h-3.5" /> Sitede Gör
             </a>
@@ -530,7 +531,7 @@ Yine de geri alınsın mı?`)) await doUndo(true);
               type="button"
               onClick={() => setEditingId((id) => (id === product.id ? null : product.id))}
               aria-expanded={editingId === product.id}
-              className="text-neutral-600 hover:text-amber-700 text-xs font-medium p-2 rounded-lg hover:bg-amber-50 transition-colors"
+              className="inline-flex min-h-10 items-center text-neutral-600 hover:text-amber-700 text-xs font-medium px-3 rounded-lg hover:bg-amber-50 transition-colors"
             >
               ✏️ {editingId === product.id ? "Kapat" : "Düzenle"}
             </button>
@@ -538,7 +539,7 @@ Yine de geri alınsın mı?`)) await doUndo(true);
               type="button"
               disabled={loadingId === product.id}
               onClick={() => handleDeleteProduct(product.id, product.title)}
-              className="text-neutral-400 hover:text-red-600 text-xs font-medium p-2 rounded-lg hover:bg-red-50 transition-colors"
+              className="ml-4 inline-flex min-h-10 items-center border border-red-200 text-red-700 hover:bg-red-50 text-xs font-semibold px-3 rounded-lg transition-colors disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-red-600"
               title="Avizeyi Katalogdan Sil"
             >
               🗑️ Modeli Sil
