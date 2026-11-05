@@ -1,4 +1,4 @@
-# e2e (Playwright) — Aşama 1: herkese açık sayfalar ve güvenlik; Aşama 2: yönetim paneli
+# e2e (Playwright) — Aşama 1: herkese açık sayfalar ve güvenlik; Aşama 2: yönetim paneli; Aşama 3: havale siparişi
 
 Kök projeden bağımsız alt projedir (kendi `package.json`). Kök bağımlılıklar değişmez.
 
@@ -22,6 +22,7 @@ npm test              # hepsi: masaüstü + mobil (herkese açık) sonra admin; 
 npm run test:desktop  # yalnızca herkese açık testler, 1280x800
 npm run test:mobile   # yalnızca herkese açık testler, 390x844
 npm run test:admin    # yalnızca yönetim paneli (giriş kurulumu + admin testleri + kalıntı denetimi)
+npm run test:orders   # yalnızca havale sipariş akışı (giriş kurulumu + sipariş testleri + kalıntı denetimi)
 npm run report        # playwright-report/ klasörünü açar
 ```
 
@@ -58,6 +59,17 @@ Yardımcılar: `admin-helpers.ts` (PNG üretici, form doldurma, temizlik), `db.t
 
 Yönetici işlemleri `revalidateTag("storefront","max")` çağırır; bu "eskiyi sun, arkada yenile" davranışıdır: değişiklikten hemen sonraki ilk istek eski veriyi görebilir.
 Testler vitrin durumunu bu yüzden `expect.poll` ile (en çok 30 sn) yoklar.
+
+## Aşama 3: havale siparişi akışı
+
+Dosyalar `tests/orders/` altındadır: `p-siparis.spec.ts` (sıralı, veri üretir), `q-dogrulama.spec.ts` (sipariş oluşmaz). Yardımcılar: `order-helpers.ts`.
+Proje `orders`: yalnızca masaüstü, `workers: 1`, herkese açık testlerden sonra, yönetici `storageState`'iyle; müşteri tarafı ayrı, oturumsuz bir bağlamda çalışır.
+
+- **Kartlı ödeme test edilmez**: PayTR'ye hiç istek gitmez. Kargonomi il/ilçe uçları (anahtarsız 502) yalnızca müşteri bağlamında `page.route` ile sabit yanıtlarla taklit edilir. Resend anahtarı boştur; e-posta gönderilemese de sipariş başarılı olmalıdır (doğrulanır).
+- **Hız sınırı**: `/api/order` bellek içi 10 dk'da 5 istek sınırı başarısız istekleri de sayar. Bir koşuda en çok 4 istek ulaşır (ana sipariş, kuponlu sipariş, kupon limit ret çağrısı, stok siparişi). Doğrulama testleri `/api/order`'ı tarayıcıda taklit eder; sunucuya gitmez. Aynı sunucu sürecinde 10 dk içinde ikinci koşu hız sınırına takılır (yeni `npm test` yeni süreç başlatır).
+- **Veri**: yönetim arayüzüyle "E2E Sipariş" önekli iki ürün (stok 5 / stok 2) ve API ile kişi başı limitli "E2EKUPON…" kuponu; müşteriler `e2e-siparis@example.invalid`, `e2e-siparis2@example.invalid`, `e2e-siparis3@example.invalid` (açıkça sahte). `afterAll`: sipariş/bildirim/misafir kullanıcı (yalnızca bu e-postalar), sonra ürünler, sonra kupon silinir.
+- **Kalıntı denetimi** (`admin/audit.ts`, yalnızca SELECT) sahte e-postalı kullanıcı, sipariş ve bildirim kalıntısını da arar.
+- **Bulgular** (siteye dokunulmaz) `test.fail` ile işaretlidir; site düzeltilince test "beklenmedik geçti" diye uyarır: `maskName` ad maskelemiyor, telefon biçimi doğrulanmıyor, stok tükenince ürün sayfası önbelleği yenilenmiyor. Ayrıca `/siparis-onay/<id>` sahiplik kontrolü yapmaz (kimlik bilen görür) ve var olmayan kimlikte HTTP 200 ile 404 içeriği döner (annotation olarak raporlanır).
 
 ## Güvenlik ilkeleri
 

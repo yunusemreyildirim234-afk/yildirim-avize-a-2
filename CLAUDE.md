@@ -110,5 +110,6 @@
 - Testler dış servis çağırmaz: Resend/PayTR/Kargonomi anahtarları boştur, GTM isteği engellidir.
 - Admin testleri yalnızca masaüstünde, `workers: 1` ile, herkese açık testlerden sonra çalışır; `E2E ` önekli veri üretir, temizler ve kalıntı denetimi (`audit.ts`) vardır.
 - Tek sunucu süreci çalışır (`next start -p 3100`); bitince kapat (bellek). Kök `.next` paylaşılır.
+- Sipariş testleri (`npm run test:orders`): kartlı ödeme test edilmez; Kargonomi yalnızca testte `page.route` ile taklit edilir. `/api/order` hız sınırı (10 dk'da 5) nedeniyle bir koşuda en çok 4 sipariş isteği sunucuya gider; sahte müşteri e-postası `e2e-*@example.invalid`, temizlik yalnızca bu e-postalara ve `E2E` önekli ürün/kuponlara dokunur.
 - Testlerin bulduğu site hataları düzeltilmez, ayrı iş olarak raporlanır. `a-smoke` anonim 401 testi bilerek `test.fail` işaretlidir.
 
