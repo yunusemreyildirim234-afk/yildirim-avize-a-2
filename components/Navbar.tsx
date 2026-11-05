@@ -66,7 +66,9 @@ const CORPORATE_LINKS = [
 const itemClass =
   "flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 transition-colors w-full text-left";
 
-export default function Navbar({ extraCategories = [], fixedOverrides = {} }: { extraCategories?: { href: string; label: string }[]; fixedOverrides?: Record<string, { title?: string; hidden?: boolean }> }) {
+export default function Navbar({ extraCategories = [], fixedOverrides = {}, showGallery = true }: { extraCategories?: { href: string; label: string }[]; fixedOverrides?: Record<string, { title?: string; hidden?: boolean }>; showGallery?: boolean }) {
+  // Yayınlanmış müşteri fotoğrafı yokken "Müşterilerimizden Gelenler" menüde görünmez
+  const discoverLinks = DISCOVER_LINKS.filter((l) => showGallery || l.href !== "/musterilerimizden-gelenler");
   // Sabit bağlantılar aynen (yönetici görünen adı değiştirdiyse yeni ad, gizlediyse menüde yok); sonradan eklenen koleksiyonlar arkasına (masaüstü menü, mobil şerit ve çekmece aynı listeyi kullanır)
   const categoryLinks = [
     ...CATEGORY_LINKS.filter((l) => !fixedOverrides[l.href.split("/").pop() ?? ""]?.hidden).map((l) => ({ ...l, label: fixedOverrides[l.href.split("/").pop() ?? ""]?.title ?? l.label })),
@@ -180,7 +182,7 @@ export default function Navbar({ extraCategories = [], fixedOverrides = {} }: { 
                 </div>
                 <div className="border-l border-zinc-100 pl-4">
                   <h2 className="px-3 pb-2 text-[11px] font-bold uppercase tracking-wider text-zinc-400">Keşfet</h2>
-                  {DISCOVER_LINKS.map(({ href, label, icon: Icon }) => (
+                  {discoverLinks.map(({ href, label, icon: Icon }) => (
                     <Link key={href} href={href} role="menuitem" onClick={close} className={itemClass}>
                       <Icon aria-hidden="true" className="w-4 h-4 text-amber-600 shrink-0" />
                       {label}
@@ -334,7 +336,7 @@ export default function Navbar({ extraCategories = [], fixedOverrides = {} }: { 
               </div>
               <div>
                 <h2 className="px-3 pb-1 text-[11px] font-bold uppercase tracking-wider text-zinc-400">Keşfet</h2>
-                {DISCOVER_LINKS.map(({ href, label, icon: Icon }) => (
+                {discoverLinks.map(({ href, label, icon: Icon }) => (
                   <Link key={href} href={href} onClick={() => setDrawerOpen(false)} className={itemClass}>
                     <Icon aria-hidden="true" className="w-4 h-4 text-amber-600 shrink-0" />
                     {label}

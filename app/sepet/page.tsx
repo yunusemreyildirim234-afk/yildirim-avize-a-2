@@ -434,9 +434,9 @@ export default function CartPage() {
       <main className="min-h-screen bg-neutral-50 py-20 px-4 text-center">
         <div className="max-w-md mx-auto space-y-4">
           <span aria-hidden="true" className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-500"><ShoppingBag className="h-7 w-7" /></span>
-          <h2 className="text-2xl font-serif font-bold text-neutral-900">
+          <h1 className="text-2xl font-serif font-bold text-neutral-900">
             Sepetiniz Henüz Boş
-          </h2>
+          </h1>
           <p className="text-sm text-neutral-500">
             Beyoğlu koleksiyonumuzun kristal ve modern avizelerini keşfedin; ilk parçanız sizi bekliyor.
           </p>
@@ -490,7 +490,7 @@ export default function CartPage() {
             {/* Ürün Listesi */}
             <div className="space-y-4">
               <div className="flex justify-end">
-                <button type="button" onClick={emptyCart} className="text-xs font-semibold text-neutral-500 hover:text-red-600 underline underline-offset-2">
+                <button type="button" onClick={emptyCart} className="inline-flex min-h-10 items-center px-2 text-xs font-semibold text-neutral-500 hover:text-red-600 underline underline-offset-2">
                   Sepeti Boşalt
                 </button>
               </div>

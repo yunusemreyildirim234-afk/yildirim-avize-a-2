@@ -3,14 +3,20 @@ import Link from "next/link";
 import { Star } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { initials, REVIEW_STATUS } from "@/lib/reviews";
+import { getGalleryPhotoCount } from "@/lib/customer-gallery";
 
 export const revalidate = 60;
 
-export const metadata: Metadata = {
-  title: "Müşterilerimizden Gelenler",
-  description: "Yıldırım Avize müşterilerinin evlerinden ve mekanlarından gönderdiği avize fotoğrafları ve gerçek alışveriş yorumları.",
-  alternates: { canonical: "/musterilerimizden-gelenler" },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  // Yayınlanmış müşteri fotoğrafı yokken sayfa noindex; fotoğraf olunca kendiliğinden indekslenir
+  const count = await getGalleryPhotoCount();
+  return {
+    title: "Müşterilerimizden Gelenler",
+    description: "Yıldırım Avize müşterilerinin evlerinden ve mekanlarından gönderdiği avize fotoğrafları ve gerçek alışveriş yorumları.",
+    alternates: { canonical: "/musterilerimizden-gelenler" },
+    ...(count === 0 ? { robots: { index: false, follow: true } } : {}),
+  };
+}
 
 export default async function CustomerGalleryPage() {
   const reviews = await prisma.review

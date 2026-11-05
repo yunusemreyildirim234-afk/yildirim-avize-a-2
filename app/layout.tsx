@@ -8,6 +8,8 @@ import WhatsAppButton from "@/components/WhatsAppButton";
 import CookieBanner from "@/components/CookieBanner";
 import GoogleTagManager from "@/components/GoogleTagManager";
 import ToastLinkRouter from "@/components/ToastLinkRouter";
+import SkipLink from "@/components/SkipLink";
+import { getGalleryPhotoCount } from "@/lib/customer-gallery";
 import { getExtraCategoryLinks, getFixedCategoryOverrides } from "@/lib/category-list";
 import { CartProvider } from "@/context/CartContext";
 import { WishlistProvider } from "@/context/WishlistContext";
@@ -67,7 +69,8 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   // Yönetim panelinden eklenen koleksiyonlar (60 sn önbellek; hata olursa sabit menü)
-  const [extraCategories, fixedOverrides] = await Promise.all([getExtraCategoryLinks(), getFixedCategoryOverrides()]);
+  const [extraCategories, fixedOverrides, galleryCount] = await Promise.all([getExtraCategoryLinks(), getFixedCategoryOverrides(), getGalleryPhotoCount()]);
+  const showGallery = galleryCount > 0; // yayınlanmış müşteri fotoğrafı yokken bağlantı gizli
   return (
     <html lang="tr" suppressHydrationWarning>
       <head>
@@ -80,11 +83,12 @@ export default async function RootLayout({
         />
       </head>
       <body className={`${inter.className} bg-gray-50 text-gray-900 antialiased`}>
+        <SkipLink />
         <CartProvider>
           <WishlistProvider>
-            <Navbar extraCategories={extraCategories} fixedOverrides={fixedOverrides} />
+            <Navbar extraCategories={extraCategories} fixedOverrides={fixedOverrides} showGallery={showGallery} />
             {children}
-            <Footer extraCategories={extraCategories} fixedOverrides={fixedOverrides} />
+            <Footer extraCategories={extraCategories} fixedOverrides={fixedOverrides} showGallery={showGallery} />
             <WhatsAppButton />
             <CookieBanner />
             <GoogleTagManager />

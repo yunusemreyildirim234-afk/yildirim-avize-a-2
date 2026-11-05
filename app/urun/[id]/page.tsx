@@ -27,18 +27,26 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const product = await getProductDetail(id); // önbellekli (60 sn), sayfayla aynı sonuç
   if (!product || !product.active) return {};
+  // Satır sonları/yinelenen boşluklar tek boşluğa indirilir (og:description ve meta açıklama düz metin olsun)
   const description =
-    product.description?.slice(0, 160) || `${product.title} – Yıldırım Avize Beyoğlu Şişhane`;
+    (product.description ?? "").replace(/\s+/g, " ").trim().slice(0, 160) || `${product.title} – Yıldırım Avize Beyoğlu Şişhane`;
+  const cover = coverImageOf(product);
   return {
     title: product.title,
     description,
     alternates: { canonical: `/urun/${id}` },
+    // og:type "product" Next'in tip listesinde yok: sayfa gövdesindeki <meta property="og:type"> ile (React başlığa taşır) verilir
     openGraph: {
-      type: "website",
       title: product.title,
       description,
       url: `/urun/${id}`,
-      images: coverImageOf(product) ? [{ url: coverImageOf(product)!, alt: product.title }] : undefined,
+      images: cover ? [{ url: cover, alt: product.title }] : undefined,
+    },
+    twitter: {
+      card: "summary",
+      title: product.title,
+      description,
+      images: cover ? [cover] : undefined,
     },
   };
 }
@@ -113,6 +121,7 @@ export default async function ProductDetailPage({ params }: Props) {
 
   return (
     <main className="min-h-screen bg-neutral-50 py-12 px-4 sm:px-6 lg:px-8">
+      <meta property="og:type" content="product" />
       <div className="max-w-6xl mx-auto">
         <JsonLd data={productSchema} />
         <GtmEvent event={viewItemEvent([gaItem({ id: product.id, name: product.title, price: offer.price, category: product.category, brand: feedBrand(product.brand), variant: offer.variation?.variationValue })])} />

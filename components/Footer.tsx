@@ -12,7 +12,7 @@ const CHANNELS = [
   { label: "Trendyol Mağazamız", href: "https://www.trendyol.com/magaza/yildirimavize-m-379320?sst=0", icon: "🛒", highlight: true },
 ];
 
-export default function Footer({ extraCategories = [], fixedOverrides = {} }: { extraCategories?: { href: string; label: string }[]; fixedOverrides?: Record<string, { title?: string; hidden?: boolean }> }) {
+export default function Footer({ extraCategories = [], fixedOverrides = {}, showGallery = true }: { extraCategories?: { href: string; label: string }[]; fixedOverrides?: Record<string, { title?: string; hidden?: boolean }>; showGallery?: boolean }) {
   return (
     <footer className="keep-theme bg-zinc-950 text-white pt-16 pb-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-10 pb-12 border-b border-zinc-800">
@@ -96,11 +96,13 @@ export default function Footer({ extraCategories = [], fixedOverrides = {} }: { 
                 Mağaza Yol Tarifi & İletişim
               </Link>
             </li>
-            <li>
-              <Link href="/musterilerimizden-gelenler" className="block py-1.5 hover:text-amber-400 transition-colors">
-                Müşterilerimizden Gelenler
-              </Link>
-            </li>
+            {showGallery && (
+              <li>
+                <Link href="/musterilerimizden-gelenler" className="block py-1.5 hover:text-amber-400 transition-colors">
+                  Müşterilerimizden Gelenler
+                </Link>
+              </li>
+            )}
             <li>
               <Link href="/kargo-takip" className="block py-1.5 hover:text-amber-400 transition-colors">
                 Kargo & Sipariş Takibi

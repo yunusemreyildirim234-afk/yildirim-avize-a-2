@@ -144,11 +144,15 @@ export default async function CategoryPage({ params, searchParams }: Props) {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-            {products.map((product, i) => (
-              <ProductCard key={product.id} product={product} priority={i < 4} />
-            ))}
-          </div>
+          <>
+            {/* Başlık sırası h1 → h2 → h3 (kart başlıkları h3); görsel değişmez */}
+            <h2 className="sr-only">{current.title} ürünleri</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+              {products.map((product, i) => (
+                <ProductCard key={product.id} product={product} priority={i < 4} />
+              ))}
+            </div>
+          </>
         )}
         <Pagination path={path} page={page} pages={pages} params={query} label="Sayfalama (alt)" />
       </section>

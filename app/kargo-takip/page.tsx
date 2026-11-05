@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { prisma } from "@/lib/db";
 import OrderTracker from "@/components/OrderTracker";
 import { maskName } from "@/lib/mask-name";
@@ -9,31 +10,86 @@ export const metadata: Metadata = {
   alternates: { canonical: "/kargo-takip" },
 };
 
+// Sipariş sorgusu ayrı bir bileşendir: sayfa kabuğu (tek <main>, h1, form) hemen gelir; yalnızca sonuç alanı Suspense iskeletiyle bekler.
+async function OrderResult({ code }: { code: string }) {
+  const order = await prisma.order.findFirst({
+    where: { OR: [{ id: code }, { shippingTrackingCode: code }, { shippingBarcode: code }] },
+    // Yalnızca sayfanın ve takip çubuğunun kullandığı alanlar (adres, telefon, fatura bilgileri istemciye gitmez)
+    select: {
+      id: true,
+      status: true,
+      shippingType: true,
+      kargonomiStatus: true,
+      kargonomiStatusLabel: true,
+      cancelReturnType: true,
+      cancelReturnStatus: true,
+      createdAt: true,
+      updatedAt: true,
+      kargonomiShipmentId: true,
+      shippingProviderName: true,
+      shippingTrackingCode: true,
+      shippingBarcode: true,
+      user: { select: { name: true } },
+    },
+  });
+
+  if (!order) {
+    return (
+      <p role="alert" className="text-sm text-center text-red-600 bg-red-50 border border-red-200 rounded-xl p-4">
+        Bu kodla eşleşen bir sipariş bulunamadı.
+      </p>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-neutral-200 p-6 text-xs space-y-3 shadow-sm">
+      <div>
+        <span className="text-neutral-400">Sipariş No</span>
+        <p className="font-mono font-bold text-neutral-800 break-all">{order.id}</p>
+      </div>
+      <div className="pt-3 border-t border-neutral-100">
+        <span className="text-neutral-400">Alıcı</span>
+        <p className="font-semibold text-neutral-800">{maskName(order.user.name)}</p>
+      </div>
+      <div className="pt-3 border-t border-neutral-100">
+        <span className="text-neutral-400 block mb-2">Sipariş Durumu</span>
+        <OrderTracker order={order} />
+      </div>
+      {order.kargonomiShipmentId && (
+        <div className="pt-3 border-t border-neutral-100 space-y-1">
+          <span className="text-neutral-400">Kargo Firması</span>
+          <p className="text-sm font-bold text-orange-700">{order.shippingProviderName || "Aras Kargo"}</p>
+          <p className="font-semibold text-neutral-900">
+            {order.shippingTrackingCode || order.shippingBarcode ? order.kargonomiStatusLabel || "Kargo kaydı oluşturuldu" : "Kargo bilgileriniz hazırlanıyor"}
+          </p>
+          {order.shippingTrackingCode && (
+            <p className="text-neutral-600">
+              Takip kodu: <span className="font-mono">{order.shippingTrackingCode}</span>
+            </p>
+          )}
+          {order.shippingBarcode && (
+            <p className="text-neutral-600">
+              Barkod: <span className="font-mono">{order.shippingBarcode}</span>
+            </p>
+          )}
+          {(order.shippingTrackingCode || order.shippingBarcode) && (
+            <a
+              href={`https://kargotakip.araskargo.com.tr/?kargotakipno=${encodeURIComponent(order.shippingTrackingCode || order.shippingBarcode || "")}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block mt-2 bg-orange-600 hover:bg-orange-700 text-white font-semibold px-4 py-2.5 rounded-xl transition-colors"
+            >
+              Aras Kargo ile Canlı Takip Et ↗
+            </a>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default async function TrackingPage({ searchParams }: { searchParams: Promise<{ code?: string }> }) {
   const code = (await searchParams).code?.trim().slice(0, 100);
-
-  const order = code
-    ? await prisma.order.findFirst({
-        where: { OR: [{ id: code }, { shippingTrackingCode: code }, { shippingBarcode: code }] },
-        // Yalnızca sayfanın ve takip çubuğunun kullandığı alanlar (adres, telefon, fatura bilgileri istemciye gitmez)
-        select: {
-          id: true,
-          status: true,
-          shippingType: true,
-          kargonomiStatus: true,
-          kargonomiStatusLabel: true,
-          cancelReturnType: true,
-          cancelReturnStatus: true,
-          createdAt: true,
-          updatedAt: true,
-          kargonomiShipmentId: true,
-          shippingProviderName: true,
-          shippingTrackingCode: true,
-          shippingBarcode: true,
-          user: { select: { name: true } },
-        },
-      })
-    : null;
 
   return (
     <main className="min-h-screen bg-neutral-50 py-12 px-4 sm:px-6">
@@ -63,56 +119,16 @@ export default async function TrackingPage({ searchParams }: { searchParams: Pro
           </button>
         </form>
 
-        {code && !order && (
-          <p role="alert" className="text-sm text-center text-red-600 bg-red-50 border border-red-200 rounded-xl p-4">
-            Bu kodla eşleşen bir sipariş bulunamadı.
-          </p>
-        )}
-
-        {order && (
-          <div className="bg-white rounded-2xl border border-neutral-200 p-6 text-xs space-y-3 shadow-sm">
-            <div>
-              <span className="text-neutral-400">Sipariş No</span>
-              <p className="font-mono font-bold text-neutral-800 break-all">{order.id}</p>
-            </div>
-            <div className="pt-3 border-t border-neutral-100">
-              <span className="text-neutral-400">Alıcı</span>
-              <p className="font-semibold text-neutral-800">{maskName(order.user.name)}</p>
-            </div>
-            <div className="pt-3 border-t border-neutral-100">
-              <span className="text-neutral-400 block mb-2">Sipariş Durumu</span>
-              <OrderTracker order={order} />
-            </div>
-            {order.kargonomiShipmentId && (
-              <div className="pt-3 border-t border-neutral-100 space-y-1">
-                <span className="text-neutral-400">Kargo Firması</span>
-                <p className="text-sm font-bold text-orange-700">{order.shippingProviderName || "Aras Kargo"}</p>
-                <p className="font-semibold text-neutral-900">
-                  {order.shippingTrackingCode || order.shippingBarcode ? order.kargonomiStatusLabel || "Kargo kaydı oluşturuldu" : "Kargo bilgileriniz hazırlanıyor"}
-                </p>
-                {order.shippingTrackingCode && (
-                  <p className="text-neutral-600">
-                    Takip kodu: <span className="font-mono">{order.shippingTrackingCode}</span>
-                  </p>
-                )}
-                {order.shippingBarcode && (
-                  <p className="text-neutral-600">
-                    Barkod: <span className="font-mono">{order.shippingBarcode}</span>
-                  </p>
-                )}
-                {(order.shippingTrackingCode || order.shippingBarcode) && (
-                  <a
-                    href={`https://kargotakip.araskargo.com.tr/?kargotakipno=${encodeURIComponent(order.shippingTrackingCode || order.shippingBarcode || "")}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-block mt-2 bg-orange-600 hover:bg-orange-700 text-white font-semibold px-4 py-2.5 rounded-xl transition-colors"
-                  >
-                    Aras Kargo ile Canlı Takip Et ↗
-                  </a>
-                )}
+        {code && (
+          <Suspense
+            fallback={
+              <div role="status" aria-busy="true" className="h-40 rounded-2xl bg-neutral-200/70 motion-safe:animate-pulse">
+                <span className="sr-only">Sipariş sorgulanıyor…</span>
               </div>
-            )}
-          </div>
+            }
+          >
+            <OrderResult code={code} />
+          </Suspense>
         )}
       </div>
     </main>

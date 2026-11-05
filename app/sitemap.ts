@@ -3,15 +3,19 @@ import { prisma } from "@/lib/db";
 import { CATEGORIES, COLLECTIONS, SITE_URL } from "@/lib/site";
 import { withVisibleProducts } from "@/lib/categories";
 import { getCategoryList, getFixedCategoryOverrides } from "@/lib/category-list";
+import { getGalleryPhotoCount } from "@/lib/customer-gallery";
 
 export const dynamic = "force-dynamic";
 
-const STATIC_PAGES = ["/musterilerimizden-gelenler", "/kargo-takip", "/iletisim", "/gizlilik-politikasi", "/kullanim-sartlari", "/mesafeli-satis-sozlesmesi", "/iptal-iade-cayma", "/aydinlatma-metni", "/cerez-politikasi"];
+const GALLERY_PAGE = "/musterilerimizden-gelenler";
+const STATIC_PAGES = ["/kargo-takip", "/iletisim", "/gizlilik-politikasi", "/kullanim-sartlari", "/mesafeli-satis-sozlesmesi", "/iptal-iade-cayma", "/aydinlatma-metni", "/cerez-politikasi"];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const products = await prisma.product
     .findMany({ where: { active: true }, select: { id: true, updatedAt: true } })
     .catch(() => []);
+
+  const galleryCount = await getGalleryPhotoCount();
 
   // Yönetim panelinden eklenen kategoriler (sabit olanlar CATEGORIES ile zaten var)
   const overrides = await getFixedCategoryOverrides();
@@ -40,7 +44,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly" as const,
       priority: 0.7,
     })),
-    ...STATIC_PAGES.map((path) => ({
+    // Müşteri fotoğrafı yokken boş sayfa sitemap'e girmez; fotoğraf olunca kendiliğinden geri gelir
+    ...(galleryCount > 0 ? [GALLERY_PAGE, ...STATIC_PAGES] : STATIC_PAGES).map((path) => ({
       url: `${SITE_URL}${path}`,
       changeFrequency: "yearly" as const,
       priority: 0.3,

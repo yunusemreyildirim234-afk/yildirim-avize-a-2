@@ -222,8 +222,8 @@ export default function IletisimPage() {
                 <form onSubmit={handleSubmit} className="space-y-4 text-xs">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="font-semibold text-neutral-700 block mb-1">Adınız Soyadınız *</label>
-                      <input aria-label="Yunus Emre Yıldırım"
+                      <label htmlFor="iletisim-ad" className="font-semibold text-neutral-700 block mb-1">Adınız Soyadınız *</label>
+                      <input id="iletisim-ad" autoComplete="name"
                         required
                         type="text"
                         placeholder="Örn: Yunus Emre Yıldırım"
@@ -234,8 +234,8 @@ export default function IletisimPage() {
                     </div>
 
                     <div>
-                      <label className="font-semibold text-neutral-700 block mb-1">E-posta Adresiniz *</label>
-                      <input aria-label="E-posta adresi"
+                      <label htmlFor="iletisim-eposta" className="font-semibold text-neutral-700 block mb-1">E-posta Adresiniz *</label>
+                      <input id="iletisim-eposta" autoComplete="email"
                         required
                         type="email"
                         placeholder="ornek@mail.com"
@@ -248,8 +248,8 @@ export default function IletisimPage() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="font-semibold text-neutral-700 block mb-1">Telefon Numaranız</label>
-                      <input aria-label="Telefon numarası"
+                      <label htmlFor="iletisim-telefon" className="font-semibold text-neutral-700 block mb-1">Telefon Numaranız</label>
+                      <input id="iletisim-telefon" autoComplete="tel"
                         type="tel"
                         placeholder="05XX XXX XX XX"
                         value={phone}
@@ -259,8 +259,9 @@ export default function IletisimPage() {
                     </div>
 
                     <div>
-                      <label className="font-semibold text-neutral-700 block mb-1">Konu Başlığı</label>
+                      <label htmlFor="iletisim-konu" className="font-semibold text-neutral-700 block mb-1">Konu Başlığı</label>
                       <select
+                        id="iletisim-konu"
                         value={subject}
                         onChange={(e) => setSubject(e.target.value)}
                         className="w-full p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600 bg-white"
@@ -275,8 +276,8 @@ export default function IletisimPage() {
                   </div>
 
                   <div>
-                    <label className="font-semibold text-neutral-700 block mb-1">Mesajınız veya Proje Detayları *</label>
-                    <textarea aria-label="Mekanınızın tavan yüksekliği, istediğiniz avize stili veya sormak istediğiniz sorular..."
+                    <label htmlFor="iletisim-mesaj" className="font-semibold text-neutral-700 block mb-1">Mesajınız veya Proje Detayları *</label>
+                    <textarea id="iletisim-mesaj"
                       required
                       rows={4}
                       placeholder="Mekanınızın tavan yüksekliği, istediğiniz avize stili veya sormak istediğiniz sorular..."
@@ -313,9 +314,9 @@ export default function IletisimPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
             {faqs.map((faq, i) => (
               <div key={i} className="bg-white rounded-2xl border border-neutral-200 p-6 space-y-2 shadow-2xs">
-                <h4 className="font-serif font-bold text-neutral-900 text-sm">
+                <h3 className="font-serif font-bold text-neutral-900 text-sm">
                   {faq.q}
-                </h4>
+                </h3>
                 <p className="text-xs text-neutral-600 leading-relaxed">
                   {faq.a}
                 </p>

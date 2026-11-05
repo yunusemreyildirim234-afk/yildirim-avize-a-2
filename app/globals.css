@@ -14,6 +14,12 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* "İçeriğe atla" ile odaklanan main: halka çizme, sabit menünün altında kalma (mobil menü ~111 px) */
+main[tabindex="-1"] {
+  outline: none;
+  scroll-margin-top: 7rem;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
