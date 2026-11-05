@@ -9,7 +9,7 @@ import PasswordFields, { passwordsOk } from "@/components/PasswordFields";
 type Mode = "login" | "register" | "forgot";
 type Step = "form" | "code" | "password" | "twofactor";
 
-const inputCls = "w-full p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600";
+const inputCls = "w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600";
 const primaryBtn =
   "w-full bg-neutral-900 hover:bg-amber-600 text-white font-semibold py-3.5 rounded-xl transition-colors shadow-sm disabled:opacity-50 mt-2";
 

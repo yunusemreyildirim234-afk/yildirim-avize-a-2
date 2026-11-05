@@ -377,7 +377,7 @@ export default function AuthPage() {
 
         <div className="relative flex items-center justify-center my-3">
           <div className="border-t border-neutral-200 w-full" />
-          <span className="bg-white px-3 text-[11px] text-neutral-400 uppercase tracking-wider relative font-medium">
+          <span className="bg-white px-3 whitespace-nowrap text-[11px] text-neutral-400 uppercase tracking-wider relative font-medium">
             veya e-posta ile
           </span>
         </div>
@@ -488,7 +488,7 @@ function AdminLoginForm() {
             autoComplete="username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            className="w-full p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
+            className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
           />
         </div>
         <div>
@@ -499,7 +499,7 @@ function AdminLoginForm() {
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
+            className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
           />
         </div>
         {error && (

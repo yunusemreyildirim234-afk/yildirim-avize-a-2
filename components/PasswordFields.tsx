@@ -6,7 +6,7 @@ import { PASSWORD_RULES, isStrongPassword } from "@/lib/validation";
 
 export const passwordsOk = (password: string, confirm: string) => isStrongPassword(password) && password === confirm;
 
-const inputCls = "w-full p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600";
+const inputCls = "w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600";
 
 /** Şifre + şifre tekrarı; kurallar ve eşleşme canlı gösterilir. */
 export default function PasswordFields({
