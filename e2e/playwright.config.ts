@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import path from "node:path";
 import { defineConfig, devices } from "@playwright/test";
 
@@ -19,6 +20,12 @@ if (host !== "localhost" && host !== "127.0.0.1") {
 if (!process.env.E2E_DATABASE_URL) {
   throw new Error("E2E_DATABASE_URL tanımlı değil (e2e/.env.e2e). Test başlatılmadı. Örnek için e2e/.env.e2e.example dosyasına bakın.");
 }
+
+// Yönetici oturumu: bu çalıştırmaya özel rastgele kimlik; yalnızca e2e sunucusunun ortamında ve test işçilerinde bulunur.
+// Gerçek ADMIN_USER / ADMIN_PASSWORD (.env, Vercel) hiçbir yerde okunmaz. Ana süreç ortamı işçilere devredilir.
+if (!process.env.E2E_ADMIN_PASSWORD) process.env.E2E_ADMIN_PASSWORD = crypto.randomBytes(18).toString("base64url");
+const E2E_ADMIN_USER = "e2e-admin";
+process.env.E2E_ADMIN_USER = E2E_ADMIN_USER;
 
 /**
  * e2e sunucusunun ortamı: yalnızca e2e veritabanı; harici servis anahtarları BOŞ (e-posta/ödeme/kargo/cron kapalı).
@@ -50,11 +57,13 @@ const serverEnv: Record<string, string> = {
   TRENDYOL_TOKEN: "",
   GOOGLE_CLIENT_ID: "",
   GOOGLE_CLIENT_SECRET: "",
-  ADMIN_USER: "",
-  ADMIN_PASSWORD: "",
+  ADMIN_USER: E2E_ADMIN_USER,
+  ADMIN_PASSWORD: process.env.E2E_ADMIN_PASSWORD,
 };
 // Dış ortamdan sızabilecek e2e'ye ait olmayan veritabanı adı kalmasın
 delete serverEnv.DIRECT_URL;
+
+const ADMIN_STATE = path.join(__dirname, ".auth", "admin.json");
 
 const next = "node node_modules/next/dist/bin/next";
 
@@ -64,8 +73,9 @@ export default defineConfig({
   globalSetup: "./global-setup.ts",
   timeout: 45_000,
   expect: { timeout: 10_000 },
-  fullyParallel: true,
-  workers: 2,
+  // Yazan admin testleri ile herkese açık testler aynı veritabanını paylaşır: tek işçi, sırayla (admin projeleri en sonda).
+  fullyParallel: false,
+  workers: 1,
   retries: 0,
   forbidOnly: !!process.env.CI,
   reporter: [["list"], ["html", { open: "never", outputFolder: "./playwright-report" }]],
@@ -78,8 +88,18 @@ export default defineConfig({
     serviceWorkers: "block",
   },
   projects: [
-    { name: "desktop", use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 } } },
-    { name: "mobile", use: { ...devices["Desktop Chrome"], viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } },
+    { name: "desktop", testIgnore: /tests[\/]admin[\/]/, use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 } } },
+    { name: "mobile", testIgnore: /tests[\/]admin[\/]/, use: { ...devices["Desktop Chrome"], viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } },
+    // Admin: gerçek giriş akışı bir kez çalışır (storageState), testler yalnızca masaüstünde ve sırayla. Kalıntı denetimi teardown olarak en sonda.
+    { name: "admin-setup", testMatch: /admin[\/]setup\.ts$/, teardown: "admin-audit", timeout: 180_000, use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 } } },
+    { name: "admin-audit", testMatch: /admin[\/]audit\.ts$/, timeout: 180_000 },
+    {
+      name: "admin",
+      testMatch: /admin[\/][a-z]-.*\.spec\.ts$/,
+      dependencies: ["admin-setup"],
+      timeout: 180_000, // yönetim sayfası ~240 ürünü yükler; uzak (Neon) veritabanı + çok adımlı akışlar
+      use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 }, storageState: ADMIN_STATE },
+    },
   ],
   // Hazır sunucu verilmediyse: güvenlik kilidi → üretim derlemesi → sunucu (3100). Kilit, derlemeden ÖNCE çalışır.
   webServer: useExistingServer

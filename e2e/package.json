@@ -7,6 +7,7 @@
     "test": "playwright test",
     "test:desktop": "playwright test --project=desktop",
     "test:mobile": "playwright test --project=mobile",
+    "test:admin": "playwright test --project=admin",
     "report": "playwright show-report",
     "browsers": "playwright install chromium"
   },
