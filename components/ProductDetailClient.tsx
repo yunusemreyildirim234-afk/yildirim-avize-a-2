@@ -186,10 +186,10 @@ export default function ProductDetailClient({ product, ladderCtx }: { product: P
           <div className="pt-4">
             <span className="text-xs text-neutral-500 block mb-1">Toplam Tutar</span>
             {listShown && listShown > currentPrice && (
-              <span className="block text-sm text-neutral-500 line-through">{(listShown * quantity).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
+              <span className="block text-xs text-neutral-500"><span>Liste fiyatı: </span><span className="line-through">{(listShown * quantity).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span></span>
             )}
             {unitNow < currentPrice && (
-              <span className="block text-sm text-neutral-500 line-through">{(currentPrice * quantity).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
+              <span className="block text-xs text-neutral-500"><span>İndirimsiz fiyat: </span><span className="line-through">{(currentPrice * quantity).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span></span>
             )}
             <span className={`text-3xl font-bold tabular-nums ${hasDiscount ? priceTone(false).sale : "text-neutral-900"}`}>
               {lineNow.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺
