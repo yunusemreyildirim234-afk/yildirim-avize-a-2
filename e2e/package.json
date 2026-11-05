@@ -1,0 +1,19 @@
+{
+  "name": "yildirim-avize-e2e",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Yıldırım Avize uçtan uca (Playwright) testleri. Kök projeden bağımsız alt proje.",
+  "scripts": {
+    "test": "playwright test",
+    "test:desktop": "playwright test --project=desktop",
+    "test:mobile": "playwright test --project=mobile",
+    "report": "playwright show-report",
+    "browsers": "playwright install chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "@types/node": "^20",
+    "@types/pg": "^8.11.0",
+    "pg": "^8.13.0"
+  }
+}
