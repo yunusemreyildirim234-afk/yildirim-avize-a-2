@@ -10,7 +10,7 @@ import CollectionsRow from "@/components/CollectionsRow";
 import { getHomeCollections } from "@/lib/home-collections";
 import { composeSection } from "@/lib/homepage-compose";
 import { getHomepageConfig, getSectionPools } from "@/lib/homepage";
-import type { ProductWithVariations } from "@/lib/products";
+import MoreProducts from "@/components/MoreProducts";
 import { ADDRESS_LINE, LAT, LNG, PHONE_TEL, SITE_URL } from "@/lib/site";
 
 export const revalidate = 60; // Genel (kişiselleştirmesiz) sayfa: 60 sn önbellek; yönetici işlemleri revalidateStorefront() ile anında yeniler
@@ -51,25 +51,9 @@ const localBusiness = {
   ],
 };
 
-/** Bölümde ilk `count` ürünün altındaki "Daha fazla göster" (yerel <details>; kapalıyken kart görselleri yüklenmez). */
-function MoreCards({ products, cols, dark = false }: { products: ProductWithVariations[]; cols: string; dark?: boolean }) {
-  if (products.length === 0) return null;
-  return (
-    <details className="group mt-6 sm:mt-8">
-      <summary
-        className={`list-none cursor-pointer mx-auto w-fit text-xs font-semibold px-6 py-3 rounded-full transition-colors group-open:hidden focus-visible:outline-2 focus-visible:outline-amber-600 ${
-          dark ? "text-white border border-white/40 hover:bg-white hover:text-zinc-900" : "text-zinc-800 border border-zinc-300 hover:border-amber-600 hover:text-amber-800"
-        }`}
-      >
-        Daha fazla göster ({products.length})
-      </summary>
-      <div className={`grid ${cols} gap-4 sm:gap-6`}>
-        {products.map((p) => (
-          <ProductCard key={p.id} product={p} dark={dark} />
-        ))}
-      </div>
-    </details>
-  );
+/** Bölümde ilk `count` ürünün altındaki "Daha fazla göster": kalan ürünler HTML'e gömülmez, tıklanınca getirilir (components/MoreProducts.tsx). */
+function MoreCards({ section, total, cols, href, dark = false }: { section: string; total: number; cols: string; href: string; dark?: boolean }) {
+  return <MoreProducts section={section} total={total} cols={cols} fallbackHref={href} dark={dark} />;
 }
 
 export default async function Home() {
@@ -146,7 +130,7 @@ export default async function Home() {
                 ))}
               </div>
             )}
-            <MoreCards products={moreFeatured} cols="grid-cols-2 md:grid-cols-3 lg:grid-cols-4" />
+            <MoreCards section="featured" total={moreFeatured.length} href="/kategori/one-cikanlar" cols="grid-cols-2 md:grid-cols-3 lg:grid-cols-4" />
           </div>
         </div>
       </section>
@@ -167,7 +151,7 @@ export default async function Home() {
               ))}
             </div>
           )}
-          <MoreCards products={moreDiscounted} cols="grid-cols-2 lg:grid-cols-4" />
+          <MoreCards section="discounted" total={moreDiscounted.length} href="/kategori/indirimli" cols="grid-cols-2 lg:grid-cols-4" />
           <div className="text-center mt-10">
             <Link
               href="/kategori/indirimli"
@@ -192,7 +176,7 @@ export default async function Home() {
                 <ProductCard key={p.id} product={p} dark />
               ))}
             </div>
-            <MoreCards products={moreBestSellers} cols="grid-cols-2 lg:grid-cols-4" dark />
+            <MoreCards section="bestsellers" total={moreBestSellers.length} href="/kategori/cok-satanlar" cols="grid-cols-2 lg:grid-cols-4" dark />
             <div className="text-center mt-10">
               <Link
                 href="/kategori/cok-satanlar"
