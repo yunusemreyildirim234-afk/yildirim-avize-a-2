@@ -57,7 +57,6 @@ test.describe("a) Duman: herkese açık sayfalar", () => {
     await expect(page.getByText("Bu Işık Söndü")).toBeVisible();
   });
   test("anonim ziyaretçide konsola 401 hatası düşmez", async ({ page }) => {
-    test.fail(true, "BULGU: anonim ziyaretçide /api/favorites ve /api/cart 401 döner; tarayıcı her sayfada konsola hata yazar (siteye dokunulmadı)");
     const errs: string[] = [];
     page.on("console", (m) => { if (m.type() === "error" && /status of 401/.test(m.text())) errs.push(`${m.text()} @ ${m.location().url}`); });
     await openOk(page, "/");

@@ -467,8 +467,6 @@ test.describe("Havale siparişi (uçtan uca)", () => {
   });
 
   test("sipariş sayfasında müşteri adı maskelenir (KVKK)", async ({ browser, baseURL }) => {
-    // BULGU: lib/mask-name.ts içinde ad /s+/ ile (harf "s") bölünüyor, boşlukla (\s+) değil → "E2E Müşteri" maskelenmeden görünür.
-    test.fail(true, "BULGU: maskName boşluk yerine 's' harfine göre bölüyor; ad maskelenmiyor");
     await guestFlow(browser, baseURL!, async ({ page }) => {
       await page.goto(`/siparis-onay/${mainOrderId}`, { waitUntil: "domcontentloaded" });
       await expect(page.getByText(/Sayın/)).toContainText("E2E M.");

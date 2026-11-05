@@ -94,8 +94,6 @@ test.describe("Ödeme doğrulamaları (sipariş oluşmaz)", () => {
   });
 
   test("geçersiz telefon (harfler) form hatası verir ve istek gitmez", async ({ browser, baseURL }) => {
-    // BULGU: telefon alanı yalnızca type="tel" ve required; biçim doğrulaması yok (sunucu da yalnızca uzunluğa bakar). "abc" geçerek sunucuya gider.
-    test.fail(true, "BULGU: telefon biçimi hiçbir yerde doğrulanmıyor (istemci ve sunucu yalnızca doluluk/uzunluk denetler)");
     test.skip(!real, "e2e veritabanında stoklu gerçek ürün yok");
     const { g, calls } = await open(browser, baseURL!, true);
     const { page } = g;
