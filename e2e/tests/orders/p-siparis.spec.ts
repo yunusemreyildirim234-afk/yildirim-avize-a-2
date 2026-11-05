@@ -282,14 +282,14 @@ test.describe("Havale siparişi (uçtan uca)", () => {
     expect(await couponUsed(couponCode), "kupon kullanım sayısı sipariş anında artar").toBe(1);
     expect(await variationStock(A.variationId)).toBe(stockBefore.A - 1);
 
-    // Aynı e-posta ikinci kez: arayüz kuponu uygulamaz (sepetteki doğrulama mesajı ayrıntı sızdırmaz: genel hata)
+    // Aynı e-posta ikinci kez: arayüz kuponu uygulamaz ve "Bu kuponu daha önce kullandınız." der
     await guestFlow(browser, baseURL!, async ({ page }) => {
       await addToCartViaPage(page, A.id, 1);
       await page.goto("/sepet", { waitUntil: "domcontentloaded" });
       await fillCustomer(page, CUSTOMER, { address: false });
       await page.getByLabel("Kupon kodu").fill(couponCode);
       await page.getByRole("button", { name: "Kuponu Uygula" }).click();
-      await expect(page.getByText(/Geçersiz veya süresi dolmuş kupon kodu/)).toBeVisible();
+      await expect(page.getByText("Bu kuponu daha önce kullandınız.")).toBeVisible();
       await expect(page.getByText(/kuponu uygulandı/)).toHaveCount(0);
     });
 
