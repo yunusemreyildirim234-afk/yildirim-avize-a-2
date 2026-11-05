@@ -1,6 +1,6 @@
 import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/db";
-import { buildCategoryList, categoryKey, resolveCategoryName } from "@/lib/categories";
+import { VISIBLE_PRODUCT_WHERE, buildCategoryList, categoryKey, resolveCategoryName, withEmptyHidden, withVisibleProducts } from "@/lib/categories";
 import { resolveCategoryRedirects, resolveCategorySettings, type CategoryRedirects, type CategorySettings } from "@/lib/category-settings";
 import { CATEGORIES } from "@/lib/site";
 
@@ -11,7 +11,7 @@ import { CATEGORIES } from "@/lib/site";
  */
 export const getCategoryList = unstable_cache(
   async () => {
-    const rows = await prisma.product.groupBy({ by: ["category"], where: { active: true }, _count: { _all: true } });
+    const rows = await prisma.product.groupBy({ by: ["category"], where: VISIBLE_PRODUCT_WHERE, _count: { _all: true } });
     return buildCategoryList(
       rows.map((r) => ({ category: r.category, count: r._count._all })),
       CATEGORIES
@@ -46,19 +46,19 @@ export type FixedOverrides = Record<string, { title?: string; hidden?: boolean }
 
 /** Sabit kategorilerin slug'a göre görünen ad / gizleme ayarı (menü, mobil şerit, alt bilgi). Ayar yoksa boş nesne. */
 export async function getFixedCategoryOverrides(): Promise<FixedOverrides> {
-  const settings = await getCategorySettings();
+  const [settings, list] = await Promise.all([getCategorySettings(), getCategoryList().catch(() => null)]);
   const out: FixedOverrides = {};
   for (const c of CATEGORIES) {
     const s = settings[categoryKey(c.dbCategory)];
     if (s) out[c.slug] = { ...(s.title ? { title: s.title } : {}), ...(s.hidden ? { hidden: true } : {}) };
   }
-  return out;
+  return withEmptyHidden(out, list); // görünür ürünü 0 olan sabit kategori de bağlantı listelerinden çıkar (liste alınamazsa değişmez)
 }
 
 /** Menü/alt bilgi için yalnızca sonradan eklenen (sabit olmayan) kategoriler; veritabanı hatasında boş (menü sabit listeyle çalışır). */
 export async function getExtraCategoryLinks(): Promise<{ href: string; label: string }[]> {
   try {
-    return (await getCategoryList()).filter((c) => !c.fixed).map((c) => ({ href: `/kategori/${c.slug}`, label: c.title }));
+    return withVisibleProducts(await getCategoryList()).filter((c) => !c.fixed).map((c) => ({ href: `/kategori/${c.slug}`, label: c.title }));
   } catch {
     return [];
   }

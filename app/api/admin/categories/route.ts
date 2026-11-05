@@ -4,7 +4,7 @@ import { withStorefrontRevalidate } from "@/lib/revalidate";
 import { adminGuard } from "@/lib/admin-guard";
 import { prisma } from "@/lib/db";
 import { rateLimit, tooMany } from "@/lib/rate-limit";
-import { buildCategoryList, categoryKey, RESERVED_SLUGS } from "@/lib/categories";
+import { VISIBLE_PRODUCT_WHERE, buildCategoryList, categoryKey, RESERVED_SLUGS } from "@/lib/categories";
 import { COLLECTIONS, CATEGORIES } from "@/lib/site";
 import { buildUndoToken, snapshotProducts } from "@/lib/admin-undo";
 import { resolveCollectionKeys } from "@/lib/collections";
@@ -31,7 +31,7 @@ const asObj = (v: unknown): Record<string, unknown> => (v && typeof v === "objec
 
 /** Aktif ürünlerden güncel kategori listesi (vitrinle aynı kural; önbelleksiz, transaction içinde). */
 async function liveList(tx: Tx) {
-  const rows = await tx.product.groupBy({ by: ["category"], where: { active: true }, _count: { _all: true } });
+  const rows = await tx.product.groupBy({ by: ["category"], where: VISIBLE_PRODUCT_WHERE, _count: { _all: true } });
   return buildCategoryList(rows.map((r) => ({ category: r.category, count: r._count._all })), CATEGORIES);
 }
 

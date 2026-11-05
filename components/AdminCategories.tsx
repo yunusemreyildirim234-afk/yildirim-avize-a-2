@@ -149,6 +149,7 @@ export default function AdminCategories({ entries, settings, uncategorized }: Pr
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
                     <span className="font-bold text-neutral-900 text-sm">{e.fixed ? s?.title ?? e.title : e.title}</span>
                     <span className="text-neutral-500">{e.count} ürün</span>
+                    {e.count === 0 && <span className="rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-semibold text-amber-800">vitrinde ürün yok</span>}
                     <span className="font-mono text-neutral-400">/kategori/{e.slug}</span>
                     {e.fixed && <span className="rounded-full bg-neutral-100 border border-neutral-200 px-2 py-0.5 text-[10px] font-semibold text-neutral-600">Sabit</span>}
                     {s?.hidden && <span className="rounded-full bg-red-50 border border-red-200 px-2 py-0.5 text-[10px] font-semibold text-red-700">Menüden gizli</span>}

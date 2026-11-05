@@ -11,7 +11,7 @@ import PageSizeLinks from "@/components/PageSizeLinks";
 import { canonicalListing, pageHref, parseAdet, parsePage, rangeOf, totalPages } from "@/lib/pagination";
 import { CATEGORIES, COLLECTIONS } from "@/lib/site";
 import { getCategoryConfig, getCategoryList } from "@/lib/category-list";
-import { RESERVED_SLUGS, categoryKey, categoryWhere, findDynamicCategory } from "@/lib/categories";
+import { RESERVED_SLUGS, categoryKey, findDynamicCategory, visibleCategoryWhere } from "@/lib/categories";
 import { categoryDisplayTitle, resolveRedirect } from "@/lib/category-settings";
 
 export const dynamic = "force-dynamic";
@@ -29,7 +29,7 @@ const resolve = cache(async (slug: string) => {
     const entry = await getCategoryList().then((l) => l.find((c) => c.fixed && c.slug === slug)).catch(() => undefined);
     // Görünen ad ayarı varsa yeni ad (sayfa başlığı, metadata, breadcrumb); yoksa mevcut başlık aynen. Gizli kategorinin adresi çalışmaya devam eder.
     const settings = await getCategoryConfig().then((c) => c.settings).catch(() => ({}));
-    return { title: categoryDisplayTitle(settings, categoryKey(category.dbCategory), category.title), desc: category.desc, where: categoryWhere(entry?.spellings ?? [category.dbCategory]) };
+    return { title: categoryDisplayTitle(settings, categoryKey(category.dbCategory), category.title), desc: category.desc, where: visibleCategoryWhere(entry?.spellings ?? [category.dbCategory]) };
   }
   if (slug === "tum") return { ...COLLECTIONS.tum, where: {} };
   if (slug === "one-cikanlar") {
@@ -43,7 +43,7 @@ const resolve = cache(async (slug: string) => {
   // Yönetim panelinden eklenen yeni koleksiyonlar: tek kaynak lib/category-list.ts (büyük/küçük harf birleştirilmiş; yazımlar IN ile aranır)
   const match = findDynamicCategory(await getCategoryList(), slug);
   if (match) {
-    return { title: match.title, desc: `${match.title} koleksiyonundaki avize ve aydınlatma modelleri.`, where: categoryWhere(match.spellings) };
+    return { title: match.title, desc: `${match.title} koleksiyonundaki avize ve aydınlatma modelleri.`, where: visibleCategoryWhere(match.spellings) };
   }
   return null;
 });

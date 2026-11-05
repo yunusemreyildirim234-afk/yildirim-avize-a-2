@@ -127,3 +127,24 @@ export function resolveCategoryName(input: string, list: readonly Pick<CategoryE
   if (hit) return hit.fixed ? hit.spellings[0] : hit.title;
   return titleCaseTr(input);
 }
+
+/**
+ * "Görünür ürün" TEK tanımı: vitrinde listelenen ürün = aktif ürün (kategori sayfası, kategori listesi sayıları, ana sayfa satırı ve kapak seçimi bunu kullanır).
+ * Kategori sayfasının filtresi: görünür + kategori eşleşmesi.
+ */
+export const VISIBLE_PRODUCT_WHERE = { active: true } as const;
+export const visibleCategoryWhere = (spellings: readonly string[]) => ({ ...VISIBLE_PRODUCT_WHERE, ...categoryWhere(spellings) });
+
+/** Vitrinde görünür ürünü olan kategoriler (bağlantı listeleri: menü, mobil şerit, alt bilgi, sitemap). Ürünsüz kategorinin sayfası çalışır, yalnızca listelerden çıkar. */
+export const withVisibleProducts = <E extends { count: number }>(list: readonly E[]): E[] => list.filter((c) => c.count > 0);
+
+/**
+ * Sabit kategori ayarlarına (slug -> {title?, hidden?}) otomatik gizlemeyi ekler: görünür ürünü 0 olan sabit kategori `hidden` olur.
+ * Liste alınamadıysa (null: veritabanı hatası) ayarlar aynen döner, yani sabit yedek liste davranışı değişmez.
+ */
+export function withEmptyHidden<O extends Record<string, { title?: string; hidden?: boolean }>>(overrides: O, list: readonly { slug: string; fixed: boolean; count: number }[] | null): Record<string, { title?: string; hidden?: boolean }> {
+  const out: Record<string, { title?: string; hidden?: boolean }> = { ...overrides };
+  if (!list) return out;
+  for (const c of list) if (c.fixed && c.count === 0) out[c.slug] = { ...out[c.slug], hidden: true };
+  return out;
+}
