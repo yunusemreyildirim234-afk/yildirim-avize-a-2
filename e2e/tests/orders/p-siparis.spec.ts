@@ -469,8 +469,8 @@ test.describe("Havale siparişi (uçtan uca)", () => {
   test("sipariş sayfasında müşteri adı maskelenir (KVKK)", async ({ browser, baseURL }) => {
     await guestFlow(browser, baseURL!, async ({ page }) => {
       await page.goto(`/siparis-onay/${mainOrderId}`, { waitUntil: "domcontentloaded" });
-      await expect(page.getByText(/Sayın/)).toContainText("E2E M.");
-      await expect(page.getByText(/Sayın/)).not.toContainText("Müşteri");
+      await expect(page.getByRole("main").getByText(/Sayın/)).toContainText("E2E M.");
+      await expect(page.getByRole("main").getByText(/Sayın/)).not.toContainText("Müşteri");
     });
   });
 });
