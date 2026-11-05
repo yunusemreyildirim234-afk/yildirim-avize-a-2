@@ -114,4 +114,24 @@ test.describe("d) Sepet", () => {
     await page.getByText("📍 Mağazadan Teslim").click();
     await expect(row(page, "Kargo / Teslimat")).toHaveText("Ücretsiz");
   });
+
+  test("mobilde sepet: adet/kaldır düğmeleri ≥40px, form alanları ≥16px, yatay taşma yok", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "mobile", "yalnızca mobil");
+    await addFirstProduct(page);
+    await openOk(page, "/sepet");
+    await expect(page.getByText("Ürünler Toplamı")).toBeVisible();
+    for (const name of ["+", "-"]) {
+      const box = await page.getByRole("button", { name, exact: true }).first().boundingBox();
+      expect(box?.width ?? 0).toBeGreaterThanOrEqual(40);
+      expect(box?.height ?? 0).toBeGreaterThanOrEqual(40);
+    }
+    const rm = await page.getByTitle("Kaldır").first().boundingBox();
+    expect(rm?.width ?? 0).toBeGreaterThanOrEqual(40);
+    expect(rm?.height ?? 0).toBeGreaterThanOrEqual(40);
+    const small = await page.locator("main input:not([type=checkbox]):not([type=radio]), main textarea, main select").evaluateAll((els) =>
+      els.filter((e) => e.getClientRects().length > 0 && parseFloat(getComputedStyle(e).fontSize) < 16).map((e) => e.getAttribute("aria-label") ?? e.tagName),
+    );
+    expect(small).toEqual([]);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  });
 });

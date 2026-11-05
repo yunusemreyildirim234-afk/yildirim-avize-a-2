@@ -551,17 +551,17 @@ export default function CartPage() {
                       <button
                         type="button"
                         onClick={() => updateQuantity(item.variationId, item.quantity - 1)}
-                        className="px-2.5 py-1 text-xs font-bold hover:bg-neutral-200"
+                        className="min-w-11 min-h-11 sm:min-w-0 sm:min-h-0 px-2.5 py-1 text-sm sm:text-xs font-bold hover:bg-neutral-200"
                       >
                         -
                       </button>
-                      <span className="px-3 py-1 text-xs font-bold text-neutral-800">
+                      <span className="min-w-8 text-center px-3 py-1 text-sm sm:text-xs font-bold text-neutral-800">
                         {item.quantity}
                       </span>
                       <button
                         type="button"
                         onClick={() => updateQuantity(item.variationId, item.quantity + 1)}
-                        className="px-2.5 py-1 text-xs font-bold hover:bg-neutral-200"
+                        className="min-w-11 min-h-11 sm:min-w-0 sm:min-h-0 px-2.5 py-1 text-sm sm:text-xs font-bold hover:bg-neutral-200"
                       >
                         +
                       </button>
@@ -570,7 +570,7 @@ export default function CartPage() {
                     <button
                       type="button"
                       onClick={() => removeFromCart(item.variationId)}
-                      className="text-neutral-400 hover:text-red-600 transition-colors p-1 text-sm"
+                      className="text-neutral-400 hover:text-red-600 transition-colors p-1 text-sm min-w-11 min-h-11 sm:min-w-0 sm:min-h-0 flex items-center justify-center"
                       title="Kaldır"
                     >
                       ✕
@@ -595,7 +595,7 @@ export default function CartPage() {
                 value={orderNote}
                 onChange={(e) => setOrderNote(e.target.value)}
                 placeholder="Örn: Tavan yüksekliğim 280 cm, zincir boyu 60 cm olsun."
-                className="w-full text-xs p-3 rounded-xl border border-amber-300 bg-white focus:outline-none focus:border-amber-600"
+                className="w-full text-base sm:text-xs p-3 rounded-xl border border-amber-300 bg-white focus:outline-none focus:border-amber-600"
               />
             </div>
 
@@ -631,7 +631,7 @@ export default function CartPage() {
                     placeholder={couponPlaceholder(quote?.showcaseCode)}
                     value={couponInput}
                     onChange={(e) => setCouponInput(e.target.value)}
-                    className="flex-1 text-xs p-3 rounded-xl border border-neutral-300 font-mono uppercase focus:outline-none focus:border-amber-600"
+                    className="flex-1 min-w-0 text-base sm:text-xs p-3 rounded-xl border border-neutral-300 font-mono uppercase focus:outline-none focus:border-amber-600"
                   />
                   <button
                     type="submit"
@@ -780,7 +780,7 @@ export default function CartPage() {
                 placeholder="Adınız Soyadınız (En az 2 kelime)"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
+                className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
               />
               <input aria-label="E-posta Adresiniz"
                 required
@@ -788,15 +788,15 @@ export default function CartPage() {
                 placeholder="E-posta Adresiniz"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
+                className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
               />
               <div className="text-[11px] text-neutral-600">
-                <label className="flex items-start gap-2 cursor-pointer">
+                <label className="flex items-start gap-2 cursor-pointer max-sm:py-2.5 max-sm:min-h-11">
                   <input
                     type="checkbox"
                     checked={marketingOptIn}
                     onChange={(e) => setMarketingOptIn(e.target.checked)}
-                    className="mt-0.5 w-4 h-4 accent-amber-600 shrink-0"
+                    className="mt-0.5 w-5 h-5 sm:w-4 sm:h-4 accent-amber-600 shrink-0"
                   />
                   <span className="font-medium text-neutral-800">Kampanya, indirim ve fırsat e-postaları almak istiyorum. (İsteğe bağlı)</span>
                 </label>
@@ -818,7 +818,7 @@ export default function CartPage() {
                   e.target.setCustomValidity(isValidPhone(e.target.value) ? "" : PHONE_ERROR);
                   setPhone(e.target.value);
                 }}
-                className="w-full text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
+                className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
               />
 
               {isPickup && (
@@ -838,7 +838,7 @@ export default function CartPage() {
                   <select
                     value={buyerStateId}
                     onChange={(e) => setBuyerStateId(Number(e.target.value))}
-                    className="w-full text-xs p-2.5 rounded-xl border border-neutral-300 bg-white focus:outline-none focus:border-amber-600"
+                    className="w-full text-base sm:text-xs p-2.5 rounded-xl border border-neutral-300 bg-white focus:outline-none focus:border-amber-600"
                   >
                     {states.map((st) => (
                       <option key={st.id} value={st.id}>
@@ -855,7 +855,7 @@ export default function CartPage() {
                   <select
                     value={buyerCityId}
                     onChange={(e) => setBuyerCityId(Number(e.target.value))}
-                    className="w-full text-xs p-2.5 rounded-xl border border-neutral-300 bg-white focus:outline-none focus:border-amber-600"
+                    className="w-full text-base sm:text-xs p-2.5 rounded-xl border border-neutral-300 bg-white focus:outline-none focus:border-amber-600"
                   >
                     {cities.map((ct) => (
                       <option key={ct.id} value={ct.id}>
@@ -872,7 +872,7 @@ export default function CartPage() {
                 placeholder="Açık Teslimat Adresiniz (Mahalle, Sokak, Bina ve Daire No)"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                className="w-full text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
+                className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
               />
               </>
               )}
@@ -884,9 +884,9 @@ export default function CartPage() {
                   {([["INDIVIDUAL", "Bireysel Fatura"], ["CORPORATE", "Kurumsal Fatura"]] as const).map(([val, label]) => (
                     <label
                       key={val}
-                      className={`flex items-center gap-2 rounded-xl border p-2.5 cursor-pointer ${invoiceType === val ? "border-amber-600 bg-amber-50" : "border-neutral-300"}`}
+                      className={`flex items-center gap-2 rounded-xl border p-2.5 max-sm:min-h-11 cursor-pointer ${invoiceType === val ? "border-amber-600 bg-amber-50" : "border-neutral-300"}`}
                     >
-                      <input type="radio" name="invoiceType" checked={invoiceType === val} onChange={() => setInvoiceType(val)} className="accent-amber-600" />
+                      <input type="radio" name="invoiceType" checked={invoiceType === val} onChange={() => setInvoiceType(val)} className="accent-amber-600 w-5 h-5 sm:w-4 sm:h-4" />
                       {label}
                     </label>
                   ))}
@@ -899,14 +899,14 @@ export default function CartPage() {
                     placeholder="T.C. Kimlik Numarası (isteğe bağlı)"
                     value={taxNumber}
                     onChange={(e) => setTaxNumber(e.target.value.replace(/\D/g, ""))}
-                    className="w-full text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
+                    className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
                   />
                 ) : (
                   <>
-                    <input aria-label="Şirket / Firma Unvanı" required placeholder="Şirket / Firma Unvanı" value={companyTitle} onChange={(e) => setCompanyTitle(e.target.value)} className="w-full text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600" />
+                    <input aria-label="Şirket / Firma Unvanı" required placeholder="Şirket / Firma Unvanı" value={companyTitle} onChange={(e) => setCompanyTitle(e.target.value)} className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600" />
                     <div className="grid grid-cols-2 gap-2">
-                      <input aria-label="Vergi Dairesi" required placeholder="Vergi Dairesi" value={taxOffice} onChange={(e) => setTaxOffice(e.target.value)} className="w-full text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600" />
-                      <input aria-label="Vergi Kimlik No (VKN)" required inputMode="numeric" maxLength={10} placeholder="VKN (10 hane)" value={taxNumber} onChange={(e) => setTaxNumber(e.target.value.replace(/\D/g, ""))} className="w-full text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600" />
+                      <input aria-label="Vergi Dairesi" required placeholder="Vergi Dairesi" value={taxOffice} onChange={(e) => setTaxOffice(e.target.value)} className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600" />
+                      <input aria-label="Vergi Kimlik No (VKN)" required inputMode="numeric" maxLength={10} placeholder="VKN (10 hane)" value={taxNumber} onChange={(e) => setTaxNumber(e.target.value.replace(/\D/g, ""))} className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600" />
                     </div>
                   </>
                 )}
@@ -977,14 +977,14 @@ export default function CartPage() {
               </div>
 
               <div className="space-y-2 pt-3 text-[11px] text-neutral-700">
-                <label className="flex items-start gap-2 cursor-pointer">
-                  <input type="checkbox" checked={agreePre} onChange={(e) => setAgreePre(e.target.checked)} className="mt-0.5 w-4 h-4 accent-amber-600 shrink-0" />
+                <label className="flex items-start gap-2 cursor-pointer max-sm:py-2.5 max-sm:min-h-11">
+                  <input type="checkbox" checked={agreePre} onChange={(e) => setAgreePre(e.target.checked)} className="mt-0.5 w-5 h-5 sm:w-4 sm:h-4 accent-amber-600 shrink-0" />
                   <span>
                     <button type="button" onClick={() => setContract("pre")} className="text-amber-700 underline font-semibold">Ön Bilgilendirme Koşulları&apos;nı</button> okudum ve kabul ediyorum.
                   </span>
                 </label>
-                <label className="flex items-start gap-2 cursor-pointer">
-                  <input type="checkbox" checked={agreeSales} onChange={(e) => setAgreeSales(e.target.checked)} className="mt-0.5 w-4 h-4 accent-amber-600 shrink-0" />
+                <label className="flex items-start gap-2 cursor-pointer max-sm:py-2.5 max-sm:min-h-11">
+                  <input type="checkbox" checked={agreeSales} onChange={(e) => setAgreeSales(e.target.checked)} className="mt-0.5 w-5 h-5 sm:w-4 sm:h-4 accent-amber-600 shrink-0" />
                   <span>
                     <button type="button" onClick={() => setContract("sales")} className="text-amber-700 underline font-semibold">Mesafeli Satış Sözleşmesi&apos;ni</button> okudum ve kabul ediyorum.
                   </span>

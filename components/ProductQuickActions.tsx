@@ -47,7 +47,7 @@ export function FavoriteButton({ product, className = "" }: { product: QuickProd
         onClick={onToggle}
         aria-pressed={fav}
         aria-label={fav ? "Favorilerden çıkar" : "Favorilere ekle"}
-        className="w-8 h-8 rounded-full bg-white/90 hover:bg-white shadow-md flex items-center justify-center transition-transform active:scale-90"
+        className="w-11 h-11 sm:w-8 sm:h-8 rounded-full bg-white/90 hover:bg-white shadow-md flex items-center justify-center transition-transform active:scale-90"
       >
         <Heart aria-hidden="true" className={`w-4 h-4 ${fav ? "fill-red-600 text-red-600" : "text-zinc-600"}`} />
       </button>
@@ -132,7 +132,7 @@ export function CartStepper({ product, inlineToast = false }: { product: QuickPr
           onClick={decrease}
           disabled={quantity === 0}
           aria-label="Adedi azalt"
-          className={`px-3 py-2 hover:bg-zinc-100 disabled:opacity-30 disabled:hover:bg-transparent ${quantity === 0 ? "max-sm:hidden" : ""}`}
+          className={`min-w-11 min-h-11 sm:min-w-0 sm:min-h-0 flex items-center justify-center px-3 py-2 hover:bg-zinc-100 disabled:opacity-30 disabled:hover:bg-transparent ${quantity === 0 ? "max-sm:hidden" : ""}`}
         >
           <Minus aria-hidden="true" className="w-3.5 h-3.5" />
         </button>
@@ -144,7 +144,7 @@ export function CartStepper({ product, inlineToast = false }: { product: QuickPr
           onClick={increase}
           disabled={quantity >= variation.stock}
           aria-label="Adedi artır"
-          className="px-2.5 sm:px-3 py-2 hover:bg-zinc-100 disabled:opacity-30 disabled:hover:bg-transparent"
+          className="min-w-11 min-h-11 sm:min-w-0 sm:min-h-0 flex items-center justify-center px-2.5 sm:px-3 py-2 hover:bg-zinc-100 disabled:opacity-30 disabled:hover:bg-transparent"
         >
           <Plus aria-hidden="true" className="w-3.5 h-3.5" />
         </button>
