@@ -82,7 +82,12 @@ export default function AdminBulkBar({ ids, scopes, onApplied, extraCategories, 
       let msg = `${preface ? `${preface}
 
 ` : ""}${d.selected} ürün seçili: ${d.apply} ürüne uygulanacak, ${d.skipped} ürün zaten bu durumda (atlanacak).`;
-      if (d.showcase?.auto) {
+      if (d.showcase?.auto && payload.action === "showcase" && payload.field === "isFeatured" && payload.value === false) {
+        // Otomatik modda "çıkar": liste elle moda geçer (sunucu mantığı aynı; yalnızca onay metni)
+        msg += `
+
+Öne Çıkanlar şu an otomatik. Bu işlem listeyi elle moda geçirecek: mevcut ${d.showcase.before} ürün sabitlenecek, yeni eklenen ürünler kendiliğinden gelmeyecek. Devam edilsin mi?`;
+      } else if (d.showcase?.auto) {
         msg += `
 
 Öne çıkanlar şu an otomatik seçiliyor (${d.showcase.before} ürün). Devam ederseniz mevcut ${d.showcase.before} ürün elle işaretlenecek ve istediğiniz değişiklik uygulanacak (sonuç: ${d.showcase.after} ürün). Bundan sonra yeni eklenen ürünler otomatik öne çıkmaz.`;
