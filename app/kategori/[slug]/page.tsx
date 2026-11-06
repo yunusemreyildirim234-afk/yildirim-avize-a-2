@@ -3,12 +3,12 @@ import { cache } from "react";
 import Link from "next/link";
 import { notFound, permanentRedirect, redirect } from "next/navigation";
 import Breadcrumbs from "@/components/Breadcrumbs";
-import ProductCard from "@/components/ProductCard";
 import { prisma } from "@/lib/db";
-import Pagination from "@/components/Pagination";
-import { DISCOUNTED, FEATURED, countProductsCached, getBestSellers, getProductsCached } from "@/lib/products";
-import PageSizeLinks from "@/components/PageSizeLinks";
-import { canonicalListing, pageHref, parseAdet, parsePage, rangeOf, totalPages } from "@/lib/pagination";
+import ProductListing from "@/components/ProductListing";
+import { DISCOUNTED, FEATURED, getBestSellers } from "@/lib/products";
+import { getListing } from "@/lib/listing";
+import { isDefaultState, parseListingParams } from "@/lib/listing-core";
+import { canonicalListing, pageHref, parseAdet, parsePage } from "@/lib/pagination";
 import { CATEGORIES, COLLECTIONS } from "@/lib/site";
 import { getCategoryConfig, getCategoryList } from "@/lib/category-list";
 import { RESERVED_SLUGS, categoryKey, findDynamicCategory, visibleCategoryWhere } from "@/lib/categories";
@@ -57,8 +57,8 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   const page = parsePage(sp.sayfa);
   const { adet } = parseAdet(sp.adet);
   const path = `/kategori/${slug}`;
-  // Varsayılan olmayan sayfa boyutu: aynı içeriğin kopyası → noindex,follow ve varsayılan boyutlu birinci sayfaya canonical
-  if (adet !== "24") {
+  // Varsayılan olmayan sayfa boyutu, filtre veya sıralama: aynı içeriğin kopyası → noindex,follow ve filtresiz ana adrese canonical
+  if (adet !== "24" || !isDefaultState(parseListingParams(sp))) {
     const base = pageHref(path, 1);
     return {
       title: current.title,
@@ -92,22 +92,16 @@ export default async function CategoryPage({ params, searchParams }: Props) {
     notFound();
   }
 
-  // Sunucu tarafı sayfalama: Çok Satanlar listesi (48, kendi mantığı) bellekte dilimlenir; diğerleri take/skip + ayrı sayım
+  // Ortak liste katmanı (lib/listing.ts): sıralama + filtre + facet; Çok Satanlar listesi (48, kendi mantığı) hazır ürünlerle beslenir
   const path = `/kategori/${slug}`;
-  let total: number;
-  let all: Awaited<ReturnType<typeof getBestSellers>> | null = null;
-  if (current.where) total = await countProductsCached(current.where);
-  else {
-    all = await getBestSellers(48);
-    total = all.length;
-  }
+  const all = current.where ? null : await getBestSellers(48);
+  const listing = await getListing(all ? { products: all } : { where: current.where!, cached: true }, query);
+  const { total } = listing;
   const fix = canonicalListing(query, total);
-  if (fix) redirect(pageHref(path, fix.page, query, fix.adet)); // geçersiz sayfa/adet → varsayılan, sınır dışı → son sayfa (404 yok)
+  if (fix) redirect(pageHref(path, fix.page, listing.params, fix.adet)); // geçersiz sayfa/adet → varsayılan, sınır dışı → son sayfa (404 yok)
   const { adet, size } = parseAdet(query.adet);
   const page = parsePage(query.sayfa);
-  const pages = totalPages(total, size);
-  const range = rangeOf(page, total, size);
-  const products = all ? all.slice((page - 1) * size, page * size) : await getProductsCached(current.where!, size, (page - 1) * size);
+  const products = await listing.fetchPage(page, size);
 
   return (
     <main className="min-h-screen bg-white pb-20">
@@ -123,38 +117,27 @@ export default async function CategoryPage({ params, searchParams }: Props) {
       </section>
 
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10">
-        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b border-zinc-200 pb-4 mb-6 text-xs text-zinc-500">
-          <div className="flex items-center gap-4">
-            <span>{range ? `${range.from}-${range.to} / ${range.total} ürün gösteriliyor` : "0 ürün listeleniyor"}</span>
-            <span className="text-amber-700 font-medium hidden lg:inline">📍 Beyoğlu Mağazasında Sergilenen Modeller</span>
-          </div>
-          {total > 0 && <PageSizeLinks path={path} current={adet} page={page} size={size} params={query} />}
-        </div>
-        <Pagination path={path} page={page} pages={pages} params={query} label="Sayfalama (üst)" className="mb-8" />
-
-        {products.length === 0 ? (
-          <div className="bg-zinc-50 rounded-3xl border border-zinc-200 p-12 text-center max-w-md mx-auto space-y-3">
-            <span className="text-3xl block" aria-hidden="true">💡</span>
-            <h2 className="font-serif font-bold text-zinc-900 text-base">Bu listede henüz ürün yok</h2>
-            <Link
-              href="/kategori/tum"
-              className="inline-block bg-zinc-900 hover:bg-amber-600 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition-colors mt-2"
-            >
-              Tüm Ürünleri Gör
-            </Link>
-          </div>
-        ) : (
-          <>
-            {/* Başlık sırası h1 → h2 → h3 (kart başlıkları h3); görsel değişmez */}
-            <h2 className="sr-only">{current.title} ürünleri</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-              {products.map((product, i) => (
-                <ProductCard key={product.id} product={product} priority={i < 4} />
-              ))}
+        <ProductListing
+          path={path}
+          listing={listing}
+          products={products}
+          page={page}
+          adet={adet}
+          size={size}
+          note={<span className="text-amber-700 font-medium hidden xl:inline">📍 Beyoğlu Mağazasında Sergilenen Modeller</span>}
+          empty={
+            <div className="bg-zinc-50 rounded-3xl border border-zinc-200 p-12 text-center max-w-md mx-auto space-y-3">
+              <span className="text-3xl block" aria-hidden="true">💡</span>
+              <h2 className="font-serif font-bold text-zinc-900 text-base">Bu listede henüz ürün yok</h2>
+              <Link
+                href="/kategori/tum"
+                className="inline-block bg-zinc-900 hover:bg-amber-600 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition-colors mt-2"
+              >
+                Tüm Ürünleri Gör
+              </Link>
             </div>
-          </>
-        )}
-        <Pagination path={path} page={page} pages={pages} params={query} label="Sayfalama (alt)" />
+          }
+        />
       </section>
     </main>
   );
