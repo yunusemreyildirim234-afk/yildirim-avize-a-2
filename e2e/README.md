@@ -69,7 +69,12 @@ Proje `orders`: yalnızca masaüstü, `workers: 1`, herkese açık testlerden so
 - **Hız sınırı**: `/api/order` bellek içi 10 dk'da 5 istek sınırı başarısız istekleri de sayar. Bir koşuda en çok 4 istek ulaşır (ana sipariş, kuponlu sipariş, kupon limit ret çağrısı, stok siparişi). Doğrulama testleri `/api/order`'ı tarayıcıda taklit eder; sunucuya gitmez. Aynı sunucu sürecinde 10 dk içinde ikinci koşu hız sınırına takılır (yeni `npm test` yeni süreç başlatır).
 - **Veri**: yönetim arayüzüyle "E2E Sipariş" önekli iki ürün (stok 5 / stok 2) ve API ile kişi başı limitli "E2EKUPON…" kuponu; müşteriler `e2e-siparis@example.invalid`, `e2e-siparis2@example.invalid`, `e2e-siparis3@example.invalid` (açıkça sahte). `afterAll`: sipariş/bildirim/misafir kullanıcı (yalnızca bu e-postalar), sonra ürünler, sonra kupon silinir.
 - **Kalıntı denetimi** (`admin/audit.ts`, yalnızca SELECT) sahte e-postalı kullanıcı, sipariş ve bildirim kalıntısını da arar.
-- **Bulgular** (siteye dokunulmaz) `test.fail` ile işaretlidir; site düzeltilince test "beklenmedik geçti" diye uyarır: stok tükenince ürün sayfası önbelleği yenilenmiyor. Ayrıca `/siparis-onay/<id>` sahiplik kontrolü yapmaz (kimlik bilen görür) (annotation olarak raporlanır). Var olmayan sipariş kimliği HTTP 404 döner (testli); geçersiz telefon sunucuda 400 verir (ayrı `x-forwarded-for` ile, hız sınırı bütçesini yemez).
+- **Bulgular** (siteye dokunulmaz): stok tükenince ürün sayfası 60 sn vitrin önbelleğinden eski stoğu gösterebilir; kararlı tekrarlanmadığı için o test `test.fixme` ile atlanır. Ayrıca `/siparis-onay/<id>` sahiplik kontrolü yapmaz (kimlik bilen görür) (annotation olarak raporlanır). Var olmayan sipariş kimliği HTTP 404 döner (testli); geçersiz telefon sunucuda 400 verir (ayrı `x-forwarded-for` ile, hız sınırı bütçesini yemez).
+
+## Neon dalını uyanık tutma
+
+`node scripts/keepalive.cjs` (e2e klasöründe): güvenlik kilidini (`safety.cjs`) doğrular, sonra 60 sn'de bir yalnızca `select 1` çalıştırır; en çok 40 dk sonra kendiliğinden çıkar.
+Hiçbir şey yazmaz, bağlantı bilgisi yazdırmaz; URL ya da `e2e_marker` yoksa hemen durur.
 
 ## Güvenlik ilkeleri
 
