@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { serverError } from "@/lib/api-error";
 import { prisma } from "@/lib/db";
 import { CARD_SELECT } from "@/lib/products";
+import { clipQuery, searchWhere } from "@/lib/product-search";
 import { getLadderContext } from "@/lib/showcase";
 import { priceLadder } from "@/lib/price-ladder";
 import { rateLimit, tooMany } from "@/lib/rate-limit";
@@ -12,7 +13,7 @@ export async function GET(req: Request) {
   const rl = rateLimit(req, "search", 120, 60_000);
   if (rl.limited) return tooMany(rl.retryAfter);
   const { searchParams } = new URL(req.url);
-  const q = (searchParams.get("q") || "").slice(0, 80);
+  const q = clipQuery(searchParams.get("q"));
 
   if (!q.trim()) {
     return NextResponse.json({ products: [] });
@@ -21,23 +22,10 @@ export async function GET(req: Request) {
   try {
     const code = q.trim();
     // Yalnızca arama listesinin ve fiyat merdiveninin kullandığı alanlar (açıklama, görsel dizisi, Trendyol alanları çekilmez)
-    // Başlıkta, açıklamada, kategoride, stok kodunda, barkodda veya model kodunda ara (büyük/küçük harf duyarsız)
+    // Koşul lib/product-search.ts'de tek yerde tanımlıdır (/arama sayfasıyla aynı sonuçlar)
     const [byCode, byText] = await Promise.all([
       prisma.product.findFirst({ where: { active: true, modelCode: code }, select: CARD_SELECT }),
-      prisma.product.findMany({
-        where: {
-          active: true,
-          OR: [
-            { title: { contains: q, mode: "insensitive" } },
-            { description: { contains: q, mode: "insensitive" } },
-            { category: { contains: q, mode: "insensitive" } },
-            { variations: { some: { barcode: { contains: code } } } },
-            { variations: { some: { stockCode: { contains: code, mode: "insensitive" } } } },
-          ],
-        },
-        select: CARD_SELECT,
-        take: 6,
-      }),
+      prisma.product.findMany({ where: searchWhere(q), select: CARD_SELECT, take: 6 }),
     ]);
 
     // Tam model kodu eşleşmesi her zaman en üstte

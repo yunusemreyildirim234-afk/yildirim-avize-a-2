@@ -2,16 +2,19 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import RecentSearches from "@/components/RecentSearches";
 import { toast } from "sonner";
 import { clearRecentSearches, getRecentSearches, removeRecentSearch, restoreRecentSearches, saveRecentSearch } from "@/lib/recent-searches";
 import { track } from "@/lib/track";
+import { MAX_SEARCH_LEN } from "@/lib/product-search";
 import PriceLadder from "@/components/PriceLadder";
 import { CartStepper, FavoriteButton, type QuickProduct } from "@/components/ProductQuickActions";
 
 type Product = QuickProduct;
 
 export default function SearchBar() {
+  const router = useRouter();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
@@ -78,9 +81,20 @@ export default function SearchBar() {
     track("SEARCH", term.trim());
   };
 
+  // Enter / büyüteç: üst aramayla (NavSearch) aynı davranış, tüm sonuçların listelendiği /arama sayfası; öneriye tıklamak ürüne gider
+  const onSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const q = query.trim();
+    if (!q) return;
+    remember(q);
+    setIsOpen(false);
+    setShowRecent(false);
+    router.push(`/arama?q=${encodeURIComponent(q.slice(0, MAX_SEARCH_LEN))}`);
+  };
+
   return (
     <div ref={searchRef} className="relative w-full">
-      <div className="relative">
+      <form onSubmit={onSubmit} role="search" className="relative">
         <input
           type="text"
           aria-label="Avize ara"
@@ -93,7 +107,6 @@ export default function SearchBar() {
               setShowRecent(true);
             }
           }}
-          onKeyDown={(e) => e.key === "Enter" && remember(query)}
           onChange={(e) => {
             setQuery(e.target.value);
             setShowRecent(!e.target.value.trim());
@@ -101,9 +114,9 @@ export default function SearchBar() {
           className="w-full text-neutral-800 placeholder-neutral-400 rounded-full focus:outline-none focus:ring-2 focus:ring-amber-500/30 border transition-all bg-white text-base pl-12 pr-12 py-4 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.25)] border-zinc-200 focus:border-amber-400"
         />
         {/* Arama İkonu */}
-        <span className="absolute text-neutral-400 left-5 top-4 text-base">
-          🔍
-        </span>
+        <button type="submit" aria-label="Ara" className="absolute text-neutral-400 hover:text-amber-700 left-0 top-0 h-full w-14 flex items-center justify-center rounded-l-full text-base">
+          <span aria-hidden="true">🔍</span>
+        </button>
 
         {/* Temizle Butonu */}
         {query && (
@@ -119,7 +132,7 @@ export default function SearchBar() {
             ✕
           </button>
         )}
-      </div>
+      </form>
 
       {showRecent && !query.trim() && recent.length > 0 && (
         <div className="absolute top-16 text-left left-0 right-0 bg-white rounded-2xl border border-neutral-200 shadow-xl overflow-hidden z-50">

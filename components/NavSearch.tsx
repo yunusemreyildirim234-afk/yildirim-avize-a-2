@@ -8,6 +8,7 @@ import RecentSearches from "@/components/RecentSearches";
 import { toast } from "sonner";
 import { clearRecentSearches, getRecentSearches, removeRecentSearch, restoreRecentSearches, saveRecentSearch } from "@/lib/recent-searches";
 import { track } from "@/lib/track";
+import { MAX_SEARCH_LEN } from "@/lib/product-search";
 
 interface Result {
   id: string;
@@ -193,14 +194,14 @@ export default function NavSearch() {
     };
   }, [open]);
 
-  // Enter: tek/ilk sonuca git
+  // Enter / büyüteç: tüm sonuçların listelendiği arama sayfasına git (öneriye tıklamak ürüne gider)
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    remember(query);
-    if (results[0]) {
-      router.push(`/urun/${results[0].id}`);
-      reset();
-    }
+    const q = query.trim();
+    if (!q) return;
+    remember(q);
+    router.push(`/arama?q=${encodeURIComponent(q.slice(0, MAX_SEARCH_LEN))}`);
+    reset();
   };
 
   const showPanel = open && query.trim().length > 0;
@@ -232,7 +233,9 @@ export default function NavSearch() {
           role="search"
           className={`relative transition-all duration-300 ease-out ${open || query ? "w-72 lg:w-80" : "w-44"}`}
         >
-          <Search aria-hidden="true" className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <button type="submit" aria-label="Ara" className="absolute left-0 top-0 h-full w-9 flex items-center justify-center rounded-l-full text-zinc-400 hover:text-amber-700">
+            <Search aria-hidden="true" className="w-4 h-4" />
+          </button>
           {field(
             desktopInput,
             "w-full text-xs pl-9 pr-8 py-2 rounded-full bg-zinc-100 border border-transparent text-zinc-800 placeholder-zinc-400 focus:bg-white focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20 [&::-webkit-search-cancel-button]:hidden"
@@ -277,7 +280,9 @@ export default function NavSearch() {
         <div role="dialog" aria-modal="true" aria-label="Ürün ara" className="md:hidden fixed inset-0 z-[60] bg-white flex flex-col">
           <form onSubmit={onSubmit} role="search" className="flex items-center gap-2 px-3 h-16 border-b border-zinc-100 shrink-0">
             <div className="relative flex-1">
-              <Search aria-hidden="true" className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <button type="submit" aria-label="Ara" className="absolute left-0 top-0 h-full w-10 flex items-center justify-center rounded-l-full text-zinc-400 hover:text-amber-700">
+                <Search aria-hidden="true" className="w-4 h-4" />
+              </button>
               {field(
                 mobileInput,
                 "w-full text-base sm:text-sm pl-9 pr-3 py-2.5 rounded-full bg-zinc-100 text-zinc-800 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-amber-500/30 [&::-webkit-search-cancel-button]:hidden"
