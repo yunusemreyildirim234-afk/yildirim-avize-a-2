@@ -38,7 +38,7 @@ test("liste dışı ilk parçalar renk sayılmaz (ama ebat okunabilir)", () => {
   for (const v of ["3'lü", "Tek kollu", "E14 duy", "45 x 25", "Renk", "", "Seçenek", "12 Watt"]) assert.equal(sec(v).c, null, v);
   assert.deepEqual(show("E14 duy / 30 x 30"), [null, "30 x 30"]);
   assert.equal(secenekColorName("Gold (0146)"), "gold"); // kod parantezi atılır
-  assert.ok(SECENEK_COLOR_ALLOWLIST.includes("lak gold") && SECENEK_COLOR_ALLOWLIST.length === 38);
+  assert.ok(SECENEK_COLOR_ALLOWLIST.includes("lak gold") && SECENEK_COLOR_ALLOWLIST.length === 45);
 });
 
 test('"Renk" türü eskisi gibi: olduğu gibi kabul, izin listesi yok; ikinci parça ebatsa ilk parça', () => {
@@ -139,4 +139,29 @@ test("ebat adres parametresi: boşluk/×/X tolere, geçersiz yok sayılır, sın
   const s = parseListingParams({ renk: "sari", ebat: "50 x 50,40x40", fiyat_min: "10" });
   assert.deepEqual(stateToParams(s), { renk: "sari", ebat: "50x50,40x40", fiyat_min: "10" });
   assert.deepEqual(stateToParams(parseListingParams({ ebat: "zzz" })), {});
+});
+
+// ---- İzin listesi güncellemesi (canlıdaki eksikler) ----
+test("canlı eksikler: ham değer → (renk, ebat); kahve → Kahverengi tek birleştirme; cam/ahşap renk değil", () => {
+  const T = [
+    ["MAT SİYAH", "Mat Siyah", null], ["mat Siyah / 62 x 62", "Mat Siyah", "62 x 62"], ["Bakır lak / 95 x 52", "Bakır Lak", "95 x 52"],
+    ["Lak kaplama platin / 72 x 72", "Lak Kaplama Platin", "72 x 72"], ["okyanus mavisi / 75 x 75", "Okyanus Mavisi", "75 x 75"],
+    ["mürdüm / 28 x 4", "Mürdüm", "28 x 4"], ["şampanya", "Şampanya", null], ["kahve / 22 x 22", "Kahverengi", "22 x 22"],
+    ["KAHVERENGİ / 14 x 30", "Kahverengi", "14 x 30"], ["prinç eskitme (elektrostatik) / 55 x 55", "Pirinç Eskitme (Elektrostatik)", "55 x 55"],
+    ["prinç eskitme, / 55 x 55", "Pirinç Eskitme", "55 x 55"], ["CAM / 25 x 37", null, "25 x 37"], ["ahşap / 10 x 11", null, "10 x 11"],
+    ["Bej (0146)", "Bej", null], ["şeffaF / 14 x 14", "Şeffaf", "14 x 14"], ["Standart", null, null],
+  ];
+  for (const [raw, color, size] of T) assert.deepEqual(show(raw), [color, size], raw);
+  // ayrı seçenekler, birleşmez
+  const keys = ["Mat Siyah", "Siyah", "Bakır Lak", "Bakır", "Pirinç Eskitme", "Pirinç Eskitme (Elektrostatik)", "Lak Kaplama Platin", "Kahve"].map((v) => sec(v).c?.k);
+  assert.equal(new Set(keys.filter(Boolean)).size, 8); // hepsi ayrı (Kahve, Kahverengi anahtarına gider)
+  assert.equal(sec("kahve").c.k, sec("Kahverengi").c.k);
+  assert.equal(sec("Mat Siyah").c.k, "mat-siyah");
+  assert.equal(sec("Pirinç Eskitme (Elektrostatik)").c.k, "pirinc-eskitme-elektrostatik");
+  for (const v of ["cam", "ahşap", "Kahveli", "Okyanus"]) assert.equal(sec(v).c, null, v);
+});
+
+test("yeni renk örnekleri", () => {
+  assert.equal(colorSwatch("mat-siyah"), "#1c1917"); // koyu: siyah tonu
+  for (const k of ["bakir-lak", "lak-kaplama-platin", "okyanus-mavisi", "murdum", "sampanya", "pirinc-eskitme-elektrostatik"]) assert.match(colorSwatch(k) ?? "", /^#[0-9a-f]{6}$/, k);
 });

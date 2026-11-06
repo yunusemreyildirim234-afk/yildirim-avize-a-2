@@ -53,8 +53,8 @@ async function loadRows(where: Prisma.ProductWhereInput, cap: number): Promise<L
 }
 
 // Önbellek yalnızca denetimli tabanlarda (kategori/koleksiyon koşulu); arama sorgusu başına anahtar üretilmez.
-// Anahtardaki sürüm: satır şekli değişince (v2: colors → vars) eski şekilli önbellek girdileri (dağıtım sonrası eskiyi sun) okunmasın. Şekil değişince artırın.
-const ROWS_CACHE_VERSION = "v2";
+// Anahtardaki sürüm: satır şekli değişince (v2: colors → vars; v3: yeni renk adları/takma ad — önbellekteki satırlar renk ANAHTARLARINI taşır) eski şekilli önbellek girdileri (dağıtım sonrası eskiyi sun) okunmasın. Şekil değişince artırın.
+const ROWS_CACHE_VERSION = "v3";
 const loadRowsCached = (where: Prisma.ProductWhereInput, cap: number) =>
   unstable_cache(() => loadRows(where, cap), ["sf-listing-rows", ROWS_CACHE_VERSION, productsCacheKey(where, cap)], { revalidate: STOREFRONT_CACHE_SECONDS, tags: storefrontTags(where) })();
 

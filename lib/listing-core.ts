@@ -147,13 +147,18 @@ export const SECENEK_COLOR_ALLOWLIST: readonly string[] = [
   "bej", "sarı", "siyah", "beyaz", "krem", "gri", "kahverengi", "kırmızı", "pembe", "mor", "lila", "mavi", "yeşil", "turuncu", "bal", "şeffaf",
   "çok renkli", "metalik", "gümüş", "altın", "gold", "lak gold", "krom", "eskitme", "pirinç eskitme", "antik", "bakır", "bronz", "nikel", "füme",
   "lacivert", "bordo", "turkuaz", "haki", "antrasit", "ceviz", "naturel", "gül kurusu",
+  "mat siyah", "bakır lak", "lak kaplama platin", "okyanus mavisi", "mürdüm", "şampanya", "pirinç eskitme (elektrostatik)",
+  // "cam" ve "ahşap" malzemedir, renk DEĞİL: bilerek yok (ebatları yine okunur).
 ];
 const ALLOW = new Set(SECENEK_COLOR_ALLOWLIST);
 /** Bilinen yazım hataları (kelime bazlı, küçük harf) */
 const SPELLING: Record<string, string> = { prinç: "pirinç" };
+/** Tek eş anlam birleştirmesi (tüm ad bazlı, küçük harf): izin listesine girmeden önce uygulanır. Başka birleştirme yapılmaz. */
+const ALIAS: Record<string, string> = { kahve: "kahverengi" };
 
 const lowerTr = (s: string) => s.toLocaleLowerCase("tr-TR");
-const titleTr = (s: string) => s.split(" ").map((w) => (w ? w.charAt(0).toLocaleUpperCase("tr-TR") + w.slice(1) : w)).join(" ");
+// Her kelimenin (parantez içindekiler dahil) ilk harfi büyük
+const titleTr = (s: string) => s.replace(/(^|[\s(])(\p{L})/gu, (_m, p: string, c: string) => p + c.toLocaleUpperCase("tr-TR"));
 
 /** "Seçenek" türü ilk parçası → izinli renk adı (küçük harf) ya da null */
 export function secenekColorName(part: string): string | null {
@@ -163,7 +168,8 @@ export function secenekColorName(part: string): string | null {
     .split(/\s+/)
     .map((w) => SPELLING[w] ?? w)
     .join(" ");
-  return ALLOW.has(s) ? s : null;
+  const name = ALIAS[s] ?? s;
+  return ALLOW.has(name) ? name : null;
 }
 
 const SIZE_RE = /^(\d{1,4}(?:[.,]\d{1,2})?)\s*[xX×]\s*(\d{1,4}(?:[.,]\d{1,2})?)$/;
@@ -226,7 +232,11 @@ const HEX: Record<string, string> = {
   naturel: "#c8a97e", ahsap: "#a47c4f", pembe: "#d9a1ad", mor: "#6d4c8c", turuncu: "#d9731a",
 };
 // Bileşik anahtarlar önce tam aranır, sonra parça parça; "cok-renkli" tek renk olmadığı için örneksizdir (nötr).
-const HEX_FULL: Record<string, string> = { "pirinc-eskitme": "#9a7a3a", "lak-gold": "#c9a227" };
+// ("mat-siyah" ve "bakir-lak" parça aramasıyla siyah/bakır tonunu alır.)
+const HEX_FULL: Record<string, string> = {
+  "pirinc-eskitme": "#9a7a3a", "pirinc-eskitme-elektrostatik": "#9a7a3a", "lak-gold": "#c9a227",
+  "lak-kaplama-platin": "#c4c7cc", "okyanus-mavisi": "#2a6f97", murdum: "#5b2a4a", sampanya: "#e8d5a8",
+};
 export function colorSwatch(key: string): string | null {
   if (HEX_FULL[key]) return HEX_FULL[key];
   if (key === "cok-renkli") return null;
