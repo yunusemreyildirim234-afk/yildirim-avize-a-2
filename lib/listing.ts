@@ -6,7 +6,7 @@ import { categoryDisplayTitle } from "@/lib/category-settings";
 import { getCategoryList, getCategorySettings } from "@/lib/category-list";
 import { STOREFRONT_CACHE_SECONDS, getProducts, getProductsCached, getRankedSellerIds, type ProductWithVariations } from "@/lib/products";
 import { productsCacheKey, storefrontTags } from "@/lib/storefront-cache-key";
-import { applyListing, isDefaultState, variationAttrs, parseListingParams, stateToParams, type CatMeta, type ListingResult, type ListingRow } from "@/lib/listing-core";
+import { applyListing, isDefaultState, parseSize, variationAttrs, parseListingParams, stateToParams, type CatMeta, type ListingResult, type ListingRow } from "@/lib/listing-core";
 
 /**
  * Ortak ürün listesi veri katmanı (/arama ve /kategori/[slug]). Taban kümenin hafif satırları (kimlik, kategori, kartta gösterilen fiyat, tarih, renkler) bir kez okunur;
@@ -28,6 +28,7 @@ const ROW_SELECT = {
   createdAt: true,
   updatedAt: true,
   isFeatured: true,
+  ebat: true,
   variations: { where: { variationType: { in: ["Renk", "Seçenek"] } }, select: { variationType: true, variationValue: true } },
 } satisfies Prisma.ProductSelect;
 
@@ -45,6 +46,7 @@ async function loadRows(where: Prisma.ProductWhereInput, cap: number): Promise<L
     created: r.createdAt.getTime(),
     updated: r.updatedAt.getTime(),
     featured: r.isFeatured,
+    own: r.ebat ? parseSize(r.ebat) : null,
     vars: r.variations.flatMap((v) => {
       const a = variationAttrs(v.variationType, v.variationValue);
       return a.c || a.s ? [a] : [];
@@ -53,8 +55,8 @@ async function loadRows(where: Prisma.ProductWhereInput, cap: number): Promise<L
 }
 
 // Önbellek yalnızca denetimli tabanlarda (kategori/koleksiyon koşulu); arama sorgusu başına anahtar üretilmez.
-// Anahtardaki sürüm: satır şekli değişince (v2: colors → vars; v3: yeni renk adları/takma ad — önbellekteki satırlar renk ANAHTARLARINI taşır) eski şekilli önbellek girdileri (dağıtım sonrası eskiyi sun) okunmasın. Şekil değişince artırın.
-const ROWS_CACHE_VERSION = "v3";
+// Anahtardaki sürüm: satır şekli değişince (v2: colors → vars; v3: yeni renk adları/takma ad — önbellekteki satırlar renk ANAHTARLARINI taşır; v4: satıra Product.ebat ("own") eklendi, eski şekilli satırda own yoktur) eski şekilli önbellek girdileri (dağıtım sonrası eskiyi sun) okunmasın. Şekil değişince artırın.
+const ROWS_CACHE_VERSION = "v4";
 const loadRowsCached = (where: Prisma.ProductWhereInput, cap: number) =>
   unstable_cache(() => loadRows(where, cap), ["sf-listing-rows", ROWS_CACHE_VERSION, productsCacheKey(where, cap)], { revalidate: STOREFRONT_CACHE_SECONDS, tags: storefrontTags(where) })();
 

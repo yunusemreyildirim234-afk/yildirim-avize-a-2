@@ -1,12 +1,14 @@
 // Ortak ürün listesi (/arama ve /kategori/[slug]) için SAF sıralama + filtre çekirdeği: veritabanı ve Next bağımlılığı yok (birim test edilebilir).
 import { categoryKey, slugifyTr } from "./categories.ts";
 
-export const SORTS = ["onerilen", "fiyat-artan", "fiyat-azalan", "cok-satan", "one-cikan", "en-yeni"] as const;
+export const SORTS = ["onerilen", "fiyat-artan", "fiyat-azalan", "ebat-artan", "ebat-azalan", "cok-satan", "one-cikan", "en-yeni"] as const;
 export type Sort = (typeof SORTS)[number];
 export const SORT_LABELS: Record<Sort, string> = {
   onerilen: "Önerilen",
   "fiyat-artan": "Fiyat: Düşükten yükseğe",
   "fiyat-azalan": "Fiyat: Yüksekten düşüğe",
+  "ebat-artan": "Ebat: Küçükten büyüğe",
+  "ebat-azalan": "Ebat: Büyükten küçüğe",
   "cok-satan": "Çok satanlar",
   "one-cikan": "Öne çıkanlar",
   "en-yeni": "En yeni",
@@ -37,6 +39,8 @@ export interface ListingRow {
   featured: boolean;
   /** Her varyasyonun renk ve ebatı (ikisi birlikte seçilince AYNI varyasyonda eşleşmeleri gerekir) */
   vars: VariationAttrs[];
+  /** Product.ebat (ürün düzeyi; tüm varyasyonlar için geçerli sayılır); yoksa null */
+  own?: Attr | null;
 }
 
 export interface Attr {
@@ -184,6 +188,29 @@ export function parseSize(part: string): Attr | null {
   return { k: `${a}x${b}`, n: `${show(a)} x ${show(b)}` };
 }
 
+export const MAX_EBAT_LEN = 24;
+/**
+ * Yönetici girişi (Product.ebat): "45x25" / "45 X 25" / "45 × 25" / "12,5 x 10" → "45 x 25" / "12,5 x 10". Boş = alanı temizle (değer null).
+ * Kalıba uymayan ("E27", "45", "45 cm", "45 x 25 x 10") reddedilir. Sunucuda zorunlu doğrulama için kullanılır.
+ */
+export function normalizeEbat(input: unknown): { ok: true; value: string | null } | { ok: false; error: string } {
+  if (input === null || input === undefined) return { ok: true, value: null };
+  if (typeof input !== "string") return { ok: false, error: "Ebat metin olmalıdır." };
+  const t = input.trim();
+  if (!t) return { ok: true, value: null };
+  if (t.length > MAX_EBAT_LEN) return { ok: false, error: `Ebat en çok ${MAX_EBAT_LEN} karakter olabilir.` };
+  const a = parseSize(t);
+  if (!a) return { ok: false, error: "Ebat \"en x boy\" biçiminde olmalıdır (örn. 45 x 25). Birim ve ek ölçü yazmayın." };
+  return { ok: true, value: a.n };
+}
+
+/** Ebat anahtarı "45x25" → (büyük kenar, küçük kenar) */
+const sizeSortKey = (k: string): [number, number] => {
+  const [a, b] = k.split("x").map(Number);
+  return a >= b ? [a, b] : [b, a];
+};
+const cmpKey = (a: [number, number], b: [number, number]) => a[0] - b[0] || a[1] - b[1];
+
 const PART_SPLIT = /\s+\/\s+/;
 
 /**
@@ -281,6 +308,7 @@ export function applyListing(rows: readonly ListingRow[], raw: ListingState, ctx
       if (v.c) universeColors.add(v.c.k);
       if (v.s) universeSizes.add(v.s.k);
     }
+    if (r.own) universeSizes.add(r.own.k);
   }
   const state: ListingState = {
     ...raw,
@@ -294,19 +322,39 @@ export function applyListing(rows: readonly ListingRow[], raw: ListingState, ctx
 
   const okCat = (r: ListingRow) => wantCats.size === 0 || wantCats.has(catByKey.get(r.cat)?.slug ?? "");
   // Yalnızca biri seçiliyse ürün düzeyinde eşleşme; ikisi birlikte seçiliyse AYNI varyasyon hem rengi hem ebatı taşımalıdır.
+  // Ürün düzeyindeki ebat (Product.ebat) o ürünün her varyasyonu için geçerli sayılır; varyasyon ebatları AYNI varyasyon kuralıyla eşleşir.
+  const ownHit = (r: ListingRow) => r.own != null && wantSizes.has(r.own.k);
+  const sizeOk = (r: ListingRow, v: VariationAttrs) => wantSizes.size === 0 || ownHit(r) || (v.s !== null && wantSizes.has(v.s.k));
+  const colorOk = (v: VariationAttrs) => wantColors.size === 0 || (v.c !== null && wantColors.has(v.c.k));
   const okColor = (r: ListingRow) =>
-    (wantColors.size === 0 && wantSizes.size === 0) ||
-    r.vars.some((v) => (wantColors.size === 0 || (v.c !== null && wantColors.has(v.c.k))) && (wantSizes.size === 0 || (v.s !== null && wantSizes.has(v.s.k))));
+    (wantColors.size === 0 && wantSizes.size === 0) || (wantColors.size === 0 && ownHit(r)) || r.vars.some((v) => colorOk(v) && sizeOk(r, v));
   const okPrice = (r: ListingRow) => (state.fiyatMin === undefined || r.price >= state.fiyatMin) && (state.fiyatMax === undefined || r.price <= state.fiyatMax);
 
   // Sıralama: tüm satırlar üzerinde anahtar hesabı, sonra filtre (filtre sırayı bozmaz)
   const idx = new Map(rows.map((r, i) => [r.id, i]));
   const rank = new Map((ctx.rankIds ?? []).map((id, i) => [id, i]));
   const byIdx = (a: ListingRow, b: ListingRow) => idx.get(a.id)! - idx.get(b.id)!;
+  // Ebat sıralaması: ürünün ebat anahtarları (varyasyon ebatları ∪ Product.ebat); artanda en küçüğü, azalanda en büyüğü; ebatsızlar iki yönde de sonda.
+  const sizeKeys = new Map(
+    rows.map((r) => {
+      const ks = [...r.vars.flatMap((v) => (v.s ? [v.s.k] : [])), ...(r.own ? [r.own.k] : [])].map(sizeSortKey);
+      return [r.id, ks.sort(cmpKey)] as const;
+    })
+  );
+  const byId = (a: ListingRow, b: ListingRow) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+  const bySize = (dir: 1 | -1) => (a: ListingRow, b: ListingRow) => {
+    const ka = sizeKeys.get(a.id)!;
+    const kb = sizeKeys.get(b.id)!;
+    if (!ka.length || !kb.length) return ka.length === kb.length ? byId(a, b) : ka.length ? -1 : 1;
+    const pick = (ks: [number, number][]) => (dir === 1 ? ks[0] : ks[ks.length - 1]);
+    return dir * cmpKey(pick(ka), pick(kb)) || byId(a, b);
+  };
   const cmp: Record<Sort, (a: ListingRow, b: ListingRow) => number> = {
     onerilen: byIdx,
     "fiyat-artan": (a, b) => a.price - b.price || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
     "fiyat-azalan": (a, b) => b.price - a.price || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+    "ebat-artan": bySize(1),
+    "ebat-azalan": bySize(-1),
     "cok-satan": (a, b) => (rank.get(a.id) ?? Infinity) - (rank.get(b.id) ?? Infinity) || byIdx(a, b),
     "one-cikan": (a, b) => Number(b.featured) - Number(a.featured) || byIdx(a, b),
     "en-yeni": (a, b) => b.created - a.created || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
@@ -321,15 +369,11 @@ export function applyListing(rows: readonly ListingRow[], raw: ListingState, ctx
   const catCount = new Map<string, number>();
   // Renk/ebat sayısı: o grup KENDİ filtresi hariç sayılır; diğer grup seçiliyse AYNI varyasyonda eşleşme aranır. Ürün başına bir kez.
   const tally = (attr: "c" | "s", otherWant: Set<string>) => {
-    const other = attr === "c" ? "s" : "c";
     const m = new Map<string, { n: Map<string, number>; count: number }>();
     for (const r of rows) {
       if (!okCat(r) || !okPrice(r)) continue;
       const seen = new Set<string>();
-      for (const v of r.vars) {
-        const a = v[attr];
-        const o = v[other];
-        if (!a || (otherWant.size > 0 && !(o && otherWant.has(o.k)))) continue;
+      const add = (a: Attr) => {
         const g = m.get(a.k) ?? { n: new Map<string, number>(), count: 0 };
         g.n.set(a.n, (g.n.get(a.n) ?? 0) + 1);
         if (!seen.has(a.k)) {
@@ -337,7 +381,16 @@ export function applyListing(rows: readonly ListingRow[], raw: ListingState, ctx
           g.count += 1;
         }
         m.set(a.k, g);
+      };
+      for (const v of r.vars) {
+        const a = v[attr];
+        if (!a) continue;
+        // Renk sayılırken ürün düzeyi ebat da "diğer grup" eşleşmesi sayılır; ebat sayılırken diğer grup renktir (ebat varyasyonun renginden bağımsız değerlendirilir).
+        const otherOk = otherWant.size === 0 || (attr === "c" ? ownHit(r) || (v.s !== null && otherWant.has(v.s.k)) : v.c !== null && otherWant.has(v.c.k));
+        if (otherOk) add(a);
       }
+      // Ürün düzeyi ebat: renk seçiliyse ürünün en az bir rengi eşleşmeli
+      if (attr === "s" && r.own && (otherWant.size === 0 || r.vars.some((v) => v.c !== null && otherWant.has(v.c.k)))) add(r.own);
     }
     return m;
   };
