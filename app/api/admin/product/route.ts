@@ -6,6 +6,7 @@ import { adminGuard } from "@/lib/admin-guard";
 import { prisma } from "@/lib/db";
 import { attachUploads, pruneUploads } from "@/lib/product-images";
 import { MAX_PRODUCT_IMAGES, parseImageUrls, parseVariations, uploadedIdsOf } from "@/lib/variation-input";
+import { normalizeEbat } from "@/lib/listing-core";
 import { schedulePriceDrops } from "@/lib/price-drop-notify";
 import { buildUndoToken, snapshotForDelete, snapshotProducts } from "@/lib/admin-undo";
 
@@ -27,6 +28,9 @@ async function POSTHandler(req: Request) {
     const basePrice = Number(body.basePrice);
     if (!Number.isFinite(basePrice) || basePrice <= 0 || basePrice > 10_000_000) return NextResponse.json({ error: "Geçerli bir satış fiyatı giriniz." }, { status: 400 });
     const description = typeof body.description === "string" ? body.description.trim().slice(0, 10_000) || null : null;
+
+    const ebat = normalizeEbat(body.ebat);
+    if (!ebat.ok) return NextResponse.json({ error: ebat.error }, { status: 400 });
 
     const images = parseImageUrls(body.images, MAX_PRODUCT_IMAGES, "Ürün fotoğrafları");
     if (!images.ok) return NextResponse.json({ error: images.error }, { status: 400 });
@@ -57,6 +61,7 @@ async function POSTHandler(req: Request) {
               imageUrl: images.value[0] ?? null,
               images: images.value,
               modelCode,
+              ebat: ebat.value,
               variations: {
                 create: variations.value.map((v, i) => ({ variationType: "Renk", variationValue: v.name, extraPrice: v.extraPrice, stock: v.stock, images: v.images, position: i })),
               },
@@ -91,8 +96,8 @@ async function PATCHHandler(req: Request) {
     const body = await req.json();
 
     // Tekil ürün düzenleme: başlık, fiyat, görseller (varsa model kodu ile birlikte)
-    if (typeof body.productId === "string" && ("title" in body || "basePrice" in body || "images" in body || "modelCode" in body || "isFeatured" in body || "isBestSeller" in body)) {
-      const data: { title?: string; basePrice?: number; images?: string[]; imageUrl?: string | null; modelCode?: string | null; isFeatured?: boolean; isBestSeller?: boolean } = {};
+    if (typeof body.productId === "string" && ("title" in body || "basePrice" in body || "images" in body || "modelCode" in body || "isFeatured" in body || "isBestSeller" in body || "ebat" in body)) {
+      const data: { title?: string; basePrice?: number; images?: string[]; imageUrl?: string | null; modelCode?: string | null; isFeatured?: boolean; isBestSeller?: boolean; ebat?: string | null } = {};
       if (typeof body.title === "string") {
         const title = body.title.trim().slice(0, 300);
         if (!title) return NextResponse.json({ error: "Ürün başlığı boş olamaz." }, { status: 400 });
@@ -102,6 +107,11 @@ async function PATCHHandler(req: Request) {
         const price = Number(body.basePrice);
         if (!(price >= 0)) return NextResponse.json({ error: "Geçerli bir fiyat giriniz." }, { status: 400 });
         data.basePrice = price;
+      }
+      if ("ebat" in body) {
+        const ebat = normalizeEbat(body.ebat);
+        if (!ebat.ok) return NextResponse.json({ error: ebat.error }, { status: 400 });
+        data.ebat = ebat.value;
       }
       if (typeof body.isFeatured === "boolean") data.isFeatured = body.isFeatured;
       if (typeof body.isBestSeller === "boolean") data.isBestSeller = body.isBestSeller;

@@ -2,6 +2,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { signSession, verifySession } from "@/lib/session";
 import { bulkTiersOf } from "@/lib/bulk-pricing";
+import { normalizeEbat } from "@/lib/listing-core";
 import { productUploadIds } from "@/lib/variation-input";
 
 // Yönetici "Geri Al" altyapısı.
@@ -23,7 +24,7 @@ export class UndoError extends Error {
 }
 
 // ---------- Durum okuma ----------
-const FIELD_KEYS = ["title", "category", "basePrice", "listPrice", "isFeatured", "isBestSeller", "bulkTiers", "modelCode", "images", "imageUrl", "active", "couponAllowed", "pickupDiscountPct", "transferDiscountPct"] as const;
+const FIELD_KEYS = ["title", "category", "basePrice", "listPrice", "isFeatured", "isBestSeller", "bulkTiers", "modelCode", "images", "imageUrl", "active", "couponAllowed", "pickupDiscountPct", "transferDiscountPct", "ebat"] as const;
 type FieldKey = (typeof FIELD_KEYS)[number];
 type Fields = Partial<Record<FieldKey, unknown>>;
 
@@ -37,7 +38,7 @@ export async function snapshotProducts(ids: string[]): Promise<ProductState[]> {
   const rows = await prisma.product.findMany({ where: { id: { in: ids } }, include: { variations: { select: { id: true, stock: true, extraPrice: true } } } });
   return rows.map((p) => ({
     id: p.id,
-    fields: { title: p.title, category: p.category, basePrice: p.basePrice, listPrice: p.listPrice, isFeatured: p.isFeatured, isBestSeller: p.isBestSeller, bulkTiers: p.bulkTiers, modelCode: p.modelCode, images: p.images, imageUrl: p.imageUrl, active: p.active, couponAllowed: p.couponAllowed, pickupDiscountPct: p.pickupDiscountPct, transferDiscountPct: p.transferDiscountPct },
+    fields: { title: p.title, category: p.category, basePrice: p.basePrice, listPrice: p.listPrice, isFeatured: p.isFeatured, isBestSeller: p.isBestSeller, bulkTiers: p.bulkTiers, modelCode: p.modelCode, images: p.images, imageUrl: p.imageUrl, active: p.active, couponAllowed: p.couponAllowed, pickupDiscountPct: p.pickupDiscountPct, transferDiscountPct: p.transferDiscountPct, ebat: p.ebat },
     variations: p.variations,
   }));
 }
@@ -151,6 +152,7 @@ function cleanFields(raw: unknown): Fields {
       case "couponAllowed": out.couponAllowed = bool(v, k); break;
       case "pickupDiscountPct": out.pickupDiscountPct = pct(v, k); break;
       case "transferDiscountPct": out.transferDiscountPct = pct(v, k); break;
+      case "ebat": { const e = normalizeEbat(v); if (!e.ok) bad(k); else out.ebat = e.value; break; }
       default: bad(`bilinmeyen alan: ${k}`);
     }
   }
@@ -179,6 +181,7 @@ function cleanRecreate(raw: unknown) {
       couponAllowed: bool(p.couponAllowed ?? true, "couponAllowed"),
       pickupDiscountPct: pct(p.pickupDiscountPct ?? null, "pickupDiscountPct"),
       transferDiscountPct: pct(p.transferDiscountPct ?? null, "transferDiscountPct"),
+      ebat: str(p.ebat ?? null, 24, "ebat", true),
       bulkTiers: jsonOrNull(tiers(p.bulkTiers ?? null)),
       trendyolMainId: str(p.trendyolMainId ?? null, 100, "trendyolMainId", true),
       modelCode: str(p.modelCode ?? null, 40, "modelCode", true),

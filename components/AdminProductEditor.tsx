@@ -19,6 +19,7 @@ export interface EditorProduct {
   title: string;
   basePrice: number;
   modelCode?: string | null;
+  ebat?: string | null;
   imageUrl?: string | null;
   images?: string[];
   isFeatured?: boolean;
@@ -43,6 +44,7 @@ export default function AdminProductEditor({ product, onSaved }: { product: Edit
   const [title, setTitle] = useState(product.title);
   const [basePrice, setBasePrice] = useState(String(product.basePrice));
   const [modelCode, setModelCode] = useState(product.modelCode ?? "");
+  const [ebat, setEbat] = useState(product.ebat ?? "");
   const [images, setImages] = useState<PickerItem[]>(itemsFromUrls(product.images?.length ? product.images : product.imageUrl ? [product.imageUrl] : []));
   const [newImage, setNewImage] = useState("");
   const [isFeatured, setIsFeatured] = useState(Boolean(product.isFeatured));
@@ -84,7 +86,7 @@ export default function AdminProductEditor({ product, onSaved }: { product: Edit
 
   const saveInfo = () =>
     run(async () => {
-      const data = await api("PATCH", "/api/admin/product", { productId: product.id, title, basePrice: Number(basePrice), modelCode, images: images.map((i) => i.src), isFeatured, isBestSeller });
+      const data = await api("PATCH", "/api/admin/product", { productId: product.id, title, basePrice: Number(basePrice), modelCode, ebat, images: images.map((i) => i.src), isFeatured, isBestSeller });
       onSaved?.(data.snapshot);
     }, "✓ Ürün bilgileri kaydedildi. Alttaki çubuktan geri alabilirsiniz.");
 
@@ -158,6 +160,11 @@ export default function AdminProductEditor({ product, onSaved }: { product: Edit
         <label className="space-y-1">
           <span className="font-semibold text-neutral-700">Model kodu</span>
           <input value={modelCode} onChange={(e) => setModelCode(e.target.value)} className={`${field} w-full font-mono`} />
+        </label>
+        <label className="block space-y-1 sm:max-w-xs">
+          <span className="font-semibold text-neutral-700">Ebat</span>
+          <input aria-label="Ebat" type="text" maxLength={24} placeholder="45 x 25" value={ebat} onChange={(e) => setEbat(e.target.value)} className="w-full p-2 rounded-lg border border-neutral-300 bg-white text-base sm:text-xs focus:outline-none focus:border-amber-600" />
+          <span className="block text-[11px] text-neutral-500">Ürünün ebadı. Filtreleme ve sıralamada kullanılır.</span>
         </label>
       </section>
 

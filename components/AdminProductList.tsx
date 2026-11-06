@@ -36,6 +36,7 @@ interface Product {
   imageUrl?: string | null;
   trendyolMainId?: string | null;
   modelCode?: string | null;
+  ebat?: string | null;
   images?: string[];
   listPrice?: number | null;
   active?: boolean;

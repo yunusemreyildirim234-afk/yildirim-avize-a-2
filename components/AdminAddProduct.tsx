@@ -33,6 +33,7 @@ export default function AdminAddProduct({ extraCategories = [] }: { extraCategor
   const [basePrice, setBasePrice] = useState("");
   const [description, setDescription] = useState("");
   const [modelCode, setModelCode] = useState("");
+  const [ebat, setEbat] = useState("");
   const [photos, setPhotos] = useState<PickerItem[]>([]);
   const [rows, setRows] = useState<ColorRow[]>([firstRow()]);
   const [nextKey, setNextKey] = useState(2);
@@ -59,6 +60,7 @@ export default function AdminAddProduct({ extraCategories = [] }: { extraCategor
     setBasePrice("");
     setNewCategory("");
     setModelCode("");
+    setEbat("");
     setDescription("");
     setPhotos([]);
     setRows([firstRow()]);
@@ -92,7 +94,7 @@ export default function AdminAddProduct({ extraCategories = [] }: { extraCategor
       const res = await fetch("/api/admin/product", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, category: categoryValue, basePrice, description, modelCode, images, variations }),
+        body: JSON.stringify({ title, category: categoryValue, basePrice, description, modelCode, ebat, images, variations }),
       });
       const data = await res.json().catch(() => ({}));
       if (data.success) {
@@ -179,6 +181,12 @@ export default function AdminAddProduct({ extraCategories = [] }: { extraCategor
           <div>
             <label className="font-semibold text-neutral-700 block mb-1">Site Model Kodu (boşsa otomatik)</label>
             <input aria-label="Site Model Kodu" type="text" placeholder="Örn: 237" value={modelCode} onChange={(e) => setModelCode(e.target.value)} className={field} />
+          </div>
+
+          <div>
+            <label className="font-semibold text-neutral-700 block mb-1">Ebat</label>
+            <input aria-label="Ebat" type="text" maxLength={24} placeholder="45 x 25" value={ebat} onChange={(e) => setEbat(e.target.value)} className={`${field} text-base sm:text-xs`} />
+            <p className="mt-1 text-[11px] text-neutral-500">Ürünün ebadı. Filtreleme ve sıralamada kullanılır.</p>
           </div>
 
           <div className="sm:col-span-2 space-y-2">
