@@ -9,15 +9,9 @@ import { toast } from "sonner";
 import { clearRecentSearches, getRecentSearches, removeRecentSearch, restoreRecentSearches, saveRecentSearch } from "@/lib/recent-searches";
 import { track } from "@/lib/track";
 import { MAX_SEARCH_LEN } from "@/lib/product-search";
+import { CartStepper, FavoriteButton, type QuickProduct } from "@/components/ProductQuickActions";
 
-interface Result {
-  id: string;
-  title: string;
-  category: string;
-  basePrice: number;
-  imageUrl?: string | null;
-  modelCode?: string | null;
-}
+type Result = QuickProduct;
 
 function Results({
   query,
@@ -51,12 +45,8 @@ function Results({
   return (
     <ul role="listbox" aria-label="Arama sonuçları" className="divide-y divide-zinc-100 max-h-[70vh] overflow-y-auto">
       {results.map((p) => (
-        <li key={p.id}>
-          <Link
-            href={`/urun/${p.id}`}
-            onClick={onPick}
-            className="flex items-center gap-3 px-3 py-2.5 hover:bg-amber-50/60 transition-colors"
-          >
+        <li key={p.id} className="flex items-start gap-2 px-3 py-2.5 hover:bg-amber-50/60 transition-colors">
+          <Link href={`/urun/${p.id}`} onClick={onPick} className="flex-1 min-w-0 flex items-center gap-3">
             <span className="w-12 h-12 rounded-lg bg-zinc-900 overflow-hidden shrink-0 border border-zinc-200 flex items-center justify-center">
               {p.imageUrl && <img src={p.imageUrl} alt="" width={48} height={48} loading="lazy" decoding="async" className="w-full h-full object-cover" />}
             </span>
@@ -66,9 +56,15 @@ function Results({
                 <span className="text-[10px] text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded-full font-medium">{p.category}</span>
                 {p.modelCode && <span className="text-[10px] font-mono text-zinc-500">Model {p.modelCode}</span>}
               </span>
+              <span className="block text-xs font-bold text-zinc-800 mt-1">{p.basePrice.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
             </span>
-            <span className="text-xs font-bold text-zinc-800 shrink-0">{p.basePrice.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
           </Link>
+          <div className="w-28 shrink-0 space-y-1.5">
+            <div className="flex justify-end">
+              <FavoriteButton product={p} />
+            </div>
+            <CartStepper product={p} inlineToast />
+          </div>
         </li>
       ))}
     </ul>

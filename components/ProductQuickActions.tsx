@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast as notify } from "sonner";
 import { toastHref } from "@/lib/toast-link";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Heart, Minus, Plus, X } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
@@ -73,6 +74,7 @@ export function FavoriteButton({ product, className = "" }: { product: QuickProd
 /** Hızlı sepete ekle ve adet artır/azalt. "+" sonrası yeşil "Sepete Git" mini bildirimi açılır. */
 export function CartStepper({ product, inlineToast = false }: { product: QuickProduct; inlineToast?: boolean }) {
   const { cart, addToCart, updateQuantity } = useCart();
+  const router = useRouter();
   const [toast, setToast] = useState(false);
 
   const inCart = cart.find((i) => i.productId === product.id);
@@ -89,6 +91,11 @@ export function CartStepper({ product, inlineToast = false }: { product: QuickPr
   const quantity = inCart?.quantity ?? 0;
 
   const increase = () => {
+    // Seçenekli (renk/boyut) ürün: seçenek seçilmeden sepete eklenmez, ürün sayfasına gidilir
+    if (!inCart && product.variations.length > 1) {
+      router.push(`/urun/${product.id}`);
+      return;
+    }
     if (quantity >= variation.stock) return;
     if (inCart) updateQuantity(variation.id, quantity + 1);
     else
@@ -136,9 +143,15 @@ export function CartStepper({ product, inlineToast = false }: { product: QuickPr
         >
           <Minus aria-hidden="true" className="w-3.5 h-3.5" />
         </button>
-        <span className="flex-1 text-center whitespace-nowrap text-[11px] sm:text-xs font-bold tabular-nums" aria-live="polite">
-          {quantity === 0 ? "Sepete Ekle" : quantity}
-        </span>
+        {quantity === 0 ? (
+          <button type="button" onClick={increase} aria-label={`Sepete Ekle: ${product.title}`} className="flex-1 self-stretch min-h-11 sm:min-h-0 text-center whitespace-nowrap text-[11px] sm:text-xs font-bold hover:bg-zinc-100">
+            Sepete Ekle
+          </button>
+        ) : (
+          <span className="flex-1 text-center whitespace-nowrap text-[11px] sm:text-xs font-bold tabular-nums" aria-live="polite">
+            {quantity}
+          </span>
+        )}
         <button
           type="button"
           onClick={increase}
