@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { SlidersHorizontal, X } from "lucide-react";
 import { SORTS, SORT_LABELS, colorSwatch, type ListingFacets, type Sort } from "@/lib/listing-core";
@@ -111,6 +111,11 @@ export default function ListingFilters({
   const closeBtn = useRef<HTMLButtonElement>(null);
   const selectedCats = new Set((params.kategori ?? "").split(","));
   const selectedColors = new Set((params.renk ?? "").split(","));
+  const selectedSizes = new Set((params.ebat ?? "").split(","));
+  // Ebat listesi: ilk 8 görünür (seçililer hep görünür), "Tümünü göster" ile açılır. JS yokken (hidrasyondan önce/kapalıyken) tümü görünür.
+  const hydrated = useSyncExternalStore(() => () => {}, () => true, () => false);
+  const [allSizes, setAllSizes] = useState(false);
+  const SIZE_VISIBLE = 8;
 
   // Yapışkan düğme üst menünün hemen altında dursun
   useEffect(() => {
@@ -280,6 +285,34 @@ export default function ListingFilters({
                     );
                   })}
                 </ul>
+              </fieldset>
+            )}
+
+            {facets.sizes.length > 0 && (
+              <fieldset data-testid="ebat-grubu">
+                <legend className={legend}>Ebat</legend>
+                <ul>
+                  {facets.sizes.map((z, i) => (
+                    <li key={z.key} className={hydrated && !allSizes && i >= SIZE_VISIBLE && !z.selected ? "hidden" : undefined}>
+                      <label className={row}>
+                        <input type="checkbox" name="ebat" value={z.key} defaultChecked={selectedSizes.has(z.key)} className={box} />
+                        <span className="flex-1 tabular-nums">{z.name}</span>
+                        <span className="text-xs tabular-nums text-zinc-500">({z.count})</span>
+                      </label>
+                    </li>
+                  ))}
+                </ul>
+                {hydrated && facets.sizes.length > SIZE_VISIBLE && (
+                  <button
+                    type="button"
+                    onClick={() => setAllSizes((v) => !v)}
+                    aria-expanded={allSizes}
+                    data-testid="ebat-tumu"
+                    className="mt-1 min-h-10 lg:min-h-8 text-sm font-medium text-amber-700 underline underline-offset-2 hover:text-amber-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-600"
+                  >
+                    {allSizes ? "Daha az göster" : `Tümünü göster (${facets.sizes.length})`}
+                  </button>
+                )}
               </fieldset>
             )}
 

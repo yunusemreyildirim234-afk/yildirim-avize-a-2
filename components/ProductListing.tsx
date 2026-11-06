@@ -12,7 +12,7 @@ import { rangeOf, totalPages, type Adet } from "@/lib/pagination";
 
 /**
  * /arama ve /kategori/[slug] için ORTAK liste görünümü: araç çubuğu (ürün sayısı, sayfa başına, sırala), seçili filtre çipleri, sol filtre paneli (mobilde çekmece),
- * ürün ızgarası (mevcut ProductCard) ve sayfalama. Durum adreste (?siralama=&kategori=&renk=&fiyat_min=&fiyat_max=&adet=&sayfa=); sunucuda çizilir, JS olmadan da çalışır.
+ * ürün ızgarası (mevcut ProductCard) ve sayfalama. Durum adreste (?siralama=&kategori=&renk=&ebat=&fiyat_min=&fiyat_max=&adet=&sayfa=); sunucuda çizilir, JS olmadan da çalışır.
  */
 export default function ProductListing({
   path,
@@ -50,12 +50,13 @@ export default function ProductListing({
     const s = q.toString();
     return s ? `${path}?${s}` : path;
   };
-  const clearHref = href({ kategori: undefined, renk: undefined, fiyat_min: undefined, fiyat_max: undefined });
+  const clearHref = href({ kategori: undefined, renk: undefined, ebat: undefined, fiyat_min: undefined, fiyat_max: undefined });
 
   // Seçili filtre çipleri: her biri kendi kaldırma bağlantısı
   const chips: { label: string; to: string }[] = [
     ...state.kategoriler.map((slug) => ({ label: facets.categories.find((c) => c.slug === slug)?.title ?? slug, to: href({ kategori: state.kategoriler.filter((s) => s !== slug).join(",") || undefined }) })),
     ...state.renkler.map((key) => ({ label: facets.colors.find((c) => c.key === key)?.name ?? key, to: href({ renk: state.renkler.filter((k) => k !== key).join(",") || undefined }) })),
+    ...state.ebatlar.map((key) => ({ label: `Ebat: ${facets.sizes.find((z) => z.key === key)?.name ?? key}`, to: href({ ebat: state.ebatlar.filter((k) => k !== key).join(",") || undefined }) })),
     ...(state.fiyatMin !== undefined || state.fiyatMax !== undefined ? [{ label: priceLabel(state), to: href({ fiyat_min: undefined, fiyat_max: undefined }) }] : []),
   ];
 
