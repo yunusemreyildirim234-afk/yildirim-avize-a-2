@@ -1,20 +1,20 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { applyListing, parseListingParams, stateToParams, colorKey, colorName, isDefaultState, colorSwatch } from "../lib/listing-core.ts";
+import { applyListing, parseListingParams, stateToParams, colorKey, isDefaultState, colorSwatch, variationAttrs, parseSize, secenekColorName, auditSecenekValues, SECENEK_COLOR_ALLOWLIST } from "../lib/listing-core.ts";
 
 const CATS = [
   { key: "kristal", slug: "kristal", title: "Kristal Serisi" },
   { key: "modern", slug: "modern", title: "Modern Avizeler" },
   { key: "yemek masasi", slug: "yemek-masasi", title: "Yemek Masası" },
 ];
-const col = (...names) => names.map((n) => ({ k: colorKey(n), n: colorName(n) }));
+const col = (...names) => names.map((n) => variationAttrs("Renk", n));
 // Varsayılan sıra = dizi sırası
 const ROWS = [
-  { id: "p1", cat: "kristal", price: 500, created: 10, updated: 90, featured: false, colors: col("Gold", "Bej (0146)") },
-  { id: "p2", cat: "modern", price: 300, created: 30, updated: 80, featured: true, colors: col("Bej") },
-  { id: "p3", cat: "modern", price: 300, created: 20, updated: 70, featured: false, colors: col("Siyah") },
-  { id: "p4", cat: "kristal", price: 900, created: 40, updated: 60, featured: true, colors: col("Gold") },
-  { id: "p5", cat: "yemek masasi", price: 100, created: 5, updated: 50, featured: false, colors: [] },
+  { id: "p1", cat: "kristal", price: 500, created: 10, updated: 90, featured: false, vars: col("Gold", "Bej (0146)") },
+  { id: "p2", cat: "modern", price: 300, created: 30, updated: 80, featured: true, vars: col("Bej") },
+  { id: "p3", cat: "modern", price: 300, created: 20, updated: 70, featured: false, vars: col("Siyah") },
+  { id: "p4", cat: "kristal", price: 900, created: 40, updated: 60, featured: true, vars: col("Gold") },
+  { id: "p5", cat: "yemek masasi", price: 100, created: 5, updated: 50, featured: false, vars: [] },
 ];
 const run = (q = {}, rankIds) => applyListing(ROWS, parseListingParams(q), { cats: CATS, rankIds });
 
@@ -77,7 +77,7 @@ test("facet sayıları: grup kendisi hariç diğer filtrelere göre", () => {
 
 test("geçersiz/bilinmeyen parametreler sessizce varsayılana düşer", () => {
   const r = run({ siralama: "<script>", kategori: "yok,../x,<b>", renk: "kirmizi", fiyat_min: "abc", fiyat_max: "-5" });
-  assert.deepEqual(r.state, { siralama: "onerilen", kategoriler: [], renkler: [] });
+  assert.deepEqual(r.state, { siralama: "onerilen", kategoriler: [], renkler: [], ebatlar: [] });
   assert.equal(r.total, 5);
   const big = parseListingParams({ kategori: Array.from({ length: 100 }, (_, i) => "k" + i).join(",") });
   assert.ok(big.kategoriler.length <= 12);

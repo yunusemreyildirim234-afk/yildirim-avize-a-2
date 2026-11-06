@@ -6,13 +6,13 @@ import { categoryDisplayTitle } from "@/lib/category-settings";
 import { getCategoryList, getCategorySettings } from "@/lib/category-list";
 import { STOREFRONT_CACHE_SECONDS, getProducts, getProductsCached, getRankedSellerIds, type ProductWithVariations } from "@/lib/products";
 import { productsCacheKey, storefrontTags } from "@/lib/storefront-cache-key";
-import { applyListing, colorKey, colorName, isDefaultState, parseListingParams, stateToParams, type CatMeta, type ListingResult, type ListingRow } from "@/lib/listing-core";
+import { applyListing, isDefaultState, variationAttrs, parseListingParams, stateToParams, type CatMeta, type ListingResult, type ListingRow } from "@/lib/listing-core";
 
 /**
  * Ortak ürün listesi veri katmanı (/arama ve /kategori/[slug]). Taban kümenin hafif satırları (kimlik, kategori, kartta gösterilen fiyat, tarih, renkler) bir kez okunur;
  * sıralama, filtre ve facet sayıları bellekte (lib/listing-core.ts) hesaplanır. Sayfadaki ürünler yalnızca o sayfanın kimlikleriyle çekilir.
  * Fiyat = Product.basePrice: ProductCard'ın gösterdiği değerle aynıdır (lib/pricing.ts / cart-pricing.ts'e dokunulmaz).
- * Renk: yalnızca variationType "Renk" olan varyasyonlar (yönetim panelinin yazdığı güvenilir tür); Trendyol "Seçenek" değerleri renk sayılmaz.
+ * Renk/ebat: variationType "Renk" (yönetim) ve "Seçenek" (Trendyol, "Renk / EnxBoy" kalıbı); ayıklama lib/listing-core.ts variationAttrs içindedir. Aynı varyasyon sorgusu (ek sorgu yok).
  */
 export const LISTING_ROW_CAP = 1000;
 
@@ -28,7 +28,7 @@ const ROW_SELECT = {
   createdAt: true,
   updatedAt: true,
   isFeatured: true,
-  variations: { where: { variationType: "Renk" }, select: { variationValue: true } },
+  variations: { where: { variationType: { in: ["Renk", "Seçenek"] } }, select: { variationType: true, variationValue: true } },
 } satisfies Prisma.ProductSelect;
 
 async function loadRows(where: Prisma.ProductWhereInput, cap: number): Promise<ListingRow[]> {
@@ -45,16 +45,18 @@ async function loadRows(where: Prisma.ProductWhereInput, cap: number): Promise<L
     created: r.createdAt.getTime(),
     updated: r.updatedAt.getTime(),
     featured: r.isFeatured,
-    colors: r.variations.flatMap((v) => {
-      const k = colorKey(v.variationValue);
-      return k ? [{ k, n: colorName(v.variationValue) }] : [];
+    vars: r.variations.flatMap((v) => {
+      const a = variationAttrs(v.variationType, v.variationValue);
+      return a.c || a.s ? [a] : [];
     }),
   }));
 }
 
 // Önbellek yalnızca denetimli tabanlarda (kategori/koleksiyon koşulu); arama sorgusu başına anahtar üretilmez.
+// Anahtardaki sürüm: satır şekli değişince (v2: colors → vars) eski şekilli önbellek girdileri (dağıtım sonrası eskiyi sun) okunmasın. Şekil değişince artırın.
+const ROWS_CACHE_VERSION = "v2";
 const loadRowsCached = (where: Prisma.ProductWhereInput, cap: number) =>
-  unstable_cache(() => loadRows(where, cap), ["sf-listing-rows", productsCacheKey(where, cap)], { revalidate: STOREFRONT_CACHE_SECONDS, tags: storefrontTags(where) })();
+  unstable_cache(() => loadRows(where, cap), ["sf-listing-rows", ROWS_CACHE_VERSION, productsCacheKey(where, cap)], { revalidate: STOREFRONT_CACHE_SECONDS, tags: storefrontTags(where) })();
 
 async function categoryMetas(): Promise<CatMeta[]> {
   const [list, settings] = await Promise.all([getCategoryList().catch(() => []), getCategorySettings()]);

@@ -21,6 +21,7 @@ export interface ListingState {
   siralama: Sort;
   kategoriler: string[]; // kategori slug'ları
   renkler: string[]; // renk anahtarları (colorKey)
+  ebatlar: string[]; // ebat anahtarları ("45x25")
   fiyatMin?: number;
   fiyatMax?: number;
 }
@@ -34,7 +35,17 @@ export interface ListingRow {
   created: number;
   updated: number;
   featured: boolean;
-  colors: { k: string; n: string }[];
+  /** Her varyasyonun renk ve ebatı (ikisi birlikte seçilince AYNI varyasyonda eşleşmeleri gerekir) */
+  vars: VariationAttrs[];
+}
+
+export interface Attr {
+  k: string;
+  n: string;
+}
+export interface VariationAttrs {
+  c: Attr | null;
+  s: Attr | null;
 }
 
 export interface CatMeta {
@@ -58,6 +69,19 @@ function tokens(raw: string | string[] | undefined): string[] {
   return out;
 }
 
+const MAX_SIZE_LEN = 24;
+/** Ebat adres değeri: "45x25" (boşluk/×/X tolere edilir, ondalık yalnızca nokta). Geçersizler sessizce atılır. */
+function sizeTokens(raw: string | string[] | undefined): string[] {
+  const parts = (Array.isArray(raw) ? raw : [raw]).flatMap((x) => (typeof x === "string" ? x.slice(0, 600).split(",") : []));
+  const out: string[] = [];
+  for (const p of parts) {
+    const t = p.toLowerCase().replace(/\s+/g, "").replace(/×/g, "x");
+    if (t && t.length <= MAX_SIZE_LEN && /^\d{1,4}(\.\d{1,2})?x\d{1,4}(\.\d{1,2})?$/.test(t) && !out.includes(t)) out.push(t);
+    if (out.length >= MAX_FILTER_ITEMS) break;
+  }
+  return out;
+}
+
 function parsePrice(raw: string | string[] | undefined): number | undefined {
   const v = firstOf(raw)?.trim();
   if (!v || v.length > 12 || !/^\d{1,8}([.,]\d{1,2})?$/.test(v)) return undefined;
@@ -75,13 +99,14 @@ export function parseListingParams(query: Params): ListingState {
     siralama: (SORTS as readonly string[]).includes(s ?? "") ? (s as Sort) : "onerilen",
     kategoriler: tokens(query.kategori),
     renkler: tokens(query.renk),
+    ebatlar: sizeTokens(query.ebat),
     ...(fiyatMin !== undefined ? { fiyatMin } : {}),
     ...(fiyatMax !== undefined ? { fiyatMax } : {}),
   };
 }
 
 export const isDefaultState = (s: ListingState) => s.siralama === "onerilen" && !hasFilters(s);
-export const hasFilters = (s: ListingState) => s.kategoriler.length > 0 || s.renkler.length > 0 || s.fiyatMin !== undefined || s.fiyatMax !== undefined;
+export const hasFilters = (s: ListingState) => s.kategoriler.length > 0 || s.renkler.length > 0 || s.ebatlar.length > 0 || s.fiyatMin !== undefined || s.fiyatMax !== undefined;
 
 const num = (n: number) => String(Number.isInteger(n) ? n : Math.round(n * 100) / 100);
 
@@ -91,6 +116,7 @@ export function stateToParams(s: ListingState): Record<string, string> {
   if (s.siralama !== "onerilen") o.siralama = s.siralama;
   if (s.kategoriler.length) o.kategori = s.kategoriler.join(",");
   if (s.renkler.length) o.renk = s.renkler.join(",");
+  if (s.ebatlar.length) o.ebat = s.ebatlar.join(",");
   if (s.fiyatMin !== undefined) o.fiyat_min = num(s.fiyatMin);
   if (s.fiyatMax !== undefined) o.fiyat_max = num(s.fiyatMax);
   return o;
@@ -98,7 +124,7 @@ export function stateToParams(s: ListingState): Record<string, string> {
 
 // ---- Renk ----
 
-/** Ürün renkleri yönetimde serbest metindir. "Bej (0146)" ve "Bej" aynı renktir: rakam içeren parantez (kod) atılır. Parantezsiz/harfli parantez korunur. */
+/** Yönetimin yazdığı "Renk" türü: "Bej (0146)" ve "Bej" aynı renktir; rakam içeren parantez (kod) atılır. Parantezsiz/harfli parantez korunur. */
 export function colorName(value: string): string {
   return value.replace(/\s*\([^)]*\d[^)]*\)/g, "").replace(/\s+/g, " ").trim();
 }
@@ -113,14 +139,97 @@ export function colorKey(value: string): string | null {
   return key === "kategori" || PLACEHOLDER_COLORS.has(key) ? null : key;
 }
 
+/**
+ * Trendyol'dan gelen "Seçenek" türünde YALNIZCA bu adlar renk sayılır (liste dışı ilk parça renk değildir: "3'lü", "E14 duy", "45 x 25" ...).
+ * Genişletmek için yalnızca buraya ekleyin (küçük harf, tr-TR). Altın / Gold / Lak gold bilerek ayrı seçeneklerdir.
+ */
+export const SECENEK_COLOR_ALLOWLIST: readonly string[] = [
+  "bej", "sarı", "siyah", "beyaz", "krem", "gri", "kahverengi", "kırmızı", "pembe", "mor", "lila", "mavi", "yeşil", "turuncu", "bal", "şeffaf",
+  "çok renkli", "metalik", "gümüş", "altın", "gold", "lak gold", "krom", "eskitme", "pirinç eskitme", "antik", "bakır", "bronz", "nikel", "füme",
+  "lacivert", "bordo", "turkuaz", "haki", "antrasit", "ceviz", "naturel", "gül kurusu",
+];
+const ALLOW = new Set(SECENEK_COLOR_ALLOWLIST);
+/** Bilinen yazım hataları (kelime bazlı, küçük harf) */
+const SPELLING: Record<string, string> = { prinç: "pirinç" };
+
+const lowerTr = (s: string) => s.toLocaleLowerCase("tr-TR");
+const titleTr = (s: string) => s.split(" ").map((w) => (w ? w.charAt(0).toLocaleUpperCase("tr-TR") + w.slice(1) : w)).join(" ");
+
+/** "Seçenek" türü ilk parçası → izinli renk adı (küçük harf) ya da null */
+export function secenekColorName(part: string): string | null {
+  const s = lowerTr(part)
+    .replace(/\s*\([^)]*\d[^)]*\)/g, "")
+    .replace(/^[\s,;.]+|[\s,;.]+$/g, "")
+    .split(/\s+/)
+    .map((w) => SPELLING[w] ?? w)
+    .join(" ");
+  return ALLOW.has(s) ? s : null;
+}
+
+const SIZE_RE = /^(\d{1,4}(?:[.,]\d{1,2})?)\s*[xX×]\s*(\d{1,4}(?:[.,]\d{1,2})?)$/;
+/** "45 x 25" / "50x50" / "12 X 12" / "12,5 x 10" → { k: "45x25", n: "45 x 25" }; kalıba uymayan null. Birim bilinmez (etiket yalnızca "Ebat"). */
+export function parseSize(part: string): Attr | null {
+  const m = SIZE_RE.exec(part.trim());
+  if (!m) return null;
+  const a = Number(m[1].replace(",", "."));
+  const b = Number(m[2].replace(",", "."));
+  if (!(a > 0) || !(b > 0)) return null;
+  const show = (n: number) => String(n).replace(".", ",");
+  return { k: `${a}x${b}`, n: `${show(a)} x ${show(b)}` };
+}
+
+const PART_SPLIT = /\s+\/\s+/;
+
+/**
+ * Bir varyasyonun renk ve ebatı. Değer kalıbı "Renk" ya da "Renk / EnxBoy"; ölçü kısmı renk değildir.
+ * - "Renk" türü (yönetici girişi): olduğu gibi kabul edilir; yalnızca ikinci parça ebat kalıbındaysa ilk parça alınır.
+ * - "Seçenek" türü (Trendyol): ilk parça izin listesinde ise renktir.
+ * - Ebat her iki türde de ikinci parçadan okunur.
+ */
+export function variationAttrs(type: string, value: string): VariationAttrs {
+  const parts = value.split(PART_SPLIT).map((p) => p.trim());
+  const s = parts.length > 1 ? parseSize(parts[1]) : null;
+  let c: Attr | null = null;
+  if (type === "Renk") {
+    const v = s ? parts[0] : value;
+    const k = colorKey(v);
+    if (k) c = { k, n: colorName(v) };
+  } else if (type === "Seçenek") {
+    const name = secenekColorName(parts[0]);
+    const k = name ? colorKey(name) : null;
+    if (name && k) c = { k, n: titleTr(name) };
+  }
+  return { c, s: type === "Renk" || type === "Seçenek" ? s : null };
+}
+
+/** Geliştirici denetimi: ham "Seçenek" değerlerinden renk sayılmayan ilk parçalar ve ebat olmayan ikinci parçalar (sayılarıyla). Veritabanına bağlanmaz. */
+export function auditSecenekValues(values: readonly string[]) {
+  const unlisted = new Map<string, number>();
+  const nonSize = new Map<string, number>();
+  for (const v of values) {
+    const parts = v.split(PART_SPLIT).map((p) => p.trim());
+    const first = lowerTr(parts[0]);
+    if (!secenekColorName(parts[0])) unlisted.set(first, (unlisted.get(first) ?? 0) + 1);
+    if (parts.length > 1 && !parseSize(parts[1])) nonSize.set(lowerTr(parts[1]), (nonSize.get(lowerTr(parts[1])) ?? 0) + 1);
+  }
+  const top = (m: Map<string, number>) => [...m].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "tr"));
+  return { unlistedFirstParts: top(unlisted), nonSizeSecondParts: top(nonSize) };
+}
+
 // Yalnızca renk örneği (nokta) için; filtreleme anahtarla yapılır. Listede olmayan renk: eğik çizgili nötr örnek.
 const HEX: Record<string, string> = {
+  lila: "#b39ddb", bal: "#c98a2b", metalik: "#9aa1a9", eskitme: "#7a5c3a", pirinc: "#b08d3c", fume: "#5b5e63", lacivert: "#1e2a4a",
+  bordo: "#6d1f2c", turkuaz: "#1b9aaa", haki: "#6b6b3a", gul: "#c98a96", kurusu: "#c98a96",
   siyah: "#1c1917", beyaz: "#fafaf9", bej: "#d6c7a8", krem: "#efe4c8", gold: "#c9a227", altin: "#c9a227", sari: "#e3b505",
   krom: "#b8bcc2", gumus: "#b8bcc2", nikel: "#a7adb4", antrasit: "#44484d", gri: "#8b9096", bronz: "#8c6a3c", bakir: "#b4683c",
   antik: "#8c6a3c", kahverengi: "#6b4a2f", ceviz: "#6b4a2f", kirmizi: "#b91c1c", mavi: "#1d4ed8", yesil: "#15803d", seffaf: "#e7e5e4",
   naturel: "#c8a97e", ahsap: "#a47c4f", pembe: "#d9a1ad", mor: "#6d4c8c", turuncu: "#d9731a",
 };
+// Bileşik anahtarlar önce tam aranır, sonra parça parça; "cok-renkli" tek renk olmadığı için örneksizdir (nötr).
+const HEX_FULL: Record<string, string> = { "pirinc-eskitme": "#9a7a3a", "lak-gold": "#c9a227" };
 export function colorSwatch(key: string): string | null {
+  if (HEX_FULL[key]) return HEX_FULL[key];
+  if (key === "cok-renkli") return null;
   for (const part of key.split("-")) if (HEX[part]) return HEX[part];
   return null;
 }
@@ -130,6 +239,8 @@ export function colorSwatch(key: string): string | null {
 export interface ListingFacets {
   categories: { slug: string; title: string; count: number; selected: boolean }[];
   colors: { key: string; name: string; count: number; selected: boolean }[];
+  /** Ebatlar (ürün sayısına göre azalan); boşsa bölüm gösterilmez */
+  sizes: { key: string; name: string; count: number; selected: boolean }[];
   /** Kategori ve renk filtrelerine uyan ürünlerin fiyat aralığı (tam sayıya yuvarlı); ürün yoksa null */
   price: { min: number; max: number } | null;
 }
@@ -152,17 +263,30 @@ export function applyListing(rows: readonly ListingRow[], raw: ListingState, ctx
   const catByKey = new Map(ctx.cats.map((c) => [c.key, c]));
   const universeSlugs = new Set<string>();
   const universeColors = new Set<string>();
+  const universeSizes = new Set<string>();
   for (const r of rows) {
     const c = catByKey.get(r.cat);
     if (c) universeSlugs.add(c.slug);
-    for (const col of r.colors) universeColors.add(col.k);
+    for (const v of r.vars) {
+      if (v.c) universeColors.add(v.c.k);
+      if (v.s) universeSizes.add(v.s.k);
+    }
   }
-  const state: ListingState = { ...raw, kategoriler: raw.kategoriler.filter((s) => universeSlugs.has(s)), renkler: raw.renkler.filter((k) => universeColors.has(k)) };
+  const state: ListingState = {
+    ...raw,
+    kategoriler: raw.kategoriler.filter((s) => universeSlugs.has(s)),
+    renkler: raw.renkler.filter((k) => universeColors.has(k)),
+    ebatlar: raw.ebatlar.filter((k) => universeSizes.has(k)),
+  };
   const wantCats = new Set(state.kategoriler);
   const wantColors = new Set(state.renkler);
+  const wantSizes = new Set(state.ebatlar);
 
   const okCat = (r: ListingRow) => wantCats.size === 0 || wantCats.has(catByKey.get(r.cat)?.slug ?? "");
-  const okColor = (r: ListingRow) => wantColors.size === 0 || r.colors.some((c) => wantColors.has(c.k));
+  // Yalnızca biri seçiliyse ürün düzeyinde eşleşme; ikisi birlikte seçiliyse AYNI varyasyon hem rengi hem ebatı taşımalıdır.
+  const okColor = (r: ListingRow) =>
+    (wantColors.size === 0 && wantSizes.size === 0) ||
+    r.vars.some((v) => (wantColors.size === 0 || (v.c !== null && wantColors.has(v.c.k))) && (wantSizes.size === 0 || (v.s !== null && wantSizes.has(v.s.k))));
   const okPrice = (r: ListingRow) => (state.fiyatMin === undefined || r.price >= state.fiyatMin) && (state.fiyatMax === undefined || r.price <= state.fiyatMax);
 
   // Sıralama: tüm satırlar üzerinde anahtar hesabı, sonra filtre (filtre sırayı bozmaz)
@@ -185,7 +309,30 @@ export function applyListing(rows: readonly ListingRow[], raw: ListingState, ctx
 
   // Facetler
   const catCount = new Map<string, number>();
-  const colorCount = new Map<string, { n: Map<string, number>; count: number }>();
+  // Renk/ebat sayısı: o grup KENDİ filtresi hariç sayılır; diğer grup seçiliyse AYNI varyasyonda eşleşme aranır. Ürün başına bir kez.
+  const tally = (attr: "c" | "s", otherWant: Set<string>) => {
+    const other = attr === "c" ? "s" : "c";
+    const m = new Map<string, { n: Map<string, number>; count: number }>();
+    for (const r of rows) {
+      if (!okCat(r) || !okPrice(r)) continue;
+      const seen = new Set<string>();
+      for (const v of r.vars) {
+        const a = v[attr];
+        const o = v[other];
+        if (!a || (otherWant.size > 0 && !(o && otherWant.has(o.k)))) continue;
+        const g = m.get(a.k) ?? { n: new Map<string, number>(), count: 0 };
+        g.n.set(a.n, (g.n.get(a.n) ?? 0) + 1);
+        if (!seen.has(a.k)) {
+          seen.add(a.k);
+          g.count += 1;
+        }
+        m.set(a.k, g);
+      }
+    }
+    return m;
+  };
+  const colorCount = tally("c", wantSizes);
+  const sizeCount = tally("s", wantColors);
   let pMin = Infinity;
   let pMax = -Infinity;
   for (const r of rows) {
@@ -193,14 +340,6 @@ export function applyListing(rows: readonly ListingRow[], raw: ListingState, ctx
     if (cat) {
       const c = catByKey.get(r.cat);
       if (c) catCount.set(c.slug, (catCount.get(c.slug) ?? 0) + 1);
-    }
-    if (okCat(r) && okPrice(r)) {
-      for (const k of new Set(r.colors.map((c) => c.k))) {
-        const g = colorCount.get(k) ?? { n: new Map<string, number>(), count: 0 };
-        g.count += 1;
-        for (const c of r.colors) if (c.k === k) g.n.set(c.n, (g.n.get(c.n) ?? 0) + 1);
-        colorCount.set(k, g);
-      }
     }
     if (okCat(r) && okColor(r)) {
       pMin = Math.min(pMin, r.price);
@@ -210,15 +349,20 @@ export function applyListing(rows: readonly ListingRow[], raw: ListingState, ctx
   const categories = ctx.cats
     .filter((c) => universeSlugs.has(c.slug) && ((catCount.get(c.slug) ?? 0) > 0 || wantCats.has(c.slug)))
     .map((c) => ({ slug: c.slug, title: c.title, count: catCount.get(c.slug) ?? 0, selected: wantCats.has(c.slug) }));
-  const colors = [...colorCount]
-    .map(([key, g]) => ({ key, name: [...g.n].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "tr"))[0][0], count: g.count, selected: wantColors.has(key) }))
-    .concat([...wantColors].filter((k) => !colorCount.has(k)).map((key) => ({ key, name: key, count: 0, selected: true })))
-    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "tr"));
+  const toList = (m: Map<string, { n: Map<string, number>; count: number }>, want: Set<string>) =>
+    [...m]
+      .map(([key, g]) => ({ key, name: [...g.n].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "tr"))[0][0], count: g.count, selected: want.has(key) }))
+      .concat([...want].filter((k) => !m.has(k)).map((key) => ({ key, name: key, count: 0, selected: true })));
+  const colors = toList(colorCount, wantColors).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "tr"));
+  const sizeDims = (k: string) => k.split("x").map(Number);
+  const sizes = toList(sizeCount, wantSizes)
+    .map((z) => ({ ...z, name: z.name === z.key ? parseSize(z.key.replace("x", " x "))?.n ?? z.key : z.name }))
+    .sort((a, b) => b.count - a.count || sizeDims(a.key)[0] - sizeDims(b.key)[0] || sizeDims(a.key)[1] - sizeDims(b.key)[1]);
 
   return {
     state,
     ids: matched.map((r) => r.id),
     total: matched.length,
-    facets: { categories, colors, price: Number.isFinite(pMin) ? { min: Math.floor(pMin), max: Math.ceil(pMax) } : null },
+    facets: { categories, colors, sizes, price: Number.isFinite(pMin) ? { min: Math.floor(pMin), max: Math.ceil(pMax) } : null },
   };
 }
