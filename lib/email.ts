@@ -21,6 +21,7 @@ interface EmailOrderData {
 
 import { ADMIN_EMAILS, BANK_INFO, PHONE_DISPLAY, SITE_URL } from "@/lib/site";
 import { IADE_TALIMATI } from "@/lib/legal-texts";
+import { buildCampaignFooter, unsubscribeHeaders } from "@/lib/marketing";
 
 const DEFAULT_FROM = "Yıldırım Avize <siparis@yildirimavize.com.tr>";
 const ONBOARDING_FROM = "Yıldırım Avize <onboarding@resend.dev>";
@@ -348,6 +349,7 @@ export async function sendPasswordChangedEmail(to: string) {
 export async function sendAbandonedCartEmail(data: { to: string; name: string; orderId: string; items: { title: string; quantity: number }[]; couponCode: string; discountLabel: string; footerHtml: string }) {
   return sendViaResend(process.env.RESEND_API_KEY, {
     to: [data.to],
+    headers: unsubscribeHeaders(data.to),
     subject: `Sepetinizdeki avize sizi bekliyor! Size özel ${data.discountLabel} indirim: ${data.couponCode}`,
     html: `<div style="font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 28px; background: #fafafa; border: 1px solid #e5e5e5; border-radius: 16px; color: #171717;">
       <h1 style="text-align: center; font-size: 22px; letter-spacing: 1px; margin: 0 0 16px;">YILDIRIM AVİZE</h1>
@@ -384,6 +386,7 @@ export async function sendCampaignCouponEmail(data: { to: string; name: string; 
   const label = data.discountAmount ? `${data.discountAmount.toLocaleString("tr-TR")} ₺` : `%${data.discountPercent}`;
   return sendViaResend(process.env.RESEND_API_KEY, {
     to: [data.to],
+    headers: unsubscribeHeaders(data.to),
     subject: `Size özel ${label} indirim kuponu - Yıldırım Avize`,
     html: `<div style="font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #171717;">
       <h2 style="margin: 0 0 12px;">Sayın ${esc(data.name)},</h2>
@@ -505,6 +508,27 @@ export async function sendInvoiceEmail(data: { to: string; name: string; orderId
       <p style="font-size: 14px; line-height: 1.6;"><strong>${no}</strong> numaralı siparişinize ait faturanız bu e-postanın ekinde yer almaktadır. Bizi tercih ettiğiniz için teşekkür ederiz.</p>
       <p style="font-size: 14px; line-height: 1.6;">Ürününüzle ilgili bir sorunuz olursa WhatsApp destek hattımızdan (${PHONE_DISPLAY}) bize ulaşabilirsiniz.</p>
       <p style="font-size: 14px; line-height: 1.6; margin-top: 20px;">Saygılarımızla,<br />Yıldırım Avize</p>
+    </div>`,
+  });
+}
+
+/** Favori ürün fiyat düşüşü (kampanya sınıfı ileti): yalnızca ticari ileti onayı olanlara; alt bilgi ve List-Unsubscribe zorunlu. */
+export async function sendPriceDropEmail(data: { to: string; name: string; productId: string; title: string; oldPrice: number; newPrice: number }) {
+  const footerHtml = await buildCampaignFooter(data.to);
+  if (!footerHtml) return false; // çıkış bağlantısı üretilemiyorsa kampanya e-postası gönderilmez
+  const tl = (n: number) => `${n.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺`;
+  const url = `${SITE_URL}/urun/${data.productId}`;
+  return sendViaResend(process.env.RESEND_API_KEY, {
+    to: [data.to],
+    headers: unsubscribeHeaders(data.to),
+    subject: "Favorinizdeki ürünün fiyatı düştü",
+    html: `<div style="font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 28px; background: #fafafa; border: 1px solid #e5e5e5; border-radius: 16px; color: #171717;">
+      <h1 style="text-align: center; font-size: 22px; letter-spacing: 1px; margin: 0 0 16px;">YILDIRIM AVİZE</h1>
+      <h2 style="font-size: 17px; margin: 0 0 10px;">Sayın ${esc(data.name)},</h2>
+      <p style="font-size: 14px; line-height: 1.6;">Favorilerinizdeki <strong>${esc(data.title)}</strong> ürününün fiyatı düştü:</p>
+      <p style="font-size: 16px; margin: 14px 0;"><span style="text-decoration: line-through; color: #737373;">${tl(data.oldPrice)}</span> &rarr; <strong style="color: #92400e;">${tl(data.newPrice)}</strong></p>
+      <p style="text-align: center; margin: 22px 0 8px;"><a href="${url}" style="display: inline-block; background: #171717; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 14px; padding: 12px 28px; border-radius: 10px;">Ürünü İncele</a></p>
+      ${footerHtml}
     </div>`,
   });
 }
