@@ -85,7 +85,7 @@ test.describe("m) Ortak sıralama ve filtre", () => {
     const boxes = form.locator('input[name="renk"]');
     const n = await boxes.count();
     info.annotations.push({ type: "renk-secenekleri", description: String(n) });
-    test.skip(n === 0, "e2e veritabanında 'Renk' türünde varyasyon yok");
+    test.skip(n === 0, "e2e veritabanında renk veren ('Renk'/'Seçenek') varyasyon yok; renk mantığı admin testlerinde (v-liste-renk, w-liste-secenek-ebat) sınanır");
     const first = boxes.first();
     const key = (await first.getAttribute("value"))!;
     const shown = Number(((await first.locator("xpath=ancestor::label").innerText()).match(/\((\d+)\)/) ?? [])[1]);
