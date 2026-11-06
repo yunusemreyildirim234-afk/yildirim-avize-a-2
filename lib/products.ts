@@ -3,6 +3,7 @@ import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/db";
 import { BEST_SELLER_CACHE_SECONDS, bestSellerSince, rankProducts } from "@/lib/best-sellers-rules";
 import { productsCacheKey, storefrontTags } from "@/lib/storefront-cache-key";
+import { SHOWCASE_ORDER_BY } from "@/lib/showcase-order";
 
 /**
  * Kart/liste için gereken alanlar (ProductCard, priceLadder, bulkTiersOf, ana sayfa havuzları).
@@ -35,6 +36,11 @@ export async function getProducts(where: Prisma.ProductWhereInput = {}, take?: n
     take,
     skip,
   });
+}
+
+/** Ana sayfa vitrini (Öne Çıkanlar / Çok Satanlar) için: getProducts ile aynı seçim, ama updatedAt'tan bağımsız sabit sıra (lib/showcase-order.ts). */
+export async function getShowcaseProducts(where: Prisma.ProductWhereInput = {}, take?: number) {
+  return prisma.product.findMany({ where: { active: true, ...where }, select: CARD_SELECT, orderBy: SHOWCASE_ORDER_BY, take });
 }
 
 /** getProducts ile aynı koşulla (yalnızca aktif) ürün sayısı. */
@@ -84,8 +90,8 @@ export const FEATURED: Prisma.ProductWhereInput = {
 
 /** Öne Çıkanlar: yönetici işaretlileri; hiç işaretli yoksa eski otomatik seçime düşer. */
 export async function getFeatured(take: number) {
-  const flagged = await getProducts({ isFeatured: true }, take);
-  return flagged.length > 0 ? flagged : getProducts(FEATURED, take);
+  const flagged = await getShowcaseProducts({ isFeatured: true }, take);
+  return flagged.length > 0 ? flagged : getShowcaseProducts(FEATURED, take);
 }
 
 /** Son 90 günde en çok sipariş edilen ürün kimlikleri (çoktan aza). Tüm geçmiş yerine 90 gün; sonuç 5 dk önbellekte (yalnızca kimlik listesi). */
@@ -106,7 +112,7 @@ const getRankedSellerIds = unstable_cache(
 
 /** Çok Satanlar: yönetici işaretlileri önce; eksik kalırsa en çok sipariş edilen aktif ürünlerle, o da yetmezse güncel ürünlerle tamamlanır. */
 export async function getBestSellers(take: number) {
-  const picked = await getProducts({ isBestSeller: true }, take);
+  const picked = await getShowcaseProducts({ isBestSeller: true }, take);
   if (picked.length >= take) return picked;
   const seen = new Set(picked.map((p) => p.id));
 
@@ -118,6 +124,6 @@ export async function getBestSellers(take: number) {
   if (out.length >= take) return out;
 
   const have = new Set(out.map((p) => p.id));
-  const filler = await getProducts({ ...FEATURED, id: { notIn: [...have] } }, take - out.length);
+  const filler = await getShowcaseProducts({ ...FEATURED, id: { notIn: [...have] } }, take - out.length);
   return [...out, ...filler];
 }
