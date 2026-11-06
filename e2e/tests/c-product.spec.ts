@@ -81,3 +81,22 @@ test.describe("c) Ürün sayfası", () => {
     expect(tested).toBe(true);
   });
 });
+
+test.describe("c) Ürün sayfası: kategori bağlantısı", () => {
+  test("başlık üstündeki kategori etiketi bağlantıdır ve breadcrumb'daki kategori bağlantısıyla aynı sayfaya gider", async ({ page }) => {
+    const href = await firstProductHref(page);
+    await openOk(page, href);
+    const label = page.getByTestId("product-category-link");
+    test.skip((await label.count()) === 0, "ilk ürünün kategorisi yok");
+    await expect(label).toHaveText(/ Serisi$/);
+    const target = await label.getAttribute("href");
+    expect(target).toMatch(/^\/kategori\/[a-z0-9-]+$/);
+    const crumb = page.getByRole("navigation", { name: "Sayfa yolu" }).locator(`a[href^="/kategori/"]`);
+    if ((await crumb.count()) > 0) expect(await crumb.first().getAttribute("href")).toBe(target);
+    await label.focus();
+    await expect(label).toBeFocused();
+    await label.click();
+    await expect(page).toHaveURL(new RegExp(`${target}$`));
+    await expect(page.locator("h1")).not.toHaveText("");
+  });
+});

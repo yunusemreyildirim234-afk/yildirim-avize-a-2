@@ -11,7 +11,7 @@ import { getUserSession } from "@/lib/account";
 import { reviewEligibility, type ReviewEligibility } from "@/lib/reviews";
 import JsonLd from "@/components/JsonLd";
 import { CATEGORIES, SITE_URL } from "@/lib/site";
-import { getCategorySettings } from "@/lib/category-list";
+import { getCategoryList, getCategorySettings } from "@/lib/category-list";
 import { categoryKey } from "@/lib/categories";
 import { categoryDisplayTitle } from "@/lib/category-settings";
 import { defaultOffer, feedBrand } from "@/lib/feed";
@@ -83,6 +83,11 @@ export default async function ProductDetailPage({ params }: Props) {
   const ratingAvg = reviews.length ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length : 0;
   const category = hasCategory ? CATEGORIES.find((c) => c.dbCategory === product.category) : undefined;
   const categorySettings = await getCategorySettings();
+  // Kategori sayfası adresi (etiket ve breadcrumb AYNI hedef): sabit kategori slug'ı; dinamik kategori listeden anahtarla bulunur; liste alınamazsa yalnızca sabit
+  const catKey = hasCategory ? categoryKey(product.category) : "";
+  const catEntry = hasCategory ? await getCategoryList().then((l) => l.find((c) => c.key === catKey)).catch(() => undefined) : undefined;
+  const fixedCat = category ?? CATEGORIES.find((c) => categoryKey(c.dbCategory) === catKey);
+  const categoryHref = catEntry ? `/kategori/${catEntry.slug}` : fixedCat ? `/kategori/${fixedCat.slug}` : undefined;
   // Fiyat/stok/marka Google feed'iyle (lib/feed.ts) ve sayfadaki varsayılan seçimle AYNI kaynaktan gelir
   const offer = defaultOffer(product);
   const productImages = imageListOf(product).map((u) => (u.startsWith("/") ? `${SITE_URL}${u}` : u)); // kapak önde (og:image/kart/feed ile aynı kural)
@@ -130,16 +135,16 @@ export default async function ProductDetailPage({ params }: Props) {
           items={[
             { name: "Ana Sayfa", href: "/" },
             ...(category
-              ? [{ name: categoryDisplayTitle(categorySettings, categoryKey(category.dbCategory), category.title), href: `/kategori/${category.slug}` }]
+              ? [{ name: categoryDisplayTitle(categorySettings, categoryKey(category.dbCategory), category.title), href: categoryHref }]
               : hasCategory
-                ? [{ name: `${product.category} Avizeler` }]
+                ? [{ name: `${product.category} Avizeler`, ...(categoryHref ? { href: categoryHref } : {}) }]
                 : []),
             { name: product.title },
           ]}
         />
 
         {/* İstemci Tarafı İnteraktif Detay Bileşeni */}
-        <ProductDetailClient product={product} ladderCtx={ladderCtx} />
+        <ProductDetailClient product={product} ladderCtx={ladderCtx} categoryHref={categoryHref} />
 
         {similar.length > 0 && (
           <section aria-labelledby="benzer" className="mt-10">

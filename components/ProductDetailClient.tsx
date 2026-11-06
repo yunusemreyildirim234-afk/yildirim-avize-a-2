@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { toastHref } from "@/lib/toast-link";
@@ -41,7 +42,7 @@ interface Product {
   variations: Variation[];
 }
 
-export default function ProductDetailClient({ product, ladderCtx }: { product: Product; ladderCtx: LadderContext }) {
+export default function ProductDetailClient({ product, ladderCtx, categoryHref }: { product: Product; ladderCtx: LadderContext; categoryHref?: string }) {
   const router = useRouter();
   const maxTotalDiscountPct = ladderCtx.maxTotalDiscountPct;
   const { addToCart } = useCart();
@@ -151,9 +152,19 @@ export default function ProductDetailClient({ product, ladderCtx }: { product: P
       <div className="p-5 sm:p-8 lg:p-12 flex flex-col justify-between space-y-8">
         <div className="space-y-4">
           {product.category.trim() && (
-            <span className="text-xs font-semibold text-amber-600 uppercase tracking-wider">
-              {product.category} Serisi
-            </span>
+            categoryHref ? (
+              <Link
+                href={categoryHref}
+                data-testid="product-category-link"
+                className="inline-block text-xs font-semibold text-amber-600 uppercase tracking-wider hover:text-amber-700 hover:underline underline-offset-2 rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600"
+              >
+                {product.category} Serisi
+              </Link>
+            ) : (
+              <span className="text-xs font-semibold text-amber-600 uppercase tracking-wider">
+                {product.category} Serisi
+              </span>
+            )
           )}
           {product.modelCode && (
             <span className="inline-block text-[11px] font-mono font-semibold text-neutral-700 bg-neutral-100 border border-neutral-200 px-2.5 py-1 rounded-md">
