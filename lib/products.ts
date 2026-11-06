@@ -96,7 +96,7 @@ export async function getFeatured(take: number) {
 }
 
 /** Son 90 günde en çok sipariş edilen ürün kimlikleri (çoktan aza). Tüm geçmiş yerine 90 gün; sonuç 5 dk önbellekte (yalnızca kimlik listesi). */
-const getRankedSellerIds = unstable_cache(
+export const getRankedSellerIds = unstable_cache(
   async (): Promise<string[]> => {
     const sold = await prisma.orderItem.groupBy({
       by: ["variationId"],
