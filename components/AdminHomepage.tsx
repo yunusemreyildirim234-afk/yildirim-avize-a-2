@@ -27,6 +27,7 @@ interface Props {
   collectionOptions: CollectionOption[];
   savedCollections: string[];
   pools: Record<SectionKey, PoolItem[]>;
+  hiddenBestSellers: PoolItem[]; // Çok Satanlar'dan elle gizlenenler (kayıtlı)
 }
 
 const LABELS: Record<SectionKey, { title: string; hint: string }> = {
@@ -74,7 +75,7 @@ interface SectionState {
   reset: boolean; // kayıtta varsayılana dönecek (bölüm ayarı silinir)
 }
 
-export default function AdminHomepage({ initial, pools, promoCards, collectionOptions, savedCollections }: Props) {
+export default function AdminHomepage({ initial, pools: savedPools, promoCards, collectionOptions, savedCollections, hiddenBestSellers }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   useOpenOnHash("ana-sayfa", setOpen);
@@ -102,6 +103,15 @@ export default function AdminHomepage({ initial, pools, promoCards, collectionOp
   const [cards, setCards] = useState<PromoCard[]>(promoCards);
   const [cardsReset, setCardsReset] = useState(false); // kayıtta varsayılan kartlara dönülecek
   const [queries, setQueries] = useState<Record<SectionKey, string>>({ featured: "", discounted: "", bestsellers: "" });
+  // Çok Satanlar'da gösterme: gizlenenler listesi (kaydedilene kadar yalnızca bu ekranda); gizli ürün sitede ve diğer bölümlerde durur
+  const [hidden, setHidden] = useState<PoolItem[]>(hiddenBestSellers);
+  const [hiddenDirty, setHiddenDirty] = useState(false);
+  const [hideQuery, setHideQuery] = useState("");
+  const pools = useMemo<Record<SectionKey, PoolItem[]>>(() => ({ ...savedPools, bestsellers: savedPools.bestsellers.filter((p) => !hidden.some((h) => h.id === p.id)) }), [savedPools, hidden]);
+  const changeHidden = (next: PoolItem[]) => {
+    setHidden(next);
+    setHiddenDirty(true);
+  };
 
   const patch = (k: SectionKey, p: Partial<SectionState>) => setState((s) => ({ ...s, [k]: { ...s[k], reset: false, ...p } }));
   const titleOf = useMemo(() => {
@@ -171,6 +181,7 @@ export default function AdminHomepage({ initial, pools, promoCards, collectionOp
     setSaving(true);
     try {
       const body: Record<string, unknown> = Object.fromEntries(SECTION_KEYS.map((k) => [k, state[k].reset ? null : { count: Number(state[k].count), pinnedIds: state[k].pinned }]));
+      if (hiddenDirty) body.hiddenBestSellers = hidden.map((h) => h.id);
       body.promoCards = cardsReset ? null : cards.map((c) => ({ ...c, title: c.title.trim(), text: c.text.trim(), ...(c.kind === "COUPON" ? { code: (c.code ?? "").trim() } : {}), ...(c.href ? { href: c.href.trim() } : {}) }));
       if (colCustom && colSel.length === 0) return toast.error("Koleksiyonlar: en az bir kategori seçin veya varsayılana dönün.");
       // Varsayılan (kayıtsız) durumda dokunulmamış liste gönderilmez; sıfırlama null gönderir
@@ -183,6 +194,7 @@ export default function AdminHomepage({ initial, pools, promoCards, collectionOp
       for (const w of (data.warnings as string[] | undefined) ?? []) toast.warning("Kupon uyarısı", { description: w, duration: 15000 });
       setCardsReset(false);
       setColReset(false);
+      setHiddenDirty(false);
       setState((s) => Object.fromEntries(SECTION_KEYS.map((k) => [k, { ...s[k], reset: false }])) as Record<SectionKey, SectionState>);
       router.refresh();
     } catch (e) {
@@ -321,6 +333,61 @@ export default function AdminHomepage({ initial, pools, promoCards, collectionOp
                     </ol>
                   )}
                 </div>
+
+                {k === "bestsellers" && (
+                  <div className="space-y-2 rounded-xl border border-neutral-200 p-3">
+                    <p className="text-xs font-semibold text-neutral-700">Çok Satanlar&apos;da gösterme</p>
+                    <p className="text-[11px] text-neutral-500">
+                      Gizlenen ürün yalnızca Çok Satanlar&apos;dan (ana sayfa, &quot;Daha fazla göster&quot; ve Çok Satanlar sayfası) çıkar; ürün sayfası, kategoriler ve diğer bölümlerde durur. Elle &quot;Çok Satan&quot; işaretli olsa da gizleme kazanır. Kaydedince geçerli olur.
+                    </p>
+                    {hidden.length === 0 ? (
+                      <p className="text-xs text-neutral-500">Gizlenen ürün yok.</p>
+                    ) : (
+                      <ul className="space-y-1" aria-label="Çok Satanlar'da gizlenen ürünler">
+                        {hidden.map((p) => (
+                          <li key={p.id} className="flex items-center gap-2 rounded-lg border border-neutral-200 px-3 py-1.5 text-xs">
+                            <span className="flex-1 min-w-0 truncate text-neutral-900">{`${p.modelCode ? `#${p.modelCode} ` : ""}${p.title}`}</span>
+                            <button type="button" onClick={() => changeHidden(hidden.filter((h) => h.id !== p.id))} className="text-xs font-semibold text-amber-800 hover:underline shrink-0">
+                              Yeniden göster
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    <input
+                      type="search"
+                      aria-label="Çok Satanlar'da gizlenecek ürünü ara"
+                      placeholder="Gizlenecek ürün: ürün adı veya model kodu"
+                      value={hideQuery}
+                      onChange={(e) => setHideQuery(e.target.value)}
+                      className={`${inputCls} w-full`}
+                    />
+                    {norm(hideQuery) && (
+                      <ul className="rounded-lg border border-neutral-200 divide-y divide-neutral-100 max-h-44 overflow-auto text-xs">
+                        {(() => {
+                          const hq = norm(hideQuery);
+                          const found = pools.bestsellers.filter((p) => norm(p.title).includes(hq) || norm(p.modelCode) === hq).slice(0, 8);
+                          if (found.length === 0) return <li className="px-3 py-2 text-neutral-400">Çok Satanlar listesinde eşleşen ürün yok.</li>;
+                          return found.map((p) => (
+                            <li key={p.id}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  changeHidden([...hidden, p]);
+                                  setHideQuery("");
+                                }}
+                                className="w-full text-left px-3 py-2 hover:bg-neutral-50"
+                              >
+                                <span className="font-mono text-amber-700 mr-2">#{p.modelCode ?? "-"}</span>
+                                <span className="font-semibold text-neutral-900">{p.title}</span>
+                              </button>
+                            </li>
+                          ));
+                        })()}
+                      </ul>
+                    )}
+                  </div>
+                )}
               </Sub>
             );
           })}

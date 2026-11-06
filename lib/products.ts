@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { BEST_SELLER_CACHE_SECONDS, bestSellerSince, rankProducts } from "@/lib/best-sellers-rules";
 import { productsCacheKey, storefrontTags } from "@/lib/storefront-cache-key";
 import { SHOWCASE_ORDER_BY } from "@/lib/showcase-order";
+import { resolveHiddenBestSellers } from "@/lib/homepage-compose";
 
 /**
  * Kart/liste için gereken alanlar (ProductCard, priceLadder, bulkTiersOf, ana sayfa havuzları).
@@ -110,13 +111,29 @@ const getRankedSellerIds = unstable_cache(
   { revalidate: BEST_SELLER_CACHE_SECONDS, tags: ["storefront"] }
 );
 
-/** Çok Satanlar: yönetici işaretlileri önce; eksik kalırsa en çok sipariş edilen aktif ürünlerle, o da yetmezse güncel ürünlerle tamamlanır. */
+/** Çok Satanlar'dan elle gizlenen ürün kimlikleri (homepageConfig.hiddenBestSellers). Okunamazsa boş: liste bozulmaz. */
+export async function getHiddenBestSellerIds(): Promise<string[]> {
+  try {
+    const row = await prisma.siteConfig.findUnique({ where: { id: 1 }, select: { homepageConfig: true } });
+    return resolveHiddenBestSellers(row?.homepageConfig);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Çok Satanlar: yönetici işaretlileri önce; eksik kalırsa en çok sipariş edilen aktif ürünlerle, o da yetmezse güncel ürünlerle tamamlanır.
+ * Elle gizlenenler (hiddenBestSellers) her aşamada dışarıda kalır; elle işaretli (isBestSeller) ile çakışırsa GİZLEME KAZANIR.
+ * Ürün yalnızca bu listeden çıkar; ürün sayfası, kategori sayfaları ve diğer bölümler etkilenmez.
+ */
 export async function getBestSellers(take: number) {
-  const picked = await getShowcaseProducts({ isBestSeller: true }, take);
+  const hidden = await getHiddenBestSellerIds();
+  const picked = await getShowcaseProducts({ isBestSeller: true, ...(hidden.length ? { id: { notIn: hidden } } : {}) }, take);
   if (picked.length >= take) return picked;
   const seen = new Set(picked.map((p) => p.id));
+  const hiddenSet = new Set(hidden);
 
-  const rankedIds = (await getRankedSellerIds()).filter((id) => !seen.has(id));
+  const rankedIds = (await getRankedSellerIds()).filter((id) => !seen.has(id) && !hiddenSet.has(id));
 
   const ranked = rankedIds.length ? await getProducts({ id: { in: rankedIds }, ...FEATURED }, undefined) : [];
   ranked.sort((a, b) => rankedIds.indexOf(a.id) - rankedIds.indexOf(b.id));
@@ -124,6 +141,6 @@ export async function getBestSellers(take: number) {
   if (out.length >= take) return out;
 
   const have = new Set(out.map((p) => p.id));
-  const filler = await getShowcaseProducts({ ...FEATURED, id: { notIn: [...have] } }, take - out.length);
+  const filler = await getShowcaseProducts({ ...FEATURED, id: { notIn: [...have, ...hidden] } }, take - out.length);
   return [...out, ...filler];
 }

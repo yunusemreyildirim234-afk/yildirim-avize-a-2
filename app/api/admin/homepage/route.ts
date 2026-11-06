@@ -3,11 +3,11 @@ import { withStorefrontRevalidate } from "@/lib/revalidate";
 import { adminGuard } from "@/lib/admin-guard";
 import { prisma } from "@/lib/db";
 import { rateLimit, tooMany } from "@/lib/rate-limit";
-import { MAX_COUNT, MAX_PINNED, SECTION_KEYS } from "@/lib/homepage-compose";
+import { MAX_COUNT, MAX_HIDDEN_BEST_SELLERS, MAX_PINNED, SECTION_KEYS } from "@/lib/homepage-compose";
 import { validateCollectionKeys } from "@/lib/collections";
 import { couponCodesOf, couponWarnings, validatePromoCards, type CouponRow } from "@/lib/promo-cards";
 
-// Ana sayfa ayarları (yalnızca yönetici). Gövde: { featured|discounted|bestsellers: { count, pinnedIds[] }, promoCards: [...] | null, collections: [kategoriAnahtarı...] | null }
+// Ana sayfa ayarları (yalnızca yönetici). Gövde: { featured|discounted|bestsellers: { count, pinnedIds[] }, promoCards: [...] | null, collections: [kategoriAnahtarı...] | null, hiddenBestSellers: [ürünId...] }
 async function PUTHandler(req: Request) {
   const denied = await adminGuard();
   if (denied) return denied;
@@ -16,7 +16,7 @@ async function PUTHandler(req: Request) {
 
   const body = await req.json().catch(() => null);
   if (!body || typeof body !== "object" || Array.isArray(body)) return NextResponse.json({ error: "Geçersiz istek." }, { status: 400 });
-  const unknownTop = Object.keys(body).filter((k) => !(SECTION_KEYS as readonly string[]).includes(k) && k !== "promoCards" && k !== "collections");
+  const unknownTop = Object.keys(body).filter((k) => !(SECTION_KEYS as readonly string[]).includes(k) && k !== "promoCards" && k !== "collections" && k !== "hiddenBestSellers");
   if (unknownTop.length) return NextResponse.json({ error: `Bilinmeyen alan: ${unknownTop[0]}` }, { status: 400 });
 
   const config: Record<string, { count: number; pinnedIds: string[] }> = {};
@@ -62,7 +62,17 @@ async function PUTHandler(req: Request) {
     if (v.keys.length === 0) reset.push("collections");
     else collections = v.keys;
   }
-  if (Object.keys(config).length === 0 && reset.length === 0 && !cards && !collections) return NextResponse.json({ error: "Kaydedilecek bölüm yok." }, { status: 400 });
+  // Çok Satanlar'dan gizlenen ürünler (kimlik listesi); boş liste gizlemeyi kaldırır. Ürünün kendisi etkilenmez.
+  const rawHidden = (body as Record<string, unknown>).hiddenBestSellers;
+  let hidden: string[] | null = null;
+  if (rawHidden !== undefined) {
+    if (!Array.isArray(rawHidden) || rawHidden.length > MAX_HIDDEN_BEST_SELLERS || rawHidden.some((x) => typeof x !== "string" || !x || x.length > 64)) {
+      return NextResponse.json({ error: `En fazla ${MAX_HIDDEN_BEST_SELLERS} ürün gizlenebilir.` }, { status: 400 });
+    }
+    hidden = [...new Set(rawHidden as string[])];
+    if (hidden.length && (await prisma.product.count({ where: { id: { in: hidden } } })) !== hidden.length) return NextResponse.json({ error: "Gizlenen ürünlerden bazıları bulunamadı." }, { status: 400 });
+  }
+  if (Object.keys(config).length === 0 && reset.length === 0 && !cards && !collections && !hidden) return NextResponse.json({ error: "Kaydedilecek bölüm yok." }, { status: 400 });
 
   // Sabitlenen ürünler mevcut ve aktif olmalı
   if (allPinned.size) {
@@ -75,6 +85,10 @@ async function PUTHandler(req: Request) {
   const merged: Record<string, unknown> = { ...(current && typeof current === "object" && !Array.isArray(current) ? current : {}), ...config };
   if (cards?.ok) merged.promoCards = cards.cards;
   if (collections) merged.collections = collections;
+  if (hidden) {
+    if (hidden.length) merged.hiddenBestSellers = hidden;
+    else delete merged.hiddenBestSellers;
+  }
   for (const key of reset) delete merged[key];
   await prisma.siteConfig.upsert({ where: { id: 1 }, create: { id: 1, homepageConfig: merged as object }, update: { homepageConfig: merged as object } });
   // Kupon kartlarında kod geçerli değilse UYARI (kaydı engellemez)

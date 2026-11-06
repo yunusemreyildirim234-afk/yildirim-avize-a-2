@@ -18,6 +18,7 @@ import { FEATURED } from "@/lib/products";
 import { getHomepageConfig, getHomepageRaw, getSectionPools } from "@/lib/homepage";
 import { resolvePromoCards } from "@/lib/promo-cards";
 import { resolveCollectionKeys } from "@/lib/collections";
+import { resolveHiddenBestSellers } from "@/lib/homepage-compose";
 import { getCategoryList, getCategorySettings } from "@/lib/category-list";
 import { uncategorizedCount } from "@/lib/category-settings";
 import AdminDiscountSettings from "@/components/AdminDiscountSettings";
@@ -285,6 +286,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           collectionOptions={collectionOptions}
           savedCollections={resolveCollectionKeys(homeRaw)}
           pools={{ featured: slim(homePools.featured), discounted: slim(homePools.discounted), bestsellers: slim(homePools.bestsellers) }}
+          hiddenBestSellers={slim(resolveHiddenBestSellers(homeRaw).flatMap((id) => products.filter((p) => p.id === id)))}
         />
 
         {/* Promosyon Kodları Yönetimi */}

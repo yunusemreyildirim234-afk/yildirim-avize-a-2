@@ -58,3 +58,13 @@ export function composeSection<P extends { id: string }>(pool: P[], sec: Resolve
   const shown = ordered.slice(0, sec.count);
   return { shown, more: sec.saved || legacyMore ? ordered.slice(sec.count) : [] };
 }
+
+export const MAX_HIDDEN_BEST_SELLERS = 100;
+
+/** Çok Satanlar'dan gizlenen ürün kimlikleri (ham JSON'daki `hiddenBestSellers`); geçersiz/eksik → boş, tekrarlar atılır. */
+export function resolveHiddenBestSellers(raw: unknown): string[] {
+  const obj = raw && typeof raw === "object" && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
+  const v = obj.hiddenBestSellers;
+  if (!Array.isArray(v)) return [];
+  return [...new Set(v.filter((x): x is string => typeof x === "string" && x.length > 0 && x.length <= 64))].slice(0, MAX_HIDDEN_BEST_SELLERS);
+}
