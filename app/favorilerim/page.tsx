@@ -5,6 +5,7 @@ import Link from "next/link";
 import { CartStepper, type QuickProduct } from "@/components/ProductQuickActions";
 import PriceLadder from "@/components/PriceLadder";
 import { useWishlist } from "@/context/WishlistContext";
+import { FavoritesMarketingStrip } from "@/components/MarketingPrefs";
 
 export default function FavorilerimPage() {
   const { favorites, removeFavoriteUndoable, clearFavorites } = useWishlist();
@@ -23,6 +24,9 @@ export default function FavorilerimPage() {
   if (favorites.length === 0) {
     return (
       <main className="min-h-screen bg-neutral-50 py-20 px-4 text-center">
+        <div className="text-left">
+          <FavoritesMarketingStrip />
+        </div>
         <div className="max-w-md mx-auto space-y-4">
           <span className="text-5xl block">♡</span>
           <h2 className="text-2xl font-serif font-bold text-neutral-900">
@@ -44,6 +48,7 @@ export default function FavorilerimPage() {
 
   return (
     <main className="min-h-screen bg-neutral-50 py-12 px-4 sm:px-6 lg:px-8">
+      <FavoritesMarketingStrip />
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between border-b border-neutral-200 pb-5 mb-8">
           <div>

@@ -14,6 +14,7 @@ import AccountSecurity from "@/components/AccountSecurity";
 import CodeStep from "@/components/CodeStep";
 import ProfileName from "@/components/ProfileName";
 import ReceiptUpload from "@/components/ReceiptUpload";
+import { MarketingPermissions } from "@/components/MarketingPrefs";
 
 interface OrderItem {
   id: string;
@@ -307,6 +308,8 @@ export default function AuthPage() {
           <AccountSecurity email={user.email} twoFactorEnabled={Boolean(user.twoFactorEnabled)} onChanged={refreshUser} />
 
           <MyCoupons />
+
+          <MarketingPermissions />
 
           <MyMessages />
         </div>
