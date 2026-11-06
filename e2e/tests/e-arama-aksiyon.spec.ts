@@ -84,7 +84,8 @@ test.describe("e) Arama listelerinde ürün aksiyonları (salt okunur)", () => {
     // Favoriyi geri al (yalnızca tarayıcı depolaması)
     await row.getByRole("button", { name: "Favorilerden çıkar" }).click();
     // Satırın ürün bağlantısı yine ürüne gider
-    await row.locator(`a[href="/urun/${p!.id}"]`).click();
+    // (Toast bildirimleri satırın üstünü örtebilir: klavyeyle etkinleştirilir)
+    await row.locator(`a[href="/urun/${p!.id}"]`).press("Enter");
     await expect(page).toHaveURL(/\/urun\//);
   });
 
