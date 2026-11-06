@@ -6,6 +6,7 @@ import { adminGuard } from "@/lib/admin-guard";
 import { prisma } from "@/lib/db";
 import { attachUploads, pruneUploads } from "@/lib/product-images";
 import { MAX_PRODUCT_IMAGES, parseImageUrls, parseVariations, uploadedIdsOf } from "@/lib/variation-input";
+import { schedulePriceDrops } from "@/lib/price-drop-notify";
 import { buildUndoToken, snapshotForDelete, snapshotProducts } from "@/lib/admin-undo";
 
 // 1. Yeni Avize Ekleme (POST): ürün + tüm renkler TEK transaction'da; fotoğraflar önceden /api/admin/product-images ile yüklenir
@@ -123,6 +124,7 @@ async function PATCHHandler(req: Request) {
         data.modelCode = modelCode || null;
       }
       const before = await snapshotProducts([body.productId]);
+      const oldBase = data.basePrice !== undefined ? (await prisma.product.findUnique({ where: { id: body.productId }, select: { basePrice: true } }))?.basePrice : undefined;
       const product = await prisma.$transaction(async (tx) => {
         const updated = await tx.product.update({ where: { id: body.productId }, data });
         if (data.images) {
@@ -135,6 +137,8 @@ async function PATCHHandler(req: Request) {
         throw e;
       });
       if (!product) return NextResponse.json({ error: "Yüklenen fotoğraflardan biri bulunamadı veya başka bir ürüne ait." }, { status: 400 });
+      // Fiyat düştüyse favorileyen üyelere bildirim (yanıttan sonra; hata kaydı bozmaz)
+      if (oldBase !== undefined && data.basePrice !== undefined) schedulePriceDrops([{ productId: body.productId, oldPrice: oldBase, newPrice: data.basePrice }]);
       return NextResponse.json({ success: true, product, snapshot: await buildUndoToken(before) });
     }
 
@@ -153,7 +157,7 @@ async function PATCHHandler(req: Request) {
 
     const { variationId, stock } = body;
 
-    const owner = await prisma.productVariation.findUnique({ where: { id: variationId }, select: { productId: true } });
+    const owner = await prisma.productVariation.findUnique({ where: { id: variationId }, select: { productId: true, extraPrice: true, product: { select: { basePrice: true } } } });
     const before = owner ? await snapshotProducts([owner.productId]) : [];
     const updated = await prisma.productVariation.update({
       where: { id: variationId },
@@ -163,6 +167,9 @@ async function PATCHHandler(req: Request) {
       },
     });
 
+    if (owner && body.extraPrice !== undefined && Number(body.extraPrice) >= 0) {
+      schedulePriceDrops([{ productId: owner.productId, oldPrice: owner.product.basePrice + owner.extraPrice, newPrice: owner.product.basePrice + updated.extraPrice }]);
+    }
     return NextResponse.json({ success: true, variation: updated, snapshot: before.length ? await buildUndoToken(before) : null });
   } catch (error) {
     return serverError("admin/product", error);

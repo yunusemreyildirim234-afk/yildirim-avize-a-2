@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { resolveLinkAction } from "@/lib/toast-link";
 import { goToHash } from "@/components/ToastLinkRouter";
-import { Bell, CheckCheck, Package, Sparkles, Ticket, MessageSquare, Trash2 } from "lucide-react";
+import { Bell, CheckCheck, Package, Sparkles, Ticket, MessageSquare, Trash2, TrendingDown } from "lucide-react";
 
 interface Item {
   id: string;
@@ -18,7 +18,7 @@ interface Item {
   createdAt: string;
 }
 
-const ICONS: Record<string, typeof Bell> = { ORDER: Package, COUPON: Ticket, QUESTION: MessageSquare, SYSTEM: Sparkles };
+const ICONS: Record<string, typeof Bell> = { ORDER: Package, COUPON: Ticket, QUESTION: MessageSquare, SYSTEM: Sparkles, PRICE_DROP: TrendingDown };
 const POLL_MS = 30_000;
 
 const fmt = (d: string) =>

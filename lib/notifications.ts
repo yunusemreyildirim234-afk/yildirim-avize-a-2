@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 
-export type NotificationType = "ORDER" | "COUPON" | "QUESTION" | "SYSTEM";
+export type NotificationType = "ORDER" | "COUPON" | "QUESTION" | "SYSTEM" | "PRICE_DROP";
 
 interface Payload {
   title: string;

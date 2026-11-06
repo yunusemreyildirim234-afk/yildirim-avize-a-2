@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { schedulePriceDrops, type PriceChange } from "@/lib/price-drop-notify";
 import { withStorefrontRevalidate } from "@/lib/revalidate";
 import { resolveCategoryForSave } from "@/lib/category-list";
 import { adminGuard } from "@/lib/admin-guard";
@@ -209,13 +210,16 @@ async function POSTHandler(req: Request) {
       const products = await prisma.product.findMany({ where: { id: { in: ids } }, select: { id: true, basePrice: true, listPrice: true } });
       const round2 = (n: number) => Math.round(n * 100) / 100;
       const ops = [];
+      const drops: PriceChange[] = [];
       for (const p of products) {
         const original = p.listPrice && p.listPrice > p.basePrice ? p.listPrice : p.basePrice;
         const next = round2(Math.max(0, mode === "PERCENT" ? original * (1 - value / 100) : original - value));
         if (next >= original) continue;
         ops.push(prisma.product.update({ where: { id: p.id }, data: { basePrice: next, listPrice: original } }));
+        drops.push({ productId: p.id, oldPrice: p.basePrice, newPrice: next });
       }
       await prisma.$transaction(ops);
+      schedulePriceDrops(drops); // satış fiyatı düşenleri favorileyen üyelere bildirim (yanıttan sonra)
       return NextResponse.json({ snapshot: await done(), success: true, updated: ids.length, skipped });
     }
 
