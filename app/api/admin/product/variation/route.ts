@@ -4,9 +4,17 @@ import { serverError } from "@/lib/api-error";
 import { adminGuard } from "@/lib/admin-guard";
 import { prisma } from "@/lib/db";
 import { attachUploads, pruneUploads } from "@/lib/product-images";
-import { MAX_VARIATIONS, MAX_VARIATION_IMAGES, colorKey, isCompleteOrder, parseImageUrls, parseVariations, uploadedIdsOf } from "@/lib/variation-input";
+import { buildUndoToken, snapshotProducts } from "@/lib/admin-undo";
+import { MAX_VARIATIONS, MAX_VARIATION_IMAGES, colorKey, isCompleteOrder, parseImageUrls, parseVariations, planBulkColor, planRename, uploadedIdsOf } from "@/lib/variation-input";
 
 class UploadMissing extends Error {}
+/** Planlama reddi (sunucuda zorunlu doğrulama): hata iletisi + isteğe bağlı onay uyarıları */
+class PlanRejected extends Error {
+  constructor(message: string, public status: number, public warnings?: string[]) {
+    super(message);
+  }
+}
+const rejected = (e: PlanRejected) => NextResponse.json({ error: e.message, ...(e.warnings ? { needsConfirm: true, warnings: e.warnings } : {}) }, { status: e.status });
 
 // Tekil ürüne renk varyasyonu ekleme / fotoğraf güncelleme / silme (proxy yalnızca yöneticiye açar)
 async function POSTHandler(req: Request) {
@@ -56,6 +64,47 @@ async function PATCHHandler(req: Request) {
       const order: string[] = body.order;
       await prisma.$transaction(order.map((id, position) => prisma.productVariation.update({ where: { id }, data: { position } })));
       return NextResponse.json({ success: true });
+    }
+    // Tek varyasyonun adı: { variationId, variationValue, confirmWarnings? }
+    if (typeof body.variationId === "string" && "variationValue" in body) {
+      const owner = await prisma.productVariation.findUnique({ where: { id: body.variationId }, select: { productId: true } });
+      if (!owner) return NextResponse.json({ error: "Varyasyon bulunamadı." }, { status: 404 });
+      const before = await snapshotProducts([owner.productId]);
+      const value = await prisma.$transaction(async (tx) => {
+        const product = await tx.product.findUnique({ where: { id: owner.productId }, select: { ebat: true, variations: { select: { id: true, variationType: true, variationValue: true } } } });
+        const cur = product?.variations.find((v) => v.id === body.variationId);
+        if (!product || !cur) throw new PlanRejected("Varyasyon bulunamadı.", 404);
+        const plan = planRename(body.variationValue, { type: cur.variationType, current: cur.variationValue, others: product.variations.filter((v) => v.id !== cur.id).map((v) => v.variationValue), productEbat: product.ebat });
+        if (!plan.ok) throw new PlanRejected(plan.error, 400);
+        if (plan.value.warnings.length && body.confirmWarnings !== true) throw new PlanRejected("Yine de kaydetmek için uyarıyı onaylayın.", 409, plan.value.warnings);
+        // Yalnızca ad: barkod, tür, stok, fiyat, fotoğraf ve sıra değişmez
+        await tx.productVariation.update({ where: { id: cur.id }, data: { variationValue: plan.value.value } });
+        return plan.value.value;
+      }).catch((e) => {
+        if (e instanceof PlanRejected) return e;
+        throw e;
+      });
+      if (value instanceof PlanRejected) return rejected(value);
+      return NextResponse.json({ success: true, variationValue: value, snapshot: await buildUndoToken(before) });
+    }
+    // Ürünün rengini toplu değiştirme (hepsi ya da hiçbiri): { productId, bulkColor: { from, to }, confirmWarnings? }
+    if (typeof body.productId === "string" && "bulkColor" in body) {
+      const bc = body.bulkColor as { from?: unknown; to?: unknown } | null;
+      const before = await snapshotProducts([body.productId]);
+      if (before.length === 0) return NextResponse.json({ error: "Ürün bulunamadı." }, { status: 404 });
+      const changed = await prisma.$transaction(async (tx) => {
+        const rows = await tx.productVariation.findMany({ where: { productId: body.productId }, select: { id: true, variationType: true, variationValue: true } });
+        const plan = planBulkColor(rows.map((r) => ({ id: r.id, type: r.variationType, value: r.variationValue })), bc?.from, bc?.to);
+        if (!plan.ok) throw new PlanRejected(plan.error, 400);
+        if (plan.value.warnings.length && body.confirmWarnings !== true) throw new PlanRejected("Yine de kaydetmek için uyarıyı onaylayın.", 409, plan.value.warnings);
+        for (const c of plan.value.changes) await tx.productVariation.update({ where: { id: c.id }, data: { variationValue: c.to } });
+        return plan.value.changes.length;
+      }).catch((e) => {
+        if (e instanceof PlanRejected) return e;
+        throw e;
+      });
+      if (changed instanceof PlanRejected) return rejected(changed);
+      return NextResponse.json({ success: true, changed, snapshot: await buildUndoToken(before) });
     }
     if (typeof body.variationId !== "string") return NextResponse.json({ error: "Eksik parametre" }, { status: 400 });
     const images = parseImageUrls(body.images, MAX_VARIATION_IMAGES, "Renk fotoğrafları");

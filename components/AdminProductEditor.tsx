@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import ImagePicker from "@/components/ImagePicker";
 import { itemsFromUrls, newKey, uploadFile, type PickerItem } from "@/lib/client-upload";
 import { MAX_VARIATION_IMAGES } from "@/lib/variation-input";
+import { BulkColorChange, VariationNameEdit } from "@/components/VariationNameTools";
 
 export interface EditorVariation {
   id: string;
+  variationType?: string;
   variationValue: string;
   extraPrice: number;
   stock: number;
@@ -99,6 +101,13 @@ export default function AdminProductEditor({ product, onSaved }: { product: Edit
       });
       onSaved?.(data.snapshot);
     }, "✓ Varyasyon kaydedildi. Alttaki çubuktan geri alabilirsiniz.");
+
+  // Ad düzenleme / toplu renk: sunucu yanıtındaki Geri Al kaydı alttaki çubuğa iletilir
+  const saveName = (body: Record<string, unknown>, okMsg: string) =>
+    run(async () => {
+      const data = await api("PATCH", "/api/admin/product/variation", body);
+      onSaved?.(data.snapshot);
+    }, okMsg);
 
   const deleteVariation = (v: EditorVariation) => {
     if (!confirm(`"${v.variationValue}" rengi silinsin mi?`)) return;
@@ -259,6 +268,7 @@ export default function AdminProductEditor({ product, onSaved }: { product: Edit
               <button type="button" disabled={busy} onClick={() => deleteVariation(v)} className="font-semibold text-red-600 hover:underline">
                 Sil
               </button>
+              <VariationNameEdit variation={v} siblings={product.variations} productEbat={product.ebat} busy={busy} save={saveName} />
               <div className="basis-full space-y-1.5 pl-1">
                 <span className="text-neutral-500">Bu renge özel fotoğraflar (en fazla {MAX_VARIATION_IMAGES})</span>
                 <ImagePicker
@@ -289,6 +299,8 @@ export default function AdminProductEditor({ product, onSaved }: { product: Edit
           </div>
         </form>
       </section>
+
+      <BulkColorChange productId={product.id} variations={product.variations} busy={busy} save={saveName} />
     </div>
   );
 }

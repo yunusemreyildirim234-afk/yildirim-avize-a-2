@@ -552,7 +552,7 @@ Yine de geri alınsın mı?`)) await doUndo(true);
           </div>
           {editingId === product.id && (
             <AdminProductEditor
-              key={`${product.id}:${product.variations.map((v) => `${v.id}${v.stock}${v.extraPrice}${(v.images ?? []).join(",")}`).join("|")}`}
+              key={`${product.id}:${product.variations.map((v) => `${v.id}${v.variationValue}${v.stock}${v.extraPrice}${(v.images ?? []).join(",")}`).join("|")}`}
               product={product}
               onSaved={(snapshot) => snapshot && setUndo({ snapshot, label: "Ürün düzenleme" })}
             />

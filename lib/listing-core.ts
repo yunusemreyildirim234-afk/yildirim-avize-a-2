@@ -162,7 +162,7 @@ const ALIAS: Record<string, string> = { kahve: "kahverengi" };
 
 const lowerTr = (s: string) => s.toLocaleLowerCase("tr-TR");
 // Her kelimenin (parantez içindekiler dahil) ilk harfi büyük
-const titleTr = (s: string) => s.replace(/(^|[\s(])(\p{L})/gu, (_m, p: string, c: string) => p + c.toLocaleUpperCase("tr-TR"));
+export const titleTr = (s: string) => s.replace(/(^|[\s(])(\p{L})/gu, (_m, p: string, c: string) => p + c.toLocaleUpperCase("tr-TR"));
 
 /** "Seçenek" türü ilk parçası → izinli renk adı (küçük harf) ya da null */
 export function secenekColorName(part: string): string | null {
