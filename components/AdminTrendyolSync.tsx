@@ -10,7 +10,7 @@ const ROWS: { group: Group; label: string }[] = [
   { group: "TEXT", label: "Başlık ve açıklama" },
   { group: "IMAGES", label: "Görseller" },
   { group: "CATEGORY", label: "Kategori ve marka" },
-  { group: "VARIANT_INFO", label: "Varyasyon adı ve stok kodu" },
+  { group: "VARIANT_INFO", label: "Varyasyon adı ve stok kodu (renk / ebat adı dahil)" },
   { group: "ACTIVE", label: "Aktif/pasif (Trendyol'dan kalkanlar)" },
 ];
 const MODES: { mode: Mode; label: string }[] = [
@@ -182,6 +182,11 @@ export default function AdminTrendyolSync() {
             </tbody>
           </table>
         </div>
+        {settings.VARIANT_INFO === "OVERWRITE" && (
+          <p role="note" className="text-xs text-amber-900 font-semibold bg-amber-50 border border-amber-300 rounded-lg p-3">
+            Ezerek seçersen elle düzelttiğin renk ve ebat adları Trendyol&apos;daki hâline geri döner.
+          </p>
+        )}
         <div className="flex flex-wrap gap-2">
           <button type="button" onClick={() => setSettings(STOCK_ONLY)} className="min-h-11 text-xs font-semibold border border-neutral-300 bg-white hover:border-amber-600 px-4 rounded-xl">
             Yalnızca stok, ezerek
