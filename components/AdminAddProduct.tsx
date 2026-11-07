@@ -186,7 +186,7 @@ export default function AdminAddProduct({ extraCategories = [] }: { extraCategor
           <div>
             <label className="font-semibold text-neutral-700 block mb-1">Ebat</label>
             <input aria-label="Ebat" type="text" maxLength={24} placeholder="45 x 25" value={ebat} onChange={(e) => setEbat(e.target.value)} className={`${field} text-base sm:text-xs`} />
-            <p className="mt-1 text-[11px] text-neutral-500">Ürünün ebadı. Filtreleme ve sıralamada kullanılır.</p>
+            <p className="mt-1 text-[11px] text-neutral-500">Ürünün ebadı (örn. 45 x 25). Boş bırakırsan renk adındaki ebat (örn. Krom / 58 x 58) kullanılır. Filtreleme ve sıralamada kullanılır.</p>
           </div>
 
           <div className="sm:col-span-2 space-y-2">

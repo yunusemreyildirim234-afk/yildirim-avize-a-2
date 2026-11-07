@@ -173,7 +173,7 @@ export default function AdminProductEditor({ product, onSaved }: { product: Edit
         <label className="block space-y-1 sm:max-w-xs">
           <span className="font-semibold text-neutral-700">Ebat</span>
           <input aria-label="Ebat" type="text" maxLength={24} placeholder="45 x 25" value={ebat} onChange={(e) => setEbat(e.target.value)} className="w-full p-2 rounded-lg border border-neutral-300 bg-white text-base sm:text-xs focus:outline-none focus:border-amber-600" />
-          <span className="block text-[11px] text-neutral-500">Ürünün ebadı. Filtreleme ve sıralamada kullanılır.</span>
+          <span className="block text-[11px] text-neutral-500">Ürünün ebadı (örn. 45 x 25). Boş bırakırsan renk adındaki ebat (örn. Krom / 58 x 58) kullanılır. Filtreleme ve sıralamada kullanılır.</span>
         </label>
       </section>
 

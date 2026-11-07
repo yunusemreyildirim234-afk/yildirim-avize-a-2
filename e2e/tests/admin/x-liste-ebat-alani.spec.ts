@@ -72,7 +72,7 @@ test.describe("Admin: Product.ebat alanı → ebat filtresi + sıralama (E2E ön
     await expect(box).toBeVisible();
     expect(await box.evaluate((el) => getComputedStyle(el).fontSize)).toBe("16px");
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-    await expect(page.getByText("Ürünün ebadı. Filtreleme ve sıralamada kullanılır.").first()).toBeVisible();
+    await expect(page.getByText("Ürünün ebadı (örn. 45 x 25). Boş bırakırsan renk adındaki ebat (örn. Krom / 58 x 58) kullanılır. Filtreleme ve sıralamada kullanılır.").first()).toBeVisible();
     await page.setViewportSize({ width: 1280, height: 800 });
 
     for (const t of [a, b, c]) await refreshStorefront(request, ids[t]);
