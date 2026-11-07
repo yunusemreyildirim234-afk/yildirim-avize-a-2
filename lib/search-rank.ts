@@ -2,7 +2,8 @@
 //
 // Sıra anahtarı (küçükten büyüğe):
 //   1) alaka puanı (büyük önce): tüm sorgu kelimeleri başlıkta → 2, ayrıca tam öbek başlıkta → 3, aksi 0
-//   2) puan eşitse: sorgu aksesuar anlamlı bir sözcük içermiyorsa "Aksesuar" kategorisindeki ürün, avize/aplik/lamba ürünlerinin ARKASINA düşer
+//   2) sorgu aksesuar anlamlı bir sözcük içermiyorsa "Aksesuar" kategorisindeki ürünün puanı en çok 2 olur (tam öbek bonusu almaz: "Kristal Avize Taşı" başlığı
+//      "kristal avize" aramasında avizenin önüne geçmesin) ve puanı eşit avize/aplik/lamba ürünlerinin ARKASINA düşer
 //   3) hâlâ eşitse: mevcut sıra (güncellik/id) aynen korunur
 
 /** Sorguda bunlardan biri varsa kullanıcı aksesuar arıyordur: aksesuar ürünleri geri itilmez. Genişletmek için buraya ekleyin (ASCII, küçük harf; çok sözcüklü olabilir). */
@@ -53,7 +54,11 @@ export interface RankRow {
 export function rankSearchRows<R extends RankRow>(rows: readonly R[], q: string): R[] {
   if (!normalizeSearch(q)) return [...rows];
   const demote = !queryWantsAccessory(q);
-  const key = rows.map((r, i) => ({ r, i, score: titleScore(q, r.title ?? ""), back: demote && r.cat === ACCESSORY_CATEGORY_KEY ? 1 : 0 }));
+  const key = rows.map((r, i) => {
+    const back = demote && r.cat === ACCESSORY_CATEGORY_KEY ? 1 : 0;
+    const score = titleScore(q, r.title ?? "");
+    return { r, i, score: back ? Math.min(score, 2) : score, back };
+  });
   key.sort((a, b) => b.score - a.score || a.back - b.back || a.i - b.i);
   return key.map((k) => k.r);
 }

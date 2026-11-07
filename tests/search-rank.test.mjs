@@ -51,3 +51,9 @@ test("girdi değişmez; boş sorgu aynen döner", () => {
   assert.deepEqual(rows, copy);
   assert.deepEqual(rankSearchRows(rows, "   ").map((r) => r.id), ["a", "b"]);
 });
+
+test("aksesuar başlığında tam öbek olsa da (Kristal Avize Taşı) sorguda aksesuar sözcüğü yoksa avizenin önüne geçmez", () => {
+  const rows = [R("t", "Kristal Avize Taşı Kontes Uyumlu", "aksesuar"), R("av", "Nova Model Kristal 6'lı Krom Avize", "kristal")];
+  assert.deepEqual(rankSearchRows(rows, "kristal avize").map((r) => r.id), ["av", "t"]);
+  assert.deepEqual(rankSearchRows(rows, "kristal avize taşı").map((r) => r.id), ["t", "av"]); // aksesuar sözcüğü (taş) var: bonus ve sıra korunur
+});
