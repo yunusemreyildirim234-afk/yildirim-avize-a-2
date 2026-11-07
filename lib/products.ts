@@ -8,7 +8,7 @@ import { resolveHiddenBestSellers } from "@/lib/homepage-compose";
 
 /**
  * Kart/liste için gereken alanlar (ProductCard, priceLadder, bulkTiersOf, ana sayfa havuzları).
- * description, images, brand, trendyol* ve zaman damgaları çekilmez.
+ * description, brand, trendyol* ve zaman damgaları çekilmez.
  */
 export const CARD_SELECT = {
   id: true,
@@ -28,10 +28,13 @@ export const CARD_SELECT = {
   variations: { select: { id: true, variationValue: true, extraPrice: true, stock: true, images: true }, orderBy: [{ position: "asc" }, { id: "asc" }] },
 } satisfies Prisma.ProductSelect;
 
+/** Kart galerisi için genel fotoğraflar (images) da gerekir; arama gibi yalnızca kapak kullanan uçlar CARD_SELECT'te kalır. */
+const CARD_LIST_SELECT = { ...CARD_SELECT, images: true } satisfies Prisma.ProductSelect;
+
 export async function getProducts(where: Prisma.ProductWhereInput = {}, take?: number, skip?: number) {
   return prisma.product.findMany({
     where: { active: true, ...where },
-    select: CARD_SELECT,
+    select: CARD_LIST_SELECT,
     // Sayfalama (skip) kullanılırken eşit updatedAt değerlerinde sayfalar arası kayma olmasın diye id ile kararlı sıra
     orderBy: skip === undefined ? { updatedAt: "desc" } : [{ updatedAt: "desc" }, { id: "asc" }],
     take,
@@ -41,7 +44,7 @@ export async function getProducts(where: Prisma.ProductWhereInput = {}, take?: n
 
 /** Ana sayfa vitrini (Öne Çıkanlar / Çok Satanlar) için: getProducts ile aynı seçim, ama updatedAt'tan bağımsız sabit sıra (lib/showcase-order.ts). */
 export async function getShowcaseProducts(where: Prisma.ProductWhereInput = {}, take?: number) {
-  return prisma.product.findMany({ where: { active: true, ...where }, select: CARD_SELECT, orderBy: SHOWCASE_ORDER_BY, take });
+  return prisma.product.findMany({ where: { active: true, ...where }, select: CARD_LIST_SELECT, orderBy: SHOWCASE_ORDER_BY, take });
 }
 
 /** getProducts ile aynı koşulla (yalnızca aktif) ürün sayısı. */

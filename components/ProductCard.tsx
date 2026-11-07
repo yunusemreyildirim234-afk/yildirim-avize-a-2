@@ -1,11 +1,11 @@
-import Image from "next/image";
+import CardImages from "@/components/CardImages";
 import Link from "next/link";
 import type { ProductWithVariations } from "@/lib/products";
 import { bulkTiersOf } from "@/lib/bulk-pricing";
 import PriceLadder, { priceTone } from "@/components/PriceLadder";
 import { getLadderContext } from "@/lib/showcase";
 import { priceLadder } from "@/lib/price-ladder";
-import { coverImageOf } from "@/lib/variation-input";
+import { coverImageOf, galleryOf } from "@/lib/variation-input";
 import { CartStepper, FavoriteButton } from "@/components/ProductQuickActions";
 
 export default async function ProductCard({
@@ -28,6 +28,8 @@ export default async function ProductCard({
   const bulk = bulkTiersOf(product);
   // Kapak: varsayılan (ilk stoklu) rengin fotoğrafı varsa o, yoksa ürün kapağı
   const cover = coverImageOf(product);
+  // Kart galerisi: ürün sayfasının açılış galerisiyle aynı sıra (genel fotoğraflar, yoksa ilk rengin), en çok 4; eski önbellekte images olmayabilir
+  const gallery = galleryOf({ ...product, images: product.images ?? [] }, null, false).slice(0, 4);
 
   // İstemci bileşenlerine yalnızca gereken alanlar geçirilir
   const quick = {
@@ -53,21 +55,7 @@ export default async function ProductCard({
       }`}
     >
       <Link href={`/urun/${product.id}`} className="flex flex-col flex-1">
-        <div className="relative aspect-square bg-zinc-100 overflow-hidden rounded-t-2xl">
-          {cover ? (
-            <Image
-              src={cover}
-              alt={product.title}
-              fill
-              priority={priority}
-              sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
-              className="object-cover transition-transform duration-500 group-hover:scale-105"
-            />
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center text-3xl" aria-hidden="true">
-              💡
-            </div>
-          )}
+        <CardImages images={gallery} alt={product.title} priority={priority}>
           {discount > 0 && (
             <span className="absolute top-3 left-3 bg-red-600 text-white text-[11px] font-bold px-2 py-1 rounded-md">
               %{discount} İndirim
@@ -83,7 +71,7 @@ export default async function ProductCard({
               Tükendi
             </span>
           )}
-        </div>
+        </CardImages>
 
         <div className="p-2.5 pb-2 sm:p-5 sm:pb-3 flex-1 flex flex-col justify-between gap-1.5 sm:gap-3">
           <div>
