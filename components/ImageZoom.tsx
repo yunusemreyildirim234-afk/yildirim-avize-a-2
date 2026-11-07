@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Minus, Plus, RotateCcw, X, ZoomIn } from "lucide-react";
+import { ChevronLeft, ChevronRight, Minus, Plus, RotateCcw, X, ZoomIn } from "lucide-react";
 
 const LENS = 170; // büyüteç çapı (px)
 const LENS_ZOOM = 2.6;
 
 /** Ana görsel: masaüstünde fare üstünde büyüteç, tıklayınca onZoom. */
-export function HoverMagnifier({ src, alt, onZoom }: { src: string; alt: string; onZoom: () => void }) {
+export function HoverMagnifier({ src, alt, onZoom, eager = true }: { src: string; alt: string; onZoom: () => void; eager?: boolean }) {
   const boxRef = useRef<HTMLButtonElement>(null);
   const [pos, setPos] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
 
@@ -27,7 +27,7 @@ export function HoverMagnifier({ src, alt, onZoom }: { src: string; alt: string;
       aria-label="Görseli büyüt"
       className="absolute inset-0 w-full h-full cursor-zoom-in"
     >
-      <img src={src} alt={alt} decoding="async" fetchPriority="high" className="w-full h-full object-cover" />
+      <img src={src} alt={alt} decoding="async" {...(eager ? { fetchPriority: "high" as const } : { loading: "lazy" as const })} className="w-full h-full object-cover" />
       <span className="absolute top-4 right-4 inline-flex items-center gap-1.5 bg-zinc-900/80 text-white text-[11px] font-semibold px-3 py-1.5 rounded-full">
         <ZoomIn aria-hidden="true" className="w-3.5 h-3.5" /> Büyüt
       </span>
@@ -60,7 +60,27 @@ const MAX = 6;
 const clamp = (v: number) => Math.min(MAX, Math.max(MIN, v));
 
 /** Tam ekran görsel: +/- butonları, sıfırlama, tekerlek, çift tıklama ve sürükleyerek kaydırma. */
-export function ImageLightbox({ src, alt, onClose }: { src: string; alt: string; onClose: () => void }) {
+export function ImageLightbox({
+  src,
+  alt,
+  onClose,
+  nav,
+}: {
+  src: string;
+  alt: string;
+  onClose: () => void;
+  /** Çok fotoğraflı üründe gezinme: oklar, ←/→, dokunmatik kaydırma */
+  nav?: { count: number; index: number; onChange: (i: number) => void };
+}) {
+  const swipe = useRef<number | null>(null);
+  const step = (d: number) => {
+    if (!nav) return;
+    const next = nav.index + d;
+    if (next < 0 || next >= nav.count) return;
+    setScale(1);
+    setOffset({ x: 0, y: 0 });
+    nav.onChange(next);
+  };
   const [scale, setScale] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const drag = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null);
@@ -84,6 +104,8 @@ export function ImageLightbox({ src, alt, onClose }: { src: string; alt: string;
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
+      else if (e.key === "ArrowLeft") step(-1);
+      else if (e.key === "ArrowRight") step(1);
       else if (e.key === "+" || e.key === "=") setZoom(scale + 0.5);
       else if (e.key === "-") setZoom(scale - 0.5);
       else if (e.key === "0") reset();
@@ -131,7 +153,10 @@ export function ImageLightbox({ src, alt, onClose }: { src: string; alt: string;
           onClick={(e) => e.stopPropagation()}
           onDoubleClick={() => (scale > 1 ? reset() : setZoom(2.5))}
           onPointerDown={(e) => {
-            if (scale === 1) return;
+            if (scale === 1) {
+              swipe.current = e.clientX;
+              return;
+            }
             e.currentTarget.setPointerCapture(e.pointerId);
             drag.current = { x: e.clientX, y: e.clientY, ox: offset.x, oy: offset.y };
             setDragging(true);
@@ -140,7 +165,14 @@ export function ImageLightbox({ src, alt, onClose }: { src: string; alt: string;
             if (!drag.current) return;
             setOffset({ x: drag.current.ox + e.clientX - drag.current.x, y: drag.current.oy + e.clientY - drag.current.y });
           }}
-          onPointerUp={endDrag}
+          onPointerUp={(e) => {
+            if (swipe.current !== null && scale === 1) {
+              const dx = e.clientX - swipe.current;
+              if (Math.abs(dx) > 50) step(dx < 0 ? 1 : -1);
+            }
+            swipe.current = null;
+            endDrag();
+          }}
           onPointerCancel={endDrag}
           className={`max-w-full max-h-full object-contain rounded-lg ${scale > 1 ? "cursor-grab active:cursor-grabbing" : "cursor-zoom-in"}`}
           style={{
@@ -153,6 +185,24 @@ export function ImageLightbox({ src, alt, onClose }: { src: string; alt: string;
       <button type="button" onClick={onClose} aria-label="Kapat" className={`${btn} absolute top-3 right-3 sm:top-5 sm:right-5`}>
         <X aria-hidden="true" className="w-6 h-6" />
       </button>
+
+      {nav && nav.count > 1 && (
+        <>
+          <span data-testid="lightbox-counter" className="absolute top-4 left-4 sm:top-6 sm:left-6 rounded-full bg-zinc-900/70 px-3 py-1.5 text-xs font-semibold text-white tabular-nums">
+            {nav.index + 1} / {nav.count}
+          </span>
+          {nav.index > 0 && (
+            <button type="button" onClick={() => step(-1)} aria-label="Önceki fotoğraf" className={`${btn} absolute left-3 sm:left-5 top-1/2 -translate-y-1/2`}>
+              <ChevronLeft aria-hidden="true" className="w-6 h-6" />
+            </button>
+          )}
+          {nav.index < nav.count - 1 && (
+            <button type="button" onClick={() => step(1)} aria-label="Sonraki fotoğraf" className={`${btn} absolute right-3 sm:right-5 top-1/2 -translate-y-1/2`}>
+              <ChevronRight aria-hidden="true" className="w-6 h-6" />
+            </button>
+          )}
+        </>
+      )}
 
       <div className="absolute bottom-4 right-4 sm:bottom-6 sm:right-6 flex items-center gap-2 rounded-full bg-zinc-900/70 p-1.5">
         <button type="button" onClick={() => setZoom(scale - 0.5)} disabled={scale <= MIN} aria-label="Uzaklaştır" className={btn}>

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -42,6 +43,11 @@ interface Product {
   variations: Variation[];
 }
 
+const galleryArrow =
+  "hidden md:flex absolute top-1/2 -translate-y-1/2 z-10 w-11 h-11 items-center justify-center rounded-full bg-white/90 text-zinc-900 shadow-lg opacity-0 group-hover/gal:opacity-100 focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-500 transition-opacity";
+
+const reducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
 export default function ProductDetailClient({ product, ladderCtx, categoryHref }: { product: Product; ladderCtx: LadderContext; categoryHref?: string }) {
   const router = useRouter();
   const maxTotalDiscountPct = ladderCtx.maxTotalDiscountPct;
@@ -58,6 +64,25 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref }
   const [quantity, setQuantity] = useState(1);
   const [addedToCart, setAddedToCart] = useState(false);
   const [zoomed, setZoomed] = useState(false);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const thumbsRef = useRef<HTMLDivElement>(null);
+  const programmatic = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Küçük resim / ok / klavye / "Büyüt" gezinmesi: fotoğrafa kaydır (bu sırada kaydırma olayı durum üretmesin)
+  const showImage = (i: number) => {
+    const n = Math.min(gallery.length - 1, Math.max(0, i));
+    setActiveImage(n);
+    const el = trackRef.current;
+    if (!el) return;
+    if (programmatic.current) clearTimeout(programmatic.current);
+    programmatic.current = setTimeout(() => (programmatic.current = null), 600);
+    el.scrollTo({ left: n * el.clientWidth, behavior: reducedMotion() ? "auto" : "smooth" });
+  };
+  // Seçili küçük resim görünür alana kayar
+  useEffect(() => {
+    const t = thumbsRef.current?.children[activeImage] as HTMLElement | undefined;
+    t?.scrollIntoView?.({ block: "nearest", inline: "nearest", behavior: reducedMotion() ? "auto" : "smooth" });
+  }, [activeImage]);
 
   const currentPrice = product.basePrice + (selectedVariation?.extraPrice || 0);
   const listShown = product.listPrice && product.listPrice > product.basePrice ? product.listPrice + (selectedVariation?.extraPrice || 0) : null;
@@ -108,14 +133,61 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref }
     <div className="bg-white rounded-3xl border border-neutral-200 overflow-hidden shadow-sm grid grid-cols-1 lg:grid-cols-2">
       {/* Sol: Büyük Boy Gerçek Avize Fotoğraf Alanı */}
       <div className="flex flex-col bg-neutral-900">
-      <div className="relative min-h-[320px] sm:min-h-[440px] flex-1 overflow-hidden flex items-center justify-center">
-        {mainImage ? (
-          <HoverMagnifier key={mainImage} src={mainImage} alt={product.title} onZoom={() => setZoomed(true)} />
+      <div className="group/gal relative min-h-[320px] sm:min-h-[440px] flex-1 overflow-hidden flex items-center justify-center">
+        {gallery.length > 0 ? (
+          <div
+            key={gallery.join("|")}
+            ref={trackRef}
+            data-testid="gallery-track"
+            tabIndex={gallery.length > 1 ? 0 : undefined}
+            aria-label={gallery.length > 1 ? "Ürün fotoğrafları (sol/sağ ok tuşlarıyla değiştirilir)" : undefined}
+            onKeyDown={(e) => {
+              if (gallery.length < 2 || zoomed) return; // Büyüt açıkken gezinmeyi lightbox yönetir
+              if (e.key === "ArrowLeft") {
+                e.preventDefault();
+                showImage(activeImage - 1);
+              } else if (e.key === "ArrowRight") {
+                e.preventDefault();
+                showImage(activeImage + 1);
+              }
+            }}
+            onScroll={(e) => {
+              if (programmatic.current) return;
+              const el = e.currentTarget;
+              const i = Math.round(el.scrollLeft / el.clientWidth);
+              if (i !== activeImage && i >= 0 && i < gallery.length) setActiveImage(i);
+            }}
+            className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-amber-500"
+          >
+            {gallery.map((src, i) => (
+              <div key={src} className="relative shrink-0 w-full h-full snap-center">
+                <HoverMagnifier src={src} alt={i === 0 ? product.title : `${product.title} ${i + 1}. fotoğraf`} onZoom={() => setZoomed(true)} eager={i === 0} />
+              </div>
+            ))}
+          </div>
         ) : (
           <div className="text-amber-400/80 p-8 text-center">
             <span className="text-4xl block mb-2">💡</span>
             <span className="text-xs uppercase tracking-widest text-neutral-400">Yıldırım Avize</span>
           </div>
+        )}
+
+        {gallery.length > 1 && (
+          <>
+            <span data-testid="gallery-counter" aria-live="polite" className="absolute top-4 left-4 z-10 bg-zinc-900/80 text-white text-[11px] font-semibold px-3 py-1.5 rounded-full tabular-nums pointer-events-none">
+              {activeImage + 1} / {gallery.length}
+            </span>
+            {activeImage > 0 && (
+              <button type="button" aria-label="Önceki fotoğraf" onClick={() => showImage(activeImage - 1)} className={`${galleryArrow} left-3`}>
+                <ChevronLeft aria-hidden="true" className="w-6 h-6" />
+              </button>
+            )}
+            {activeImage < gallery.length - 1 && (
+              <button type="button" aria-label="Sonraki fotoğraf" onClick={() => showImage(activeImage + 1)} className={`${galleryArrow} right-3`}>
+                <ChevronRight aria-hidden="true" className="w-6 h-6" />
+              </button>
+            )}
+          </>
         )}
 
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
@@ -127,7 +199,7 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref }
         </div>
       </div>
       {gallery.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto p-3 border-t border-neutral-800" role="tablist" aria-label="Ürün fotoğrafları">
+        <div ref={thumbsRef} className="flex gap-2 overflow-x-auto p-3 border-t border-neutral-800" role="tablist" aria-label="Ürün fotoğrafları">
           {gallery.map((src, i) => (
             <button
               key={src}
@@ -135,7 +207,7 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref }
               role="tab"
               aria-selected={i === activeImage}
               aria-label={`${i + 1}. fotoğraf`}
-              onClick={() => setActiveImage(i)}
+              onClick={() => showImage(i)}
               className={`shrink-0 w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-lg overflow-hidden border-2 transition-colors ${
                 i === activeImage ? "border-amber-500" : "border-transparent opacity-70 hover:opacity-100"
               }`}
@@ -339,7 +411,7 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref }
       </div>
 
       {zoomed && mainImage && (
-        <ImageLightbox src={mainImage} alt={product.title} onClose={() => setZoomed(false)} />
+        <ImageLightbox src={mainImage} alt={product.title} onClose={() => setZoomed(false)} nav={{ count: gallery.length, index: activeImage, onChange: showImage }} />
       )}
     </div>
   );
