@@ -136,6 +136,10 @@ test.describe("m) Ortak sıralama ve filtre", () => {
     // geçersiz değerler varsayılana düşer: dizine alınabilir kalır
     await openOk(page, "/kategori/tum?siralama=zzz");
     expect(await robotsOf(page)).not.toContain("noindex");
+    // açık varsayılan sıralama da dizine alınabilir; canonical parametresizdir
+    await openOk(page, "/kategori/tum?siralama=onerilen");
+    expect(await robotsOf(page)).not.toContain("noindex");
+    expect(await page.locator('link[rel="canonical"]').getAttribute("href")).toBe(plainCanonical);
   });
 
   test("geçersiz ve zararlı parametreler sessizce varsayılana düşer", async ({ page, consoleErrors, serverErrors }) => {

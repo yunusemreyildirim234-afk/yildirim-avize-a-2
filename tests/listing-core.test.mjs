@@ -93,3 +93,13 @@ test("boş sonuç ve URL durumu", () => {
   assert.deepEqual(stateToParams(s), { siralama: "fiyat-artan", kategori: "modern", renk: "bej", fiyat_min: "100.5", fiyat_max: "900" });
   assert.deepEqual(stateToParams(parseListingParams({})), {});
 });
+
+test("sıralama ve dizinleme: varsayılan/geçersiz sıralama dizine alınabilir, geçerli farklı sıralama değil (noindex kararı isDefaultState'e bağlı)", () => {
+  assert.equal(isDefaultState(parseListingParams({})), true);
+  assert.equal(isDefaultState(parseListingParams({ siralama: "onerilen" })), true);
+  assert.equal(isDefaultState(parseListingParams({ siralama: "gecersiz" })), true);
+  assert.equal(isDefaultState(parseListingParams({ siralama: ["gecersiz", "fiyat-artan"] })), true); // yalnızca ilk değer geçerlidir
+  for (const s of ["fiyat-artan", "fiyat-azalan", "ebat-artan", "ebat-azalan", "cok-satan", "one-cikan", "en-yeni"]) {
+    assert.equal(isDefaultState(parseListingParams({ siralama: s })), false, s);
+  }
+});
