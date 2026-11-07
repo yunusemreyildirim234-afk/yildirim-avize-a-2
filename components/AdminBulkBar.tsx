@@ -153,14 +153,14 @@ export default function AdminBulkBar({ ids, scopes, onApplied, extraCategories, 
 
   return (
     <div className="border-t border-amber-200 px-4 sm:px-6 py-3 space-y-3">
-      <div className="flex flex-wrap items-center gap-2 text-xs">
-        <strong className="text-amber-950 mr-2">{ids.length} ürün seçili</strong>
+      <div className="flex flex-nowrap sm:flex-wrap items-center gap-2 text-xs overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 pb-1 [scrollbar-width:thin]">
+        <strong className="text-amber-950 mr-2 shrink-0 whitespace-nowrap">{ids.length} ürün seçili</strong>
         {TABS.map((t) => (
           <button
             key={t.id}
             type="button"
             onClick={() => setTab(t.id)}
-            className={`px-3 py-1.5 rounded-full font-semibold border transition-colors ${
+            className={`shrink-0 min-h-10 px-3 py-1.5 rounded-full font-semibold border transition-colors ${
               tab === t.id ? "bg-neutral-900 text-white border-neutral-900" : "bg-white text-neutral-700 border-neutral-300 hover:border-amber-600"
             }`}
           >

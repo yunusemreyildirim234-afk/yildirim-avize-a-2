@@ -82,6 +82,44 @@ test.describe("Admin paket D: görsel düzen ve bölüme git çubuğu", () => {
     await expect(page.locator("#kurumsal button[aria-expanded]").first()).toHaveAttribute("aria-expanded", "true");
   });
 
+  test("mobil (390): ürün işaretlenince 'bölüme git' çipleri örtülmez, toplu işlem şeridi taşmaz, Seçimi temizle çalışır", async ({ page }) => {
+    const title = `${PREFIX} ${uniq()} toplu`;
+    page.on("dialog", (d) => void d.accept());
+    await openAdmin(page);
+    await createProductViaForm(page, { title, category: "Kristal", price: "999", photos: [png(10, 120, 200)], colors: [{ name: "E2E Renk", stock: "7" }] });
+    await expect.poll(async () => (await productIdByTitle(title)) ?? "", { timeout: 30_000 }).not.toBe("");
+    await page.setViewportSize({ width: 390, height: 844 });
+    await openAdmin(page);
+    await findInProductList(page, title);
+    await page.getByRole("checkbox", { name: `${title} seç` }).check();
+    const region = page.getByRole("region", { name: "Seçilen ürünler" });
+    await expect(region).toBeVisible();
+    await region.getByRole("button", { name: /ürün seçili/ }).click(); // toplu işlem katmanını aç
+    const chips = page.locator('nav[aria-label="Yönetim bölümleri"] a');
+    // Her çip, kendi merkezinde en üstteki öğedir (başka çubuk örtmez) ve çubuk ekranın içindedir
+    const covered = await chips.evaluateAll((els) =>
+      els.flatMap((a) => {
+        const r = a.getBoundingClientRect();
+        if (r.right <= 0 || r.left >= window.innerWidth) return []; // yatay kaydırmayla dışarıdaki çip denetlenmez
+        const hit = document.elementFromPoint(Math.min(Math.max(r.left + r.width / 2, 1), window.innerWidth - 1), r.top + r.height / 2);
+        return hit && (hit === a || a.contains(hit)) ? [] : [a.textContent ?? ""];
+      })
+    );
+    expect(covered, "örtülen bölüm çipleri").toEqual([]);
+    const navBox = (await page.getByRole("navigation", { name: "Yönetim bölümleri" }).boundingBox())!;
+    const regBox = (await region.boundingBox())!;
+    expect(regBox.y, "seçim çubuğu çip çubuğunun altında").toBeGreaterThanOrEqual(navBox.y + navBox.height - 2);
+    const m = await page.evaluate(() => ({ doc: document.documentElement.scrollWidth, win: window.innerWidth }));
+    expect(m.doc, "sayfa yatay taşması").toBeLessThanOrEqual(m.win);
+    // Sekme düğmeleri en az 40 px yüksekliğinde
+    for (const name of ["Stok", "İsim", "Renk Ekle", "Koleksiyon", "İndirim", "Vitrin"]) {
+      const b = await region.getByRole("button", { name, exact: true }).first().boundingBox().catch(() => null);
+      if (b) expect(b.height, `${name} düğmesi`).toBeGreaterThanOrEqual(39.5);
+    }
+    await region.getByRole("button", { name: "Seçimi temizle" }).click();
+    await expect(region.getByText("Toplu işlem için ürünleri işaretleyin.")).toBeVisible();
+  });
+
   // Elle görsel inceleme için: SHOTS=<klasör> verilirse çubuk ve satır görüntülerini alır (verilmezse atlanır)
   test("görsel inceleme ekran görüntüleri (isteğe bağlı)", async ({ page }) => {
     const dir = process.env.SHOTS;

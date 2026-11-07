@@ -40,16 +40,24 @@ export default function AdminSelectionPanel({
   const [away, setAway] = useState(false);
   const count = chips.length;
 
-  // Site başlığı yapışıksa panel onun hemen altında durur
+  // Panel, yapışık site başlığının ve (varsa) yapışık "bölüme git" çubuğunun hemen altında durur: iki çubuğun yüksekliği toplanır, çip çubuğu örtülmez
   useEffect(() => {
-    const measure = () => {
-      const h = document.querySelector("header");
-      const pos = h ? getComputedStyle(h).position : "";
-      setTop(h && (pos === "sticky" || pos === "fixed") ? Math.round(h.getBoundingClientRect().height) : 0);
+    const stuck = (el: Element | null) => {
+      const pos = el ? getComputedStyle(el).position : "";
+      return el && (pos === "sticky" || pos === "fixed") ? Math.round(el.getBoundingClientRect().height) : 0;
     };
+    const header = document.querySelector("header");
+    const nav = document.querySelector('nav[aria-label="Yönetim bölümleri"]');
+    const measure = () => setTop(stuck(header) + stuck(nav));
     measure();
+    const ro = new ResizeObserver(measure);
+    if (header) ro.observe(header);
+    if (nav) ro.observe(nav);
     window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+    };
   }, []);
 
   // Son seçilen satır ekran dışındaysa "Seçtiğim yere dön" görünür
