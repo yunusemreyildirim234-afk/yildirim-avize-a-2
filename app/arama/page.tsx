@@ -45,7 +45,7 @@ export default async function SearchPage({ searchParams }: Props) {
     if (!limited) {
       try {
         // Ortak liste katmanı: taban küme en çok MAX_SEARCH_RESULTS ürün; arama sorgusu için önbellek anahtarı üretilmez
-        listing = await getListing({ where: searchWhere(q), cached: false, cap: MAX_SEARCH_RESULTS }, query);
+        listing = await getListing({ where: searchWhere(q), cached: false, cap: MAX_SEARCH_RESULTS }, query, { search: q });
         total = listing.total;
         const fix = canonicalListing(query, total);
         if (fix) redirect(pageHref(path, fix.page, { q, ...listing.params }, fix.adet));

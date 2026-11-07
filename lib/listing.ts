@@ -6,6 +6,7 @@ import { categoryDisplayTitle } from "@/lib/category-settings";
 import { getCategoryList, getCategorySettings } from "@/lib/category-list";
 import { STOREFRONT_CACHE_SECONDS, getProducts, getProductsCached, getRankedSellerIds, type ProductWithVariations } from "@/lib/products";
 import { productsCacheKey, storefrontTags } from "@/lib/storefront-cache-key";
+import { rankSearchRows } from "@/lib/search-rank";
 import { applyListing, isDefaultState, parseSize, variationAttrs, parseListingParams, stateToParams, type CatMeta, type ListingResult, type ListingRow } from "@/lib/listing-core";
 
 /**
@@ -23,6 +24,7 @@ export type ListingBase =
 
 const ROW_SELECT = {
   id: true,
+  title: true,
   category: true,
   basePrice: true,
   createdAt: true,
@@ -41,6 +43,7 @@ async function loadRows(where: Prisma.ProductWhereInput, cap: number): Promise<L
   });
   return rows.map((r) => ({
     id: r.id,
+    title: r.title,
     cat: categoryKey(r.category),
     price: r.basePrice,
     created: r.createdAt.getTime(),
@@ -56,7 +59,7 @@ async function loadRows(where: Prisma.ProductWhereInput, cap: number): Promise<L
 
 // Önbellek yalnızca denetimli tabanlarda (kategori/koleksiyon koşulu); arama sorgusu başına anahtar üretilmez.
 // Anahtardaki sürüm: satır şekli değişince (v2: colors → vars; v3: yeni renk adları/takma ad — önbellekteki satırlar renk ANAHTARLARINI taşır; v4: satıra Product.ebat ("own") eklendi, eski şekilli satırda own yoktur) eski şekilli önbellek girdileri (dağıtım sonrası eskiyi sun) okunmasın. Şekil değişince artırın.
-const ROWS_CACHE_VERSION = "v4";
+const ROWS_CACHE_VERSION = "v5"; // v5: satıra title eklendi
 const loadRowsCached = (where: Prisma.ProductWhereInput, cap: number) =>
   unstable_cache(() => loadRows(where, cap), ["sf-listing-rows", ROWS_CACHE_VERSION, productsCacheKey(where, cap)], { revalidate: STOREFRONT_CACHE_SECONDS, tags: storefrontTags(where) })();
 
@@ -72,7 +75,8 @@ export interface Listing extends ListingResult {
   fetchPage: (page: number, size: number) => Promise<ProductWithVariations[]>;
 }
 
-export async function getListing(base: ListingBase, query: Record<string, string | string[] | undefined>): Promise<Listing> {
+/** `search`: yalnızca /arama; varsayılan "onerilen" sıralamada başlık alaka kuralı (lib/search-rank.ts) uygulanır, diğer sıralamalar ve kategori sayfaları değişmez. */
+export async function getListing(base: ListingBase, query: Record<string, string | string[] | undefined>, opts: { search?: string } = {}): Promise<Listing> {
   const raw = parseListingParams(query);
   const cats = await categoryMetas();
 
@@ -85,6 +89,8 @@ export async function getListing(base: ListingBase, query: Record<string, string
     const cap = base.cap ?? LISTING_ROW_CAP;
     rows = base.cached ? await loadRowsCached(base.where, cap) : await loadRows(base.where, cap);
   }
+
+  if (opts.search && raw.siralama === "onerilen") rows = rankSearchRows(rows, opts.search);
 
   const rankIds = raw.siralama === "cok-satan" ? await getRankedSellerIds().catch(() => []) : undefined;
   const result = applyListing(rows, raw, { cats, rankIds });

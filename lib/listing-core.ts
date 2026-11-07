@@ -30,6 +30,8 @@ export interface ListingState {
 
 export interface ListingRow {
   id: string;
+  /** Ürün başlığı (yalnızca /arama alaka sırası için; sıralama/filtre çekirdeği kullanmaz) */
+  title?: string;
   /** categoryKey(ürün kategorisi) */
   cat: string;
   /** Kartta gösterilen fiyat (Product.basePrice) */
