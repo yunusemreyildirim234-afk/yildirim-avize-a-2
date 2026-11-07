@@ -30,7 +30,7 @@ export default function PageSizeLinks({
       <div role="group" aria-labelledby="sayfa-basina" className="flex items-center gap-1">
         {OPTIONS.map((o) =>
           o.adet === current ? (
-            <span key={o.adet} aria-current="true" className="inline-flex h-8 min-w-8 items-center justify-center rounded-lg border border-zinc-900 bg-zinc-900 px-2.5 font-semibold text-white">
+            <span key={o.adet} aria-current="true" className="inline-flex h-10 min-w-10 sm:h-8 sm:min-w-8 items-center justify-center rounded-lg border border-zinc-900 bg-zinc-900 px-2.5 font-semibold text-white">
               {o.label}
             </span>
           ) : (
@@ -38,7 +38,7 @@ export default function PageSizeLinks({
               key={o.adet}
               href={adetHref(path, o.adet, page, size, params)}
               rel="nofollow"
-              className="inline-flex h-8 min-w-8 items-center justify-center rounded-lg border border-zinc-200 bg-white px-2.5 font-medium text-zinc-700 hover:border-amber-600 hover:text-amber-800 focus-visible:outline-2 focus-visible:outline-amber-600"
+              className="inline-flex h-10 min-w-10 sm:h-8 sm:min-w-8 items-center justify-center rounded-lg border border-zinc-200 bg-white px-2.5 font-medium text-zinc-700 hover:border-amber-600 hover:text-amber-800 focus-visible:outline-2 focus-visible:outline-amber-600"
             >
               {o.label}
             </Link>

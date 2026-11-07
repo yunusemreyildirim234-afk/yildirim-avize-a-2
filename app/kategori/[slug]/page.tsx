@@ -105,7 +105,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
 
   return (
     <main className="min-h-screen bg-white pb-20">
-      <section className="bg-zinc-50 border-b border-zinc-200 py-12 px-4 text-center">
+      <section className="bg-zinc-50 border-b border-zinc-200 py-8 sm:py-12 px-4 text-center">
         <div className="max-w-3xl mx-auto space-y-3">
           <Breadcrumbs
             className="text-zinc-500 mb-2 flex justify-center"
@@ -116,7 +116,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
         </div>
       </section>
 
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-10">
         <ProductListing
           path={path}
           listing={listing}

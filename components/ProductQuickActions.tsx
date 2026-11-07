@@ -61,7 +61,7 @@ export function FavoriteButton({ product, className = "" }: { product: QuickProd
             type="button"
             onClick={() => setBubble(false)}
             aria-label="Bildirimi kapat"
-            className="rounded-full p-0.5 hover:bg-white/20"
+            className="relative rounded-full p-0.5 hover:bg-white/20 after:absolute after:-inset-3 after:content-['']"
           >
             <X aria-hidden="true" className="w-3 h-3" />
           </button>
@@ -126,7 +126,7 @@ export function CartStepper({ product, inlineToast = false }: { product: QuickPr
             type="button"
             onClick={() => setToast(false)}
             aria-label="Bildirimi kapat"
-            className="rounded-full p-0.5 hover:bg-white/20"
+            className="relative rounded-full p-0.5 hover:bg-white/20 after:absolute after:-inset-3 after:content-['']"
           >
             <X aria-hidden="true" className="w-3 h-3" />
           </button>

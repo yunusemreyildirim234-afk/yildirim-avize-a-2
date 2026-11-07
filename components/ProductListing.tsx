@@ -92,17 +92,17 @@ export default function ProductListing({
         clearHref={clearHref}
         filtered={filtered}
       />
-      <div className="min-w-0 pt-4 lg:pt-0">
+      <div className="min-w-0 pt-3 lg:pt-0">
         {toolbar}
         {chips.length > 0 && (
           <div className="mb-5 flex flex-wrap items-center gap-2" aria-label="Seçili filtreler" role="group">
             {chips.map((c) => (
-              <Link key={c.label} href={c.to} rel="nofollow" aria-label={`${c.label} filtresini kaldır`} className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50 px-3 text-xs font-medium text-amber-950 hover:bg-amber-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-600">
+              <Link key={c.label} href={c.to} rel="nofollow" aria-label={`${c.label} filtresini kaldır`} className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50 px-3 text-xs font-medium text-amber-950 hover:bg-amber-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-600">
                 {c.label}
                 <X className="h-3.5 w-3.5" aria-hidden="true" />
               </Link>
             ))}
-            <Link href={clearHref} rel="nofollow" className="inline-flex min-h-9 items-center px-2 text-xs font-semibold text-zinc-900 underline underline-offset-2">
+            <Link href={clearHref} rel="nofollow" className="inline-flex min-h-10 items-center px-2 text-xs font-semibold text-zinc-900 underline underline-offset-2">
               Filtreleri temizle
             </Link>
           </div>
