@@ -6,7 +6,7 @@ import { maskEmail } from "@/lib/admin-password";
 import AdminPayoutCard from "@/components/AdminPayoutCard";
 import { PAYOUT_EXCLUDED_STATUSES, buildPayouts, payoutWindowStart } from "@/lib/payout";
 import Link from "next/link";
-import { Building2, KeyRound, MessageSquare, Package, ShieldCheck, ShoppingBag, Star, Users } from "lucide-react";
+import { ArrowLeft, Building2, KeyRound, MapPin, MessageSquare, Package, Phone, Receipt, ShieldCheck, ShoppingBag, Star, StickyNote, Truck, Users } from "lucide-react";
 import AdminSectionNav from "@/components/AdminSectionNav";
 import nextDynamic from "next/dynamic";
 import { prisma } from "@/lib/db";
@@ -175,15 +175,15 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           <div className="flex items-center gap-3">
             <Link
               href="/kargo-takip"
-              className="text-xs font-semibold bg-amber-50 border border-amber-300 text-amber-900 px-4 py-2.5 rounded-xl hover:bg-amber-100 transition-colors w-fit"
+              className="text-xs font-semibold bg-amber-50 border border-amber-300 text-amber-900 px-4 py-2.5 rounded-xl hover:bg-amber-100 transition-colors inline-flex items-center gap-1.5 w-fit"
             >
-              🚚 Kargo Takip Sayfası
+              <Truck aria-hidden="true" className="w-3.5 h-3.5 shrink-0" /> Kargo Takip Sayfası
             </Link>
             <Link
               href="/"
-              className="text-xs font-semibold bg-white border border-neutral-300 text-neutral-700 px-4 py-2.5 rounded-xl hover:bg-neutral-50 transition-colors w-fit"
+              className="text-xs font-semibold bg-white border border-neutral-300 text-neutral-700 px-4 py-2.5 rounded-xl hover:bg-neutral-50 transition-colors inline-flex items-center gap-1.5 w-fit"
             >
-              ← Mağaza Vitrinine Dön
+              <ArrowLeft aria-hidden="true" className="w-3.5 h-3.5 shrink-0" /> Mağaza Vitrinine Dön
             </Link>
           </div>
         </div>
@@ -383,23 +383,23 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                         <span className="font-bold text-neutral-900 block">{order.user.name}</span>
                         <span className="text-neutral-500 text-[11px] block">{cleanGuestEmail(order.user.email)}</span>
                         {order.phone && (
-                          <span className="text-neutral-500 text-[11px] font-mono block mt-0.5">
-                            📞 {order.phone}
+                          <span className="text-neutral-500 text-[11px] font-mono mt-0.5 flex items-center gap-1">
+                            <Phone aria-hidden="true" className="w-3.5 h-3.5 shrink-0" /> {order.phone}
                           </span>
                         )}
-                        <span className="text-neutral-500 text-[10px] block mt-0.5">
-                          🧾 {order.invoiceType === "CORPORATE"
+                        <span className="text-neutral-500 text-[10px] mt-0.5 flex items-start gap-1">
+                          <Receipt aria-hidden="true" className="w-3.5 h-3.5 shrink-0" /> <span>{order.invoiceType === "CORPORATE"
                             ? `Kurumsal: ${order.companyTitle ?? "-"} • VD: ${order.taxOffice ?? "-"} • VKN: ${order.taxNumber ?? "-"}`
-                            : `Bireysel${order.taxNumber ? ` • T.C. ${order.taxNumber}` : ""}`}
+                            : `Bireysel${order.taxNumber ? ` • T.C. ${order.taxNumber}` : ""}`}</span>
                         </span>
                         {order.orderNote && (
                           <span className="block mt-1.5 max-w-xs rounded-lg bg-amber-50 border border-amber-200 px-2.5 py-1.5 text-[11px] text-amber-950 whitespace-pre-line">
-                            📝 <strong>Sipariş Notu:</strong> {order.orderNote}
+                            <StickyNote aria-hidden="true" className="inline w-3.5 h-3.5 -mt-0.5" /> <strong>Sipariş Notu:</strong> {order.orderNote}
                           </span>
                         )}
                         {order.address && (
                           <span className="text-neutral-400 text-[10px] block mt-0.5 max-w-xs line-clamp-2">
-                            📍 {order.address}{" "}
+                            <MapPin aria-hidden="true" className="inline w-3 h-3 -mt-0.5" /> {order.address}{" "}
                             {order.buyerCityName || order.buyerStateName
                               ? `(${order.buyerCityName || ""} / ${order.buyerStateName || ""})`
                               : ""}
@@ -417,12 +417,12 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                       </td>
                       <td className="p-4 space-y-1">
                         {order.shippingType === "BEYOGLU_MAGAZA_TESLIM" ? (
-                          <span className="inline-block bg-amber-100 text-amber-900 text-[11px] font-semibold px-2.5 py-1 rounded-full">
-                            📍 Mağazadan Teslim
+                          <span className="inline-flex items-center gap-1 bg-amber-100 text-amber-900 text-[11px] font-semibold px-2.5 py-1 rounded-full">
+                            <MapPin aria-hidden="true" className="w-3.5 h-3.5 shrink-0" /> Mağazadan Teslim
                           </span>
                         ) : (
-                          <span className="inline-block bg-blue-100 text-blue-900 text-[11px] font-semibold px-2.5 py-1 rounded-full">
-                            📦 Adrese Teslim
+                          <span className="inline-flex items-center gap-1 bg-blue-100 text-blue-900 text-[11px] font-semibold px-2.5 py-1 rounded-full">
+                            <Package aria-hidden="true" className="w-3.5 h-3.5 shrink-0" /> Adrese Teslim
                           </span>
                         )}
                         <div className="font-bold text-neutral-900 text-sm pt-1">

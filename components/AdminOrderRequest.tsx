@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { TriangleAlert } from "lucide-react";
 
 interface Props {
   orderId: string;
@@ -52,7 +53,7 @@ export default function AdminOrderRequest({ orderId, type, status, reason }: Pro
 
   return (
     <div className="mt-2 rounded-xl border border-red-300 bg-red-50 p-3 space-y-2 max-w-[260px]">
-      <p className="text-[11px] font-bold text-red-800">⚠ {label} talebi bekliyor</p>
+      <p className="flex items-center gap-1.5 text-[11px] font-bold text-red-800"><TriangleAlert aria-hidden="true" className="w-3.5 h-3.5" /> {label} talebi bekliyor</p>
       {reason && <p className="text-[11px] text-red-900 whitespace-pre-line">&ldquo;{reason}&rdquo;</p>}
       <input
         aria-label="Müşteriye not"

@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Trash2 } from "lucide-react";
+import { Trash2, Undo2 } from "lucide-react";
 
 const DELAY_MS = 8000;
 let pending = 0; // aynı anda bekleyen silme çubuklarını alt alta dizmek için
@@ -88,8 +88,8 @@ export default function AdminDeleteButton({
       {waiting && (
         <div role="status" style={{ bottom: `${1 + slot * 3.25}rem` }} className="fixed left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-full bg-neutral-900 text-white text-xs pl-5 pr-2 py-2 shadow-2xl">
           <span>Kayıt {DELAY_MS / 1000} sn içinde silinecek.</span>
-          <button type="button" onClick={cancel} className="rounded-full bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold px-3 py-1.5">
-            ↩ Geri Al
+          <button type="button" onClick={cancel} className="inline-flex items-center gap-1.5 rounded-full bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold px-3 py-1.5">
+            <Undo2 aria-hidden="true" className="w-3.5 h-3.5" /> Geri Al
           </button>
         </div>
       )}

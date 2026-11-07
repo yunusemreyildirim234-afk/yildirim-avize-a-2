@@ -235,7 +235,7 @@ test.describe("Havale siparişi (uçtan uca)", () => {
     await expect(row).toContainText(CUSTOMER.phone);
     await expect(row).toContainText(CUSTOMER.address);
     await expect(row).toContainText("1x E2E Renk");
-    await expect(row).toContainText("📦 Adrese Teslim");
+    await expect(row).toContainText("Adrese Teslim"); // simge (lucide) metin değildir
     await expect(row).toContainText(`${o.totalAmount.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺`);
     await expect(row.getByLabel("Sipariş durumu")).toHaveValue("PENDING_NEW");
     // Tarih + saat: veritabanının hesapladığı İstanbul saatiyle aynı

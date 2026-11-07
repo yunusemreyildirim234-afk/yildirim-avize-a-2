@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Boxes, ChevronDown, ExternalLink, Search } from "lucide-react";
+import { Boxes, ChevronDown, ExternalLink, Lightbulb, Pencil, Search, Trash2, Undo2 } from "lucide-react";
 import { useOpenOnHash } from "@/components/useOpenOnHash";
 import { useRouter } from "next/navigation";
 import AdminBulkBar from "@/components/AdminBulkBar";
@@ -461,7 +461,7 @@ Yine de geri alınsın mı?`)) await doUndo(true);
                 {coverImageOf(product) ? (
                   <img src={coverImageOf(product)!} alt={product.title} width={64} height={64} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-amber-400 text-xs font-serif">💡</div>
+                  <div className="w-full h-full flex items-center justify-center text-amber-400 text-xs font-serif"><Lightbulb aria-hidden="true" className="w-5 h-5" /></div>
                 )}
               </a>
               <div className="min-w-0">
@@ -535,18 +535,18 @@ Yine de geri alınsın mı?`)) await doUndo(true);
               type="button"
               onClick={() => setEditingId((id) => (id === product.id ? null : product.id))}
               aria-expanded={editingId === product.id}
-              className="inline-flex min-h-10 items-center text-neutral-600 hover:text-amber-700 text-xs font-medium px-3 rounded-lg hover:bg-amber-50 transition-colors"
+              className="inline-flex min-h-10 items-center gap-1.5 text-neutral-600 hover:text-amber-700 text-xs font-medium px-3 rounded-lg hover:bg-amber-50 transition-colors"
             >
-              ✏️ {editingId === product.id ? "Kapat" : "Düzenle"}
+              <Pencil aria-hidden="true" className="w-3.5 h-3.5" /> {editingId === product.id ? "Kapat" : "Düzenle"}
             </button>
             <button
               type="button"
               disabled={loadingId === product.id}
               onClick={() => handleDeleteProduct(product.id, product.title)}
-              className="ml-4 inline-flex min-h-10 items-center border border-red-200 text-red-700 hover:bg-red-50 text-xs font-semibold px-3 rounded-lg transition-colors disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-red-600"
+              className="ml-4 inline-flex min-h-10 items-center gap-1.5 border border-red-200 text-red-700 hover:bg-red-50 text-xs font-semibold px-3 rounded-lg transition-colors disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-red-600"
               title="Avizeyi Katalogdan Sil"
             >
-              🗑️ Modeli Sil
+              <Trash2 aria-hidden="true" className="w-3.5 h-3.5" /> Modeli Sil
             </button>
             </div>
           </div>
@@ -575,8 +575,8 @@ Yine de geri alınsın mı?`)) await doUndo(true);
       {undo && (
         <div role="status" className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-full bg-neutral-900 text-white text-xs pl-5 pr-2 py-2 shadow-2xl">
           <span>{undo.label} uygulandı.</span>
-          <button type="button" disabled={undoing} onClick={() => doUndo()} className="rounded-full bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold px-3 py-1.5 disabled:opacity-60">
-            {undoing ? "Geri alınıyor..." : "↩ Son İşlemi Geri Al"}
+          <button type="button" disabled={undoing} onClick={() => doUndo()} className="inline-flex items-center gap-1.5 rounded-full bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold px-3 py-1.5 disabled:opacity-60">
+            {undoing ? "Geri alınıyor..." : <><Undo2 aria-hidden="true" className="w-3.5 h-3.5" /> Son İşlemi Geri Al</>}
           </button>
           <button type="button" aria-label="Kapat" onClick={() => setUndo(null)} className="px-2 text-neutral-400 hover:text-white">
             ×

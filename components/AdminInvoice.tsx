@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Receipt } from "lucide-react";
 import { toast } from "sonner";
 import type { InvoiceMeta } from "@/lib/invoice";
 
@@ -59,7 +60,7 @@ export default function AdminInvoice({ orderId, state, meta }: Props) {
 
   return (
     <div className="mt-2 rounded-xl border border-neutral-200 bg-neutral-50 p-3 space-y-2 max-w-xs">
-      <p className="text-[11px] font-bold text-neutral-800">🧾 Fatura</p>
+      <p className="flex items-center gap-1.5 text-[11px] font-bold text-neutral-800"><Receipt aria-hidden="true" className="w-3.5 h-3.5" /> Fatura</p>
       <input ref={input} type="file" accept="application/pdf" aria-label="Fatura PDF dosyası" className="sr-only" onChange={(e) => onFile(e.target.files?.[0])} />
 
       {meta ? (
