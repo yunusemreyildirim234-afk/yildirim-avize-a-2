@@ -94,7 +94,7 @@ test.describe("Admin paket D: görsel düzen ve bölüme git çubuğu", () => {
     await page.getByRole("checkbox", { name: `${title} seç` }).check();
     const region = page.getByRole("region", { name: "Seçilen ürünler" });
     await expect(region).toBeVisible();
-    await region.getByRole("button", { name: /ürün seçili/ }).click(); // toplu işlem katmanını aç
+    await region.locator('button[aria-controls="admin-selection-detail"]').click(); // toplu işlem katmanını aç
     const chips = page.locator('nav[aria-label="Yönetim bölümleri"] a');
     // Her çip, kendi merkezinde en üstteki öğedir (başka çubuk örtmez) ve çubuk ekranın içindedir
     const covered = await chips.evaluateAll((els) =>
@@ -115,6 +115,21 @@ test.describe("Admin paket D: görsel düzen ve bölüme git çubuğu", () => {
     for (const name of ["Stok", "İsim", "Renk Ekle", "Koleksiyon", "İndirim", "Vitrin"]) {
       const b = await region.getByRole("button", { name, exact: true }).first().boundingBox().catch(() => null);
       if (b) expect(b.height, `${name} düğmesi`).toBeGreaterThanOrEqual(39.5);
+    }
+    const shots = process.env.SHOTS; // isteğe bağlı görsel inceleme: 390/1280, açık/koyu
+    if (shots) {
+      for (const [w, h] of [[390, 844], [1280, 800]] as const) {
+        await page.setViewportSize({ width: w, height: h });
+        for (const dark of [false, true]) {
+          await page.evaluate((d) => document.documentElement.classList.toggle("dark", d), dark);
+          await region.scrollIntoViewIfNeeded();
+          await page.evaluate(() => window.scrollBy(0, 260)); // çubuk yapışık hâlde görünsün
+          await page.waitForTimeout(300);
+          await page.screenshot({ path: `${shots}/k2-admin-secim-${w}-${dark ? "koyu" : "acik"}.png` });
+        }
+      }
+      await page.evaluate(() => document.documentElement.classList.remove("dark"));
+      await page.setViewportSize({ width: 390, height: 844 });
     }
     await region.getByRole("button", { name: "Seçimi temizle" }).click();
     await expect(region.getByText("Toplu işlem için ürünleri işaretleyin.")).toBeVisible();
