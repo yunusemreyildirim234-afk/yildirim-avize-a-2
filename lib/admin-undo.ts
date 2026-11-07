@@ -4,6 +4,7 @@ import { signSession, verifySession } from "@/lib/session";
 import { bulkTiersOf } from "@/lib/bulk-pricing";
 import { normalizeEbat } from "@/lib/listing-core";
 import { productUploadIds } from "@/lib/variation-input";
+import { isUndoValue, variationUndoEntry, type VarState, type VarUndoEntry } from "@/lib/undo-variation";
 
 // Yönetici "Geri Al" altyapısı.
 //  - Sunucu işlemden SONRA, işlemin gerçekten değiştirdiği alanları (önceki değerleriyle) ve stok FARKLARINI (delta) hesaplar
@@ -31,11 +32,11 @@ type Fields = Partial<Record<FieldKey, unknown>>;
 export interface ProductState {
   id: string;
   fields: Record<FieldKey, unknown>;
-  variations: { id: string; stock: number; extraPrice: number }[];
+  variations: VarState[];
 }
 
 export async function snapshotProducts(ids: string[]): Promise<ProductState[]> {
-  const rows = await prisma.product.findMany({ where: { id: { in: ids } }, include: { variations: { select: { id: true, stock: true, extraPrice: true } } } });
+  const rows = await prisma.product.findMany({ where: { id: { in: ids } }, include: { variations: { select: { id: true, stock: true, extraPrice: true, variationValue: true } } } });
   return rows.map((p) => ({
     id: p.id,
     fields: { title: p.title, category: p.category, basePrice: p.basePrice, listPrice: p.listPrice, isFeatured: p.isFeatured, isBestSeller: p.isBestSeller, bulkTiers: p.bulkTiers, modelCode: p.modelCode, images: p.images, imageUrl: p.imageUrl, active: p.active, couponAllowed: p.couponAllowed, pickupDiscountPct: p.pickupDiscountPct, transferDiscountPct: p.transferDiscountPct, ebat: p.ebat },
@@ -60,7 +61,7 @@ interface UndoPayload extends Record<string, unknown> {
   kind: "undo";
   iat: number;
   products: { id: string; fields: Fields; afterUpdatedAt: string | null }[];
-  variations: { id: string; stockDelta?: number; extraPrice?: number }[];
+  variations: VarUndoEntry[];
   deleteVariationIds: string[];
   recreate: { product: Record<string, unknown>; variations: Record<string, unknown>[] }[];
 }
@@ -85,10 +86,8 @@ export async function buildUndoToken(before: ProductState[], extra: UndoExtra = 
     for (const v of b.variations) {
       const c = curVar.get(v.id);
       if (!c) continue;
-      const entry: { id: string; stockDelta?: number; extraPrice?: number } = { id: v.id };
-      if (c.stock !== v.stock) entry.stockDelta = c.stock - v.stock;
-      if (c.extraPrice !== v.extraPrice) entry.extraPrice = v.extraPrice;
-      if (entry.stockDelta !== undefined || entry.extraPrice !== undefined) payload.variations.push(entry);
+      const entry = variationUndoEntry(v, c);
+      if (entry) payload.variations.push(entry);
     }
   }
   if (!payload.products.length && !payload.variations.length && !payload.deleteVariationIds.length && !payload.recreate.length) return null;
@@ -229,12 +228,16 @@ export async function readUndoToken(token: unknown) {
     }),
     variations: p.variations.map((v) => {
       if (!isObj(v)) return bad("variation");
-      const out: { id: string; stockDelta?: number; extraPrice?: number } = { id: id(v.id, "variation.id") };
+      const out: VarUndoEntry = { id: id(v.id, "variation.id") };
       if (v.stockDelta !== undefined) {
         if (typeof v.stockDelta !== "number" || !Number.isInteger(v.stockDelta) || Math.abs(v.stockDelta) > 1e7) bad("stockDelta");
         out.stockDelta = v.stockDelta as number;
       }
       if (v.extraPrice !== undefined) out.extraPrice = num(v.extraPrice, "extraPrice") as number;
+      if (v.variationValue !== undefined) {
+        if (!isUndoValue(v.variationValue)) bad("variationValue");
+        out.variationValue = v.variationValue as string;
+      }
       return out;
     }),
     deleteVariationIds: (Array.isArray(p.deleteVariationIds) ? p.deleteVariationIds : (bad("deleteVariationIds") as never)).slice(0, 5000).map((x: unknown) => id(x, "deleteVariationId")),
@@ -276,6 +279,7 @@ export async function restoreFromToken(token: unknown, force: boolean): Promise<
     }
     for (const v of snap.variations) {
       if (v.extraPrice !== undefined) await tx.productVariation.update({ where: { id: v.id }, data: { extraPrice: v.extraPrice } });
+      if (v.variationValue !== undefined) await tx.productVariation.update({ where: { id: v.id }, data: { variationValue: v.variationValue } });
       if (v.stockDelta) {
         // Ters delta: atomik ve negatife düşmeyi engeller (arada siparişle stok azaldıysa reddedilir)
         const n = await tx.$executeRaw`UPDATE "ProductVariation" SET "stock" = "stock" - ${v.stockDelta} WHERE "id" = ${v.id} AND "stock" - ${v.stockDelta} >= 0`;
