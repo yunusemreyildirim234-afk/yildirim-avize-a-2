@@ -49,11 +49,11 @@ export default function Pagination({
             …
           </span>
         ) : it === page ? (
-          <span key={it} aria-current="page" className={`${base} hidden sm:inline-flex border-zinc-900 bg-zinc-900 text-white`}>
+          <span key={it} aria-current="page" className={`${base} max-sm:hidden border-zinc-900 bg-zinc-900 text-white`}>
             {it}
           </span>
         ) : (
-          <Link key={it} href={href(it)} aria-label={`Sayfa ${it}`} className={`${idle} hidden sm:inline-flex`}>
+          <Link key={it} href={href(it)} aria-label={`Sayfa ${it}`} className={`${idle} max-sm:hidden`}>
             {it}
           </Link>
         )
