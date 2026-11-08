@@ -4,6 +4,7 @@ import { getLadderContext } from "@/lib/showcase";
 import { priceLadder } from "@/lib/price-ladder";
 import { rateLimit, tooMany } from "@/lib/rate-limit";
 import { coverImageOf } from "@/lib/variation-input";
+import { getVisibleWhere } from "@/lib/visibility";
 
 // Sepet/favoriler gibi istemci listeleri için güncel görsel, fiyat ve stok bilgisi
 export async function GET(req: Request) {
@@ -17,7 +18,7 @@ export async function GET(req: Request) {
   if (ids.length === 0) return NextResponse.json({ products: [] });
 
   const products = await prisma.product.findMany({
-    where: { id: { in: ids }, active: true },
+    where: { AND: [await getVisibleWhere(), { id: { in: ids } }] },
     select: {
       id: true,
       title: true,

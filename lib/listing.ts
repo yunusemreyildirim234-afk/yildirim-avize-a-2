@@ -6,6 +6,7 @@ import { categoryDisplayTitle } from "@/lib/category-settings";
 import { getCategoryList, getCategorySettings } from "@/lib/category-list";
 import { STOREFRONT_CACHE_SECONDS, getProducts, getProductsCached, getRankedSellerIds, type ProductWithVariations } from "@/lib/products";
 import { productsCacheKey, storefrontTags } from "@/lib/storefront-cache-key";
+import { getVisibleWhere } from "@/lib/visibility";
 import { rankSearchRows } from "@/lib/search-rank";
 import { applyListing, isDefaultState, parseSize, variationAttrs, parseListingParams, stateToParams, type CatMeta, type ListingResult, type ListingRow } from "@/lib/listing-core";
 
@@ -31,12 +32,12 @@ const ROW_SELECT = {
   updatedAt: true,
   isFeatured: true,
   ebat: true,
-  variations: { where: { variationType: { in: ["Renk", "Seçenek"] } }, select: { variationType: true, variationValue: true } },
+  variations: { select: { variationType: true, variationValue: true, stock: true } }, // stok: "stokta" sırası/filtresi; renk-ebat yalnızca Renk/Seçenek türlerinden
 } satisfies Prisma.ProductSelect;
 
 async function loadRows(where: Prisma.ProductWhereInput, cap: number): Promise<ListingRow[]> {
   const rows = await prisma.product.findMany({
-    where: { active: true, ...where },
+    where: { AND: [await getVisibleWhere(), where] }, // vitrin görünürlüğü TEK kaynak: lib/visibility.ts
     select: ROW_SELECT,
     orderBy: [{ updatedAt: "desc" }, { id: "asc" }], // getProducts ile aynı varsayılan sıra
     take: cap,
@@ -50,7 +51,9 @@ async function loadRows(where: Prisma.ProductWhereInput, cap: number): Promise<L
     updated: r.updatedAt.getTime(),
     featured: r.isFeatured,
     own: r.ebat ? parseSize(r.ebat) : null,
+    inStock: r.variations.some((v) => v.stock > 0),
     vars: r.variations.flatMap((v) => {
+      if (v.variationType !== "Renk" && v.variationType !== "Seçenek") return [];
       const a = variationAttrs(v.variationType, v.variationValue);
       return a.c || a.s ? [a] : [];
     }),
@@ -59,7 +62,7 @@ async function loadRows(where: Prisma.ProductWhereInput, cap: number): Promise<L
 
 // Önbellek yalnızca denetimli tabanlarda (kategori/koleksiyon koşulu); arama sorgusu başına anahtar üretilmez.
 // Anahtardaki sürüm: satır şekli değişince (v2: colors → vars; v3: yeni renk adları/takma ad — önbellekteki satırlar renk ANAHTARLARINI taşır; v4: satıra Product.ebat ("own") eklendi, eski şekilli satırda own yoktur) eski şekilli önbellek girdileri (dağıtım sonrası eskiyi sun) okunmasın. Şekil değişince artırın.
-const ROWS_CACHE_VERSION = "v5"; // v5: satıra title eklendi
+const ROWS_CACHE_VERSION = "v6"; // v5: satıra title eklendi; v6: satıra inStock eklendi
 const loadRowsCached = (where: Prisma.ProductWhereInput, cap: number) =>
   unstable_cache(() => loadRows(where, cap), ["sf-listing-rows", ROWS_CACHE_VERSION, productsCacheKey(where, cap)], { revalidate: STOREFRONT_CACHE_SECONDS, tags: storefrontTags(where) })();
 

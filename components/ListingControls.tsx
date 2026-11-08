@@ -91,6 +91,7 @@ export default function ListingFilters({
   total,
   clearHref,
   filtered,
+  soldOutFilter = false,
 }: {
   path: string;
   fixed: Fixed;
@@ -101,6 +102,8 @@ export default function ListingFilters({
   total: number;
   clearHref: string;
   filtered: boolean;
+  /** Listede stoksuz görünen ürün varsa "Sadece stokta olanlar" kutusu gösterilir */
+  soldOutFilter?: boolean;
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -245,6 +248,13 @@ export default function ListingFilters({
                 ))}
               </select>
             </div>
+
+            {soldOutFilter && (
+              <label className={row} data-testid="stok-filtre">
+                <input type="checkbox" name="stok" value="var" defaultChecked={params.stok === "var"} className={box} />
+                <span className="flex-1">Sadece stokta olanlar</span>
+              </label>
+            )}
 
             {nCats > 1 && (
               <fieldset>

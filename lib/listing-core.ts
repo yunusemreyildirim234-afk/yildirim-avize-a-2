@@ -26,6 +26,8 @@ export interface ListingState {
   ebatlar: string[]; // ebat anahtarları ("45x25")
   fiyatMin?: number;
   fiyatMax?: number;
+  /** "Sadece stokta olanlar" (?stok=var) */
+  stok?: boolean;
 }
 
 export interface ListingRow {
@@ -39,6 +41,8 @@ export interface ListingRow {
   created: number;
   updated: number;
   featured: boolean;
+  /** En az bir varyasyonu stokta; yoksa (eski satır şekli) stokta sayılır */
+  inStock?: boolean;
   /** Her varyasyonun renk ve ebatı (ikisi birlikte seçilince AYNI varyasyonda eşleşmeleri gerekir) */
   vars: VariationAttrs[];
   /** Product.ebat (ürün düzeyi; tüm varyasyonlar için geçerli sayılır); yoksa null */
@@ -106,13 +110,14 @@ export function parseListingParams(query: Params): ListingState {
     kategoriler: tokens(query.kategori),
     renkler: tokens(query.renk),
     ebatlar: sizeTokens(query.ebat),
+    ...(firstOf(query.stok)?.trim().toLowerCase() === "var" ? { stok: true } : {}),
     ...(fiyatMin !== undefined ? { fiyatMin } : {}),
     ...(fiyatMax !== undefined ? { fiyatMax } : {}),
   };
 }
 
 export const isDefaultState = (s: ListingState) => s.siralama === "onerilen" && !hasFilters(s);
-export const hasFilters = (s: ListingState) => s.kategoriler.length > 0 || s.renkler.length > 0 || s.ebatlar.length > 0 || s.fiyatMin !== undefined || s.fiyatMax !== undefined;
+export const hasFilters = (s: ListingState) => s.kategoriler.length > 0 || s.renkler.length > 0 || s.ebatlar.length > 0 || s.fiyatMin !== undefined || s.fiyatMax !== undefined || s.stok === true;
 
 const num = (n: number) => String(Number.isInteger(n) ? n : Math.round(n * 100) / 100);
 
@@ -123,6 +128,7 @@ export function stateToParams(s: ListingState): Record<string, string> {
   if (s.kategoriler.length) o.kategori = s.kategoriler.join(",");
   if (s.renkler.length) o.renk = s.renkler.join(",");
   if (s.ebatlar.length) o.ebat = s.ebatlar.join(",");
+  if (s.stok) o.stok = "var";
   if (s.fiyatMin !== undefined) o.fiyat_min = num(s.fiyatMin);
   if (s.fiyatMax !== undefined) o.fiyat_max = num(s.fiyatMax);
   return o;
@@ -291,6 +297,8 @@ export interface ListingResult {
   ids: string[];
   total: number;
   facets: ListingFacets;
+  /** Filtrelenmemiş evrende stoksuz (görünen) ürün var */
+  hasSoldOut: boolean;
 }
 
 /**
@@ -298,7 +306,9 @@ export interface ListingResult {
  * Filtre sayıları standart facet davranışıdır: her grup, KENDİSİ hariç diğer aktif filtrelere göre sayılır.
  * Her sıralamada eşitlik kararlı ikincil sırayla (varsayılan sıra / id) çözülür.
  */
-export function applyListing(rows: readonly ListingRow[], raw: ListingState, ctx: { cats: readonly CatMeta[]; rankIds?: readonly string[] }): ListingResult {
+export function applyListing(allRows: readonly ListingRow[], raw: ListingState, ctx: { cats: readonly CatMeta[]; rankIds?: readonly string[] }): ListingResult {
+  const hasSoldOut = allRows.some((r) => r.inStock === false);
+  const rows = raw.stok ? allRows.filter((r) => r.inStock !== false) : allRows; // "stokta olanlar": sayılar da bu kümeye göredir
   const catByKey = new Map(ctx.cats.map((c) => [c.key, c]));
   const universeSlugs = new Set<string>();
   const universeColors = new Set<string>();
@@ -365,7 +375,9 @@ export function applyListing(rows: readonly ListingRow[], raw: ListingState, ctx
     const d = cmp[state.siralama](a, b);
     return Number.isNaN(d) || d === 0 ? byIdx(a, b) : d; // Infinity - Infinity = NaN → varsayılan sıra
   });
-  const matched = sorted.filter((r) => okCat(r) && okColor(r) && okPrice(r));
+  // Stoklu ürünler HER sıralamada önde, stoksuzlar arkada; her grup kendi içinde seçili sıralamayı korur (kararlı bölme)
+  const ordered = [...sorted.filter((r) => r.inStock !== false), ...sorted.filter((r) => r.inStock === false)];
+  const matched = ordered.filter((r) => okCat(r) && okColor(r) && okPrice(r));
 
   // Facetler
   const catCount = new Map<string, number>();
@@ -428,6 +440,7 @@ export function applyListing(rows: readonly ListingRow[], raw: ListingState, ctx
     state,
     ids: matched.map((r) => r.id),
     total: matched.length,
+    hasSoldOut,
     facets: { categories, colors, sizes, price: Number.isFinite(pMin) ? { min: Math.floor(pMin), max: Math.ceil(pMax) } : null },
   };
 }

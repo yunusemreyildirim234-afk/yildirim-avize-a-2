@@ -14,8 +14,8 @@ export const clipQuery = (raw: string | null | undefined) => (raw || "").slice(0
  */
 export function searchWhere(q: string): Prisma.ProductWhereInput {
   const code = q.trim();
+  // Görünürlük (aktif / "Tükendi" görünen pasif) çağıranda lib/visibility.ts getVisibleWhere ile birleştirilir
   return {
-    active: true,
     OR: [
       { modelCode: code },
       { title: { contains: q, mode: "insensitive" } },

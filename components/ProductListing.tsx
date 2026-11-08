@@ -50,7 +50,7 @@ export default function ProductListing({
     const s = q.toString();
     return s ? `${path}?${s}` : path;
   };
-  const clearHref = href({ kategori: undefined, renk: undefined, ebat: undefined, fiyat_min: undefined, fiyat_max: undefined });
+  const clearHref = href({ kategori: undefined, renk: undefined, ebat: undefined, fiyat_min: undefined, fiyat_max: undefined, stok: undefined });
 
   // Seçili filtre çipleri: her biri kendi kaldırma bağlantısı
   const chips: { label: string; to: string }[] = [
@@ -58,6 +58,7 @@ export default function ProductListing({
     ...state.renkler.map((key) => ({ label: facets.colors.find((c) => c.key === key)?.name ?? key, to: href({ renk: state.renkler.filter((k) => k !== key).join(",") || undefined }) })),
     ...state.ebatlar.map((key) => ({ label: `Ebat: ${facets.sizes.find((z) => z.key === key)?.name ?? key}`, to: href({ ebat: state.ebatlar.filter((k) => k !== key).join(",") || undefined }) })),
     ...(state.fiyatMin !== undefined || state.fiyatMax !== undefined ? [{ label: priceLabel(state), to: href({ fiyat_min: undefined, fiyat_max: undefined }) }] : []),
+    ...(state.stok ? [{ label: "Sadece stokta olanlar", to: href({ stok: undefined }) }] : []),
   ];
 
   const nothingAtAll = total === 0 && !filtered;
@@ -91,6 +92,7 @@ export default function ProductListing({
         total={total}
         clearHref={clearHref}
         filtered={filtered}
+        soldOutFilter={listing.hasSoldOut || state.stok === true}
       />
       <div className="min-w-0 pt-3 lg:pt-0">
         {toolbar}

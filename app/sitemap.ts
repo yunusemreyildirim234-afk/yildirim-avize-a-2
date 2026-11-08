@@ -4,6 +4,7 @@ import { CATEGORIES, COLLECTIONS, SITE_URL } from "@/lib/site";
 import { withVisibleProducts } from "@/lib/categories";
 import { getCategoryList, getFixedCategoryOverrides } from "@/lib/category-list";
 import { getGalleryPhotoCount } from "@/lib/customer-gallery";
+import { getVisibleWhere } from "@/lib/visibility";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +13,7 @@ const STATIC_PAGES = ["/kargo-takip", "/iletisim", "/gizlilik-politikasi", "/kul
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const products = await prisma.product
-    .findMany({ where: { active: true }, select: { id: true, updatedAt: true } })
+    .findMany({ where: await getVisibleWhere(), select: { id: true, updatedAt: true } })
     .catch(() => []);
 
   const galleryCount = await getGalleryPhotoCount();

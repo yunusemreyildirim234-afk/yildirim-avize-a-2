@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { getSessionUserId } from "@/lib/account";
 import type { Prisma } from "@/generated/prisma/client";
 import { coverImageOf } from "@/lib/variation-input";
+import { getVisibleWhere } from "@/lib/visibility";
 
 type FavoriteRow = Prisma.FavoriteGetPayload<{ include: { product: { include: { variations: { select: { images: true } } } } } }>;
 
@@ -13,7 +14,7 @@ export async function GET() {
   if (!userId) return NextResponse.json({ items: [], anon: true });
 
   const rows = await prisma.favorite.findMany({
-    where: { userId, product: { active: true } },
+    where: { userId, product: await getVisibleWhere() },
     include: { product: { include: { variations: { select: { images: true }, orderBy: [{ position: "asc" }, { id: "asc" }] } } } },
     orderBy: { createdAt: "asc" },
   });

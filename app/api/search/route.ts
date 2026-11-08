@@ -7,6 +7,7 @@ import { getLadderContext } from "@/lib/showcase";
 import { priceLadder } from "@/lib/price-ladder";
 import { rateLimit, tooMany } from "@/lib/rate-limit";
 import { coverImageOf } from "@/lib/variation-input";
+import { getVisibleWhere } from "@/lib/visibility";
 
 export async function GET(req: Request) {
   // Kimliksiz ve indeksiz (contains) arama: IP başına dakikada 120 istek, sorgu en çok 80 karakter
@@ -23,9 +24,10 @@ export async function GET(req: Request) {
     const code = q.trim();
     // Yalnızca arama listesinin ve fiyat merdiveninin kullandığı alanlar (açıklama, görsel dizisi, Trendyol alanları çekilmez)
     // Koşul lib/product-search.ts'de tek yerde tanımlıdır (/arama sayfasıyla aynı sonuçlar)
+    const visible = await getVisibleWhere();
     const [byCode, byText] = await Promise.all([
-      prisma.product.findFirst({ where: { active: true, modelCode: code }, select: CARD_SELECT }),
-      prisma.product.findMany({ where: searchWhere(q), select: CARD_SELECT, take: 6 }),
+      prisma.product.findFirst({ where: { AND: [visible, { modelCode: code }] }, select: CARD_SELECT }),
+      prisma.product.findMany({ where: { AND: [visible, searchWhere(q)] }, select: CARD_SELECT, take: 6 }),
     ]);
 
     // Tam model kodu eşleşmesi her zaman en üstte
