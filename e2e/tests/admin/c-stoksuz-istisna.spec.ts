@@ -84,7 +84,7 @@ test.describe("Stoksuz ürün istisnası", () => {
     expect((await cardIds(shop, `/kategori/${SLUG}`)).sort()).toEqual([id.p3, id.p2].sort());
     expect(await cardIds(shop, `/arama?q=${encodeURIComponent("E2E Istisna P")}`)).not.toContain(id.p1);
     await expect.poll(async () => (await sitemap(request)).includes(`/urun/${id.p1}`), POLL).toBe(false); // sitemap önbelleği
-    expect(await sitemap(request)).toContain(`/urun/${id.p2}`);
+    await expect.poll(async () => (await sitemap(request)).includes(`/urun/${id.p2}`), POLL).toBe(true);
 
     // kaldır: tekrar görünür
     const [res2] = await Promise.all([page.waitForResponse((r) => r.url().includes("/api/admin/product") && r.request().method() === "PATCH"), box.click()]);
