@@ -518,10 +518,10 @@ Yine de geri alınsın mı?`)) await doUndo(true);
                 </span>
                 <DiscountBadges product={product} disabled={loadingId === product.id} onRemove={(payload, label) => removeFromProduct(product.id, payload, label)} />
                 {stockedInactive(product) && (
-                  <p data-testid="stoklu-pasif-rozet" className="mt-1.5 inline-flex max-w-full items-start gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-950">
+                  <p data-testid="stoklu-pasif-rozet" className="mt-1.5 flex flex-wrap sm:inline-flex max-w-full items-start gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-950">
                     <AlertTriangle aria-hidden="true" className="mt-px h-3.5 w-3.5 shrink-0 text-amber-700" />
                     <span>Stoğu var ama pasif: vitrinde görünmüyor</span>
-                    <button type="button" data-testid="vitrine-al" disabled={loadingId === product.id} onClick={() => setActive(product, true)} className="ml-1 inline-flex min-h-10 items-center rounded-md bg-neutral-900 px-3 font-bold text-white hover:bg-amber-700 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-amber-600">
+                    <button type="button" data-testid="vitrine-al" disabled={loadingId === product.id} onClick={() => setActive(product, true)} className="mt-1 sm:mt-0 sm:ml-1 inline-flex min-h-10 w-full sm:w-auto items-center justify-center rounded-md bg-neutral-900 px-3 font-bold text-white hover:bg-amber-700 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-amber-600">
                       Vitrine al (aktif yap)
                     </button>
                   </p>
