@@ -3,7 +3,7 @@ import { categoryDisplayTitle, isCategoryHidden } from "@/lib/category-settings"
 import { categoryKey, visibleCategoryWhere, type CategoryEntry } from "@/lib/categories";
 import { pickCollections, resolveCollectionKeys } from "@/lib/collections";
 import { getHomepageRaw } from "@/lib/homepage";
-import { getProducts } from "@/lib/products";
+import { getActiveProducts } from "@/lib/products";
 import { CATEGORIES } from "@/lib/site";
 import { coverImageOf } from "@/lib/variation-input";
 
@@ -25,7 +25,7 @@ export async function getHomeCollections(): Promise<HomeCollection[]> {
   const picked = pickCollections(visible, resolveCollectionKeys(raw));
   return Promise.all(
     picked.map(async (c) => {
-      const products = await getProducts(visibleCategoryWhere(c.spellings), 6).catch(() => []);
+      const products = await getActiveProducts(visibleCategoryWhere(c.spellings), 6).catch(() => []);
       const cover = products.map((p) => coverImageOf(p)).find((u): u is string => Boolean(u)) ?? null;
       return { slug: c.slug, title: categoryDisplayTitle(settings, c.key, c.title), cover };
     })

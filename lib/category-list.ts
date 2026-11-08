@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { VISIBLE_PRODUCT_WHERE, buildCategoryList, categoryKey, resolveCategoryName, withEmptyHidden, withVisibleProducts } from "@/lib/categories";
 import { resolveCategoryRedirects, resolveCategorySettings, type CategoryRedirects, type CategorySettings } from "@/lib/category-settings";
 import { CATEGORIES } from "@/lib/site";
+import { getStocklessCategoryRows } from "@/lib/visibility";
 
 /**
  * Vitrin kategori listesi tek kaynağı: menü, mobil şerit, alt bilgi, sitemap ve /kategori/[slug] buradan beslenir.
@@ -12,8 +13,9 @@ import { CATEGORIES } from "@/lib/site";
 export const getCategoryList = unstable_cache(
   async () => {
     const rows = await prisma.product.groupBy({ by: ["category"], where: VISIBLE_PRODUCT_WHERE, _count: { _all: true } });
+    const soldOut = await getStocklessCategoryRows(); // "Tükendi" görünen pasif ürünler de sayıya girer (ayar kapalıysa boş)
     return buildCategoryList(
-      rows.map((r) => ({ category: r.category, count: r._count._all })),
+      [...rows.map((r) => ({ category: r.category, count: r._count._all })), ...soldOut],
       CATEGORIES
     );
   },

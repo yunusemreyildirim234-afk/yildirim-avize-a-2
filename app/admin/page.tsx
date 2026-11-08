@@ -21,6 +21,7 @@ import { resolveCollectionKeys } from "@/lib/collections";
 import { resolveHiddenBestSellers } from "@/lib/homepage-compose";
 import { getCategoryList, getCategorySettings } from "@/lib/category-list";
 import { uncategorizedCount } from "@/lib/category-settings";
+import { resolveStocklessRule } from "@/lib/stockless";
 import AdminDiscountSettings from "@/components/AdminDiscountSettings";
 import AdminSessions from "@/components/AdminSessions";
 import AdminTwoFactor, { AdminTwoFactorBanner } from "@/components/AdminTwoFactor";
@@ -278,6 +279,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           entries={categoryEntries}
           settings={categorySettings}
           uncategorized={uncategorizedCount(products)}
+          showStockless={resolveStocklessRule(homeRaw).global}
         />
 
         <AdminHomepage

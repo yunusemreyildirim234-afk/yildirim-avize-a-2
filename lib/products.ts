@@ -5,6 +5,7 @@ import { BEST_SELLER_CACHE_SECONDS, bestSellerSince, rankProducts } from "@/lib/
 import { productsCacheKey, storefrontTags } from "@/lib/storefront-cache-key";
 import { SHOWCASE_ORDER_BY } from "@/lib/showcase-order";
 import { resolveHiddenBestSellers } from "@/lib/homepage-compose";
+import { getVisibleWhere } from "@/lib/visibility";
 
 /**
  * Kart/liste için gereken alanlar (ProductCard, priceLadder, bulkTiersOf, ana sayfa havuzları).
@@ -31,9 +32,10 @@ export const CARD_SELECT = {
 /** Kart galerisi için genel fotoğraflar (images) da gerekir; arama gibi yalnızca kapak kullanan uçlar CARD_SELECT'te kalır. */
 const CARD_LIST_SELECT = { ...CARD_SELECT, images: true } satisfies Prisma.ProductSelect;
 
+/** Vitrin görünürlüğü (lib/visibility.ts): aktif ürünler + ayar açıksa "Tükendi" görünen pasif ürünler. Ana sayfa vitrinleri bunu KULLANMAZ (getActiveProducts). */
 export async function getProducts(where: Prisma.ProductWhereInput = {}, take?: number, skip?: number) {
   return prisma.product.findMany({
-    where: { active: true, ...where },
+    where: { AND: [await getVisibleWhere(), where] },
     select: CARD_LIST_SELECT,
     // Sayfalama (skip) kullanılırken eşit updatedAt değerlerinde sayfalar arası kayma olmasın diye id ile kararlı sıra
     orderBy: skip === undefined ? { updatedAt: "desc" } : [{ updatedAt: "desc" }, { id: "asc" }],
@@ -42,14 +44,19 @@ export async function getProducts(where: Prisma.ProductWhereInput = {}, take?: n
   });
 }
 
+/** Yalnızca AKTİF ürünler (ana sayfa havuzları, benzer ürünler): stoksuz görünen pasif ürünler buraya girmez. */
+export async function getActiveProducts(where: Prisma.ProductWhereInput = {}, take?: number) {
+  return prisma.product.findMany({ where: { active: true, ...where }, select: CARD_LIST_SELECT, orderBy: { updatedAt: "desc" }, take });
+}
+
 /** Ana sayfa vitrini (Öne Çıkanlar / Çok Satanlar) için: getProducts ile aynı seçim, ama updatedAt'tan bağımsız sabit sıra (lib/showcase-order.ts). */
 export async function getShowcaseProducts(where: Prisma.ProductWhereInput = {}, take?: number) {
   return prisma.product.findMany({ where: { active: true, ...where }, select: CARD_LIST_SELECT, orderBy: SHOWCASE_ORDER_BY, take });
 }
 
-/** getProducts ile aynı koşulla (yalnızca aktif) ürün sayısı. */
-export function countProducts(where: Prisma.ProductWhereInput = {}) {
-  return prisma.product.count({ where: { active: true, ...where } });
+/** getProducts ile aynı koşulla (vitrinde görünür) ürün sayısı. */
+export async function countProducts(where: Prisma.ProductWhereInput = {}) {
+  return prisma.product.count({ where: { AND: [await getVisibleWhere(), where] } });
 }
 
 // ---- Veri düzeyinde 60 sn önbellek (kişiden bağımsız sorgular) ----
@@ -138,7 +145,7 @@ export async function getBestSellers(take: number) {
 
   const rankedIds = (await getRankedSellerIds()).filter((id) => !seen.has(id) && !hiddenSet.has(id));
 
-  const ranked = rankedIds.length ? await getProducts({ id: { in: rankedIds }, ...FEATURED }, undefined) : [];
+  const ranked = rankedIds.length ? await getActiveProducts({ id: { in: rankedIds }, ...FEATURED }) : [];
   ranked.sort((a, b) => rankedIds.indexOf(a.id) - rankedIds.indexOf(b.id));
   const out = [...picked, ...ranked].slice(0, take);
   if (out.length >= take) return out;

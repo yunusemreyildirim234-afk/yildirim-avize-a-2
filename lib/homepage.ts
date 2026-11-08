@@ -1,6 +1,6 @@
 import { cache } from "react";
 import { prisma } from "@/lib/db";
-import { DISCOUNTED, FEATURED, getBestSellers, getProducts, getShowcaseProducts } from "@/lib/products";
+import { DISCOUNTED, FEATURED, getActiveProducts, getBestSellers, getShowcaseProducts } from "@/lib/products";
 import { resolveConfig, type ResolvedConfig } from "@/lib/homepage-compose";
 
 /** Ham ana sayfa JSON'u: istek başına bir kez okunur (bölümler ve avantaj kartları aynı okumayı paylaşır); hata → null. */
@@ -24,7 +24,7 @@ export const getSectionPools = cache(async () => {
   const flagged = await getShowcaseProducts({ isFeatured: true }, POOL);
   const [featuredAuto, discounted, bestsellers] = await Promise.all([
     flagged.length > 0 ? Promise.resolve(flagged) : getShowcaseProducts(FEATURED, POOL),
-    getProducts(DISCOUNTED, POOL),
+    getActiveProducts(DISCOUNTED, POOL),
     getBestSellers(POOL),
   ]);
   return { featured: featuredAuto, featuredManual: flagged.length > 0, discounted, bestsellers };

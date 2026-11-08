@@ -13,6 +13,8 @@ const SLUG_RE = /^[a-z0-9-]{1,80}$/;
 export interface CategorySetting {
   title?: string;
   hidden?: boolean;
+  /** Stoksuz (pasif + toplam stok 0) ürünlerin vitrinde "Tükendi" görünmesi: yoksa genel ayar (lib/stockless.ts) */
+  stockless?: "show" | "hide";
 }
 export type CategorySettings = Record<string, CategorySetting>;
 export type CategoryRedirects = Record<string, string>;
@@ -38,8 +40,8 @@ export function resolveCategorySettings(homepageConfig: unknown): CategorySettin
     const o = asObj(v);
     if (!o || !k || k.length > MAX_KEY) continue;
     const t = o.title === undefined ? null : validateDisplayTitle(o.title);
-    const entry: CategorySetting = { ...(t?.ok ? { title: t.title } : {}), ...(o.hidden === true ? { hidden: true } : {}) };
-    if (entry.title !== undefined || entry.hidden) out[k] = entry;
+    const entry: CategorySetting = { ...(t?.ok ? { title: t.title } : {}), ...(o.hidden === true ? { hidden: true } : {}), ...(o.stockless === "show" || o.stockless === "hide" ? { stockless: o.stockless } : {}) };
+    if (entry.title !== undefined || entry.hidden || entry.stockless) out[k] = entry;
   }
   return out;
 }
@@ -50,8 +52,12 @@ export const categoryDisplayTitle = (settings: CategorySettings, key: string, fa
 export const isCategoryHidden = (settings: CategorySettings, key: string): boolean => settings[key]?.hidden === true;
 
 /** Tek kategorinin ayarını günceller (null = o alanı sil). Boşalan kayıt tamamen kaldırılır. Girdiyi değiştirmez. */
-export function patchCategorySetting(settings: CategorySettings, key: string, patch: { title?: string | null; hidden?: boolean | null }): CategorySettings {
+export function patchCategorySetting(settings: CategorySettings, key: string, patch: { title?: string | null; hidden?: boolean | null; stockless?: "show" | "hide" | null }): CategorySettings {
   const cur: CategorySetting = { ...(settings[key] ?? {}) };
+  if (patch.stockless !== undefined) {
+    if (patch.stockless === null) delete cur.stockless;
+    else cur.stockless = patch.stockless;
+  }
   if (patch.title !== undefined) {
     if (patch.title === null) delete cur.title;
     else cur.title = patch.title;
@@ -61,7 +67,7 @@ export function patchCategorySetting(settings: CategorySettings, key: string, pa
     else delete cur.hidden;
   }
   const next = { ...settings };
-  if (cur.title === undefined && !cur.hidden) delete next[key];
+  if (cur.title === undefined && !cur.hidden && !cur.stockless) delete next[key];
   else next[key] = cur;
   return next;
 }

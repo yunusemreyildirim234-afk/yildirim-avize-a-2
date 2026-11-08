@@ -60,6 +60,34 @@ async function POSTHandler(req: Request) {
   const key = typeof body.key === "string" ? body.key : "";
   if (!key || key.length > 80) return NextResponse.json({ error: "Geçersiz istek." }, { status: 400 });
 
+  // ---- Stoksuz ürünleri vitrinde "Tükendi" göster: genel anahtar ve kategori bazlı seçenek (ürünün active alanına DOKUNMAZ) ----
+  if (body.action === "stocklessGlobal") {
+    if (typeof body.value !== "boolean") return NextResponse.json({ error: "Geçersiz istek." }, { status: 400 });
+    await prisma.$transaction((tx) =>
+      mutateConfig(tx, (cfg) => {
+        if (body.value) cfg.showStockless = true;
+        else delete cfg.showStockless; // kapalı = varsayılan
+        return cfg;
+      })
+    );
+    return NextResponse.json({ success: true });
+  }
+  if (body.action === "stockless") {
+    const value = body.value;
+    if (value !== "show" && value !== "hide" && value !== null) return NextResponse.json({ error: "Geçersiz istek." }, { status: 400 });
+    const known = await prisma.product.groupBy({ by: ["category"] });
+    if (!known.some((r) => categoryKey(r.category) === key) && !CATEGORIES.some((c) => categoryKey(c.dbCategory) === key)) return NextResponse.json({ error: "Kategori bulunamadı." }, { status: 400 });
+    await prisma.$transaction((tx) =>
+      mutateConfig(tx, (cfg) => {
+        const settings = patchCategorySetting(resolveCategorySettings(cfg), key, { stockless: value });
+        if (Object.keys(settings).length) cfg.categorySettings = settings;
+        else delete cfg.categorySettings;
+        return cfg;
+      })
+    );
+    return NextResponse.json({ success: true });
+  }
+
   // ---- Sabit kategori: görünen ad / gizleme ----
   if (body.action === "setting") {
     if (!CATEGORIES.some((c) => categoryKey(c.dbCategory) === key)) return NextResponse.json({ error: "Yalnızca sabit kategoriler için geçerlidir." }, { status: 400 });

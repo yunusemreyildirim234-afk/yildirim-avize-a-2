@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ChevronDown, FolderTree } from "lucide-react";
+import { ChevronDown, FolderTree, PackageX } from "lucide-react";
 import { useOpenOnHash } from "@/components/useOpenOnHash";
 import { MAX_CATEGORY_NAME, type CategorySettings } from "@/lib/category-settings";
 
@@ -19,12 +19,14 @@ interface Props {
   entries: CategoryRowInfo[];
   settings: CategorySettings;
   uncategorized: number;
+  /** Genel "Stoksuz ürünleri vitrinde göster" ayarı */
+  showStockless: boolean;
 }
 
 const inputCls = "p-2 rounded-lg border border-neutral-300 bg-white text-xs focus:outline-none focus:border-amber-600 min-w-0";
 const btnCls = "text-xs font-semibold border border-neutral-300 hover:bg-neutral-50 disabled:opacity-50 px-3 min-h-9 rounded-lg";
 
-export default function AdminCategories({ entries, settings, uncategorized }: Props) {
+export default function AdminCategories({ entries, settings, uncategorized, showStockless }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   useOpenOnHash("kategoriler", setOpen);
@@ -57,6 +59,19 @@ export default function AdminCategories({ entries, settings, uncategorized }: Pr
       delete n[e.key];
       return n;
     });
+    router.refresh();
+  };
+
+  const stocklessGlobal = async (value: boolean) => {
+    const r = await call({ action: "stocklessGlobal", key: "*", value });
+    if (!r.ok) return toast.error(String(r.data.error || "Kaydedilemedi."));
+    toast.success(value ? "Stoksuz ürünler vitrinde Tükendi olarak görünecek." : "Stoksuz ürünler vitrinde gizli.");
+    router.refresh();
+  };
+  const stocklessCat = async (e: CategoryRowInfo, value: "show" | "hide" | null) => {
+    const r = await call({ action: "stockless", key: e.key, value });
+    if (!r.ok) return toast.error(String(r.data.error || "Kaydedilemedi."));
+    toast.success("Stoksuz ürün ayarı kaydedildi.");
     router.refresh();
   };
 
@@ -142,6 +157,16 @@ export default function AdminCategories({ entries, settings, uncategorized }: Pr
             </div>
           )}
 
+          <div className="rounded-xl border border-neutral-200 bg-neutral-50/60 p-3">
+            <label className="flex items-start gap-3 min-h-10 cursor-pointer">
+              <input type="checkbox" data-testid="stoksuz-genel" checked={showStockless} disabled={busy} onChange={(ev) => stocklessGlobal(ev.target.checked)} className="mt-0.5 h-5 w-5 shrink-0 accent-amber-600" />
+              <span className="text-xs text-neutral-800">
+                <span className="flex items-center gap-1.5 font-bold text-sm text-neutral-900"><PackageX aria-hidden="true" className="w-4 h-4 text-amber-600" /> Stoksuz ürünleri vitrinde göster</span>
+                <span className="block mt-0.5 text-neutral-600">Açıkken stoğu 0 olan ürünler &apos;Tükendi&apos; olarak görünür, satın alınamaz. Yalnızca pasif ve toplam stoğu 0 olan ürünleri kapsar; stoklu pasif ürün gizli kalır. Kategori satırından genel ayar değiştirilebilir.</span>
+              </span>
+            </label>
+          </div>
+
           <ul className="space-y-3">
             {entries.map((e) => {
               const s = settings[e.key];
@@ -186,6 +211,21 @@ export default function AdminCategories({ entries, settings, uncategorized }: Pr
                         </button>
                       </>
                     )}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 text-xs">
+                    <label htmlFor={`sk-${e.key}`} className="font-semibold text-neutral-700">Stoksuz ürünler:</label>
+                    <select
+                      id={`sk-${e.key}`}
+                      data-testid={`stoksuz-kat-${e.key}`}
+                      disabled={busy}
+                      value={s?.stockless ?? ""}
+                      onChange={(ev) => stocklessCat(e, ev.target.value === "" ? null : (ev.target.value as "show" | "hide"))}
+                      className={`${inputCls} min-h-10 sm:min-h-9`}
+                    >
+                      <option value="">Genel ayarı kullan ({showStockless ? "Göster" : "Gizle"})</option>
+                      <option value="show">Göster (Tükendi)</option>
+                      <option value="hide">Gizle</option>
+                    </select>
                   </div>
                   {e.fixed && <p className="text-[11px] text-neutral-500">Veritabanı adı ve adres değişmez; yalnızca sitede görünen ad değişir. Gizli kategori menü, alt bilgi, ana sayfa satırı ve sitemap&apos;ten çıkar; adresi ve ürünleri çalışmaya devam eder.</p>}
                 </li>
