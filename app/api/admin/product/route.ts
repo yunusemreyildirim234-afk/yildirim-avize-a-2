@@ -95,6 +95,15 @@ async function PATCHHandler(req: Request) {
   try {
     const body = await req.json();
 
+    // Aktif yap / pasife al (yalnızca boolean; Geri Al belirteci döner). Vitrin önbelleği withStorefrontRevalidate ile temizlenir.
+    if (typeof body.productId === "string" && "active" in body) {
+      if (typeof body.active !== "boolean") return NextResponse.json({ error: "Geçersiz istek." }, { status: 400 });
+      const before = await snapshotProducts([body.productId]);
+      if (before.length === 0) return NextResponse.json({ error: "Ürün bulunamadı." }, { status: 404 });
+      if (before[0].fields.active !== body.active) await prisma.product.update({ where: { id: body.productId }, data: { active: body.active } });
+      return NextResponse.json({ success: true, active: body.active, snapshot: await buildUndoToken(before) });
+    }
+
     // Tekil ürün düzenleme: başlık, fiyat, görseller (varsa model kodu ile birlikte)
     if (typeof body.productId === "string" && ("title" in body || "basePrice" in body || "images" in body || "modelCode" in body || "isFeatured" in body || "isBestSeller" in body || "ebat" in body)) {
       const data: { title?: string; basePrice?: number; images?: string[]; imageUrl?: string | null; modelCode?: string | null; isFeatured?: boolean; isBestSeller?: boolean; ebat?: string | null } = {};

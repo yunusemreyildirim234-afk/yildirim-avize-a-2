@@ -26,6 +26,7 @@ export interface EditorProduct {
   images?: string[];
   isFeatured?: boolean;
   isBestSeller?: boolean;
+  active?: boolean;
   variations: EditorVariation[];
 }
 
@@ -39,7 +40,7 @@ async function api(method: string, url: string, body: Record<string, unknown>) {
 const field = "p-2 rounded-lg border border-neutral-300 bg-white text-xs focus:outline-none focus:border-amber-600";
 
 // Tekil ürün düzenleme: başlık, fiyat, model kodu, renk/stok ve görseller
-export default function AdminProductEditor({ product, onSaved }: { product: EditorProduct; onSaved?: (snapshot: unknown) => void }) {
+export default function AdminProductEditor({ product, onSaved, onSetActive, busyActive }: { product: EditorProduct; onSaved?: (snapshot: unknown) => void; onSetActive?: (makeActive: boolean) => void; busyActive?: boolean }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
 
@@ -176,6 +177,25 @@ export default function AdminProductEditor({ product, onSaved }: { product: Edit
           <span className="block text-[11px] text-neutral-500">Ürünün ebadı (örn. 45 x 25). Boş bırakırsan renk adındaki ebat (örn. Krom / 58 x 58) kullanılır. Filtreleme ve sıralamada kullanılır.</span>
         </label>
       </section>
+
+      {/* Vitrin durumu: aktif yap / pasife al (onaylı, Geri Al'lı; "Kaydet"ten bağımsız, hemen uygulanır) */}
+      {onSetActive && (
+        <section className="flex flex-wrap items-center gap-x-4 gap-y-2" data-testid="durum-bolumu">
+          <span className="font-semibold text-neutral-700">
+            Durum:{" "}
+            <span data-testid="durum-etiketi" className={product.active === false ? "text-red-800" : "text-emerald-800"}>{product.active === false ? "Pasif (vitrinde görünmez)" : "Aktif (vitrinde)"}</span>
+          </span>
+          <button
+            type="button"
+            data-testid={product.active === false ? "duzenle-vitrine-al" : "duzenle-pasife-al"}
+            disabled={busyActive}
+            onClick={() => onSetActive(product.active === false)}
+            className="inline-flex min-h-10 items-center rounded-lg border border-neutral-300 bg-white px-3 font-semibold text-neutral-800 hover:border-amber-600 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-amber-600"
+          >
+            {product.active === false ? "Vitrine al (aktif yap)" : "Vitrinden kaldır (pasife al)"}
+          </button>
+        </section>
+      )}
 
       {/* Vitrin */}
       <section className="flex flex-wrap items-center gap-x-6 gap-y-2">

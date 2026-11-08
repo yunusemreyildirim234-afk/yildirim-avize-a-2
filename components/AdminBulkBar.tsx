@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { resultMessage } from "@/lib/bulk-plan";
+import { activeConfirmMessage, resultMessage } from "@/lib/bulk-plan";
 import { useRouter } from "next/navigation";
 import { COLLECTION_OPTIONS } from "@/lib/site";
 
-type Tab = "stock" | "rename" | "color" | "collection" | "discount" | "showcase";
+type Tab = "stock" | "rename" | "color" | "collection" | "discount" | "showcase" | "active";
 
-const TAB_LABEL: Record<Tab, string> = { stock: "Stok", rename: "İsim değişikliği", color: "Renk ekleme", collection: "Koleksiyon", discount: "İndirim", showcase: "Vitrin" };
+const TAB_LABEL: Record<Tab, string> = { stock: "Stok", rename: "İsim değişikliği", color: "Renk ekleme", collection: "Koleksiyon", discount: "İndirim", showcase: "Vitrin", active: "Aktif/Pasif" };
 const NEW_COLLECTION = "__new__";
 const TABS: { id: Tab; label: string }[] = [
   { id: "stock", label: "Stok" },
@@ -16,6 +16,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "collection", label: "Koleksiyon" },
   { id: "discount", label: "İndirim" },
   { id: "showcase", label: "Vitrin" },
+  { id: "active", label: "Aktif/Pasif" },
 ];
 
 interface Props {
@@ -55,6 +56,7 @@ export default function AdminBulkBar({ ids, scopes, onApplied, extraCategories, 
   const [allProducts, setAllProducts] = useState(false);
   const [showField, setShowField] = useState<"isFeatured" | "isBestSeller">("isFeatured");
   const [showValue, setShowValue] = useState(true);
+  const [activeValue, setActiveValue] = useState(true);
 
   const post = async (payload: Record<string, unknown>) => {
     const res = await fetch("/api/admin/product/bulk", {
@@ -74,7 +76,7 @@ export default function AdminBulkBar({ ids, scopes, onApplied, extraCategories, 
         alert(dry.data.error || "İşlem başarısız.");
         return;
       }
-      const d = dry.data as { selected: number; apply: number; skipped: number; hidden?: number; showcase: { auto: boolean; before: number; after: number; revertsToAuto: boolean } | null };
+      const d = dry.data as { selected: number; apply: number; skipped: number; hidden?: number; soldOut?: number; showcase: { auto: boolean; before: number; after: number; revertsToAuto: boolean } | null };
       if (d.apply === 0) {
         alert("Seçili ürünlerin hepsi zaten bu durumda.");
         return;
@@ -98,6 +100,13 @@ export default function AdminBulkBar({ ids, scopes, onApplied, extraCategories, 
       if (hiddenNote) msg += `
 
 ⚠ ${hiddenNote} (İşlem yine de uygulanır.)`;
+      if (payload.action === "active") {
+        // Aktif yap / pasife al: ortak onay metni (sayı, Tükendi uyarısı, Trendyol notu)
+        msg = activeConfirmMessage({ makeActive: payload.value === true, count: d.apply, soldOut: d.soldOut });
+        if (d.skipped > 0) msg += `
+
+(${d.selected} ürün seçili; ${d.skipped} ürün zaten bu durumda, atlanacak.)`;
+      }
       if (!confirm(msg)) return;
 
       const { ok, data } = await post(payload);
@@ -139,6 +148,7 @@ export default function AdminBulkBar({ ids, scopes, onApplied, extraCategories, 
       return run({ action: "tier", type: discMode, minQty: qty, value, label: `${qty}+ adet kademesi` });
     }
     if (tab === "showcase") return run({ action: "showcase", field: showField, value: showValue });
+    if (tab === "active") return run({ action: "active", value: activeValue, label: activeValue ? "Aktif yapma" : "Pasife alma" });
     const category = collection === NEW_COLLECTION ? newCollection.trim() : collection;
     if (!category) return alert("Yeni koleksiyon adını yazın.");
     return run({ action: "category", category });
@@ -268,6 +278,13 @@ export default function AdminBulkBar({ ids, scopes, onApplied, extraCategories, 
               <option value="remove">Vitrinden çıkar</option>
             </select>
           </>
+        )}
+
+        {tab === "active" && (
+          <select aria-label="Aktif/Pasif işlemi" value={activeValue ? "on" : "off"} onChange={(e) => setActiveValue(e.target.value === "on")} className={input}>
+            <option value="on">Aktif yap (vitrine al)</option>
+            <option value="off">Pasife al (vitrinden kaldır)</option>
+          </select>
         )}
 
         {tab === "collection" && (

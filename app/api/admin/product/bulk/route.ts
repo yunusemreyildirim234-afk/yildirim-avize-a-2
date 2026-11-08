@@ -9,7 +9,7 @@ import { buildUndoToken, snapshotProducts, type UndoExtra } from "@/lib/admin-un
 import { bulkTiersOf, upsertTier } from "@/lib/bulk-pricing";
 import { FEATURED, getBestSellers } from "@/lib/products";
 import { nextPosition } from "@/lib/variation-input";
-import { planAddVariation, planBestSeller, planCategory, planFeatured } from "@/lib/bulk-plan";
+import { planActive, planAddVariation, planBestSeller, planCategory, planFeatured } from "@/lib/bulk-plan";
 
 interface Plan {
   targets: string[]; // gerçekten değişecek ürünler
@@ -25,7 +25,7 @@ async function planBulk(body: Record<string, unknown>, selected: string[]): Prom
   const all: Plan = { targets: selected, markFirst: [] };
   const rows = await prisma.product.findMany({
     where: { id: { in: selected } },
-    select: { id: true, title: true, category: true, basePrice: true, listPrice: true, bulkTiers: true, bulkMinQty: true, couponAllowed: true, pickupDiscountPct: true, transferDiscountPct: true, isFeatured: true, isBestSeller: true, variations: { select: { variationValue: true, stock: true } } },
+    select: { id: true, title: true, category: true, active: true, basePrice: true, listPrice: true, bulkTiers: true, bulkMinQty: true, couponAllowed: true, pickupDiscountPct: true, transferDiscountPct: true, isFeatured: true, isBestSeller: true, variations: { select: { variationValue: true, stock: true } } },
   });
   type Row = (typeof rows)[number];
   const keep = (fn: (p: Row) => boolean): Plan => ({ targets: rows.filter(fn).map((r) => r.id), markFirst: [] });
@@ -95,6 +95,8 @@ async function planBulk(body: Record<string, unknown>, selected: string[]): Prom
       const want = body.reset === true ? { couponAllowed: true, pickup: null, transfer: null } : { couponAllowed: body.couponAllowed !== false, pickup: pickupPct, transfer: transferPct };
       return keep((p) => p.couponAllowed !== want.couponAllowed || p.pickupDiscountPct !== want.pickup || p.transferDiscountPct !== want.transfer);
     }
+    case "active":
+      return typeof body.value === "boolean" ? { targets: planActive(selected, rows, body.value).targets, markFirst: [] } : all;
     case "showcase": {
       if (typeof body.value !== "boolean") return all;
       if (body.field === "isBestSeller") {
@@ -133,7 +135,9 @@ async function POSTHandler(req: Request) {
   // Vitrine/indirime giren ama PASİF olan ürünler sitede (getProducts: active=true) görünmez; işlem engellenmez, yalnızca uyarılır
   const exposes = body.action === "discount" || body.action === "tier" || (body.action === "showcase" && body.value === true);
   const hidden = exposes && ids.length ? await prisma.product.count({ where: { id: { in: ids }, active: false } }) : 0;
-  if (body.dryRun === true) return NextResponse.json({ dryRun: true, selected: selected.length, apply: ids.length, skipped, hidden, showcase: plan.info ?? null });
+  // Aktif yaparken: toplam stoğu 0 olanlar "Tükendi" görünür (onay metni için sayı)
+  const soldOut = body.action === "active" && body.value === true && ids.length ? await prisma.product.count({ where: { id: { in: ids }, variations: { none: { stock: { gt: 0 } } } } }) : 0;
+  if (body.dryRun === true) return NextResponse.json({ dryRun: true, selected: selected.length, apply: ids.length, skipped, hidden, soldOut, showcase: plan.info ?? null });
   if (ids.length === 0) return NextResponse.json({ success: true, updated: ids.length, skipped });
 
   // Geri Al için işlem öncesi durum: yalnızca gerçekten değişecek ürünler (otomatik işaretlenenler dahil)
@@ -273,6 +277,13 @@ async function POSTHandler(req: Request) {
         ? { couponAllowed: true, pickupDiscountPct: null, transferDiscountPct: null }
         : { couponAllowed: body.couponAllowed !== false, pickupDiscountPct: pickupPct, transferDiscountPct: transferPct };
       await prisma.product.updateMany({ where: { id: { in: ids } }, data });
+      return NextResponse.json({ snapshot: await done(), success: true, updated: ids.length, skipped });
+    }
+
+    // Aktif yap / pasife al (yalnızca boolean; stok ve diğer alanlara dokunmaz)
+    case "active": {
+      if (typeof body.value !== "boolean") return NextResponse.json({ error: "Geçersiz işlem." }, { status: 400 });
+      await prisma.product.updateMany({ where: { id: { in: ids } }, data: { active: body.value } });
       return NextResponse.json({ snapshot: await done(), success: true, updated: ids.length, skipped });
     }
 

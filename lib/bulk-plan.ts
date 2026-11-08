@@ -67,3 +67,27 @@ export function planBestSeller(value: boolean, selectedRows: { id: string; isBes
 export function resultMessage(updated: number, skipped: number): string {
   return updated === 0 ? "Seçili ürünlerin hepsi zaten bu durumda." : `${updated} ürün güncellendi, ${skipped} ürün zaten bu durumda olduğu için atlandı.`;
 }
+
+// ---------- Aktif yap / Pasife al ----------
+
+/** Aktif/pasif: zaten istenen durumdaki ürünler atlanır. */
+export function planActive(selected: string[], products: { id: string; active: boolean }[], value: boolean): PlanResult {
+  const cur = new Map(products.map((p) => [p.id, p.active]));
+  return done(selected, selected.filter((id) => cur.get(id) !== value));
+}
+
+export const TRENDYOL_ACTIVE_NOTE = "Trendyol eşitlemesinde \"Aktif/pasif\" satırı \"Ezerek\" ise bu durum eşitlemede değişebilir.";
+
+/**
+ * Aktif yap / pasife al onay metni (tek ve toplu işlem için ortak).
+ * count: etkilenecek ürün sayısı; title: tek üründe ürün adı; soldOut: aktif yapılacaklardan toplam stoğu 0 olanların sayısı;
+ * stillShown: pasife alınanlardan "Tükendi" olarak vitrinde kalmaya devam edecek olanların sayısı.
+ */
+export function activeConfirmMessage(o: { makeActive: boolean; count: number; title?: string; soldOut?: number; stillShown?: number }): string {
+  const what = o.count === 1 && o.title ? `"${o.title}"` : `${o.count} ürün`;
+  const lines: string[] = [o.makeActive ? `${what} vitrine alınacak (aktif yapılacak).` : `${what} vitrinden kaldırılacak (pasife alınacak).`];
+  if (o.makeActive && (o.soldOut ?? 0) > 0) lines.push(o.count === 1 ? "Stoğu 0, 'Tükendi' olarak görünecek." : `${o.soldOut} ürünün stoğu 0, 'Tükendi' olarak görünecek.`);
+  if (!o.makeActive && (o.stillShown ?? 0) > 0) lines.push(o.count === 1 ? "Stoksuz ürün gösterme ayarı açık olduğu için 'Tükendi' olarak görünmeye devam edecek." : `${o.stillShown} ürün, stoksuz ürün gösterme ayarı nedeniyle 'Tükendi' olarak görünmeye devam edecek.`);
+  lines.push(TRENDYOL_ACTIVE_NOTE, "Devam edilsin mi?");
+  return lines.join("\n\n");
+}
