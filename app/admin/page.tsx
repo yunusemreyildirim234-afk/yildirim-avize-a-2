@@ -13,6 +13,7 @@ import { prisma } from "@/lib/db";
 import OrderStatusSelector from "@/components/OrderStatusSelector";
 import AdminKargonomiHeader from "@/components/AdminKargonomiHeader";
 import AdminTrendyolSync from "@/components/AdminTrendyolSync";
+import { resolveSyncModes } from "@/lib/trendyol-modes";
 import AdminKargonomiOrderActions from "@/components/AdminKargonomiOrderActions";
 import { FEATURED } from "@/lib/products";
 import { getHomepageConfig, getHomepageRaw, getSectionPools } from "@/lib/homepage";
@@ -218,7 +219,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
 
         {/* Trendyol ürün senkronizasyonu (varsayılan kapalı; bileşen state'i gövde gizliyken de korunur) */}
         <AdminSection id="trendyol" icon={<ShoppingBag aria-hidden="true" className="w-4 h-4 text-amber-600" />} title="Trendyol Ürünleri" description="Mağazadaki ürünleri, fiyat ve stokları Trendyol'dan önizleyip seçerek güncelleyin.">
-          <AdminTrendyolSync />
+          <AdminTrendyolSync initial={resolveSyncModes(homeRaw)} />
         </AdminSection>
 
         {/* 1. Özet İstatistik Kartları */}

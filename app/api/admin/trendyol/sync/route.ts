@@ -5,6 +5,8 @@ import { adminGuard } from "@/lib/admin-guard";
 import { rateLimit, tooMany } from "@/lib/rate-limit";
 import { applyPlan, buildPlan, parseSettings } from "@/lib/trendyol-sync";
 import { onizleme } from "@/lib/trendyol-plan";
+import { prisma } from "@/lib/db";
+import { isDefaultModes, parseModesStrict } from "@/lib/trendyol-modes";
 
 // Vercel Hobby (Fluid Compute) üst sınırı 300 sn; Trendyol sayfalama + toplu yazma bu sınıra sığdırılır.
 export const maxDuration = 300;
@@ -27,6 +29,30 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, dryRun: false, sonuc, sayac: plan.sayac });
   } catch (error) {
     return serverError("admin/trendyol/sync", error, "Trendyol senkronizasyonu başarısız oldu. Lütfen tekrar deneyin.", 502);
+  }
+}
+
+// Alan modlarını KAYDET: yalnızca formu önceden doldurur; eşitleme yine önizleme + onay ister, hiçbir şey otomatik çalışmaz.
+// SiteConfig.homepageConfig.trendyolSyncModes (şemasız); varsayılana eşitse kayıt silinir. Vitrini etkilemez (revalidate yok).
+export async function PUT(req: Request) {
+  const denied = await adminGuard();
+  if (denied) return denied;
+  const rl = rateLimit(req, "admin-trendyol-modes", 30, 10 * 60_000);
+  if (rl.limited) return tooMany(rl.retryAfter);
+  const body = await req.json().catch(() => null);
+  const modes = parseModesStrict(body?.ayarlar);
+  if (!modes) return NextResponse.json({ error: "Geçersiz ayar." }, { status: 400 });
+  try {
+    await prisma.$transaction(async (tx) => {
+      const cur = (await tx.siteConfig.findUnique({ where: { id: 1 }, select: { homepageConfig: true } }))?.homepageConfig;
+      const cfg: Record<string, unknown> = cur && typeof cur === "object" && !Array.isArray(cur) ? { ...(cur as Record<string, unknown>) } : {};
+      if (isDefaultModes(modes)) delete cfg.trendyolSyncModes;
+      else cfg.trendyolSyncModes = modes;
+      await tx.siteConfig.upsert({ where: { id: 1 }, create: { id: 1, homepageConfig: cfg as object }, update: { homepageConfig: cfg as object } });
+    });
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return serverError("admin/trendyol/modes", error);
   }
 }
 

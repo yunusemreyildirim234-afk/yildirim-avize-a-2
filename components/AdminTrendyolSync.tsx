@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Decision, Group, Mode, Settings, Val } from "@/lib/trendyol-plan";
+import { DEFAULT_SYNC_MODES, overwriteGroups, type SyncModes } from "@/lib/trendyol-modes";
 
 const ROWS: { group: Group; label: string }[] = [
   { group: "STOCK", label: "Stok" },
@@ -19,7 +20,7 @@ const MODES: { mode: Mode; label: string }[] = [
   { mode: "OVERWRITE", label: "Ezerek" },
 ];
 const allOf = (m: Mode): Settings => ({ STOCK: m, PRICE: m, TEXT: m, IMAGES: m, CATEGORY: m, VARIANT_INFO: m, ACTIVE: m });
-const STOCK_ONLY: Settings = { ...allOf("SKIP"), STOCK: "OVERWRITE" };
+const STOCK_ONLY: Settings = { ...DEFAULT_SYNC_MODES };
 
 interface FieldView { alan: string; grup: Group; simdiki: Val; trendyol: Val; karar: Decision; elleDegisti: boolean }
 interface ProductView {
@@ -55,9 +56,31 @@ async function call(body: object) {
   return data;
 }
 
-export default function AdminTrendyolSync() {
+export default function AdminTrendyolSync({ initial = { modes: DEFAULT_SYNC_MODES, fromSaved: false } }: { initial?: { modes: SyncModes; fromSaved: boolean } }) {
   const router = useRouter();
-  const [settings, setSettings] = useState<Settings>(STOCK_ONLY);
+  const [settings, setSettings] = useState<Settings>({ ...initial.modes });
+  const [saved, setSaved] = useState<Settings>({ ...initial.modes }); // kayıtlı değer: yalnızca formu önceden doldurur
+  const [loadedFromSaved, setLoadedFromSaved] = useState(initial.fromSaved);
+  const [saving, setSaving] = useState(false);
+  const [saveMsg, setSaveMsg] = useState("");
+  const dirty = JSON.stringify(settings) !== JSON.stringify(saved);
+
+  const onSave = async () => {
+    setSaving(true);
+    setSaveMsg("");
+    try {
+      const res = await fetch("/api/admin/trendyol/sync", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ayarlar: settings }) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Kaydedilemedi.");
+      setSaved({ ...settings });
+      setLoadedFromSaved(JSON.stringify(settings) !== JSON.stringify(DEFAULT_SYNC_MODES));
+      setSaveMsg("Ayarlar kaydedildi.");
+    } catch (e) {
+      setSaveMsg((e as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
   const [preview, setPreview] = useState<Preview | null>(null);
   const [previewSettings, setPreviewSettings] = useState<Settings | null>(null);
   const [checked, setChecked] = useState<Set<string>>(new Set());
@@ -187,6 +210,17 @@ export default function AdminTrendyolSync() {
             Ezerek seçersen elle düzelttiğin renk ve ebat adları Trendyol&apos;daki hâline geri döner.
           </p>
         )}
+        {loadedFromSaved && overwriteGroups(settings).length > 0 && (
+          <p role="alert" data-testid="ezerek-uyari" className="text-xs text-red-900 font-semibold bg-red-50 border border-red-300 rounded-lg p-3">
+            Kayıtlı ayarda &ldquo;Ezerek&rdquo; seçili: {overwriteGroups(settings).map((g) => ROWS.find((r) => r.group === g)?.label.split(" (")[0]).join(", ")}. Elle yaptığınız değişiklikler eşitlemede ezilir; uygulamadan önce önizlemeyi ve onay penceresini dikkatle okuyun.
+          </p>
+        )}
+        <div className="flex flex-wrap items-center gap-2">
+          <button type="button" data-testid="ayar-kaydet" onClick={onSave} disabled={!dirty || saving} className="min-h-11 text-xs font-semibold bg-neutral-900 hover:bg-amber-600 text-white px-4 rounded-xl transition-colors disabled:opacity-40">
+            {saving ? "Kaydediliyor..." : "Ayarları kaydet"}
+          </button>
+          <span role="status" aria-live="polite" data-testid="ayar-durum" className="text-xs text-neutral-600">{saveMsg || (dirty ? "Kaydedilmemiş değişiklik var." : "")}</span>
+        </div>
         <div className="flex flex-wrap gap-2">
           <button type="button" onClick={() => setSettings(STOCK_ONLY)} className="min-h-11 text-xs font-semibold border border-neutral-300 bg-white hover:border-amber-600 px-4 rounded-xl">
             Yalnızca stok, ezerek
