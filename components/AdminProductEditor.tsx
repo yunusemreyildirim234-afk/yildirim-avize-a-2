@@ -27,6 +27,8 @@ export interface EditorProduct {
   isFeatured?: boolean;
   isBestSeller?: boolean;
   active?: boolean;
+  /** Stoksuz olunca vitrinde gösterilmeyecek istisna listesinde mi */
+  stocklessHidden?: boolean;
   variations: EditorVariation[];
 }
 
@@ -40,7 +42,7 @@ async function api(method: string, url: string, body: Record<string, unknown>) {
 const field = "p-2 rounded-lg border border-neutral-300 bg-white text-xs focus:outline-none focus:border-amber-600";
 
 // Tekil ürün düzenleme: başlık, fiyat, model kodu, renk/stok ve görseller
-export default function AdminProductEditor({ product, onSaved, onSetActive, busyActive }: { product: EditorProduct; onSaved?: (snapshot: unknown) => void; onSetActive?: (makeActive: boolean) => void; busyActive?: boolean }) {
+export default function AdminProductEditor({ product, onSaved, onSetActive, onSetStocklessHidden, busyActive }: { product: EditorProduct; onSaved?: (snapshot: unknown) => void; onSetActive?: (makeActive: boolean) => void; onSetStocklessHidden?: (hidden: boolean) => void; busyActive?: boolean }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
 
@@ -194,6 +196,15 @@ export default function AdminProductEditor({ product, onSaved, onSetActive, busy
           >
             {product.active === false ? "Vitrine al (aktif yap)" : "Vitrinden kaldır (pasife al)"}
           </button>
+          {onSetStocklessHidden && (
+            <label className="basis-full flex items-start gap-2 font-semibold text-neutral-700 cursor-pointer">
+              <input type="checkbox" data-testid="stoksuz-gizle" checked={Boolean(product.stocklessHidden)} disabled={busyActive} onChange={(e) => onSetStocklessHidden(e.target.checked)} className="mt-0.5 w-4 h-4 shrink-0 accent-amber-600" />
+              <span>
+                Stoksuz olduğunda vitrinde gösterme
+                <span className="block font-normal text-[11px] text-neutral-500">Kategori ayarı açık olsa bile bu ürün stoğu bittiğinde vitrinde görünmez (kalıcı kaldırılan ürünler için).</span>
+              </span>
+            </label>
+          )}
         </section>
       )}
 

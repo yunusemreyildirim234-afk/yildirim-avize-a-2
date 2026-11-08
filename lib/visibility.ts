@@ -1,7 +1,7 @@
 import type { Prisma } from "@/generated/prisma/client";
 import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/db";
-import { DEFAULT_STOCKLESS_RULE, SOLD_OUT_INACTIVE_WHERE, resolveStocklessRule, stocklessEnabled, stocklessShown, visibleWhere, type StocklessRule } from "@/lib/stockless";
+import { DEFAULT_STOCKLESS_RULE, resolveStocklessRule, soldOutInactiveWhere, stocklessEnabled, stocklessShown, visibleWhere, type StocklessRule } from "@/lib/stockless";
 
 /**
  * Vitrin görünürlüğü için sunucu tarafı tek kaynak (kural: lib/stockless.ts). Ayar kapalıyken sorgu yapılmaz (eski davranış, sıfır maliyet);
@@ -12,7 +12,7 @@ export const getStocklessState = unstable_cache(
     const row = await prisma.siteConfig.findUnique({ where: { id: 1 }, select: { homepageConfig: true } });
     const rule = resolveStocklessRule(row?.homepageConfig);
     if (!stocklessEnabled(rule)) return { rule, spellings: [], rows: [] };
-    const groups = await prisma.product.groupBy({ by: ["category"], where: SOLD_OUT_INACTIVE_WHERE, _count: { _all: true } });
+    const groups = await prisma.product.groupBy({ by: ["category"], where: soldOutInactiveWhere(rule.hiddenIds), _count: { _all: true } });
     return { rule, ...stocklessShown(rule, groups.map((g) => ({ category: g.category, count: g._count._all }))) };
   },
   ["sf-stockless-state"],
@@ -31,7 +31,8 @@ export async function getStocklessRule(): Promise<StocklessRule> {
 /** Vitrinde görünür ürün koşulu (Prisma); her vitrin sorgusu bunu `AND` ile birleştirir. */
 export async function getVisibleWhere(): Promise<Prisma.ProductWhereInput> {
   try {
-    return visibleWhere((await getStocklessState()).spellings);
+    const st = await getStocklessState();
+    return visibleWhere(st.spellings, st.rule.hiddenIds);
   } catch {
     return { active: true };
   }

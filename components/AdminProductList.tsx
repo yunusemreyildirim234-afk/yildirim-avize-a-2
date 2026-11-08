@@ -195,7 +195,7 @@ Yine de geri alınsın mı?`)) await doUndo(true);
   // Aktif yap / pasife al (tek ürün): onay şart; sunucu /api/admin/product PATCH {productId, active}; Geri Al belirteci döner
   const setActive = async (p: Product, makeActive: boolean) => {
     const total = totalStockOf(p);
-    const stillShown = !makeActive && stocklessRule && isShownAsSoldOut({ active: false, totalStock: total, category: p.category }, stocklessRule) ? 1 : 0;
+    const stillShown = !makeActive && stocklessRule && isShownAsSoldOut({ id: p.id, active: false, totalStock: total, category: p.category }, stocklessRule) ? 1 : 0;
     if (!confirm(activeConfirmMessage({ makeActive, count: 1, title: p.title, soldOut: makeActive && total === 0 ? 1 : 0, stillShown }))) return;
     setLoadingId(p.id);
     try {
@@ -203,6 +203,21 @@ Yine de geri alınsın mı?`)) await doUndo(true);
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "İşlem başarısız.");
       if (data.snapshot) setUndo({ snapshot: data.snapshot, label: makeActive ? "Aktif yapma" : "Pasife alma" });
+      router.refresh();
+    } catch (e) {
+      alert((e as Error).message);
+    } finally {
+      setLoadingId(null);
+    }
+  };
+
+  // Ürün bazlı istisna kutusu: anında kaydedilir (vitrin önbelleği sunucuda temizlenir)
+  const setStocklessHidden = async (p: Product, hidden: boolean) => {
+    setLoadingId(p.id);
+    try {
+      const res = await fetch("/api/admin/product", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ productId: p.id, stocklessHidden: hidden }) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "İşlem başarısız.");
       router.refresh();
     } catch (e) {
       alert((e as Error).message);
@@ -511,8 +526,11 @@ Yine de geri alınsın mı?`)) await doUndo(true);
                     </button>
                   </p>
                 )}
-                {stocklessRule && isShownAsSoldOut({ active: product.active !== false, totalStock: totalStockOf(product), category: product.category }, stocklessRule) && (
+                {stocklessRule && isShownAsSoldOut({ id: product.id, active: product.active !== false, totalStock: totalStockOf(product), category: product.category }, stocklessRule) && (
                   <p data-testid="vitrinde-tukendi-notu" className="mt-1.5 text-[11px] text-neutral-600">Vitrinde Tükendi olarak görünür</p>
+                )}
+                {stocklessRule?.hiddenIds.includes(product.id) && (
+                  <p data-testid="stoksuz-istisna-notu" className="mt-1.5 text-[11px] text-neutral-600">Stoksuz olunca vitrinde gösterilmez (ürün istisnası)</p>
                 )}
                 <ModelCodeEditor
                   key={`${product.id}-${product.modelCode ?? ""}`}
@@ -590,9 +608,10 @@ Yine de geri alınsın mı?`)) await doUndo(true);
           {editingId === product.id && (
             <AdminProductEditor
               key={`${product.id}:${product.variations.map((v) => `${v.id}${v.variationValue}${v.stock}${v.extraPrice}${(v.images ?? []).join(",")}`).join("|")}`}
-              product={product}
+              product={{ ...product, stocklessHidden: stocklessRule?.hiddenIds.includes(product.id) ?? false }}
               busyActive={loadingId === product.id}
               onSetActive={(makeActive) => setActive(product, makeActive)}
+              onSetStocklessHidden={stocklessRule ? (hidden) => setStocklessHidden(product, hidden) : undefined}
               onSaved={(snapshot) => snapshot && setUndo({ snapshot, label: "Ürün düzenleme" })}
             />
           )}

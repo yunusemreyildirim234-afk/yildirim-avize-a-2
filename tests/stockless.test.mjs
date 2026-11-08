@@ -1,10 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { DEFAULT_STOCKLESS_RULE, effectiveShow, isProductVisible, isShownAsSoldOut, resolveStocklessRule, stocklessEnabled, stocklessShown, visibleWhere } from "../lib/stockless.ts";
+import { DEFAULT_STOCKLESS_RULE, effectiveShow, isProductVisible, isShownAsSoldOut, resolveStocklessHiddenIds, resolveStocklessRule, setStocklessHidden, soldOutInactiveWhere, stocklessEnabled, stocklessShown, visibleWhere } from "../lib/stockless.ts";
 import { patchCategorySetting, resolveCategorySettings } from "../lib/category-settings.ts";
 import { applyListing, parseListingParams, stateToParams, hasFilters } from "../lib/listing-core.ts";
 
-const rule = (global, byCategory = {}) => ({ global, byCategory });
+const rule = (global, byCategory = {}, hiddenIds = []) => ({ global, byCategory, hiddenIds });
 const P = (active, totalStock, category = "Kristal") => ({ active, totalStock, category });
 
 test("görünürlük tablosu: aktif/pasif × stoklu/stoksuz × genel/kategori ayarı", () => {
@@ -99,4 +99,53 @@ test("?stok=var: yalnızca stoklular, sayılar da bu kümeye göre; hasSoldOut d
   assert.equal(applyListing(rows, parseListingParams({}), ctx).facets.categories[0].count, 5); // varsayılanda sayılar stoksuzları içerir
   assert.equal(parseListingParams({ stok: "yok" }).stok, undefined);
   assert.equal(applyListing(rows.filter((r) => r.inStock), parseListingParams({}), ctx).hasSoldOut, false);
+});
+
+// ---- Ürün bazlı istisna (stocklessHiddenIds) ----
+const PI = (id, active, totalStock, category = "Kristal") => ({ id, active, totalStock, category });
+const X = "urun-istisna-1"; // istisna listesindeki
+const Y = "urun-baska-22"; // listede değil
+
+test("istisna tablosu: istisna × aktif/pasif × stok × ayar (genel / kategori)", () => {
+  const cases = [
+    // [ürün, kural, beklenen]
+    [PI(X, false, 0), rule(true, {}, [X]), false], // ayar açık + pasif + stoksuz ama istisnalı → gizli
+    [PI(Y, false, 0), rule(true, {}, [X]), true], // başka ürün etkilenmez
+    [PI(X, true, 0), rule(true, {}, [X]), true], // aktif ürün istisnadan etkilenmez
+    [PI(X, true, 5), rule(true, {}, [X]), true],
+    [PI(X, false, 5), rule(true, {}, [X]), false], // pasif + stoklu zaten gizli
+    [PI(X, false, 0), rule(false, {}, [X]), false], // ayar kapalı: zaten gizli
+    [PI(X, false, 0), rule(false, { kristal: "show" }, [X]), false], // kategori "göster" olsa da istisna kazanır
+    [PI(Y, false, 0), rule(false, { kristal: "show" }, [X]), true],
+    [PI(X, false, 0), rule(true, { kristal: "hide" }, []), false], // istisna listesi boş + kategori gizle
+    [PI(X, false, 0), rule(true, {}, []), true], // istisna kaldırılınca görünür
+    [PI(X, false, 0, "KRİSTAL"), rule(true, {}, [X]), false], // harf varyantı
+  ];
+  for (const [p, r, want] of cases) assert.equal(isProductVisible(p, r), want, JSON.stringify([p, r]));
+  // kimlik verilmezse istisna uygulanamaz (eski çağıranlar bozulmaz)
+  assert.equal(isShownAsSoldOut({ active: false, totalStock: 0, category: "Kristal" }, rule(true, {}, [X])), true);
+});
+
+test("istisna listesi: çözüm, ekle/çıkar, sınır, sorgu parçaları", () => {
+  assert.deepEqual(resolveStocklessHiddenIds(null), []);
+  assert.deepEqual(resolveStocklessHiddenIds({ stocklessHiddenIds: "x" }), []);
+  assert.deepEqual(resolveStocklessHiddenIds({ stocklessHiddenIds: [X, X, 5, "kısa", "bo ş bo ş bo ş", Y] }), [X, Y]); // yineleme/geçersiz atılır
+  assert.deepEqual(resolveStocklessRule({ stocklessHiddenIds: [X] }).hiddenIds, [X]);
+  assert.deepEqual(DEFAULT_STOCKLESS_RULE.hiddenIds, []);
+
+  const a = setStocklessHidden([], X, true);
+  assert.deepEqual(a, [X]);
+  assert.deepEqual(setStocklessHidden(a, X, true), [X]); // yinelenmez
+  assert.deepEqual(setStocklessHidden(a, Y, true), [X, Y]);
+  assert.deepEqual(setStocklessHidden([X, Y], X, false), [Y]);
+  assert.deepEqual(setStocklessHidden([Y], X, false), [Y]);
+  const input = [X];
+  setStocklessHidden(input, Y, true);
+  assert.deepEqual(input, [X]); // girdi değişmez
+
+  assert.deepEqual(visibleWhere(["Kristal"], []).OR[1], { variations: { none: { stock: { gt: 0 } } }, category: { in: ["Kristal"] } }); // istisna yok: eski sorgu aynen
+  assert.deepEqual(visibleWhere(["Kristal"], [X]).OR[1], { variations: { none: { stock: { gt: 0 } } }, category: { in: ["Kristal"] }, id: { notIn: [X] } });
+  assert.deepEqual(visibleWhere([], [X]), { active: true }); // ayar kapalı: istisna sorguyu değiştirmez
+  assert.equal(soldOutInactiveWhere([]).id, undefined);
+  assert.deepEqual(soldOutInactiveWhere([X]).id, { notIn: [X] });
 });

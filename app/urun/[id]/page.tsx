@@ -30,7 +30,7 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const product = await getProductDetail(id); // önbellekli (60 sn), sayfayla aynı sonuç
-  if (!product || !isProductVisible({ active: product.active, totalStock: totalStockOf(product), category: product.category }, await getStocklessRule())) return {};
+  if (!product || !isProductVisible({ id: product.id, active: product.active, totalStock: totalStockOf(product), category: product.category }, await getStocklessRule())) return {};
   // Satır sonları/yinelenen boşluklar tek boşluğa indirilir (og:description ve meta açıklama düz metin olsun)
   const description =
     (product.description ?? "").replace(/\s+/g, " ").trim().slice(0, 160) || `${product.title} – Yıldırım Avize Beyoğlu Şişhane`;
@@ -64,7 +64,7 @@ export default async function ProductDetailPage({ params }: Props) {
   const ladderCtx = await getLadderContext();
 
   // Görünürlük: aktif ürün VEYA (ayar açık + pasif + toplam stok 0) — kural lib/stockless.ts, vitrin sorgularıyla aynı
-  if (!product || !isProductVisible({ active: product.active, totalStock: totalStockOf(product), category: product.category }, await getStocklessRule())) {
+  if (!product || !isProductVisible({ id: product.id, active: product.active, totalStock: totalStockOf(product), category: product.category }, await getStocklessRule())) {
     notFound();
   }
 

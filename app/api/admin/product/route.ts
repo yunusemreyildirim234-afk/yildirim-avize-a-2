@@ -8,6 +8,7 @@ import { attachUploads, pruneUploads } from "@/lib/product-images";
 import { MAX_PRODUCT_IMAGES, parseImageUrls, parseVariations, uploadedIdsOf } from "@/lib/variation-input";
 import { normalizeEbat } from "@/lib/listing-core";
 import { schedulePriceDrops } from "@/lib/price-drop-notify";
+import { resolveStocklessHiddenIds, setStocklessHidden } from "@/lib/stockless";
 import { buildUndoToken, snapshotForDelete, snapshotProducts } from "@/lib/admin-undo";
 
 // 1. Yeni Avize Ekleme (POST): ürün + tüm renkler TEK transaction'da; fotoğraflar önceden /api/admin/product-images ile yüklenir
@@ -102,6 +103,21 @@ async function PATCHHandler(req: Request) {
       if (before.length === 0) return NextResponse.json({ error: "Ürün bulunamadı." }, { status: 404 });
       if (before[0].fields.active !== body.active) await prisma.product.update({ where: { id: body.productId }, data: { active: body.active } });
       return NextResponse.json({ success: true, active: body.active, snapshot: await buildUndoToken(before) });
+    }
+
+    // Ürün bazlı istisna: "Stoksuz olduğunda vitrinde gösterme" (SiteConfig.homepageConfig.stocklessHiddenIds; şemasız). Aktif ürünleri etkilemez.
+    if (typeof body.productId === "string" && "stocklessHidden" in body) {
+      if (typeof body.stocklessHidden !== "boolean") return NextResponse.json({ error: "Geçersiz istek." }, { status: 400 });
+      if (!(await prisma.product.findUnique({ where: { id: body.productId }, select: { id: true } }))) return NextResponse.json({ error: "Ürün bulunamadı." }, { status: 404 });
+      await prisma.$transaction(async (tx) => {
+        const cur = (await tx.siteConfig.findUnique({ where: { id: 1 }, select: { homepageConfig: true } }))?.homepageConfig;
+        const cfg: Record<string, unknown> = cur && typeof cur === "object" && !Array.isArray(cur) ? { ...(cur as Record<string, unknown>) } : {};
+        const ids = setStocklessHidden(resolveStocklessHiddenIds(cfg), body.productId, body.stocklessHidden);
+        if (ids.length) cfg.stocklessHiddenIds = ids;
+        else delete cfg.stocklessHiddenIds; // boş = varsayılan
+        await tx.siteConfig.upsert({ where: { id: 1 }, create: { id: 1, homepageConfig: cfg as object }, update: { homepageConfig: cfg as object } });
+      });
+      return NextResponse.json({ success: true, stocklessHidden: body.stocklessHidden });
     }
 
     // Tekil ürün düzenleme: başlık, fiyat, görseller (varsa model kodu ile birlikte)
