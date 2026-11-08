@@ -1,6 +1,6 @@
 import type { APIRequestContext, Page } from "@playwright/test";
 import { test, expect } from "../../fixtures";
-import { expandPanel, openAdmin } from "../../admin-helpers";
+import { expandPanel, openAdmin, restoreHomepageConfig, settleStorefront } from "../../admin-helpers";
 import { exec, rows } from "../../db";
 
 // Ürün bazlı istisna: "Stoksuz olduğunda vitrinde gösterme" (homepageConfig.stocklessHiddenIds). Genel "Stoksuz ürünleri göster" açıkken
@@ -48,6 +48,8 @@ test.describe("Stoksuz ürün istisnası", () => {
     for (const k of ["p1", "p2", "p3", "p4"] as const) if (id[k]) await setHidden(request, id[k], false).catch(() => {});
     await setGlobal(request, false).catch(() => {});
     await exec(`delete from "Product" where title like 'E2E Istisna%'`).catch(() => {});
+    await restoreHomepageConfig(originalConfig).catch(() => {});
+    await settleStorefront(request);
     const now = (await rows<{ homepageConfig: unknown }>(`select "homepageConfig" from "SiteConfig" where id = 1`))[0]?.homepageConfig ?? null;
     expect(now, "homepageConfig eski haline döndü").toEqual(originalConfig);
   });

@@ -137,3 +137,23 @@ export async function cleanupE2eCategories(request: APIRequestContext) {
   const cats = await rows<{ category: string }>(`select distinct category from "Product" where category ilike 'e2e %'`).catch(() => []);
   for (const c of cats) await request.post("/api/admin/categories", { data: { action: "delete", key: catKey(c.category) } }).catch(() => {});
 }
+
+/**
+ * Vitrin önbelleği "eskiyken-yenile" çalışır ve diske yazılır: bir spec ayarı/ürünleri geri alsa bile geri almadan ÖNCEki sayfa/menü verisi
+ * önbellekte kalabilir ve sonraki ilk istek (başka spec ya da yeni koşu) onu bir kez bayat okur (ör. b-menu "Sarkıt: kart yok").
+ * afterAll sonunda çağrılır: sayfaları iki turda okutarak önbelleği geri alınmış veritabanı durumuyla yeniler.
+ */
+export async function settleStorefront(request: APIRequestContext) {
+  const paths = ["/", "/kategori/tum", "/kategori/sarkit", "/kategori/kristal", "/sitemap.xml"];
+  for (let round = 0; round < 2; round++) {
+    for (const p of paths) await request.get(p, { maxRedirects: 0 }).catch(() => {});
+    await new Promise((r) => setTimeout(r, 4000)); // arka plan yenilemesi bitsin
+  }
+}
+
+/** homepageConfig'i testten önceki değerine doğrudan geri yazar (API ile geri alma başarısız olduysa güvenlik ağı). Gerekmiyorsa dokunmaz. */
+export async function restoreHomepageConfig(original: unknown) {
+  const cur = (await rows<{ homepageConfig: unknown }>(`select "homepageConfig" from "SiteConfig" where id = 1`))[0]?.homepageConfig ?? null;
+  if (JSON.stringify(cur) === JSON.stringify(original)) return;
+  await exec(`update "SiteConfig" set "homepageConfig" = $1::jsonb where id = 1`, [original === null ? null : JSON.stringify(original)]);
+}

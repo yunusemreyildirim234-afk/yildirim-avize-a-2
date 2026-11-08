@@ -1,6 +1,6 @@
 import type { APIRequestContext, Page } from "@playwright/test";
 import { test, expect } from "../../fixtures";
-import { expandPanel, openAdmin, refreshStorefront } from "../../admin-helpers";
+import { expandPanel, openAdmin, refreshStorefront, restoreHomepageConfig, settleStorefront } from "../../admin-helpers";
 import { exec, rows } from "../../db";
 
 // "Stoksuz ürünleri vitrinde Tükendi olarak göster" ayarı (genel + kategori bazlı). Yalnızca "E2E " önekli ürün/kategori üretilir; ayar sonda ESKİ haline getirilir.
@@ -56,6 +56,8 @@ test.describe("Stoksuz ürünler vitrinde Tükendi", () => {
     await setCat(request, KEY2, null).catch(() => {});
     await setCat(request, "e2e stoksuz kat", null).catch(() => {});
     await exec(`delete from "Product" where title like 'E2E Stoksuz%'`).catch(() => {});
+    await restoreHomepageConfig(originalConfig).catch(() => {}); // API geri alması başarısız olsa bile ayar eski haline döner
+    await settleStorefront(request);
     // Ayar ESKİ haline döndü mü?
     const now = (await rows<{ homepageConfig: unknown }>(`select "homepageConfig" from "SiteConfig" where id = 1`))[0]?.homepageConfig ?? null;
     expect(now, "homepageConfig eski haline döndü").toEqual(originalConfig);

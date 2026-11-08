@@ -1,6 +1,6 @@
 import type { APIRequestContext, Dialog, Page } from "@playwright/test";
 import { test, expect } from "../../fixtures";
-import { expandPanel, openAdmin } from "../../admin-helpers";
+import { expandPanel, openAdmin, settleStorefront } from "../../admin-helpers";
 import { exec, rows } from "../../db";
 
 // Admin: ürünü Aktif yap / Pasife al (tek: rozet kısayolu ve düzenleme bölümü; toplu: Toplu işlem çubuğu), onay penceresi ve Geri Al.
@@ -49,8 +49,9 @@ test.describe("Aktif yap / Pasife al", () => {
     id.b = await insert(T.b, false, 4);
     id.c = await insert(T.c, true, 0);
   });
-  test.afterAll(async () => {
+  test.afterAll(async ({ request }) => {
     await exec(`delete from "Product" where title like 'E2E Aktif%'`).catch(() => {});
+    await settleStorefront(request);
   });
 
   test("rozet kısayolu: iptal edilince değişiklik yok; onaylanınca vitrinde görünür; Geri Al tekrar gizler", async ({ page, request }) => {

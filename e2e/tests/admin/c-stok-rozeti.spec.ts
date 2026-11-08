@@ -1,6 +1,6 @@
 import type { APIRequestContext, Page } from "@playwright/test";
 import { test, expect } from "../../fixtures";
-import { openAdmin, refreshStorefront } from "../../admin-helpers";
+import { openAdmin, refreshStorefront, restoreHomepageConfig, settleStorefront } from "../../admin-helpers";
 import { exec, rows } from "../../db";
 
 // "Stok azaldı rozeti" ("Son N adet"): genel anahtar (varsayılan KAPALI) + eşik (1..10). Yalnızca gerçek stoktan; Tükendi ve eşik üstünde rozet yok.
@@ -42,6 +42,8 @@ test.describe("Son N adet stok rozeti", () => {
   test.afterAll(async ({ request }) => {
     await saveSetting(request, false, 3).catch(() => {});
     await exec(`delete from "Product" where title like 'E2E Rozet%'`).catch(() => {});
+    await restoreHomepageConfig(originalConfig).catch(() => {});
+    await settleStorefront(request);
     const now = (await rows<{ homepageConfig: unknown }>(`select "homepageConfig" from "SiteConfig" where id = 1`))[0]?.homepageConfig ?? null;
     expect(now, "homepageConfig eski haline döndü").toEqual(originalConfig);
   });
