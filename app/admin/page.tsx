@@ -315,7 +315,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         />
 
         {/* 3. Canlı Avize Kataloğu & Stok Yönetimi */}
-        <AdminProductList products={products} maxTotalDiscountPct={discountCap} showcase={showcase} extraCategories={extraCategories} />
+        <AdminProductList products={products} maxTotalDiscountPct={discountCap} showcase={showcase} extraCategories={extraCategories} stocklessRule={resolveStocklessRule(homeRaw)} />
 
         {/* 4. Canlı Siparişler & Kargonomi Operasyon Tablosu */}
         <AdminSection

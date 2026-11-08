@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Boxes, ChevronDown, ExternalLink, Lightbulb, Pencil, Search, Trash2, Undo2 } from "lucide-react";
+import { AlertTriangle, Boxes, ChevronDown, ExternalLink, Lightbulb, Pencil, Search, Trash2, Undo2 } from "lucide-react";
 import { useOpenOnHash } from "@/components/useOpenOnHash";
 import { useRouter } from "next/navigation";
 import AdminBulkBar from "@/components/AdminBulkBar";
@@ -13,6 +13,7 @@ import { bulkTiersOf, tierBadgeLabel, tierValueLabel } from "@/lib/bulk-pricing"
 import { CATEGORIES } from "@/lib/site";
 import { buildCategoryList, productInCategory } from "@/lib/categories";
 import { uncategorizedCount } from "@/lib/category-settings";
+import { isShownAsSoldOut, type StocklessRule } from "@/lib/stockless";
 
 const NONE_KEY = "__kategorisiz__"; // "Kategorisiz (N)" çipi
 import { coverImageOf } from "@/lib/variation-input";
@@ -54,8 +55,11 @@ const hasDiscount = (p: Product) => Boolean(p.listPrice && p.listPrice > p.baseP
 // Vitrin çipleri, sitedeki (ana sayfa / kategori) ürün kümesiyle AYNI ürünleri kullanır: sunucu bu kümeleri hesaplayıp kimlik listesi olarak verir
 // (yönetici işaretlileri varsa onlar, yoksa otomatik seçim; Çok Satanlar: işaretliler + en çok satılanlar).
 type ChipSets = { featured: Set<string>; bestseller: Set<string> };
+// Pasif ama en az bir varyasyonu stoklu: vitrinde GÖRÜNMEZ (satış kaybı riski); kural bilinçli olarak değişmez, yönetici uyarılır
+const totalStockOf = (p: Product) => p.variations.reduce((sum, v) => sum + Math.max(0, v.stock), 0);
+const stockedInactive = (p: Product) => p.active === false && totalStockOf(p) > 0;
 const chipTest = (key: string, p: Product, sets: ChipSets): boolean =>
-  key === "discount" ? hasDiscount(p) : key === "featured" ? sets.featured.has(p.id) : key === "bestseller" ? sets.bestseller.has(p.id) : false;
+  key === "stockedinactive" ? stockedInactive(p) : key === "discount" ? hasDiscount(p) : key === "featured" ? sets.featured.has(p.id) : key === "bestseller" ? sets.bestseller.has(p.id) : false;
 
 function ModelCodeEditor({ initial, disabled, onSave }: { initial: string; disabled: boolean; onSave: (code: string) => void }) {
   const [value, setValue] = useState(initial);
@@ -123,7 +127,7 @@ function DiscountBadges({ product, onRemove, disabled }: { product: Product; onR
 
 const norm = (v?: string | null) => (v ?? "").toLocaleLowerCase("tr").trim();
 
-export default function AdminProductList({ products, maxTotalDiscountPct, showcase, extraCategories = [] }: { products: Product[]; maxTotalDiscountPct?: number | null; extraCategories?: string[]; showcase: { featured: string[]; bestSellers: string[]; manualFeatured: number } }) {
+export default function AdminProductList({ products, maxTotalDiscountPct, showcase, extraCategories = [], stocklessRule }: { products: Product[]; maxTotalDiscountPct?: number | null; extraCategories?: string[]; stocklessRule?: StocklessRule; showcase: { featured: string[]; bestSellers: string[]; manualFeatured: number } }) {
   const sets = useMemo<ChipSets>(() => ({ featured: new Set(showcase.featured), bestseller: new Set(showcase.bestSellers) }), [showcase]);
   const router = useRouter();
   const [loadingId, setLoadingId] = useState<string | null>(null);
@@ -382,6 +386,7 @@ Yine de geri alınsın mı?`)) await doUndo(true);
               { key: "discount", label: "İndirimdekiler", count: products.filter((p) => chipTest("discount", p, sets)).length },
               { key: "featured", label: "Öne Çıkanlar", count: products.filter((p) => chipTest("featured", p, sets)).length },
               { key: "bestseller", label: "Çok Satanlar", count: products.filter((p) => chipTest("bestseller", p, sets)).length },
+              ...(products.some(stockedInactive) ? [{ key: "stockedinactive", label: "Stoğu var ama pasif", count: products.filter(stockedInactive).length }] : []),
             ]}
           />
           <div className="mt-2">
@@ -477,6 +482,15 @@ Yine de geri alınsın mı?`)) await doUndo(true);
                   {product.basePrice.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺
                 </span>
                 <DiscountBadges product={product} disabled={loadingId === product.id} onRemove={(payload, label) => removeFromProduct(product.id, payload, label)} />
+                {stockedInactive(product) && (
+                  <p data-testid="stoklu-pasif-rozet" className="mt-1.5 inline-flex max-w-full items-start gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-950">
+                    <AlertTriangle aria-hidden="true" className="mt-px h-3.5 w-3.5 shrink-0 text-amber-700" />
+                    <span>Stoğu var ama pasif: vitrinde görünmüyor</span>
+                  </p>
+                )}
+                {stocklessRule && isShownAsSoldOut({ active: product.active !== false, totalStock: totalStockOf(product), category: product.category }, stocklessRule) && (
+                  <p data-testid="vitrinde-tukendi-notu" className="mt-1.5 text-[11px] text-neutral-600">Vitrinde Tükendi olarak görünür</p>
+                )}
                 <ModelCodeEditor
                   key={`${product.id}-${product.modelCode ?? ""}`}
                   initial={product.modelCode ?? ""}
