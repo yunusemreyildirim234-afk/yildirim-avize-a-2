@@ -32,7 +32,7 @@ interface LocationItem {
 
 export default function CartPage() {
   const router = useRouter();
-  const { cart, removeFromCart, emptyCart, updateQuantity, applyServerPrices, clearCart, totalPrice } = useCart();
+  const { cart, removeFromCart, emptyCart, updateQuantity, applyServerPrices, refreshNames, clearCart, totalPrice } = useCart();
 
   // Eski sepet kayıtlarında görsel yoksa ürün görselleri veritabanından tamamlanır
   const [images, setImages] = useState<Record<string, string>>({});
@@ -150,7 +150,7 @@ export default function CartPage() {
 
   // Sunucu fiyat teklifi (/api/cart/quote, salt okunur): gösterilen tutar buradan gelir
   interface Quote {
-    lines: { variationId: string; available: boolean; stockShort?: boolean; title?: string; price?: number; unitPrice?: number; bulk?: BulkRule[]; rules?: ItemRules; capInfo?: CapInfo | null; ladder?: LadderStep[] }[];
+    lines: { variationId: string; available: boolean; stockShort?: boolean; title?: string; variationName?: string; price?: number; unitPrice?: number; bulk?: BulkRule[]; rules?: ItemRules; capInfo?: CapInfo | null; ladder?: LadderStep[] }[];
     totals: { itemsTotal: number; shipping: number; couponDiscount: number; pickupDiscount: number; bankDiscount: number; total: number };
     coupon: { ok: boolean; error?: string; limited?: boolean } | null;
     maxTotalDiscountPct?: number | null;
@@ -188,6 +188,7 @@ export default function CartPage() {
   // Teklifi uygular: bayat fiyat/kademeler güncellenir, fark varsa kullanıcıya bildirilir ve onayı istenir
   const absorbQuote = (q: Quote, shownTotal: number) => {
     applyServerPrices(q.lines.filter((l) => l.available && typeof l.price === "number").map((l) => ({ variationId: l.variationId, price: l.price as number, bulk: l.bulk ?? [], rules: l.rules })));
+    refreshNames(q.lines.filter((l) => l.available && typeof l.variationName === "string").map((l) => ({ variationId: l.variationId, variationName: l.variationName as string })));
     setIssues(q.lines.flatMap((l) => (!l.available ? ["Sepetinizdeki bir ürün artık satışta değil."] : l.stockShort ? [`"${l.title}" için yeterli stok yok.`] : [])));
     if (appliedCoupon && q.coupon?.limited) {
       // Deneme sınırı: kupon düşürülmez, kod ve durum korunur; mesaj gösterilir

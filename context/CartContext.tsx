@@ -9,6 +9,7 @@ import { gtmPush } from "@/lib/gtm";
 import { addToCartEvent, gaItem } from "@/lib/gtm-events";
 import { bulkTiersOf, type BulkRule } from "@/lib/bulk-pricing";
 import { priceCart, type CartPriceLine } from "@/lib/cart-pricing";
+import { applyNameUpdates } from "@/lib/cart-names";
 
 export interface CartItem {
   productId: string;
@@ -49,6 +50,8 @@ interface CartContextType {
   updateQuantity: (variationId: string, quantity: number) => void;
   /** Sunucunun güncel birim fiyat/kademe bilgisini sepet kalemlerine yazar (bayat tarayıcı fiyatı korunmaz). */
   applyServerPrices: (updates: { variationId: string; price: number; bulk: BulkRule[]; rules?: ItemRules }[]) => void;
+  /** Sunucudaki güncel varyasyon adını sepet kopyasına yazar (tür öneki korunur; ad değişmediyse state ve localStorage değişmez). */
+  refreshNames: (updates: { variationId: string; variationName: string }[]) => void;
   clearCart: () => void;
   totalItems: number;
   totalPrice: number;
@@ -175,6 +178,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  const refreshNames = (updates: { variationId: string; variationName: string }[]) => setCart((prev) => applyNameUpdates(prev, updates));
+
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = priceCart({ lines: cartPriceLines(cart), shippingType: "STANDART_KARGO", paymentMethod: "CREDIT_CARD" }).itemsTotal;
 
@@ -187,6 +192,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         emptyCart,
         updateQuantity,
         applyServerPrices,
+        refreshNames,
         clearCart,
         totalItems,
         totalPrice,
