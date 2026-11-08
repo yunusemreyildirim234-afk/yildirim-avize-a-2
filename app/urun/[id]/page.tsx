@@ -8,6 +8,8 @@ import ProductQuestionForm from "@/components/ProductQuestionForm";
 import ProductCard from "@/components/ProductCard";
 import { getProductDetail, getProductsCached } from "@/lib/products";
 import { getUserSession } from "@/lib/account";
+import { getStocklessRule } from "@/lib/visibility";
+import { isProductVisible } from "@/lib/stockless";
 import { reviewEligibility, type ReviewEligibility } from "@/lib/reviews";
 import JsonLd from "@/components/JsonLd";
 import { CATEGORIES, SITE_URL } from "@/lib/site";
@@ -19,6 +21,8 @@ import { coverImageOf, imageListOf } from "@/lib/variation-input";
 import { GtmEvent } from "@/components/GtmEvent";
 import { gaItem, viewItemEvent } from "@/lib/gtm-events";
 
+const totalStockOf = (p: { variations: { stock: number }[] }) => p.variations.reduce((sum, v) => sum + Math.max(0, v.stock), 0);
+
 interface Props {
   params: Promise<{ id: string }>;
 }
@@ -26,7 +30,7 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const product = await getProductDetail(id); // önbellekli (60 sn), sayfayla aynı sonuç
-  if (!product || !product.active) return {};
+  if (!product || !isProductVisible({ active: product.active, totalStock: totalStockOf(product), category: product.category }, await getStocklessRule())) return {};
   // Satır sonları/yinelenen boşluklar tek boşluğa indirilir (og:description ve meta açıklama düz metin olsun)
   const description =
     (product.description ?? "").replace(/\s+/g, " ").trim().slice(0, 160) || `${product.title} – Yıldırım Avize Beyoğlu Şişhane`;
@@ -59,12 +63,13 @@ export default async function ProductDetailPage({ params }: Props) {
 
   const ladderCtx = await getLadderContext();
 
-  if (!product || !product.active) {
+  // Görünürlük: aktif ürün VEYA (ayar açık + pasif + toplam stok 0) — kural lib/stockless.ts, vitrin sorgularıyla aynı
+  if (!product || !isProductVisible({ active: product.active, totalStock: totalStockOf(product), category: product.category }, await getStocklessRule())) {
     notFound();
   }
 
   const hasCategory = product.category.trim().length > 0; // kategorisiz ürün: benzer ürün / kategori yolu / kategori alanı yok
-  const similar = hasCategory ? await getProductsCached({ category: product.category, id: { not: product.id } }, 4).catch(() => []) : [];
+  const similar = hasCategory ? await getProductsCached({ active: true, variations: { some: { stock: { gt: 0 } } }, category: product.category, id: { not: product.id } }, 4).catch(() => []) : [];
 
   const userSession = await getUserSession();
   const eligibility: ReviewEligibility | "guest" = userSession?.uid ? await reviewEligibility(userSession.uid, product.id) : "guest";

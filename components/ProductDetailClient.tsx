@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Heart } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -9,6 +9,7 @@ import { toastHref } from "@/lib/toast-link";
 import { coverImageOf, galleryOf } from "@/lib/variation-input";
 import { HoverMagnifier, ImageLightbox } from "@/components/ImageZoom";
 import { useCart } from "@/context/CartContext";
+import { useWishlist } from "@/context/WishlistContext";
 import { FREE_SHIPPING_THRESHOLD, PICKUP_DISCOUNT, SHIPPING_TYPES } from "@/lib/pricing";
 import { priceCart, ruleNotes } from "@/lib/cart-pricing";
 import { withShowcaseNote } from "@/lib/coupon-code";
@@ -52,6 +53,7 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref }
   const router = useRouter();
   const maxTotalDiscountPct = ladderCtx.maxTotalDiscountPct;
   const { addToCart } = useCart();
+  const { isFavorite, toggleFavorite } = useWishlist();
 
   const [selectedVariation, setSelectedVariation] = useState<Variation | null>(
     product.variations.find((v) => v.stock > 0) || product.variations[0] || null
@@ -101,9 +103,12 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref }
   const notes = withShowcaseNote(ruleNotes(rules), ladderCtx.coupon?.code); // "XXX kuponu kullanılamamaktadır" notundaki kod vitrin kuponundan gelir
   const maxQty = selectedVariation ? Math.max(0, selectedVariation.stock) : 0;
   const outOfStock = !selectedVariation || maxQty <= 0;
+  const soldOut = product.variations.every((v) => v.stock <= 0); // tüm seçenekler tükendi: satın alma bölümü yerine stok sorma
+  const fav = isFavorite(product.id);
   const freeShipping = currentPrice >= FREE_SHIPPING_THRESHOLD;
   const waMessage = `Merhaba, ${product.title}${product.modelCode ? ` (Model: ${product.modelCode})` : ""} avize modeli hakkında bilgi almak istiyorum: ${SITE_URL}/urun/${product.id}`;
-  const waUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(waMessage)}`;
+  const stockMessage = `Merhaba, ${product.modelCode ? `${product.modelCode} model kodlu ` : ""}'${product.title}' ürününün stoğu ne zaman gelir? ${SITE_URL}/urun/${product.id}`;
+  const waUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(soldOut ? stockMessage : waMessage)}`;
 
   const handleAddToCart = () => {
     if (!selectedVariation || outOfStock) return;
@@ -243,6 +248,11 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref }
               Model Kodu: #{product.modelCode}
             </span>
           )}
+          {soldOut && (
+            <span data-testid="tukendi-rozet" className="ml-2 inline-block text-xs font-bold text-white bg-zinc-900 px-3 py-1 rounded-md align-middle">
+              Tükendi
+            </span>
+          )}
           <h1 className="text-2xl sm:text-3xl font-serif font-bold leading-tight tracking-tight text-neutral-900">
             {product.title}
           </h1>
@@ -355,50 +365,76 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref }
           </div>
         )}
 
-        {/* Adet ve Sepete Ekleme */}
+        {/* Adet ve Sepete Ekleme (tükenmiş üründe: stok sorma + favori) */}
         <div className="space-y-4 pt-6 border-t border-neutral-100">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center border border-neutral-300 rounded-xl overflow-hidden bg-neutral-50">
+          {soldOut ? (
+            <div data-testid="stok-yok-bolumu" className="space-y-3">
+              <p className="text-sm font-semibold text-neutral-900">Bu ürün şu an stokta yok</p>
+              <a
+                href={waUrl}
+                data-testid="stok-sor"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 w-full min-h-11 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-semibold py-2.5 transition-colors"
+              >
+                Stok durumunu sor
+              </a>
               <button
                 type="button"
-                onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                aria-label="Adedi azalt"
-                className="min-w-11 min-h-11 px-3.5 hover:bg-neutral-200 text-sm font-semibold transition-colors"
+                data-testid="favori-ekle"
+                aria-pressed={fav}
+                onClick={() => toggleFavorite({ id: product.id, title: product.title, category: product.category, basePrice: product.basePrice, imageUrl: coverImageOf(product) })}
+                className="flex items-center justify-center gap-2 w-full min-h-11 rounded-xl border border-neutral-300 text-neutral-800 hover:border-amber-600 text-sm font-semibold py-2.5 transition-colors"
               >
-                -
-              </button>
-              <span aria-live="polite" className="min-w-8 text-center text-sm font-bold text-neutral-800">
-                {quantity}
-              </span>
-              <button
-                type="button"
-                onClick={() => setQuantity((q) => Math.min(maxQty, q + 1))}
-                disabled={quantity >= maxQty}
-                aria-label="Adedi artır"
-                className="min-w-11 min-h-11 px-3.5 hover:bg-neutral-200 text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                +
+                <Heart aria-hidden="true" className={`w-4 h-4 ${fav ? "fill-red-500 text-red-500" : ""}`} /> {fav ? "Favorilerde" : "Favorilere ekle"}
               </button>
             </div>
-
-            <button
-              type="button"
-              onClick={handleAddToCart}
-              disabled={outOfStock}
-              className="flex-1 min-h-11 bg-neutral-900 hover:bg-amber-600 text-white font-medium py-3 px-4 sm:px-6 rounded-xl transition-colors shadow-sm text-sm disabled:opacity-50 disabled:hover:bg-neutral-900 disabled:cursor-not-allowed"
+          ) : (
+            <>
+          <div className="flex items-center gap-4">
+              <div className="flex items-center border border-neutral-300 rounded-xl overflow-hidden bg-neutral-50">
+                <button
+                  type="button"
+                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                  aria-label="Adedi azalt"
+                  className="min-w-11 min-h-11 px-3.5 hover:bg-neutral-200 text-sm font-semibold transition-colors"
+                >
+                  -
+                </button>
+                <span aria-live="polite" className="min-w-8 text-center text-sm font-bold text-neutral-800">
+                  {quantity}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setQuantity((q) => Math.min(maxQty, q + 1))}
+                  disabled={quantity >= maxQty}
+                  aria-label="Adedi artır"
+                  className="min-w-11 min-h-11 px-3.5 hover:bg-neutral-200 text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  +
+                </button>
+              </div>
+  
+              <button
+                type="button"
+                onClick={handleAddToCart}
+                disabled={outOfStock}
+                className="flex-1 min-h-11 bg-neutral-900 hover:bg-amber-600 text-white font-medium py-3 px-4 sm:px-6 rounded-xl transition-colors shadow-sm text-sm disabled:opacity-50 disabled:hover:bg-neutral-900 disabled:cursor-not-allowed"
+              >
+                {outOfStock ? "Stokta Yok" : addedToCart ? "✓ Sepete Eklendi!" : "Sepete Ekle"}
+              </button>
+            </div>
+  
+            <a
+              href={waUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 w-full rounded-xl border border-emerald-600 text-emerald-700 hover:bg-emerald-50 text-sm font-semibold py-2.5 transition-colors"
             >
-              {outOfStock ? "Stokta Yok" : addedToCart ? "✓ Sepete Eklendi!" : "Sepete Ekle"}
-            </button>
-          </div>
-
-          <a
-            href={waUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 w-full rounded-xl border border-emerald-600 text-emerald-700 hover:bg-emerald-50 text-sm font-semibold py-2.5 transition-colors"
-          >
-            WhatsApp ile Bu Ürünü Sor
-          </a>
+              WhatsApp ile Bu Ürünü Sor
+            </a>
+            </>
+          )}
 
           <div className="bg-amber-50/60 border border-amber-200/60 rounded-xl p-3.5 text-xs text-amber-950 flex items-start gap-2.5">
             <span aria-hidden="true" className="text-base">📍</span>
