@@ -8,6 +8,7 @@ import { VISIBLE_PRODUCT_WHERE, buildCategoryList, categoryKey, RESERVED_SLUGS }
 import { COLLECTIONS, CATEGORIES } from "@/lib/site";
 import { buildUndoToken, snapshotProducts } from "@/lib/admin-undo";
 import { resolveCollectionKeys } from "@/lib/collections";
+import { DEFAULT_LOW_STOCK_THRESHOLD, validThreshold } from "@/lib/low-stock";
 import {
   addRedirect,
   patchCategorySetting,
@@ -67,6 +68,21 @@ async function POSTHandler(req: Request) {
       mutateConfig(tx, (cfg) => {
         if (body.value) cfg.showStockless = true;
         else delete cfg.showStockless; // kapalı = varsayılan
+        return cfg;
+      })
+    );
+    return NextResponse.json({ success: true });
+  }
+  // ---- "Son N adet" stok rozeti: genel anahtar + eşik (1..10). Kapalı + varsayılan eşik = kayıt silinir (varsayılan) ----
+  if (body.action === "lowStock") {
+    const threshold = validThreshold(body.threshold);
+    if (typeof body.enabled !== "boolean" || threshold === null) return NextResponse.json({ error: "Eşik 1 ile 10 arasında tam sayı olmalıdır." }, { status: 400 });
+    await prisma.$transaction((tx) =>
+      mutateConfig(tx, (cfg) => {
+        if (body.enabled) cfg.lowStockBadge = true;
+        else delete cfg.lowStockBadge;
+        if (threshold !== DEFAULT_LOW_STOCK_THRESHOLD) cfg.lowStockThreshold = threshold;
+        else delete cfg.lowStockThreshold;
         return cfg;
       })
     );

@@ -23,6 +23,8 @@ import { getCategoryList, getCategorySettings } from "@/lib/category-list";
 import { uncategorizedCount } from "@/lib/category-settings";
 import { resolveStocklessRule } from "@/lib/stockless";
 import AdminDiscountSettings from "@/components/AdminDiscountSettings";
+import AdminLowStock from "@/components/AdminLowStock";
+import { resolveLowStock } from "@/lib/low-stock";
 import AdminSessions from "@/components/AdminSessions";
 import AdminTwoFactor, { AdminTwoFactorBanner } from "@/components/AdminTwoFactor";
 import AdminPasswordChange from "@/components/AdminPasswordChange";
@@ -267,6 +269,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         <AdminAddProduct extraCategories={extraCategories} />
 
         <AdminDiscountSettings initial={discountCap} />
+        <AdminLowStock initial={resolveLowStock(homeRaw)} />
         <AdminSessions />
         <AdminSection id="guvenlik" icon={<ShieldCheck aria-hidden="true" className="w-4 h-4 text-amber-600" />} title="İki Aşamalı Doğrulama (Yönetici Hesapları)" description="Yönetici girişine e-posta kodu ekleyin veya kapatın.">
           <AdminTwoFactor admins={adminRows} />

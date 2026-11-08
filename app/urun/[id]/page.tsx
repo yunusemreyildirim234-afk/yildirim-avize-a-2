@@ -9,6 +9,7 @@ import ProductCard from "@/components/ProductCard";
 import { getProductDetail, getProductsCached } from "@/lib/products";
 import { getUserSession } from "@/lib/account";
 import { getStocklessRule } from "@/lib/visibility";
+import { getLowStockSetting } from "@/lib/low-stock-setting";
 import { isProductVisible } from "@/lib/stockless";
 import { reviewEligibility, type ReviewEligibility } from "@/lib/reviews";
 import JsonLd from "@/components/JsonLd";
@@ -149,7 +150,7 @@ export default async function ProductDetailPage({ params }: Props) {
         />
 
         {/* İstemci Tarafı İnteraktif Detay Bileşeni */}
-        <ProductDetailClient product={product} ladderCtx={ladderCtx} categoryHref={categoryHref} />
+        <ProductDetailClient product={product} ladderCtx={ladderCtx} categoryHref={categoryHref} lowStock={await getLowStockSetting()} />
 
         {similar.length > 0 && (
           <section aria-labelledby="benzer" className="mt-10">

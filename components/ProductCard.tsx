@@ -7,6 +7,8 @@ import { getLadderContext } from "@/lib/showcase";
 import { priceLadder } from "@/lib/price-ladder";
 import { coverImageOf, galleryOf } from "@/lib/variation-input";
 import { CartStepper, FavoriteButton } from "@/components/ProductQuickActions";
+import { lowStockLabel } from "@/lib/low-stock";
+import { getLowStockSetting } from "@/lib/low-stock-setting";
 
 export default async function ProductCard({
   product,
@@ -20,6 +22,7 @@ export default async function ProductCard({
 }) {
   const ladder = priceLadder(product, await getLadderContext());
   const totalStock = product.variations.reduce((sum, v) => sum + v.stock, 0);
+  const lowStock = lowStockLabel(totalStock, await getLowStockSetting()); // ayar kapalıysa null
   const discount =
     product.listPrice && product.listPrice > product.basePrice
       ? Math.round((1 - product.basePrice / product.listPrice) * 100)
@@ -65,6 +68,11 @@ export default async function ProductCard({
           {bulk.length > 0 && (
             <span className={`absolute left-3 bg-amber-100 text-amber-950 text-[11px] font-semibold px-2 py-1 rounded-md ${discount > 0 ? "top-11" : "top-3"}`}>
               {bulk[0].minQty}+ Adet İndirimi
+            </span>
+          )}
+          {lowStock && (
+            <span data-testid="son-adet-rozet" className="absolute bottom-3 left-3 bg-amber-100 text-amber-950 text-[11px] font-semibold px-2 py-1 rounded-md">
+              {lowStock}
             </span>
           )}
           {totalStock === 0 && (

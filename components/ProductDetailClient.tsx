@@ -17,6 +17,7 @@ import PriceLadder, { priceTone } from "@/components/PriceLadder";
 import { priceLadder, type LadderContext } from "@/lib/price-ladder";
 import { SITE_URL, WHATSAPP_NUMBER } from "@/lib/site";
 import { activeTier, bulkLabel, bulkTiersOf, unitPriceFor } from "@/lib/bulk-pricing";
+import { lowStockLabel, type LowStockSetting } from "@/lib/low-stock";
 
 interface Variation {
   id: string;
@@ -49,7 +50,7 @@ const galleryArrow =
 
 const reducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-export default function ProductDetailClient({ product, ladderCtx, categoryHref }: { product: Product; ladderCtx: LadderContext; categoryHref?: string }) {
+export default function ProductDetailClient({ product, ladderCtx, categoryHref, lowStock }: { product: Product; ladderCtx: LadderContext; categoryHref?: string; lowStock?: LowStockSetting }) {
   const router = useRouter();
   const maxTotalDiscountPct = ladderCtx.maxTotalDiscountPct;
   const { addToCart } = useCart();
@@ -103,6 +104,7 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref }
   const notes = withShowcaseNote(ruleNotes(rules), ladderCtx.coupon?.code); // "XXX kuponu kullanılamamaktadır" notundaki kod vitrin kuponundan gelir
   const maxQty = selectedVariation ? Math.max(0, selectedVariation.stock) : 0;
   const outOfStock = !selectedVariation || maxQty <= 0;
+  const lowStockText = lowStock && selectedVariation ? lowStockLabel(selectedVariation.stock, lowStock) : null; // seçili varyasyonun gerçek stoğu; ayar kapalıysa null
   const soldOut = product.variations.every((v) => v.stock <= 0); // tüm seçenekler tükendi: satın alma bölümü yerine stok sorma
   const fav = isFavorite(product.id);
   const freeShipping = currentPrice >= FREE_SHIPPING_THRESHOLD;
@@ -287,6 +289,11 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref }
             <span className={`text-3xl font-bold tabular-nums ${hasDiscount ? priceTone(false).sale : "text-neutral-900"}`}>
               {lineNow.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺
             </span>
+            {lowStockText && (
+              <span data-testid="son-adet-rozet" className="ml-3 inline-block align-middle rounded-md border border-amber-300 bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-950">
+                {lowStockText}
+              </span>
+            )}
             {bulk.length > 0 && (
               <ul className="mt-2 space-y-1">
                 {bulk.map((t) => (
