@@ -162,6 +162,23 @@ test.describe("m) Ortak sıralama ve filtre", () => {
     expect(await count(page)).toBeGreaterThan(0);
   });
 
+  // BİLİNÇLİ DEĞİŞİKLİK: bilinmeyen renk/ebat artık yok sayılıp filtresiz liste döndürmez; 0 sonuç + "Filtreleri temizle"
+  for (const q of ["/kategori/kristal?renk=turkuaz-yok", "/kategori/kristal?ebat=7x7", "/arama?q=avize&renk=turkuaz-yok"]) {
+    test(`bilinmeyen değer 0 sonuç verir, noindex,follow + filtresiz canonical: ${q}`, async ({ page }) => {
+      await openOk(page, q);
+      await expect(page.getByTestId("liste-bos")).toContainText("ürün bulunamadı");
+      expect(await count(page)).toBe(0);
+      await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
+      await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /follow/);
+      if (q.startsWith("/kategori/")) {
+        const canonical = await page.locator('link[rel="canonical"]').getAttribute("href");
+        expect(canonical).not.toMatch(/[?]/);
+      }
+      await page.getByTestId("liste-bos").getByRole("link", { name: "Filtreleri temizle" }).click();
+      await expect(page).not.toHaveURL(/renk=|ebat=/);
+    });
+  }
+
   test("masaüstü: panel solda, ızgara 3 sütun; mobil: çekmece aç/kapat/uygula, yatay taşma yok, dokunma hedefleri", async ({ page }, info) => {
     const mobile = info.project.name === "mobile";
     await openOk(page, "/kategori/tum");

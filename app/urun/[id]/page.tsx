@@ -103,7 +103,7 @@ export default async function ProductDetailPage({ params }: Props) {
     name: product.title,
     description: product.description || product.title,
     ...(hasCategory ? { category: product.category } : {}),
-    brand: { "@type": "Brand", name: feedBrand(product.brand) },
+    brand: { "@type": "Brand", name: feedBrand() },
     url: `${SITE_URL}/urun/${id}`,
     ...(productImages.length ? { image: productImages.slice(0, 6) } : {}),
     ...(product.modelCode ? { sku: product.modelCode } : {}),
@@ -135,7 +135,7 @@ export default async function ProductDetailPage({ params }: Props) {
       <meta property="og:type" content="product" />
       <div className="max-w-6xl mx-auto">
         <JsonLd data={productSchema} />
-        <GtmEvent event={viewItemEvent([gaItem({ id: product.id, name: product.title, price: offer.price, category: product.category, brand: feedBrand(product.brand), variant: offer.variation?.variationValue })])} />
+        <GtmEvent event={viewItemEvent([gaItem({ id: product.id, name: product.title, price: offer.price, category: product.category, brand: feedBrand(), variant: offer.variation?.variationValue })])} />
         <Breadcrumbs
           className="text-neutral-500 mb-8"
           items={[

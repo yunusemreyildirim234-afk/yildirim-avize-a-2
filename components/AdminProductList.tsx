@@ -128,7 +128,7 @@ function DiscountBadges({ product, onRemove, disabled }: { product: Product; onR
 
 const norm = (v?: string | null) => (v ?? "").toLocaleLowerCase("tr").trim();
 
-export default function AdminProductList({ products, maxTotalDiscountPct, showcase, extraCategories = [], stocklessRule }: { products: Product[]; maxTotalDiscountPct?: number | null; extraCategories?: string[]; stocklessRule?: StocklessRule; showcase: { featured: string[]; bestSellers: string[]; manualFeatured: number } }) {
+export default function AdminProductList({ products, maxTotalDiscountPct, showcase, extraCategories = [], categoryTitles = {}, stocklessRule }: { products: Product[]; maxTotalDiscountPct?: number | null; extraCategories?: string[]; categoryTitles?: Record<string, string>; stocklessRule?: StocklessRule; showcase: { featured: string[]; bestSellers: string[]; manualFeatured: number } }) {
   const sets = useMemo<ChipSets>(() => ({ featured: new Set(showcase.featured), bestseller: new Set(showcase.bestSellers) }), [showcase]);
   const router = useRouter();
   const [loadingId, setLoadingId] = useState<string | null>(null);
@@ -252,7 +252,11 @@ Yine de geri alınsın mı?`)) await doUndo(true);
   const q = norm(query);
   const chipFiltered0 = chips.length ? products.filter((p) => chips.some((c) => chipTest(c, p, sets))) : products;
   // Kategori çipleri: seçili kategorilerden biri (büyük/küçük harf ve boşluk varyantları dahil) VE yukarıdaki vitrin çipleri
-  const catEntries = useMemo(() => buildCategoryList(products.map((p) => ({ category: p.category, count: 1 })), CATEGORIES), [products]);
+  // Sabit kategorilerin görünen adı vitrindeki gibi: yönetimden verilen ad (CategorySettings.title) varsa o, yoksa site.ts adı
+  const catEntries = useMemo(
+    () => buildCategoryList(products.map((p) => ({ category: p.category, count: 1 })), CATEGORIES).map((c) => (c.fixed && categoryTitles[c.key] ? { ...c, title: categoryTitles[c.key] } : c)),
+    [products, categoryTitles]
+  );
   const selectedCats = catEntries.filter((c) => catChips.includes(c.key));
   const noneCount = uncategorizedCount(products); // kategorisiz ürün sayısı (boş / yalnız boşluk)
   const noneOn = catChips.includes(NONE_KEY);

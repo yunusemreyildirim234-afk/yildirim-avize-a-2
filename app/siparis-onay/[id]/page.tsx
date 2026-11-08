@@ -38,7 +38,7 @@ export default async function OrderConfirmationPage({ params }: { params: Promis
         shipping: shippingFee,
         paymentType: order.paymentMethod,
         coupon: order.couponCode,
-        items: order.items.map((i) => gaItem({ id: i.variation.product.id, name: i.variation.product.title, price: i.unitPrice, quantity: i.quantity, category: i.variation.product.category, brand: feedBrand(i.variation.product.brand), variant: i.variation.variationValue })),
+        items: order.items.map((i) => gaItem({ id: i.variation.product.id, name: i.variation.product.title, price: i.unitPrice, quantity: i.quantity, category: i.variation.product.category, brand: feedBrand(), variant: i.variation.variationValue })),
       })
     : null;
 

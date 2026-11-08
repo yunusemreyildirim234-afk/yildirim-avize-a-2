@@ -134,8 +134,9 @@ test("ebat adres parametresi: boşluk/×/X tolere, geçersiz yok sayılır, sın
   assert.deepEqual(parseListingParams({ ebat: ["45x25", "45x25", "abc", "<b>", "45", "x", "../x", "99999x1", "1x1x1"] }).ebatlar, ["45x25"]);
   assert.ok(parseListingParams({ ebat: "1".repeat(500) }).ebatlar.length === 0);
   assert.ok(parseListingParams({ ebat: Array.from({ length: 100 }, (_, i) => `${i + 1}x${i + 1}`).join(",") }).ebatlar.length <= 12);
-  assert.deepEqual(run({ ebat: "7x7" }).state.ebatlar, []); // evrende yok → sessizce atılır
-  assert.equal(run({ ebat: "7x7" }).total, 5);
+  // BİLİNÇLİ DEĞİŞİKLİK: evrende olmayan ebat atılmaz → 0 sonuç
+  assert.deepEqual(run({ ebat: "7x7" }).state.ebatlar, ["7x7"]);
+  assert.equal(run({ ebat: "7x7" }).total, 0);
   const s = parseListingParams({ renk: "sari", ebat: "50 x 50,40x40", fiyat_min: "10" });
   assert.deepEqual(stateToParams(s), { renk: "sari", ebat: "50x50,40x40", fiyat_min: "10" });
   assert.deepEqual(stateToParams(parseListingParams({ ebat: "zzz" })), {});

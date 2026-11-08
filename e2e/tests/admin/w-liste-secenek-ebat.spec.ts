@@ -95,9 +95,10 @@ test.describe("Admin: Seçenek türü renk + ebat filtresi (E2E önekli veri, so
     await open("ebat=50x50");
     expect((await labels("renk")).map((x) => x.t.replace(/\s*\((\d+)\)$/, " ($1)"))).toEqual(["Bej (1)"]);
 
-    // Geçersiz ebat sessizce yok sayılır; filtreli adres noindex
+    // Biçimi geçersiz ebat sessizce yok sayılır; BİLİNÇLİ DEĞİŞİKLİK: biçimi geçerli ama listede olmayan ebat (9x9) 0 sonuç verir; filtreli adres noindex
     const all = await open("");
-    expect(await open("ebat=abc,9x9,45,%3Cscript%3E")).toBe(all);
+    expect(await open("ebat=abc,45,%3Cscript%3E")).toBe(all);
+    expect(await open("ebat=9x9")).toBe("0");
     await open("ebat=40x40");
     expect(await page.evaluate(() => document.querySelector('meta[name="robots"]')?.getAttribute("content") ?? "")).toContain("noindex");
 

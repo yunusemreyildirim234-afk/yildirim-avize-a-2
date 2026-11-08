@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { isLimited, rateLimit, recordFailure, tooMany } from "@/lib/rate-limit";
 import { bulkTiersOf } from "@/lib/bulk-pricing";
 import { priceCart } from "@/lib/cart-pricing";
+import { isPurchasablePrice, priceUnavailableMessage } from "@/lib/purchasable";
 import { SHIPPING_LABELS, type CouponRule } from "@/lib/pricing";
 import { COUPON_FAIL_LIMIT, COUPON_LIMITED_ERROR, validateCoupon } from "@/lib/coupons";
 import { getSessionUserId } from "@/lib/account";
@@ -39,11 +40,15 @@ export async function POST(req: Request) {
   });
   const byId = new Map(variations.map((v) => [v.id, v]));
 
-  const missing: { variationId: string; available: false }[] = [];
+  const missing: { variationId: string; available: false; reason?: "price"; title?: string; message?: string }[] = [];
   const usable = [...wanted.entries()].flatMap(([variationId, quantity]) => {
     const v = byId.get(variationId);
     if (!v || !v.product.active) {
       missing.push({ variationId, available: false });
+      return [];
+    }
+    if (!isPurchasablePrice(v.product.basePrice + v.extraPrice)) {
+      missing.push({ variationId, available: false, reason: "price", title: v.product.title, message: priceUnavailableMessage(v.product.title) });
       return [];
     }
     return [{ v, quantity }];

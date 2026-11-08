@@ -1,9 +1,10 @@
+import { SITE_NAME } from "./site.ts";
 import { imageListOf } from "./variation-input.ts"; // göreli + .ts: node --test bu dosyayı doğrudan yükler (@/ takma adı çözülmez)
 
 // Google Merchant Center ürün feed'i için SAF yardımcılar (veritabanı/ağ yok). Fiyat ve stok, ürün sayfasındaki
 // (components/ProductDetailClient.tsx) varsayılan seçimle birebir aynıdır: kupon, Havale, mağaza ve adet indirimleri YOK.
 
-export const FEED_BRAND_FALLBACK = "Yıldırım Avize";
+export const FEED_BRAND_FALLBACK = SITE_NAME;
 export const FEED_DESCRIPTION_MAX = 5000;
 export const FEED_TITLE_MAX = 150;
 export const FEED_EXTRA_IMAGES = 10;
@@ -97,7 +98,8 @@ export function defaultOffer<V extends FeedVariation>(p: { basePrice: number; li
 /** Feed bağlantıları kanonik www adresini kullanır (ortam değişkeni www'suz ise de): yildirimavize.com.tr → www.yildirimavize.com.tr */
 export const feedSite = (u: string) => u.replace(/^(https:\/\/)(yildirimavize\.com\.tr)(?=\/|$)/i, "$1www.$2").replace(/\/$/, "");
 
-export const feedBrand = (b: string | null | undefined) => b?.trim() || FEED_BRAND_FALLBACK;
+/** Marka (feed, JSON-LD, GA öğeleri) tek sabit: SITE_NAME. Product.brand (Trendyol'dan gelen değer) bilerek KULLANILMAZ; veritabanı alanı değişmez. */
+export const feedBrand = () => FEED_BRAND_FALLBACK;
 
 export function googleCategory(category: string): string {
   return category.trim().toLocaleLowerCase("tr-TR") === "aksesuar" ? ACCESSORIES : CHANDELIERS;
@@ -126,7 +128,7 @@ export function feedItemXml(p: FeedProduct, site: string): string | null {
     tag("availability", offer.inStock ? "in_stock" : "out_of_stock"),
     tag("price", regular ?? shown),
     ...(regular ? [tag("sale_price", shown)] : []),
-    tag("brand", feedBrand(p.brand)),
+    tag("brand", feedBrand()),
     tag("condition", "new"),
     tag("google_product_category", googleCategory(p.category)),
     ...(p.category.trim() ? [tag("product_type", p.category)] : []), // kategorisiz üründe alan hiç yazılmaz (google_product_category değişmez)

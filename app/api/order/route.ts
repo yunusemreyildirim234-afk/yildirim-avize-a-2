@@ -11,6 +11,7 @@ import { EMAIL_RE, invoiceError } from "@/lib/validation";
 import { bulkTiersOf } from "@/lib/bulk-pricing";
 import { isShort, mergeByVariation } from "@/lib/stock-rules";
 import { priceCart } from "@/lib/cart-pricing";
+import { isPurchasablePrice, priceUnavailableMessage } from "@/lib/purchasable";
 import { releaseCoupon, reserveCouponLocked, validateCoupon } from "@/lib/coupons";
 import { reserveLines, StockShortError } from "@/lib/stock-reserve";
 import { PENDING_LIMIT_ERROR } from "@/lib/pending-orders";
@@ -110,6 +111,9 @@ export async function POST(req: Request) {
       let variation = await loadVariation();
       if (!variation || !variation.product.active) {
         return NextResponse.json({ error: "Sepetinizdeki bir ürün artık satışta değil. Lütfen sepeti yenileyin." }, { status: 400 });
+      }
+      if (!isPurchasablePrice(variation.product.basePrice + variation.extraPrice)) {
+        return NextResponse.json({ error: priceUnavailableMessage(variation.product.title) }, { status: 400 });
       }
       // Aynı varyasyon birden fazla satırda gelebilir: toplam adet stokla karşılaştırılır
       const wanted = wantedByVariation.get(item.variationId) ?? quantity;

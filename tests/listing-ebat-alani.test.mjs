@@ -96,7 +96,10 @@ test("filtre: renk + ürün düzeyi ebat; ürün ebadı her renk varyasyonuyla e
   assert.equal(g.facets.colors.find((c) => c.key === "siyah").count, 1); // "own" (ürün ebadı) ; "var" siyahı 30x30
   assert.equal(g.facets.colors.find((c) => c.key === "gold").count, 2);
 });
-test("filtre: evrende olmayan ebat atılır; ürün ebadı evrene girer", () => {
-  assert.deepEqual(run([row("a")], { ebat: "45x25" }).state.ebatlar, []);
+// BİLİNÇLİ DEĞİŞİKLİK: evrende olmayan ebat atılmaz, 0 sonuç verir; ürün ebadı evrene girer
+test("filtre: evrende olmayan ebat 0 sonuç verir; ürün ebadı eşleşir", () => {
+  const none = run([row("a")], { ebat: "45x25" });
+  assert.deepEqual(none.state.ebatlar, ["45x25"]);
+  assert.equal(none.total, 0);
   assert.deepEqual(run([row("a", { own: parseSize("45 x 25") })], { ebat: "45x25" }).state.ebatlar, ["45x25"]);
 });

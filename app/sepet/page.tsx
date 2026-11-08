@@ -150,7 +150,7 @@ export default function CartPage() {
 
   // Sunucu fiyat teklifi (/api/cart/quote, salt okunur): gösterilen tutar buradan gelir
   interface Quote {
-    lines: { variationId: string; available: boolean; stockShort?: boolean; title?: string; variationName?: string; price?: number; unitPrice?: number; bulk?: BulkRule[]; rules?: ItemRules; capInfo?: CapInfo | null; ladder?: LadderStep[] }[];
+    lines: { variationId: string; available: boolean; message?: string; stockShort?: boolean; title?: string; variationName?: string; price?: number; unitPrice?: number; bulk?: BulkRule[]; rules?: ItemRules; capInfo?: CapInfo | null; ladder?: LadderStep[] }[];
     totals: { itemsTotal: number; shipping: number; couponDiscount: number; pickupDiscount: number; bankDiscount: number; total: number };
     coupon: { ok: boolean; error?: string; limited?: boolean } | null;
     maxTotalDiscountPct?: number | null;
@@ -189,7 +189,7 @@ export default function CartPage() {
   const absorbQuote = (q: Quote, shownTotal: number) => {
     applyServerPrices(q.lines.filter((l) => l.available && typeof l.price === "number").map((l) => ({ variationId: l.variationId, price: l.price as number, bulk: l.bulk ?? [], rules: l.rules })));
     refreshNames(q.lines.filter((l) => l.available && typeof l.variationName === "string").map((l) => ({ variationId: l.variationId, variationName: l.variationName as string })));
-    setIssues(q.lines.flatMap((l) => (!l.available ? ["Sepetinizdeki bir ürün artık satışta değil."] : l.stockShort ? [`"${l.title}" için yeterli stok yok.`] : [])));
+    setIssues(q.lines.flatMap((l) => (!l.available ? [l.message ?? "Sepetinizdeki bir ürün artık satışta değil."] : l.stockShort ? [`"${l.title}" için yeterli stok yok.`] : [])));
     if (appliedCoupon && q.coupon?.limited) {
       // Deneme sınırı: kupon düşürülmez, kod ve durum korunur; mesaj gösterilir
       setCouponError(q.coupon.error || "Çok fazla deneme, lütfen sonra tekrar deneyin");

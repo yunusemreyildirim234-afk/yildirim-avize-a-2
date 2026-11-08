@@ -311,22 +311,16 @@ export function applyListing(allRows: readonly ListingRow[], raw: ListingState, 
   const rows = raw.stok ? allRows.filter((r) => r.inStock !== false) : allRows; // "stokta olanlar": sayılar da bu kümeye göredir
   const catByKey = new Map(ctx.cats.map((c) => [c.key, c]));
   const universeSlugs = new Set<string>();
-  const universeColors = new Set<string>();
-  const universeSizes = new Set<string>();
   for (const r of rows) {
     const c = catByKey.get(r.cat);
     if (c) universeSlugs.add(c.slug);
-    for (const v of r.vars) {
-      if (v.c) universeColors.add(v.c.k);
-      if (v.s) universeSizes.add(v.s.k);
-    }
-    if (r.own) universeSizes.add(r.own.k);
   }
   const state: ListingState = {
     ...raw,
     kategoriler: raw.kategoriler.filter((s) => universeSlugs.has(s)),
-    renkler: raw.renkler.filter((k) => universeColors.has(k)),
-    ebatlar: raw.ebatlar.filter((k) => universeSizes.has(k)),
+    // Renk ve ebat: evrende olmayan değer ATILMAZ (eskiden filtresiz liste dönüyordu); hiçbir ürünle eşleşmez → 0 sonuç + "Filtreleri temizle"
+    renkler: raw.renkler,
+    ebatlar: raw.ebatlar,
   };
   const wantCats = new Set(state.kategoriler);
   const wantColors = new Set(state.renkler);

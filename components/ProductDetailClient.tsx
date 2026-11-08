@@ -16,6 +16,7 @@ import { withShowcaseNote } from "@/lib/coupon-code";
 import PriceLadder, { priceTone } from "@/components/PriceLadder";
 import { priceLadder, type LadderContext } from "@/lib/price-ladder";
 import { SITE_URL, WHATSAPP_NUMBER } from "@/lib/site";
+import { isPurchasablePrice } from "@/lib/purchasable";
 import { activeTier, bulkLabel, bulkTiersOf, unitPriceFor } from "@/lib/bulk-pricing";
 import { lowStockLabel, type LowStockSetting } from "@/lib/low-stock";
 
@@ -106,6 +107,8 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
   const outOfStock = !selectedVariation || maxQty <= 0;
   const lowStockText = lowStock && selectedVariation ? lowStockLabel(selectedVariation.stock, lowStock) : null; // seçili varyasyonun gerçek stoğu; ayar kapalıysa null
   const soldOut = product.variations.every((v) => v.stock <= 0); // tüm seçenekler tükendi: satın alma bölümü yerine stok sorma
+  const priceOnRequest = !soldOut && !isPurchasablePrice(currentPrice); // fiyatı 0/altı: "Sepete ekle" yerine "Fiyat için sorun"
+  const priceMessage = `Merhaba, ${product.title}${product.modelCode ? ` (Model: ${product.modelCode})` : ""} avizesinin güncel fiyatını öğrenmek istiyorum: ${SITE_URL}/urun/${product.id}`;
   const fav = isFavorite(product.id);
   const freeShipping = currentPrice >= FREE_SHIPPING_THRESHOLD;
   const waMessage = `Merhaba, ${product.title}${product.modelCode ? ` (Model: ${product.modelCode})` : ""} avize modeli hakkında bilgi almak istiyorum: ${SITE_URL}/urun/${product.id}`;
@@ -113,7 +116,7 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
   const waUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(soldOut ? stockMessage : waMessage)}`;
 
   const handleAddToCart = () => {
-    if (!selectedVariation || outOfStock) return;
+    if (!selectedVariation || outOfStock || priceOnRequest) return;
     if (quantity > maxQty) {
       setQuantity(maxQty);
       toast.error(`Bu seçenekte en fazla ${maxQty} adet stok var.`);
@@ -398,6 +401,17 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
             </div>
           ) : (
             <>
+          {priceOnRequest ? (
+            <a
+              href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(priceMessage)}`}
+              data-testid="fiyat-sor"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 w-full min-h-11 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-semibold py-2.5 transition-colors"
+            >
+              Fiyat için sorun
+            </a>
+          ) : (
           <div className="flex items-center gap-4">
               <div className="flex items-center border border-neutral-300 rounded-xl overflow-hidden bg-neutral-50">
                 <button
@@ -431,7 +445,8 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
                 {outOfStock ? "Stokta Yok" : addedToCart ? "✓ Sepete Eklendi!" : "Sepete Ekle"}
               </button>
             </div>
-  
+          )}
+
             <a
               href={waUrl}
               target="_blank"

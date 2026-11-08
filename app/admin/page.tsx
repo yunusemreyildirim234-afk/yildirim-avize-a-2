@@ -319,7 +319,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         />
 
         {/* 3. Canlı Avize Kataloğu & Stok Yönetimi */}
-        <AdminProductList products={products} maxTotalDiscountPct={discountCap} showcase={showcase} extraCategories={extraCategories} stocklessRule={resolveStocklessRule(homeRaw)} />
+        <AdminProductList products={products} maxTotalDiscountPct={discountCap} showcase={showcase} extraCategories={extraCategories} categoryTitles={Object.fromEntries(Object.entries(categorySettings).flatMap(([k, s]) => (s.title ? [[k, s.title]] : [])))} stocklessRule={resolveStocklessRule(homeRaw)} />
 
         {/* 4. Canlı Siparişler & Kargonomi Operasyon Tablosu */}
         <AdminSection

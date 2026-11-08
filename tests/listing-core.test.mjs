@@ -76,12 +76,22 @@ test("facet sayıları: grup kendisi hariç diğer filtrelere göre", () => {
 });
 
 test("geçersiz/bilinmeyen parametreler sessizce varsayılana düşer", () => {
-  const r = run({ siralama: "<script>", kategori: "yok,../x,<b>", renk: "kirmizi", fiyat_min: "abc", fiyat_max: "-5" });
+  const r = run({ siralama: "<script>", kategori: "yok,../x,<b>", fiyat_min: "abc", fiyat_max: "-5" });
   assert.deepEqual(r.state, { siralama: "onerilen", kategoriler: [], renkler: [], ebatlar: [] });
   assert.equal(r.total, 5);
   const big = parseListingParams({ kategori: Array.from({ length: 100 }, (_, i) => "k" + i).join(",") });
   assert.ok(big.kategoriler.length <= 12);
   assert.equal(parseListingParams({ fiyat_min: "500", fiyat_max: "100" }).fiyatMin, 100); // ters aralık yer değiştirir
+});
+
+// BİLİNÇLİ DEĞİŞİKLİK: evrende olmayan renk artık sessizce atılıp filtresiz liste döndürmez; 0 sonuç verir ("Filtreleri temizle" gösterilir).
+test("evrende olmayan renk: filtre korunur, 0 sonuç; geçerli renk etkilenmez", () => {
+  const bad = run({ renk: "turkuaz" });
+  assert.deepEqual(bad.state.renkler, ["turkuaz"]);
+  assert.equal(bad.total, 0);
+  assert.deepEqual(bad.ids, []);
+  assert.equal(run({ renk: "bej" }).total, 2); // p1 (Bej (0146)) + p2
+  assert.equal(run({ renk: "bej,turkuaz" }).total, 2); // bilinmeyen değer geçerli olanı bozmaz
 });
 
 test("boş sonuç ve URL durumu", () => {

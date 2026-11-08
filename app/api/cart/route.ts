@@ -4,6 +4,7 @@ import { getSessionUserId } from "@/lib/account";
 import type { Prisma } from "@/generated/prisma/client";
 import { bulkTiersOf } from "@/lib/bulk-pricing";
 import { coverImageOf } from "@/lib/variation-input";
+import { isPurchasablePrice, priceUnavailableMessage } from "@/lib/purchasable";
 
 type CartRow = Prisma.CartItemGetPayload<{ include: { variation: { include: { product: { include: { variations: { select: { images: true } } } } } } } }>;
 
@@ -20,7 +21,7 @@ export async function GET() {
   });
 
   const items = rows
-    .filter((r: CartRow) => r.variation.product.active && r.variation.stock > 0)
+    .filter((r: CartRow) => r.variation.product.active && r.variation.stock > 0 && isPurchasablePrice(r.variation.product.basePrice + r.variation.extraPrice)) // fiyatı 0/altı kalem hesap sepetine alınmaz
     .map((r: CartRow) => ({
       productId: r.variation.productId,
       variationId: r.variationId,
@@ -48,10 +49,13 @@ export async function PUT(req: Request) {
     quantities.set(r.variationId, Math.min(99, Math.max(1, Math.floor(Number(r.quantity) || 1))));
   }
 
-  const existing = await prisma.productVariation.findMany({
+  const found = await prisma.productVariation.findMany({
     where: { id: { in: [...quantities.keys()] }, product: { active: true } },
-    select: { id: true },
+    select: { id: true, extraPrice: true, product: { select: { title: true, basePrice: true } } },
   });
+  // Fiyatı 0 veya altı kalemler kaydedilmez (sipariş yollarındaki kuralla aynı); istemciye nedeni bildirilir
+  const existing = found.filter((v) => isPurchasablePrice(v.product.basePrice + v.extraPrice));
+  const rejected = found.filter((v) => !existing.includes(v)).map((v) => ({ variationId: v.id, error: priceUnavailableMessage(v.product.title) }));
 
   await prisma.$transaction([
     prisma.cartItem.deleteMany({ where: { userId } }),
@@ -59,5 +63,5 @@ export async function PUT(req: Request) {
       data: existing.map((v) => ({ userId, variationId: v.id, quantity: quantities.get(v.id) as number })),
     }),
   ]);
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ success: true, ...(rejected.length ? { rejected } : {}) });
 }
