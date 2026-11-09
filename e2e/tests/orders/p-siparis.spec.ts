@@ -286,6 +286,7 @@ test.describe("Havale siparişi (uçtan uca)", () => {
     await guestFlow(browser, baseURL!, async ({ page }) => {
       await addToCartViaPage(page, A.id, 1);
       await page.goto("/sepet", { waitUntil: "domcontentloaded" });
+      await chooseDelivery(page, "magaza"); // varsayılan adrese teslim
       await fillCustomer(page, CUSTOMER, { address: false });
       await page.getByLabel("Kupon kodu").fill(couponCode);
       await page.getByRole("button", { name: "Kuponu Uygula" }).click();
@@ -414,12 +415,24 @@ test.describe("Havale siparişi (uçtan uca)", () => {
     await openAdminOrders(page);
     const row = adminOrderRow(page, couponOrderId);
     await expect(row.getByLabel("Sipariş durumu")).toHaveValue("PENDING_NEW");
+    // Onaylanmadan hiçbir şey yapılmaz
+    let posted = false;
+    const onReq = (r: import("@playwright/test").Request) => { if (r.url().endsWith("/api/admin/order-status")) posted = true; };
+    page.on("request", onReq);
+    page.once("dialog", (d) => void d.dismiss());
+    await row.getByLabel("Sipariş durumu").selectOption("CANCELLED");
+    await expect(row.getByLabel("Sipariş durumu")).toHaveValue("PENDING_NEW");
+    expect(posted, "iptal onaylanmadan istek gitmemeli").toBe(false);
+    page.off("request", onReq);
+    let confirmText = "";
+    page.once("dialog", (d) => { confirmText = d.message(); void d.accept(); });
     const [res] = await Promise.all([
       page.waitForResponse((r) => r.url().endsWith("/api/admin/order-status") && r.request().method() === "POST"),
       row.getByLabel("Sipariş durumu").selectOption("CANCELLED"),
     ]);
     expect(res.status()).toBe(200);
     expect(((await res.json()) as { success: boolean }).success).toBe(true);
+    expect(confirmText).toBe("Stok ve kupon iade edilecek. Geri Al ile geri alınabilir.");
 
     const o = (await orderById(couponOrderId))!;
     expect(o.status).toBe("CANCELLED");

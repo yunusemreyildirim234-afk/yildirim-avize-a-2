@@ -21,6 +21,7 @@ export default function AdminOrderRequest({ orderId, type, status, reason }: Pro
   const label = type === "CANCEL" ? "İptal" : "İade";
 
   const decide = async (decision: "APPROVE" | "REJECT") => {
+    if (decision === "APPROVE" && type === "CANCEL" && !confirm("İptal talebi onaylanacak. Stok ve kupon iade edilecek.")) return;
     setLoading(true);
     try {
       const res = await fetch("/api/admin/order-request", {

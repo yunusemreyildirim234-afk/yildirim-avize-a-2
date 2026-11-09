@@ -16,6 +16,7 @@ export default function OrderStatusSelector({ orderId, initialStatus, shippingTy
   const [loading, setLoading] = useState(false);
 
   const handleStatusChange = async (newStatus: string) => {
+    if (newStatus === "CANCELLED" && !confirm("Stok ve kupon iade edilecek. Geri Al ile geri alınabilir.")) return;
     const previous = status;
     setStatus(newStatus);
     setLoading(true);
