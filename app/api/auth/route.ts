@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 import { rateLimit, tooMany } from "@/lib/rate-limit";
 import { bumpUserSessionVersion, getSessionUserId, getUserSession, issueUserToken } from "@/lib/account";
 import { getCustomerWithOrders } from "@/lib/customer";
-import { hashPassword, verifyPassword } from "@/lib/password";
+import { hashPassword, verifyPasswordOrDummy } from "@/lib/password";
 import { sendVerificationCodeEmail } from "@/lib/email";
 import { USER_COOKIE, cookieOptions } from "@/lib/session";
 import { EMAIL_RE, isStrongPassword } from "@/lib/validation";
@@ -52,7 +52,8 @@ export async function POST(req: Request) {
       if (rl.limited) return tooMany(rl.retryAfter);
       if (!email || !password) return NextResponse.json({ error: "E-posta ve şifre zorunludur" }, { status: 400 });
       const user = await findByEmail(email);
-      if (!user || user.password === GUEST_PASSWORD || !verifyPassword(password, user.password)) {
+      const passOk = verifyPasswordOrDummy(password, user?.password); // hesap yoksa da aynı süre harcanır
+      if (!user || user.password === GUEST_PASSWORD || !passOk) {
         return NextResponse.json({ error: "Geçersiz e-posta veya şifre." }, { status: 401 });
       }
       if (!user.twoFactorEnabled) return respond(user.id);
