@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { revalidateStorefront } from "@/lib/revalidate";
+import { TrendyolTimeoutError } from "@/lib/trendyol";
 import { serverError } from "@/lib/api-error";
 import { adminGuard } from "@/lib/admin-guard";
 import { rateLimit, tooMany } from "@/lib/rate-limit";
@@ -28,7 +29,7 @@ export async function POST(req: Request) {
     revalidateStorefront(); // vitrin yalnızca gerçek uygulamadan sonra yenilenir (önizleme yazmaz, önbelleği sıfırlamaz)
     return NextResponse.json({ success: true, dryRun: false, sonuc, sayac: plan.sayac });
   } catch (error) {
-    return serverError("admin/trendyol/sync", error, "Trendyol senkronizasyonu başarısız oldu. Lütfen tekrar deneyin.", 502);
+    return serverError("admin/trendyol/sync", error, error instanceof TrendyolTimeoutError ? error.message : "Trendyol senkronizasyonu başarısız oldu. Lütfen tekrar deneyin.", 502);
   }
 }
 

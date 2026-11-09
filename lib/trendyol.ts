@@ -32,18 +32,33 @@ function credentials() {
   return { supplierId, token };
 }
 
+const READ_TIMEOUT_MS = 15_000;
+
+/** Trendyol okuma isteği zamanında yanıtlanmadı. */
+export class TrendyolTimeoutError extends Error {
+  constructor() {
+    super("Trendyol 15 saniye içinde yanıt vermedi. Biraz sonra tekrar deneyin.");
+  }
+}
+
 /** Mağazadaki tüm ürünleri (sayfa sayfa) çeker. */
 export async function fetchTrendyolProducts(): Promise<TrendyolItem[]> {
   const { supplierId, token } = credentials();
   const items: TrendyolItem[] = [];
 
   for (let page = 0; ; page++) {
-    const res = await fetch(`${BASE}/${supplierId}/products?page=${page}&size=${PAGE_SIZE}`, {
-      headers: { Authorization: `Basic ${token}`, "User-Agent": `${supplierId} - SelfIntegration` },
-      cache: "no-store",
-    });
-    if (!res.ok) throw new Error(`Trendyol API hatası (${res.status})`);
-    const data = await res.json();
+    let data;
+    try {
+      const res = await fetch(`${BASE}/${supplierId}/products?page=${page}&size=${PAGE_SIZE}`, {
+        headers: { Authorization: `Basic ${token}`, "User-Agent": `${supplierId} - SelfIntegration` },
+        cache: "no-store",
+        signal: AbortSignal.timeout(READ_TIMEOUT_MS),
+      });
+      if (!res.ok) throw new Error(`Trendyol API hatası (${res.status})`);
+      data = await res.json();
+    } catch (e) {
+      throw (e as Error).name === "TimeoutError" ? new TrendyolTimeoutError() : e;
+    }
     items.push(...(data.content ?? []));
     if (page + 1 >= (data.totalPages ?? 0)) break;
   }

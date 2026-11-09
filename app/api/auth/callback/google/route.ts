@@ -47,6 +47,7 @@ export async function GET(req: Request) {
     // 2. Google Sunucularından Kullanıcının Gerçek Adını ve E-postasını Çekiyoruz
     const userRes = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
       headers: { Authorization: `Bearer ${tokenData.access_token}` },
+      signal: AbortSignal.timeout(15_000),
     });
 
     const googleUser = await userRes.json();
