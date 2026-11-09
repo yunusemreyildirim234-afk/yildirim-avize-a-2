@@ -97,7 +97,7 @@ export default async function ProductCard({
               <span className="text-xs line-through text-zinc-500">{product.listPrice.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
             )}
           </div>
-          <PriceLadder steps={ladder} size="card" dark={dark} />
+          <PriceLadder steps={ladder} size="card" dark={dark} itemsTotal={product.basePrice} />
         </div>
       </Link>
 

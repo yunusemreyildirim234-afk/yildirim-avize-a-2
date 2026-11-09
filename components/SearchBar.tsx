@@ -181,7 +181,7 @@ export default function SearchBar() {
                     <span className="block text-xs font-bold text-neutral-800 mt-1">
                       {product.basePrice.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺
                     </span>
-                    {product.ladder && <PriceLadder steps={product.ladder} size="sm" />}
+                    {product.ladder && <PriceLadder steps={product.ladder} size="sm" itemsTotal={product.basePrice} />}
                     </span>
                   </Link>
                   <div className="w-28 shrink-0 space-y-1.5">

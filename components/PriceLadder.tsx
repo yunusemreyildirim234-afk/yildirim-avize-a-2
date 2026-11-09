@@ -1,4 +1,5 @@
 import type { LadderStep } from "@/lib/price-ladder";
+import { FREE_SHIPPING_THRESHOLD } from "@/lib/pricing";
 
 const tl = (n: number) => `${n.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺`;
 // Dar ekranda ",00" atılır (yalnızca tam sayı tutarlarda); sm ve üstünde tam biçim
@@ -20,8 +21,10 @@ export const priceTone = (dark: boolean) => (dark ? PRICE_TONE.onDark : PRICE_TO
  * Ana fiyatın altında adım adım düşen fiyatlar. Sunucu ve istemci bileşenlerinden kullanılabilir (durumsuz).
  * size="card": ürün kartı; sm altında tek satır (kısa etiket solda, tutar sağda), açıklamalar gizli. "sm"/"md": her ekranda tam metin.
  */
-export default function PriceLadder({ steps, size = "md", dark = false }: { steps: LadderStep[]; size?: "card" | "sm" | "md"; dark?: boolean }) {
+export default function PriceLadder({ steps, size = "md", dark = false, itemsTotal }: { steps: LadderStep[]; size?: "card" | "sm" | "md"; dark?: boolean; itemsTotal?: number }) {
   if (steps.length === 0) return null;
+  // Kargo ücretsiz kuralı sepet/siparişle aynı: ürünler toplamı (indirim öncesi) >= eşik. Ücretsizse not gösterilmez.
+  const showNote = !(itemsTotal !== undefined && itemsTotal >= FREE_SHIPPING_THRESHOLD);
   const card = size === "card";
   const small = size !== "md";
   const tone = priceTone(dark);
@@ -55,6 +58,9 @@ export default function PriceLadder({ steps, size = "md", dark = false }: { step
           </span>
         </li>
       ))}
+      {showNote && (
+        <li className={`text-[10px] leading-tight ${dark ? "text-zinc-500" : "text-neutral-500"}`}>Fiyatlar kargo hariçtir</li>
+      )}
     </ul>
   );
 }

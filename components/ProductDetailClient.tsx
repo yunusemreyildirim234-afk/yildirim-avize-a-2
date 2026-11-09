@@ -313,7 +313,7 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
                 )}
               </ul>
             )}
-            <PriceLadder steps={priceLadder(product, ladderCtx, currentPrice)} />
+            <PriceLadder steps={priceLadder(product, ladderCtx, currentPrice)} itemsTotal={currentPrice} />
             {notes.length > 0 && (
               <ul className="mt-2 space-y-0.5">
                 {notes.map((n) => (

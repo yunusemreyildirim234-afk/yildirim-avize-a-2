@@ -131,7 +131,7 @@ export default function FavorilerimPage() {
                     İncele →
                   </Link>
                 </div>
-                {quick[product.id]?.ladder && <PriceLadder steps={quick[product.id].ladder!} />}
+                {quick[product.id]?.ladder && <PriceLadder steps={quick[product.id].ladder!} itemsTotal={product.basePrice} />}
               </div>
             </div>
           ))}

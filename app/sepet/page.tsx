@@ -528,7 +528,7 @@ export default function CartPage() {
                         <span className="ml-2 text-xs font-medium text-neutral-400 line-through">{item.price.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
                       )}
                     </div>
-                    {fresh && <PriceLadder steps={quote.lines.find((l) => l.variationId === item.variationId)?.ladder ?? []} size="sm" />}
+                    {fresh && <PriceLadder steps={quote.lines.find((l) => l.variationId === item.variationId)?.ladder ?? []} size="sm" itemsTotal={itemsShown} />}
                     {item.bulk?.map((t) => (
                       <p key={t.minQty} className="text-[11px] text-emerald-800 mt-1">
                         {activeTier(item.bulk, pricedOf(item.variationId)?.tierQty ?? item.quantity)?.minQty === t.minQty ? "✓ " : ""}
