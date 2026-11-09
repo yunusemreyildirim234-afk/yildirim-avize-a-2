@@ -14,11 +14,24 @@ import { FREE_SHIPPING_THRESHOLD, SHIPPING_COST } from "@/lib/pricing";
 import { getSessionUserId } from "@/lib/account";
 import { canViewOrderDetails } from "@/lib/order-access";
 import { trackState } from "@/lib/orderStatus";
+import { WHATSAPP_NUMBER } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Siparişiniz Alındı",
   robots: { index: false, follow: false },
 };
+
+const waLink = (id: string) => `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Merhaba, ${id} numaralı siparişim hakkında bilgi almak istiyorum.`)}`;
+
+function ClosedNote({ id, returned }: { id: string; returned: boolean }) {
+  return (
+    <p className="text-sm text-neutral-600 text-center">
+      {returned ? "Bu siparişin iadesi tamamlanmıştır." : "Bu sipariş iptal edilmiştir."} Sorularınız için{" "}
+      <a href={waLink(id)} target="_blank" rel="noopener noreferrer" className="font-semibold text-amber-800 underline underline-offset-2">WhatsApp</a> veya{" "}
+      <Link href="/iletisim" className="font-semibold text-amber-800 underline underline-offset-2">iletişim sayfası</Link> üzerinden bize ulaşabilirsiniz.
+    </p>
+  );
+}
 
 export default async function OrderConfirmationPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -30,6 +43,8 @@ export default async function OrderConfirmationPage({ params }: { params: Promis
 
   const canSeeDetails = canViewOrderDetails({ userId: order.userId, isGuest: order.user.password === "guest_checkout", createdAt: order.createdAt }, await getSessionUserId());
   const awaitsBankReceipt = order.paymentMethod === "BANK_TRANSFER" && order.status === "PENDING_NEW";
+  const closed = order.status === "CANCELLED" || order.status === "RETURNED";
+  const returned = order.status === "RETURNED";
 
   if (!canSeeDetails) {
     const state = trackState(order);
@@ -50,17 +65,18 @@ export default async function OrderConfirmationPage({ params }: { params: Promis
             </div>
           </dl>
           {/* Hatırlatma e-postasındaki "Dekontumu Yükle" bağlantısı süre dolduktan sonra da çalışmalı; bu blok sipariş detayı içermez */}
-          {awaitsBankReceipt && (
+          {closed && <ClosedNote id={order.id} returned={returned} />}
+          {awaitsBankReceipt && !closed && (
             <div className="space-y-4">
               <BankTransferCard orderId={order.id} />
               <ReceiptUpload orderId={order.id} uploaded={Boolean(order.receiptUrl)} />
             </div>
           )}
-          <p className="text-sm text-neutral-600 text-center">
+          {!closed && <p className="text-sm text-neutral-600 text-center">
             Detaylar için{" "}
             <Link href="/giris" className="font-semibold text-amber-800 underline underline-offset-2">giriş yapın</Link> veya{" "}
             <Link href="/iletisim" className="font-semibold text-amber-800 underline underline-offset-2">bizimle iletişime geçin</Link>.
-          </p>
+          </p>}
         </div>
       </main>
     );
@@ -91,15 +107,17 @@ export default async function OrderConfirmationPage({ params }: { params: Promis
       <div className="max-w-xl mx-auto bg-white rounded-3xl border border-neutral-200 p-6 sm:p-12 text-center space-y-6 shadow-sm">
         <div
           aria-hidden="true"
-          className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-2xl font-bold"
+          className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto text-2xl font-bold ${closed ? "bg-neutral-200 text-neutral-500" : "bg-emerald-100 text-emerald-600"}`}
         >
-          ✓
+          {closed ? "✕" : "✓"}
         </div>
         <h1 className="text-2xl sm:text-3xl font-serif font-bold text-neutral-900">
-          {paymentFailed ? "Ödeme Tamamlanamadı" : awaitingPayment ? "Ödemeniz Onaylanıyor" : "Teşekkürler, Siparişiniz Alındı!"}
+          {returned ? "Siparişiniz İade Edildi" : closed ? "Siparişiniz İptal Edildi" : paymentFailed ? "Ödeme Tamamlanamadı" : awaitingPayment ? "Ödemeniz Onaylanıyor" : "Teşekkürler, Siparişiniz Alındı!"}
         </h1>
         <p className="text-sm text-neutral-600">
-          {paymentFailed
+          {closed
+            ? "Bu siparişle ilgili ödeme beklenmemektedir."
+            : paymentFailed
             ? "Ödemeniz alınamadı. Sepete dönerek tekrar deneyebilirsiniz."
             : awaitingPayment
             ? "Ödeme bilginiz bankadan onaylanıyor. Birkaç saniye içinde sayfayı yenileyin; onaylanınca e-posta ile bilgilendirileceksiniz."
@@ -163,9 +181,11 @@ export default async function OrderConfirmationPage({ params }: { params: Promis
           </div>
         </div>
 
-        {order.paymentMethod === "BANK_TRANSFER" && !paymentFailed && <BankTransferCard orderId={order.id} />}
+        {closed && <ClosedNote id={order.id} returned={returned} />}
 
-        {awaitsBankReceipt && (
+        {order.paymentMethod === "BANK_TRANSFER" && !paymentFailed && !closed && <BankTransferCard orderId={order.id} />}
+
+        {awaitsBankReceipt && !closed && (
           <div className="text-left space-y-2">
             <p className="text-xs text-neutral-600">Havaleyi yaptıktan sonra dekontunuzu yükleyerek ödemenizin hızla onaylanmasını sağlayabilirsiniz.</p>
             <ReceiptUpload orderId={order.id} uploaded={Boolean(order.receiptUrl)} />
