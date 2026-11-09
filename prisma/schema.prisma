@@ -98,6 +98,8 @@ model ProductVariation {
   position       Int         @default(0) // Gösterim/varsayılan seçim sırası (eşitlikte id)
   orderItems     OrderItem[]
   cartItems      CartItem[]
+
+  @@index([productId])
 }
 
 // Müşteri Siparişleri (Kargonomi API v1 Entegrasyonlu)
