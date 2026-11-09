@@ -8,7 +8,7 @@ import { rateLimit } from "@/lib/rate-limit";
 
 export const metadata: Metadata = {
   title: "Kargo & Sipariş Takibi",
-  description: "Yıldırım Avize sipariş ve Kargonomi kargo durumunuzu sipariş veya takip koduyla sorgulayın.",
+  description: "Yıldırım Avize sipariş ve kargo durumunuzu sipariş veya takip koduyla sorgulayın.",
   alternates: { canonical: "/kargo-takip" },
 };
 

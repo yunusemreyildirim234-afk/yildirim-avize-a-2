@@ -5,7 +5,8 @@ import { notFound, permanentRedirect, redirect } from "next/navigation";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { prisma } from "@/lib/db";
 import ProductListing from "@/components/ProductListing";
-import { DISCOUNTED, FEATURED, getBestSellers } from "@/lib/products";
+import { DISCOUNTED, FEATURED, getBestSellers, getProductsCached } from "@/lib/products";
+import { coverImageOf } from "@/lib/variation-input";
 import { getListing } from "@/lib/listing";
 import { isDefaultState, parseListingParams } from "@/lib/listing-core";
 import { canonicalListing, pageHref, parseAdet, parsePage } from "@/lib/pagination";
@@ -52,6 +53,9 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   const { slug } = await params;
   const current = await resolve(slug);
   if (!current) return {};
+  // Paylaşım görseli: kategorideki ilk ürünün kapağı, yoksa site görseli (sayfanın openGraph'ı layout'unkini tümüyle ezer)
+  const first = current.where ? (await getProductsCached(current.where, 1).catch(() => []))[0] : undefined;
+  const images = [{ url: (first && coverImageOf(first)) || "/logo.png", alt: current.title }];
   // Her sayfanın kendi kanonik adresi vardır (sayfa=1 parametresiz)
   const sp = await searchParams;
   const page = parsePage(sp.sayfa);
@@ -65,7 +69,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
       description: current.desc,
       alternates: { canonical: base },
       robots: { index: false, follow: true },
-      openGraph: { title: current.title, description: current.desc, url: base },
+      openGraph: { title: current.title, description: current.desc, url: base, images },
     };
   }
   const url = pageHref(path, page);
@@ -73,7 +77,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
     title: page > 1 ? `${current.title} - Sayfa ${page}` : current.title,
     description: current.desc,
     alternates: { canonical: url },
-    openGraph: { title: current.title, description: current.desc, url },
+    openGraph: { title: current.title, description: current.desc, url, images },
     // "next" burada yazılmaz (toplam sayı metadata'da okunmuyor); sayfadaki Sonraki bağlantısı rel="next" taşır
     ...(page > 1 ? { pagination: { previous: pageHref(path, page - 1) } } : {}),
   };

@@ -29,9 +29,9 @@ export default function FavorilerimPage() {
         </div>
         <div className="max-w-md mx-auto space-y-4">
           <span className="text-5xl block">♡</span>
-          <h2 className="text-2xl font-serif font-bold text-neutral-900">
+          <h1 className="text-2xl font-serif font-bold text-neutral-900">
             Favori Listeniz Boş
-          </h2>
+          </h1>
           <p className="text-sm text-neutral-500">
             Beğendiğiniz avizeleri daha sonra incelemek ve karşılaştırmak için favorilerinize ekleyebilirsiniz.
           </p>

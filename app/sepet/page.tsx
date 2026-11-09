@@ -51,7 +51,7 @@ export default function CartPage() {
   }, [missingKey]);
 
   // 1. Teslimat Yöntemi
-  const [shippingType, setShippingType] = useState<string>("BEYOGLU_MAGAZA_TESLIM");
+  const [shippingType, setShippingType] = useState<string>("STANDART_KARGO");
 
   // 2. Ödeme Yöntemi
   const [paymentMethod, setPaymentMethod] = useState<"CREDIT_CARD" | "BANK_TRANSFER">("CREDIT_CARD");
@@ -772,10 +772,11 @@ export default function CartPage() {
 
             <form onSubmit={handleCheckout} className="space-y-3">
               <label className="text-xs font-bold text-neutral-700 uppercase tracking-wider block">
-                Teslimat & Kargonomi Alıcı Bilgileri:
+                Teslimat Bilgileri:
               </label>
 
               <input aria-label="Adınız Soyadınız (En az 2 kelime)"
+                autoComplete="name"
                 required
                 type="text"
                 placeholder="Adınız Soyadınız (En az 2 kelime)"
@@ -784,6 +785,7 @@ export default function CartPage() {
                 className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
               />
               <input aria-label="E-posta Adresiniz"
+                autoComplete="email"
                 required
                 type="email"
                 placeholder="E-posta Adresiniz"
@@ -810,6 +812,7 @@ export default function CartPage() {
                 </p>
               </div>
               <input aria-label="Telefon Numaranız (Örn: 0555 123 45 67)"
+                autoComplete="tel"
                 required
                 type="tel"
                 inputMode="tel"
@@ -837,6 +840,7 @@ export default function CartPage() {
                     İl (Şehir)
                   </label>
                   <select
+                    autoComplete="address-level1"
                     value={buyerStateId}
                     onChange={(e) => setBuyerStateId(Number(e.target.value))}
                     className="w-full text-base sm:text-xs p-2.5 rounded-xl border border-neutral-300 bg-white focus:outline-none focus:border-amber-600"
@@ -854,6 +858,7 @@ export default function CartPage() {
                     İlçe
                   </label>
                   <select
+                    autoComplete="address-level2"
                     value={buyerCityId}
                     onChange={(e) => setBuyerCityId(Number(e.target.value))}
                     className="w-full text-base sm:text-xs p-2.5 rounded-xl border border-neutral-300 bg-white focus:outline-none focus:border-amber-600"
@@ -868,6 +873,7 @@ export default function CartPage() {
               </div>
 
               <textarea aria-label="Açık Teslimat Adresiniz (Mahalle, Sokak, Bina ve Daire No)"
+                autoComplete="street-address"
                 required
                 rows={2}
                 placeholder="Açık Teslimat Adresiniz (Mahalle, Sokak, Bina ve Daire No)"
@@ -1014,7 +1020,7 @@ export default function CartPage() {
               )}
 
               <div className="text-center pt-2 text-[10px] text-neutral-400">
-                🔒 256-Bit SSL & Kargonomi Entegre Lojistik Güvencesi
+                🔒 256-Bit SSL & Aras Kargo ile Gönderim
               </div>
             </form>
           </div>

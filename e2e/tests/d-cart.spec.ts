@@ -76,6 +76,20 @@ test.describe("d) Sepet", () => {
     await expect(page.getByRole("button", { name: "+", exact: true }).first()).toBeVisible();
   });
 
+  test("varsayılan teslimat adrese teslim; mağazadan teslim indirim bilgisiyle seçenek; alanlarda autocomplete", async ({ page }) => {
+    await addFirstProduct(page);
+    await openOk(page, "/sepet");
+    await expect(page.getByText("Ürünler Toplamı")).toBeVisible();
+    await expect(page.getByText(/^Mağazadan Teslim İndirimi/)).toHaveCount(0);
+    await expect(page.getByLabel(/Açık Teslimat Adresiniz/)).toBeVisible();
+    await expect(page.getByText(/Ücretsiz • %\d+ İndirim/)).toBeVisible();
+    await expect(page.getByLabel(/Adınız Soyadınız/)).toHaveAttribute("autocomplete", "name");
+    await expect(page.getByLabel("E-posta Adresiniz")).toHaveAttribute("autocomplete", "email");
+    await expect(page.getByLabel(/Telefon Numaranız/)).toHaveAttribute("autocomplete", "tel");
+    await expect(page.getByLabel(/Açık Teslimat Adresiniz/)).toHaveAttribute("autocomplete", "street-address");
+    await expect(page.getByText(/Kargonomi/)).toHaveCount(0);
+  });
+
   test("kargo satırı kurala uyar: 'Adrese Teslim'de ürün toplamı eşiğin altında ücretli, üstünde ücretsiz; mağazadan teslimde ücretsiz", async ({ page }) => {
     await addFirstProduct(page);
     await openOk(page, "/sepet");
