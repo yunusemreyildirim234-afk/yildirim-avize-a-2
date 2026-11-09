@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { serverError, badRequest } from "@/lib/api-error";
 import { prisma } from "@/lib/db";
-import { rateLimit, tooMany } from "@/lib/rate-limit";
+import { rateLimit, requestIp, tooMany } from "@/lib/rate-limit";
 import { isValidPhone, PHONE_ERROR } from "@/lib/phone";
 import { bankPendingLimitReached, enforcePendingLimits, finalizeOrder, releasePreviousCardOrder, releaseStaleReservations, restoreOrderStock } from "@/lib/orders";
 import { getPaytrToken } from "@/lib/paytr";
@@ -16,6 +16,7 @@ import { releaseCoupon, reserveCouponLocked, validateCoupon } from "@/lib/coupon
 import { reserveLines, StockShortError } from "@/lib/stock-reserve";
 import { BANK_PENDING_LIMIT_ERROR, PENDING_LIMIT_ERROR } from "@/lib/pending-orders";
 import { bestEffort, createOrFindGuest } from "@/lib/best-effort";
+import { recordConsent } from "@/lib/marketing";
 
 interface CartLine {
   variationId: string;
@@ -259,6 +260,15 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: `"${l?.variation.product.title ?? "Ürün"}" için stok yetersiz.` }, { status: 400 });
       }
       throw err;
+    }
+
+    // Kampanya e-postası onayı: yalnızca açık true; sipariş oluştuktan sonra, best-effort. Abonelikten çıkmış kayıt yeniden açılmaz.
+    if (body.marketingOptIn === true) {
+      try {
+        await recordConsent({ email: normalizedEmail, ip: requestIp(req), userAgent: req.headers.get("user-agent"), source: "siparis", reactivate: false });
+      } catch (e) {
+        console.error("[siparis] kampanya onayı kaydedilemedi:", (e as Error).message);
+      }
     }
 
     // 4a. Havale/EFT: sipariş hemen onaylanır

@@ -297,16 +297,6 @@ export default function CartPage() {
       return;
     }
 
-    // Kampanya e-postası onayı arka planda kaydedilir; hata alsa bile sipariş akışı durmaz
-    if (marketingOptIn) {
-      fetch("/api/marketing-consent", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, consent: true }),
-        keepalive: true,
-      }).catch(() => {});
-    }
-
     const selectedStateObj = states.find((s) => Number(s.id) === Number(buyerStateId));
     const selectedCityObj = cities.find((c) => Number(c.id) === Number(buyerCityId));
 
@@ -371,6 +361,7 @@ export default function CartPage() {
           taxOffice,
           companyTitle,
           consent: true,
+          marketingOptIn,
           ...(previousCardOrderId() ? { previousOrderId: previousCardOrderId() } : {}),
           items: cart,
         }),

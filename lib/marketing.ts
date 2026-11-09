@@ -3,6 +3,7 @@ import { normalizeEmail, signUnsubscribeToken, verifyUnsubscribeToken } from "@/
 import { getCompanyInfo, toPublicCompany } from "@/lib/company";
 import { ADDRESS_LINE, PHONE_DISPLAY, SITE_URL } from "@/lib/site";
 import { LEGAL_UPDATED } from "@/lib/legal-texts";
+import { writeConsent } from "@/lib/consent-write";
 
 // Ticari elektronik ileti (kampanya e-postası) onayı.
 // KRİTİK: MarketingConsent tablosu canlı veritabanında henüz oluşturulmamış olabilir. Bu tabloya dokunan HER sorgu
@@ -36,17 +37,14 @@ export async function hasActiveConsent(email: string): Promise<boolean> {
   }
 }
 
-/** Açık rıza kaydı (yeniden onayda önceki çıkış kaydı temizlenir). Hata halinde false döner, asla fırlatmaz. */
-export async function recordConsent(opts: { email: string; ip?: string | null; userAgent?: string | null; source?: string }): Promise<boolean> {
+/**
+ * Açık rıza kaydı. Varsayılan: yeniden onayda önceki çıkış kaydı temizlenir (Hesabım gibi doğrulanmış kullanıcı eylemi).
+ * reactivate: false (sipariş yolu): yalnızca kayıt yoksa oluşturur, abonelikten çıkmış kaydı yeniden açmaz.
+ * Hata halinde false döner, asla fırlatmaz.
+ */
+export async function recordConsent(opts: { email: string; ip?: string | null; userAgent?: string | null; source?: string; reactivate?: boolean }): Promise<boolean> {
   try {
-    const email = normalizeEmail(opts.email);
-    const now = new Date();
-    const meta = { textVersion: LEGAL_UPDATED, ip: opts.ip?.slice(0, 64) ?? null, userAgent: opts.userAgent?.slice(0, 300) ?? null };
-    await prisma.marketingConsent.upsert({
-      where: { email },
-      create: { email, consentedAt: now, source: opts.source ?? "sepet", ...meta },
-      update: { consentedAt: now, unsubscribedAt: null, ...meta },
-    });
+    await writeConsent(prisma, { ...opts, textVersion: LEGAL_UPDATED });
     return true;
   } catch (e) {
     console.error("[marketing] onay kaydedilemedi:", (e as Error).message);
