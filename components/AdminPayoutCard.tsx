@@ -45,7 +45,7 @@ export default function AdminPayoutCard({ summary }: { summary: PayoutSummary })
         className="text-left bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm hover:bg-neutral-50/60 transition-colors focus-visible:outline-2 focus-visible:outline-amber-600 min-w-0"
       >
         <span className="flex items-center justify-between gap-2 text-xs text-neutral-500 font-medium">
-          Kuveyt Türk Hesabı
+          Kartlı ödemeler (Kuveyt Türk)
           <ChevronDown aria-hidden="true" className={`w-4 h-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
         </span>
         <span className="text-2xl font-bold text-neutral-900 mt-1 block break-words">{tl(summary.pendingKurus)}</span>

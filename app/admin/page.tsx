@@ -4,6 +4,7 @@ import { getExtraCategoryNames } from "@/lib/category-list";
 import { cleanGuestEmail } from "@/lib/guest-email";
 import { maskEmail } from "@/lib/admin-password";
 import AdminPayoutCard from "@/components/AdminPayoutCard";
+import AdminOrderBreakdown from "@/components/AdminOrderBreakdown";
 import { PAYOUT_EXCLUDED_STATUSES, buildPayouts, payoutWindowStart } from "@/lib/payout";
 import Link from "next/link";
 import { ArrowLeft, Building2, KeyRound, MapPin, MessageSquare, Package, Phone, Receipt, ShieldCheck, ShoppingBag, Star, StickyNote, Truck, Users } from "lucide-react";
@@ -152,6 +153,9 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const attempts = orders.filter((o) => o.status === "AWAITING_PAYMENT");
   const groupCounts = Object.fromEntries(ORDER_GROUPS.map((g) => [g.key, orders.filter((o) => g.test(o)).length])) as Record<OrderGroupKey, number>;
   const pendingMessages = messages.filter((m) => m.status === "PENDING").length;
+  // Bekleyen havale: yalnızca zaten yüklü sipariş listesinden türer (ek sorgu yok)
+  const pendingTransfer = orders.filter((o) => o.status === "PENDING_NEW" && o.paymentMethod === "BANK_TRANSFER");
+  const pendingTransferTotal = pendingTransfer.reduce((sum, o) => sum + o.totalAmount, 0);
   const totalRevenue = countedOrders.reduce((sum, o) => sum + o.totalAmount, 0);
   const beyogluOrders = countedOrders.filter((o) => o.shippingType === "BEYOGLU_MAGAZA_TESLIM");
   const beyogluDelivered = beyogluOrders.filter((o) => o.status === "DELIVERED").length;
@@ -236,6 +240,14 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           </div>
 
           <AdminPayoutCard summary={payout} />
+
+          <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm">
+            <span className="text-xs text-neutral-500 font-medium block">Bekleyen Havale/EFT</span>
+            <span className="text-2xl font-bold text-neutral-900 mt-1 block break-words">
+              {pendingTransferTotal.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺
+            </span>
+            <span className="text-[11px] text-neutral-500 mt-1 block">{pendingTransfer.length} sipariş, ödeme onayı bekliyor</span>
+          </div>
 
           <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm">
             <span className="text-xs text-neutral-500 font-medium block">Geçerli Sipariş</span>
@@ -460,6 +472,12 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                         <div className="font-bold text-neutral-900 text-sm pt-1">
                           {order.totalAmount.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺
                         </div>
+                        <AdminOrderBreakdown
+                          itemsTotal={order.items.reduce((s, i) => s + i.unitPrice * i.quantity, 0)}
+                          totalAmount={order.totalAmount}
+                          couponCode={order.couponCode}
+                          isPickup={order.shippingType === "BEYOGLU_MAGAZA_TESLIM"}
+                        />
                       </td>
                       <td className="p-4">
                         {/* İstemciye yalnızca gereken alanlar gider (tam sipariş nesnesi müşteri kaydını, parola özetini de taşırdı) */}
