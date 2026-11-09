@@ -42,6 +42,7 @@ import { getActivity } from "@/lib/activity";
 import { getCompanyInfo } from "@/lib/company";
 import { ORDER_GROUPS, isCountedOrder, matchesGroups, parseGroupParam, type OrderGroupKey } from "@/lib/orderStatus";
 import { getInvoiceMeta } from "@/lib/invoice";
+import { orderItemProductView } from "@/lib/order-item-product";
 
 // Büyük ve ilk görünümde kapalı bölümlerde duran bileşenler ayrı parçada yüklenir (davranış aynı)
 const AdminProductList = nextDynamic(() => import("@/components/AdminProductList"));
@@ -62,7 +63,10 @@ async function getAdminData() {
         user: { select: { name: true, email: true } },
         items: {
           include: {
-            variation: { omit: { syncSnapshot: true, syncStock: true } },
+            variation: {
+              omit: { syncSnapshot: true, syncStock: true },
+              include: { product: { select: { id: true, title: true, imageUrl: true, images: true } } },
+            },
           },
         },
       },
@@ -413,13 +417,35 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                         )}
                       </td>
                       <td className="p-4">
-                        {order.items.map((item) => (
-                          <div key={item.id} className="text-xs">
-                            <span className="font-semibold text-neutral-800">
-                              {item.quantity}x {item.variation.variationValue}
-                            </span>
-                          </div>
-                        ))}
+                        {order.items.map((item) => {
+                          const p = orderItemProductView(item.variation?.product);
+                          const thumb = p.image ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={p.image} alt={p.title ?? "Ürün"} loading="lazy" width={48} height={48} className="w-12 h-12 rounded object-cover bg-neutral-100 shrink-0" />
+                          ) : (
+                            <span aria-hidden="true" className="w-12 h-12 rounded bg-neutral-200 shrink-0" />
+                          );
+                          return (
+                            <div key={item.id} className="text-xs flex items-center gap-2 py-1">
+                              {p.href ? (
+                                <a href={p.href} target="_blank" rel="noopener" className="shrink-0">{thumb}</a>
+                              ) : (
+                                thumb
+                              )}
+                              <div className="min-w-0">
+                                {p.title &&
+                                  (p.href ? (
+                                    <a href={p.href} target="_blank" rel="noopener" className="block font-bold text-neutral-900 line-clamp-2 hover:underline">{p.title}</a>
+                                  ) : (
+                                    <span className="block font-bold text-neutral-900 line-clamp-2">{p.title}</span>
+                                  ))}
+                                <span className="font-semibold text-neutral-800">
+                                  {item.quantity}x {item.variation?.variationValue}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </td>
                       <td className="p-4 space-y-1">
                         {order.shippingType === "BEYOGLU_MAGAZA_TESLIM" ? (
