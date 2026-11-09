@@ -69,6 +69,16 @@ test("pickCover: aktiflerde kapak varsa yedek sorgu çalışmaz", async () => {
 test("pickCover: aktif yoksa görünen ürünlerden", async () => {
   assert.equal(await pickCover([], async () => [{ u: null }, { u: "b.jpg" }], (p) => p.u), "b.jpg");
 });
-test("pickCover: hiçbirinde yoksa null", async () => {
+import { fallbackCoverWhere, visibleCategoryWhere } from "../lib/categories.ts";
+test("fallbackCoverWhere: active içermez (getProducts görünürlüğü kendisi ekler)", () => {
+  assert.equal("active" in fallbackCoverWhere(["Sarkıt"]), false);
+  assert.equal("active" in fallbackCoverWhere(["Sarkıt", "sarkıt"]), false);
+  assert.deepEqual(fallbackCoverWhere(["Sarkıt"]), { category: "Sarkıt" });
+});
+test("fallbackCoverWhere: active:true içeren visibleCategoryWhere ile karşılaştırma (eski hata)", () => {
+  assert.equal("active" in visibleCategoryWhere(["Sarkıt"]), true);
+  assert.notDeepEqual(fallbackCoverWhere(["Sarkıt"]), visibleCategoryWhere(["Sarkıt"]));
+});
+test("pickCover: hiçbirinde yoksa null",async () => {
   assert.equal(await pickCover([], async () => [{ u: null }], (p) => p.u), null);
 });

@@ -133,7 +133,9 @@ export function resolveCategoryName(input: string, list: readonly Pick<CategoryE
  * Kategori sayfasının filtresi: görünür + kategori eşleşmesi.
  */
 export const VISIBLE_PRODUCT_WHERE = { active: true } as const;
-export const visibleCategoryWhere = (spellings: readonly string[]) => ({ ...VISIBLE_PRODUCT_WHERE, ...categoryWhere(spellings) });
+/** Kapak yedek sorgusu: `active` içermez; getProducts zaten aktif + ayarlı stoksuz görünenleri (getVisibleWhere) kendisi ekler. */
+export const fallbackCoverWhere = (spellings: readonly string[]) => categoryWhere(spellings);
+export const visibleCategoryWhere =(spellings: readonly string[]) => ({ ...VISIBLE_PRODUCT_WHERE, ...categoryWhere(spellings) });
 
 /** Vitrinde görünür ürünü olan kategoriler (bağlantı listeleri: menü, mobil şerit, alt bilgi, sitemap). Ürünsüz kategorinin sayfası çalışır, yalnızca listelerden çıkar. */
 export const withVisibleProducts = <E extends { count: number }>(list: readonly E[]): E[] => list.filter((c) => c.count > 0);

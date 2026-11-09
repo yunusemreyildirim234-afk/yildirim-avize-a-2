@@ -1,6 +1,6 @@
 import { getCategoryList, getCategorySettings } from "@/lib/category-list";
 import { categoryDisplayTitle, isCategoryHidden } from "@/lib/category-settings";
-import { categoryKey, visibleCategoryWhere, type CategoryEntry } from "@/lib/categories";
+import { categoryKey, fallbackCoverWhere, visibleCategoryWhere, type CategoryEntry } from "@/lib/categories";
 import { pickCollections, pickCover, resolveCollectionKeys } from "@/lib/collections";
 import { getHomepageRaw } from "@/lib/homepage";
 import { getActiveProducts, getProducts } from "@/lib/products";
@@ -27,7 +27,7 @@ export async function getHomeCollections(): Promise<HomeCollection[]> {
     picked.map(async (c) => {
       const products = await getActiveProducts(visibleCategoryWhere(c.spellings), 6).catch(() => []);
       // Aktif ürün yoksa: aynı kategori koşuluyla vitrinde görünen (stoksuz "göster" ayarlı) ürünlerden kapak
-      const cover = await pickCover(products, () => getProducts(visibleCategoryWhere(c.spellings), 6).catch(() => []), coverImageOf);
+      const cover = await pickCover(products, () => getProducts(fallbackCoverWhere(c.spellings), 6).catch(() => []), coverImageOf);
       return { slug: c.slug, title: categoryDisplayTitle(settings, c.key, c.title), cover };
     })
   );
