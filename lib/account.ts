@@ -1,7 +1,7 @@
 import { cache } from "react";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
-import { USER_COOKIE, signSession, verifySession, verifyVersioned, versionMatches } from "@/lib/session";
+import { USER_COOKIE, signSession, verifyUserSession, verifyVersioned, versionMatches } from "@/lib/session";
 
 type UserSession = { uid: string; sv?: number; picture?: string | null };
 
@@ -10,7 +10,7 @@ const readUser = cache((uid: string) => prisma.user.findUnique({ where: { id: ui
 
 /** Oturum açmış müşterinin ID'si (çerez geçerli, kullanıcı hâlâ var ve oturum sürümü eşleşiyorsa), aksi halde null. */
 export async function getSessionUserId() {
-  const session = await verifySession<UserSession>((await cookies()).get(USER_COOKIE)?.value);
+  const session = await verifyUserSession<UserSession>((await cookies()).get(USER_COOKIE)?.value);
   if (!session?.uid) return null;
   const user = await readUser(session.uid);
   if (!user || !versionMatches(session.sv, user.sessionVersion)) return null;
@@ -19,7 +19,7 @@ export async function getSessionUserId() {
 
 /** Doğrulanmış müşteri oturumu (imza, süre, oturum sürümü). Kullanıcı silinmişse null; sürüm okunamazsa (DB hatası) oturum geçerli kalır (loglanır). */
 export const getUserSession = cache(async (): Promise<UserSession | null> => {
-  const session = await verifySession<UserSession>((await cookies()).get(USER_COOKIE)?.value);
+  const session = await verifyUserSession<UserSession>((await cookies()).get(USER_COOKIE)?.value);
   if (!session?.uid) return null;
   let deleted = false;
   const valid = await verifyVersioned(session, "sv", async () => {
@@ -33,7 +33,7 @@ export const getUserSession = cache(async (): Promise<UserSession | null> => {
 /** Kullanıcının güncel oturum sürümünü içeren yeni oturum belirteci. */
 export async function issueUserToken(userId: string, extra: Record<string, unknown> = {}) {
   const u = await prisma.user.findUnique({ where: { id: userId }, select: { sessionVersion: true } });
-  return signSession({ uid: userId, sv: u?.sessionVersion ?? 0, ...extra });
+  return signSession({ ...extra, uid: userId, sv: u?.sessionVersion ?? 0, purpose: "session" });
 }
 
 /** Sürümü artırır (eski tüm oturumlar geçersiz olur) ve yeni sürümü döner. */

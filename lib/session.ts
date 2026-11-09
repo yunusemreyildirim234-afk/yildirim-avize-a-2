@@ -49,6 +49,17 @@ export async function verifySession<T extends Record<string, unknown>>(token?: s
   }
 }
 
+/** Kullanıcı oturumu olabilecek yük: uid var ve amaç yok (eski oturum biçimi) ya da "session". 2FA bekleyen jeton, e-posta kanıtı, geri alma ve yönetici belirteçleri oturum DEĞİLDİR. */
+export function isUserSessionPayload(p: Record<string, unknown> | null | undefined): boolean {
+  return !!p && typeof p.uid === "string" && p.uid !== "" && (p.purpose === undefined || p.purpose === "session") && p.kind === undefined && p.role === undefined;
+}
+
+/** ya_user çerezi için doğrulama: imza + süre + yalnızca oturum amaçlı yük. */
+export async function verifyUserSession<T extends Record<string, unknown>>(token?: string | null): Promise<T | null> {
+  const session = await verifySession<T>(token);
+  return isUserSessionPayload(session) ? session : null;
+}
+
 export const cookieOptions = {
   httpOnly: true,
   sameSite: "lax" as const,
