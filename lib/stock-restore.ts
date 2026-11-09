@@ -1,6 +1,8 @@
 // Sipariş stok iadesinin çekirdeği: bayrak güncellemesi ve stok artışları AYNI transaction istemcisi (tx) üzerinde çalışır.
 // Saf yardımcı: veritabanı istemcisi parametredir (test edilebilir).
 
+import { mergeByVariation } from "./stock-rules.ts";
+
 export interface RestoreTx {
   order: { updateMany(args: { where: { id: string; stockDeducted: boolean }; data: { stockDeducted: boolean } }): Promise<{ count: number }> };
   orderItem: { findMany(args: { where: { orderId: string }; select: { variationId: true; quantity: true } }): Promise<{ variationId: string; quantity: number }[]> };
@@ -12,7 +14,8 @@ export async function restoreStockInTx(tx: RestoreTx, orderId: string): Promise<
   const claimed = await tx.order.updateMany({ where: { id: orderId, stockDeducted: true }, data: { stockDeducted: false } });
   if (claimed.count === 0) return;
   const items = await tx.orderItem.findMany({ where: { orderId }, select: { variationId: true, quantity: true } });
-  for (const i of items) {
+  // variationId sırası: satır kilitleri rezervasyon ve düşümle aynı sırada alınır (deadlock olmaz)
+  for (const i of mergeByVariation(items)) {
     await tx.productVariation.update({ where: { id: i.variationId }, data: { stock: { increment: i.quantity } } });
   }
 }

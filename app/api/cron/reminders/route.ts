@@ -6,6 +6,7 @@ import { sendAbandonedCartEmail, sendBankOrderCancelledEmail, sendCartReminderEm
 import { buildCampaignFooter, hasActiveConsent } from "@/lib/marketing";
 import { releaseCoupon } from "@/lib/coupons";
 import { cancelUnpaidBankOrder, restoreOrderStock } from "@/lib/orders";
+import { restoreStockInTx, type RestoreTx } from "@/lib/stock-restore";
 import { notifyAdmins, notifyCustomer } from "@/lib/notifications";
 import { ABANDONED_CARD_MINUTES, BANK_ORDER_HOLD_HOURS, shouldCancelUnpaidBank, shouldCloseAbandonedCard } from "@/lib/stock-rules";
 import { couponValueLabel, loadShowcaseCoupon } from "@/lib/showcase";
@@ -80,12 +81,18 @@ export async function GET(req: Request) {
   });
   for (const o of stale) {
     if (!shouldCloseAbandonedCard(o, now)) continue;
-    // Durum koşullu geçiş: callback ile yarışırsa yalnızca biri kazanır, kupon tek kez serbest kalır
-    const failed = await prisma.order.updateMany({ where: { id: o.id, status: "AWAITING_PAYMENT" }, data: { status: "PAYMENT_FAILED" } });
-    if (failed.count === 0) continue;
-    await restoreOrderStock(o.id).catch((err) => console.error("[cron] stok iade edilemedi (sonraki süpürmede denenir):", (err as Error).message));
-    await releaseCoupon(o.couponCode).catch((err) => console.error("[cron] kupon serbest bırakılamadı:", (err as Error).message));
-    closed++;
+    // Durum + stok + kupon tek transaction'da; durum koşullu geçiş: callback ile yarışırsa yalnızca biri kazanır, hata olursa sipariş sonraki cron'da yeniden denenir
+    const done = await prisma.$transaction(async (tx) => {
+      const failed = await tx.order.updateMany({ where: { id: o.id, status: "AWAITING_PAYMENT" }, data: { status: "PAYMENT_FAILED" } });
+      if (failed.count === 0) return false;
+      await restoreStockInTx(tx as unknown as RestoreTx, o.id);
+      await releaseCoupon(o.couponCode, tx);
+      return true;
+    }, { maxWait: 5000, timeout: 10000 }).catch((err) => {
+      console.error("[cron] terk edilmiş ödeme kapatılamadı (sonraki çalışmada denenir):", (err as Error).message);
+      return false;
+    });
+    if (done) closed++;
   }
   // Süpürme: kartlı PAYMENT_FAILED olup stoğu hâlâ ayrılı kalmış siparişler (iade adımı hata verdiyse) bayrak koşullu iade edilir
   const stuck = await prisma.order.findMany({ where: { status: "PAYMENT_FAILED", paymentMethod: "CREDIT_CARD", stockDeducted: true }, select: { id: true }, take: 200 });

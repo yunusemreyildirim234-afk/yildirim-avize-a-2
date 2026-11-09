@@ -4,10 +4,9 @@ import { serverError } from "@/lib/api-error";
 import { adminGuard } from "@/lib/admin-guard";
 import { prisma } from "@/lib/db";
 import { notifyCustomer } from "@/lib/notifications";
-import { restoreOrderStock } from "@/lib/orders";
 import { releaseCoupon } from "@/lib/coupons";
 import { signSession } from "@/lib/session";
-import { planStatusChange } from "@/lib/order-undo";
+import { applyStatusChangeInTx, type StatusChangeTx } from "@/lib/order-undo";
 
 const STATUS_NOTICE: Record<string, string> = {
   PENDING: "Siparişiniz hazırlanıyor.",
@@ -31,18 +30,17 @@ async function POSTHandler(req: Request) {
       return NextResponse.json({ error: "Geçersiz sipariş durumu." }, { status: 400 });
     }
 
-    const before = await prisma.order.findUnique({ where: { id: orderId }, select: { status: true, stockDeducted: true } });
-    if (!before) return NextResponse.json({ error: "Sipariş bulunamadı." }, { status: 404 });
-    // Koşullu güncelleme: yalnızca okunan eski durum hâlâ geçerliyse (eşzamanlı PayTR/cron/yönetici işlemi aynı iadeyi iki kez yapmasın)
-    const moved = await prisma.order.updateMany({ where: { id: orderId, status: before.status }, data: { status } });
-    if (moved.count === 0) return NextResponse.json({ success: false, alreadyUpdated: true, error: "Sipariş zaten güncellendi (başka bir işlem durumu değiştirdi). Sayfayı yenileyin." }, { status: 409 });
-    const updatedOrder = await prisma.order.findUniqueOrThrow({ where: { id: orderId } });
-
-    // Doğrudan iptal/iade (karar lib/order-undo.ts planStatusChange): stok bayrağı (stockDeducted) true ise stok (kartlı rezervasyon dahil), kupon henüz iade edilmediyse kupon iade edilir
-    const plan = before.status !== status ? planStatusChange(before.status, status, before.stockDeducted) : { restoreStock: false, releaseCoupon: false };
+    // Durum + stok + kupon tek transaction'da: biri hata verirse hiçbiri uygulanmaz (lib/order-undo.ts)
+    const result = await prisma.$transaction(
+      (tx) => applyStatusChangeInTx(tx as unknown as StatusChangeTx, orderId, status, (code) => releaseCoupon(code, tx)),
+      { maxWait: 5000, timeout: 10000 }
+    );
+    if (result.outcome === "NOT_FOUND") return NextResponse.json({ error: "Sipariş bulunamadı." }, { status: 404 });
+    if (result.outcome === "CONFLICT") return NextResponse.json({ success: false, alreadyUpdated: true, error: "Sipariş zaten güncellendi (başka bir işlem durumu değiştirdi). Sayfayı yenileyin." }, { status: 409 });
+    const before = { status: result.from };
+    const { plan } = result;
     const restoredStock = plan.restoreStock;
-    if (plan.restoreStock) await restoreOrderStock(orderId);
-    if (plan.releaseCoupon) await releaseCoupon(updatedOrder.couponCode).catch(() => {});
+    const updatedOrder = await prisma.order.findUniqueOrThrow({ where: { id: orderId } });
 
     const notified = before.status !== status && Boolean(STATUS_NOTICE[status]);
     if (notified) {
