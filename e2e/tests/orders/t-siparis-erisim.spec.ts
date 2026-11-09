@@ -44,7 +44,7 @@ test.describe("Sipariş sayfalarına erişim", () => {
   test("(e) takip kodu ve barkodla sorguda UUID ve onay bağlantısı yok; durum ve maskeli ad var", async ({ request }) => {
     for (const code of [tracking, barcode]) {
       const html = await (await request.get(`/kargo-takip?code=${code}`, { headers: clientHeaders(20) })).text();
-      expect(html, code).toContain("E2E M.");
+      expect(html, code).toMatch(/E2E (M|Ü)\./); // barkod misafir ve üye siparişlerinde ortak; hangisi bulunursa ad maskeli olmalı
       expect(html).toContain("Hazırlanıyor");
       expect(html).not.toContain(guestOld);
       expect(html).not.toContain(guestFresh);

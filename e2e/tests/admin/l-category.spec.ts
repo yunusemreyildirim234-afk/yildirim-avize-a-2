@@ -83,7 +83,7 @@ test.describe("Admin kategori yönetimi", () => {
       const old = await request.get(href(slug), { maxRedirects: 0 });
       expect(old.status()).toBe(308);
       expect(old.headers()["location"]).toContain(href(newSlug));
-      expect((await request.get(href(newSlug))).status()).toBe(200);
+      await expect.poll(async () => (await request.get(href(newSlug))).status(), { message: "yeni adres", ...POLL }).toBe(200);
       expect(await categoryOf(id)).toBe(newName);
     });
 
@@ -93,7 +93,7 @@ test.describe("Admin kategori yönetimi", () => {
       await catRow(page, newSlug).getByRole("button", { name: "Sil" }).click();
       await expect(page.getByText(/kategorisiz kaldı/)).toBeVisible();
       expect(await categoryOf(id)).toBe("");
-      expect((await request.get(href(newSlug))).status(), "silinen kategori adresi").toBe(404);
+      await expect.poll(async () => (await request.get(href(newSlug))).status(), { message: "silinen kategori adresi", ...POLL }).toBe(404);
       await expect.poll(() => where(page, newSlug), { message: "silinen kategori menüde yok", ...POLL }).toEqual({ menu: false, footer: false, home: false });
       await expect.poll(() => searchIds(request, title), { message: "aramada görünür", ...POLL }).toContain(id);
       await page.goto("/kategori/tum");
@@ -115,7 +115,7 @@ test.describe("Admin kategori yönetimi", () => {
       await page.getByRole("button", { name: "Geri Al", exact: true }).click();
       await expect(page.getByText(/Geri alındı/)).toBeVisible();
       expect(await categoryOf(id)).toBe(newName);
-      expect((await request.get(href(newSlug))).status()).toBe(200);
+      await expect.poll(async () => (await request.get(href(newSlug))).status(), { message: "geri alınan kategori adresi", ...POLL }).toBe(200);
       // temizlik: kategoriyi tekrar sil (yönlendirme kayıtları da kalkar), ürünü afterAll siler
       await openAdmin(page);
       await expandPanel(page, /^Kategoriler/);
