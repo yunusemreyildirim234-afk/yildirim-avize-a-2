@@ -98,7 +98,10 @@ export async function fillCustomer(page: Page, c: Customer, opts: { address: boo
   await page.getByLabel(/Adınız Soyadınız/).fill(c.name);
   await page.getByLabel("E-posta Adresiniz").fill(c.email);
   await page.getByLabel(/Telefon Numaranız/).fill(c.phone);
-  if (opts.address) await page.getByLabel(/Açık Teslimat Adresiniz/).fill(c.address);
+  if (opts.address) {
+    await page.locator('select[autocomplete="address-level2"]').selectOption("425"); // ilçe artık boş başlar; taklit konum listesindeki BEYOĞLU seçilir
+    await page.getByLabel(/Açık Teslimat Adresiniz/).fill(c.address);
+  }
 }
 
 export async function acceptAgreements(page: Page) {

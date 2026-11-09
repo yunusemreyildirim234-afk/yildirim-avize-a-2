@@ -55,7 +55,7 @@ test.describe("Fiyatı 0 olan ürün", () => {
     const before = (await rows<{ n: number }>(`select count(*)::int as n from "OrderItem" where "variationId" = $1`, [vid]))[0].n;
     const res = await g.ctx.request.post("/api/order", {
       headers: { "x-forwarded-for": "203.0.113.78" }, // ayrı hız sınırı sayacı: p-siparis ve c-stoksuz-vitrin istekleriyle 5/10 dk bütçesini paylaşmaz
-      data: { name: CUSTOMER.name, email: CUSTOMER.email, phone: CUSTOMER.phone, address: CUSTOMER.address, shippingType: "STANDART_KARGO", paymentMethod: "BANK_TRANSFER", consent: true, items: [{ variationId: vid, quantity: 1 }] },
+      data: { name: CUSTOMER.name, email: CUSTOMER.email, phone: CUSTOMER.phone, address: CUSTOMER.address, buyerStateId: 34, buyerCityId: 425, buyerStateName: "İSTANBUL", buyerCityName: "BEYOĞLU", shippingType: "STANDART_KARGO", paymentMethod: "BANK_TRANSFER", consent: true, items: [{ variationId: vid, quantity: 1 }] },
     });
     expect(res.status()).toBe(400);
     expect(((await res.json()) as { error: string }).error).toContain("güncel fiyat bilgisi yok");

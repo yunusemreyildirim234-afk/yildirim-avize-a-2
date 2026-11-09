@@ -32,3 +32,28 @@ export function cleanDisplayName(raw: unknown): { ok: true; name: string } | { o
   if (/[<>]/.test(name)) return { ok: false, error: "Ad geçersiz karakter içeriyor." };
   return { ok: true, name };
 }
+
+export type ShippingFormField = "name" | "address" | "state" | "city";
+
+/** Teslimat formu doğrulaması (sepet ve /api/order ortak). Mağazadan teslimde yalnızca ad kontrol edilir. */
+export function shippingFormError(i: {
+  name: string;
+  address: string;
+  stateId?: unknown;
+  cityId?: unknown;
+  isPickup: boolean;
+}): { field: ShippingFormField; message: string } | null {
+  const words = i.name.trim().split(/\s+/).filter(Boolean);
+  const letters = (w: string) => (w.match(/\p{L}/gu) ?? []).length;
+  if (words.length < 2 || words.some((w) => letters(w) < 2)) {
+    return { field: "name", message: "Lütfen ad ve soyadınızı eksiksiz yazın (en az iki kelime)." };
+  }
+  if (i.isPickup) return null;
+  if (!Number.isInteger(i.stateId) || Number(i.stateId) <= 0) return { field: "state", message: "Lütfen il seçin." };
+  if (!Number.isInteger(i.cityId) || Number(i.cityId) <= 0) return { field: "city", message: "Lütfen ilçe seçin." };
+  const addr = i.address.trim();
+  if (addr.length < 10 || !/\p{L}/u.test(addr)) {
+    return { field: "address", message: "Lütfen açık adresinizi yazın (en az 10 karakter, mahalle/sokak/bina bilgisi ile)." };
+  }
+  return null;
+}

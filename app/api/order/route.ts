@@ -7,7 +7,7 @@ import { bankPendingLimitReached, enforcePendingLimits, finalizeOrder, releasePr
 import { getPaytrToken } from "@/lib/paytr";
 import { SHIPPING_LABELS } from "@/lib/pricing";
 import { getSessionUserId } from "@/lib/account";
-import { EMAIL_RE, invoiceError } from "@/lib/validation";
+import { EMAIL_RE, invoiceError, shippingFormError } from "@/lib/validation";
 import { bulkTiersOf } from "@/lib/bulk-pricing";
 import { isShort, mergeByVariation } from "@/lib/stock-rules";
 import { priceCart } from "@/lib/cart-pricing";
@@ -85,6 +85,9 @@ export async function POST(req: Request) {
     if (!(shippingType in SHIPPING_LABELS)) {
       return NextResponse.json({ error: "Geçersiz teslimat yöntemi." }, { status: 400 });
     }
+    // Teslimat formu: ad soyad, il, ilçe ve açık adres sunucuda da zorunlu (mağazadan teslimde yalnızca ad)
+    const formErr = shippingFormError({ name, address, stateId: buyerStateId, cityId: buyerCityId, isPickup: shippingType === "BEYOGLU_MAGAZA_TESLIM" });
+    if (formErr) return NextResponse.json({ error: formErr.message, field: formErr.field }, { status: 400 });
 
     // Kartlı ödeme ekranını kapatıp tekrar deneyen müşteri: yalnızca istemcinin bildiği önceki sipariş kimliği ve aynı e-posta/oturum ile
     // kendi bekleyen kartlı siparişi (stok + kupon) yeni rezervasyondan ÖNCE serbest bırakılır; geçersiz kimlik sessizce yok sayılır.

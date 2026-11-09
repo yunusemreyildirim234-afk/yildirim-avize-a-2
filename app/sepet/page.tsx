@@ -15,7 +15,7 @@ import PriceLadder from "@/components/PriceLadder";
 import type { LadderStep } from "@/lib/price-ladder";
 import BankTransferCard from "@/components/BankTransferCard";
 import ContractModal from "@/components/ContractModal";
-import { invoiceError } from "@/lib/validation";
+import { invoiceError, shippingFormError } from "@/lib/validation";
 import { ADDRESS_LINE } from "@/lib/site";
 import { rememberEmail, track } from "@/lib/track";
 import { gtmPush } from "@/lib/gtm";
@@ -77,7 +77,7 @@ export default function CartPage() {
   const [states, setStates] = useState<LocationItem[]>([]);
   const [cities, setCities] = useState<LocationItem[]>([]);
   const [buyerStateId, setBuyerStateId] = useState<number>(34);
-  const [buyerCityId, setBuyerCityId] = useState<number>(425);
+  const [buyerCityId, setBuyerCityId] = useState<number>(0); // ilçe boş başlar; müşteri bilinçli seçer
 
   const [loading, setLoading] = useState(false);
 
@@ -131,7 +131,7 @@ export default function CartPage() {
       .then((data) => {
         if (Array.isArray(data.cities) && data.cities.length > 0) {
           setCities(data.cities);
-          setBuyerCityId(Number(data.cities[0].id));
+          setBuyerCityId(0);
         }
       })
       .catch(() => {});
@@ -289,6 +289,12 @@ export default function CartPage() {
     if (invErr) {
       toast.error(invErr);
       track("ERROR", invErr, "sepet/fatura-formu");
+      return;
+    }
+    const formErr = shippingFormError({ name, address, stateId: buyerStateId, cityId: buyerCityId, isPickup });
+    if (formErr) {
+      toast.error(formErr.message);
+      track("ERROR", formErr.message, "sepet/teslimat-formu");
       return;
     }
     if (!agreePre || !agreeSales) {
@@ -833,7 +839,7 @@ export default function CartPage() {
                   <select
                     autoComplete="address-level1"
                     value={buyerStateId}
-                    onChange={(e) => setBuyerStateId(Number(e.target.value))}
+                    onChange={(e) => { setBuyerStateId(Number(e.target.value)); setBuyerCityId(0); }}
                     className="w-full text-base sm:text-xs p-2.5 rounded-xl border border-neutral-300 bg-white focus:outline-none focus:border-amber-600"
                   >
                     {states.map((st) => (
@@ -854,6 +860,7 @@ export default function CartPage() {
                     onChange={(e) => setBuyerCityId(Number(e.target.value))}
                     className="w-full text-base sm:text-xs p-2.5 rounded-xl border border-neutral-300 bg-white focus:outline-none focus:border-amber-600"
                   >
+                    <option value={0}>İlçe seçin</option>
                     {cities.map((ct) => (
                       <option key={ct.id} value={ct.id}>
                         {ct.name}

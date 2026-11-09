@@ -162,7 +162,7 @@ test.describe("Stoksuz ürünler vitrinde Tükendi", () => {
     expect(quote.status()).toBeLessThan(500);
     expect(JSON.stringify(await quote.json())).toContain('"available":false');
     const order = await ctx.post("/api/order", {
-      data: { name: "E2E Müşteri", email: "e2e-stoksuz@example.invalid", phone: "0500 000 00 03", address: "E2E Test Mah. No:3", shippingType: "STANDART_KARGO", paymentMethod: "BANK_TRANSFER", consent: true, items: [{ variationId: v.id, quantity: 1 }] },
+      data: { name: "E2E Müşteri", email: "e2e-stoksuz@example.invalid", phone: "0500 000 00 03", address: "E2E Test Mah. No:3", buyerStateId: 34, buyerCityId: 425, buyerStateName: "İSTANBUL", buyerCityName: "BEYOĞLU", shippingType: "STANDART_KARGO", paymentMethod: "BANK_TRANSFER", consent: true, items: [{ variationId: v.id, quantity: 1 }] },
     });
     if (order.status() === 429) test.info().annotations.push({ type: "ATLANDI-hiz-siniri", description: "/api/order hız sınırı doldu; sepet quote doğrulandı" });
     else {
