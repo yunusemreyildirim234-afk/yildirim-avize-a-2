@@ -2,11 +2,12 @@ import { cleanGuestEmail } from "@/lib/guest-email";
 import { safeCompare } from "@/lib/session";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { sendAbandonedCartEmail, sendCartReminderEmail, sendReceiptReminderEmail } from "@/lib/email";
+import { sendAbandonedCartEmail, sendBankOrderCancelledEmail, sendCartReminderEmail, sendReceiptReminderEmail } from "@/lib/email";
 import { buildCampaignFooter, hasActiveConsent } from "@/lib/marketing";
 import { releaseCoupon } from "@/lib/coupons";
-import { restoreOrderStock } from "@/lib/orders";
-import { ABANDONED_CARD_MINUTES, shouldCloseAbandonedCard } from "@/lib/stock-rules";
+import { cancelUnpaidBankOrder, restoreOrderStock } from "@/lib/orders";
+import { notifyAdmins, notifyCustomer } from "@/lib/notifications";
+import { ABANDONED_CARD_MINUTES, BANK_ORDER_HOLD_HOURS, shouldCancelUnpaidBank, shouldCloseAbandonedCard } from "@/lib/stock-rules";
 import { couponValueLabel, loadShowcaseCoupon } from "@/lib/showcase";
 
 const HOUR = 60 * 60 * 1000;
@@ -50,13 +51,13 @@ export async function GET(req: Request) {
     else await prisma.order.update({ where: { id: o.id }, data: { abandonedEmailSent: false } });
   }
 
-  // 2) Havale dekont hatırlatması: 3 saati geçmiş, dekont yok
+  // 2) Havale dekont hatırlatması: 3 saati geçmiş, dekont yok, otomatik iptal süresi dolmamış (iptal edilecek siparişe hatırlatma gitmez)
   const pending = await prisma.order.findMany({
     where: {
       status: "PENDING_NEW",
       receiptReminderSent: false,
       receiptUrl: null,
-      createdAt: { lt: new Date(now - 3 * HOUR), gt: new Date(now - 14 * 24 * HOUR) },
+      createdAt: { lt: new Date(now - 3 * HOUR), gt: new Date(now - BANK_ORDER_HOLD_HOURS * HOUR) },
     },
     include: { user: true },
     take: 50,
@@ -90,5 +91,26 @@ export async function GET(req: Request) {
   const stuck = await prisma.order.findMany({ where: { status: "PAYMENT_FAILED", paymentMethod: "CREDIT_CARD", stockDeducted: true }, select: { id: true }, take: 200 });
   for (const o of stuck) await restoreOrderStock(o.id).catch((err) => console.error("[cron] stok süpürme hatası:", (err as Error).message));
 
-  return NextResponse.json({ success: true, abandoned, receipts, closed });
+  // 4) Dekontsuz, ödemesiz Havale siparişleri: süre dolunca iptal; durum + stok + kupon tek işlemde, bildirimler işlem sonrası
+  let bankCancelled = 0;
+  const unpaid = await prisma.order.findMany({
+    where: { status: "PENDING_NEW", paymentMethod: "BANK_TRANSFER", receiptUrl: null, createdAt: { lt: new Date(now - BANK_ORDER_HOLD_HOURS * HOUR) } },
+    include: { user: true },
+    take: 50,
+  });
+  for (const o of unpaid) {
+    if (!shouldCancelUnpaidBank(o, now)) continue;
+    const cancelled = await cancelUnpaidBankOrder(o.id).catch((err) => {
+      console.error("[cron] havale siparişi iptal edilemedi:", (err as Error).message);
+      return false;
+    });
+    if (!cancelled) continue;
+    bankCancelled++;
+    const short = o.id.slice(0, 8);
+    await notifyAdmins({ title: `Havale siparişi otomatik iptal: #${short}`, message: `${BANK_ORDER_HOLD_HOURS} saat içinde dekont gelmedi; stok ve kupon iade edildi.`, type: "ORDER", link: "/admin#siparisler" });
+    await notifyCustomer({ userId: o.userId }, { title: "Siparişiniz iptal edildi", message: `#${short} numaralı Havale siparişiniz ${BANK_ORDER_HOLD_HOURS} saat içinde ödeme dekontu gelmediği için iptal edildi.`, type: "ORDER", link: `/siparis-onay/${o.id}` });
+    await sendBankOrderCancelledEmail({ to: cleanGuestEmail(o.user.email), name: o.user.name, orderId: o.id, hours: BANK_ORDER_HOLD_HOURS }).catch(() => false);
+  }
+
+  return NextResponse.json({ success: true, abandoned, receipts, closed, bankCancelled });
 }

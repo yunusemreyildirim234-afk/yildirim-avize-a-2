@@ -1,9 +1,9 @@
 import { prisma } from "@/lib/db";
 import { sendOrderNotificationEmails, sendStockShortageEmail } from "@/lib/email";
-import { mergeByVariation, RESERVATION_RELEASE_MINUTES } from "@/lib/stock-rules";
+import { BANK_ORDER_HOLD_HOURS, mergeByVariation, RESERVATION_RELEASE_MINUTES } from "@/lib/stock-rules";
 import { releaseCoupon } from "@/lib/coupons";
 import { canReleasePrevious, isOrderId } from "@/lib/previous-order";
-import { planPendingCleanup, type PendingRow } from "@/lib/pending-orders";
+import { bankPendingBlocked, planPendingCleanup, type PendingRow } from "@/lib/pending-orders";
 import { createShipmentForOrder } from "@/lib/kargonomi";
 import { notifyAdmins, notifyCustomer } from "@/lib/notifications";
 import { cleanGuestEmail } from "@/lib/guest-email";
@@ -125,6 +125,31 @@ export async function enforcePendingLimits(who: { email: string; phone: string; 
   return { blocked: plan.blocked, cancelled };
 }
 
+/** Aynı e-posta/telefonun bekleyen Havale siparişi sınırda mı? Süresi (BANK_ORDER_HOLD_HOURS) geçenler sayılmaz. */
+export async function bankPendingLimitReached(who: { email: string; phone: string }, now: number = Date.now()): Promise<boolean> {
+  const rows = await prisma.order.findMany({
+    where: { status: "PENDING_NEW", paymentMethod: "BANK_TRANSFER", createdAt: { gte: new Date(now - BANK_ORDER_HOLD_HOURS * 3_600_000) } },
+    select: { phone: true, user: { select: { email: true } } },
+    take: 500,
+  });
+  return bankPendingBlocked(rows, who);
+}
+
+/**
+ * Dekontsuz, ödemesiz Havale siparişini iptal eder. Durum geçişi, stok ve kupon iadesi TEK transaction'dadır;
+ * koşullu geçişi yalnızca bir çağrı kazanır, tekrar çağrı veya yönetici onayıyla yarış çift iade üretmez. İptal edildiyse true.
+ */
+export async function cancelUnpaidBankOrder(orderId: string): Promise<boolean> {
+  return prisma.$transaction(async (tx) => {
+    const o = await tx.order.findUnique({ where: { id: orderId }, select: { couponCode: true } });
+    const moved = await tx.order.updateMany({ where: { id: orderId, status: "PENDING_NEW", paymentMethod: "BANK_TRANSFER", receiptUrl: null }, data: { status: "CANCELLED" } });
+    if (moved.count === 0) return false;
+    await restoreStockInTx(tx as unknown as RestoreTx, orderId);
+    await releaseCoupon(o?.couponCode, tx);
+    return true;
+  }, TX_OPTIONS);
+}
+
 type FullOrder = Awaited<ReturnType<typeof loadOrder>>;
 const loadOrder = (orderId: string) =>
   prisma.order.findUniqueOrThrow({
@@ -183,15 +208,13 @@ async function announceNewOrder(order: FullOrder) {
 /**
  * Kartlı ödemesi alınan siparişi hazırlanıyor durumuna geçirir, stoğu düşer, kargo gönderisini oluşturur ve bildirimleri yollar.
  * Havale siparişleri (PENDING_NEW) için `awaitPayment: true`: durum ödeme onayına kadar PENDING_NEW kalır,
- * stok rezerve edilir, e-posta/bildirimler gider; gönderi ve hazırlanıyor durumu confirmBankPayment ile gelir.
- * Tekrar çağrılırsa tekrar işlem yapmaz.
+ * stok sipariş işleminde zaten ayrılmıştır, yalnızca e-posta/bildirimler gider; gönderi ve hazırlanıyor durumu confirmBankPayment ile gelir.
+ * Kartlı akış tekrar çağrılırsa tekrar işlem yapmaz.
  */
 export async function finalizeOrder(orderId: string, opts: { awaitPayment?: boolean } = {}) {
   if (opts.awaitPayment) {
-    const current = await prisma.order.findUnique({ where: { id: orderId }, select: { status: true, stockDeducted: true } });
-    if (!current || current.status !== "PENDING_NEW" || current.stockDeducted) return;
-    await deductOrderStock(orderId);
-    await announceNewOrder(await loadOrder(orderId));
+    const order = await loadOrder(orderId);
+    if (order.status === "PENDING_NEW") await announceNewOrder(order);
     return;
   }
 

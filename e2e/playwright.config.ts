@@ -26,6 +26,8 @@ if (!process.env.E2E_DATABASE_URL) {
 if (!process.env.E2E_ADMIN_PASSWORD) process.env.E2E_ADMIN_PASSWORD = crypto.randomBytes(18).toString("base64url");
 const E2E_ADMIN_USER = "e2e-admin";
 process.env.E2E_ADMIN_USER = E2E_ADMIN_USER;
+// Cron testleri için bu çalıştırmaya özel rastgele sır (yalnızca e2e sunucusu ve test işçileri); çağrıldığında e2e veritabanında çalışır, e-posta anahtarı boştur.
+if (!process.env.E2E_CRON_SECRET) process.env.E2E_CRON_SECRET = crypto.randomBytes(18).toString("base64url");
 
 /**
  * e2e sunucusunun ortamı: yalnızca e2e veritabanı; harici servis anahtarları BOŞ (e-posta/ödeme/kargo/cron kapalı).
@@ -50,7 +52,7 @@ const serverEnv: Record<string, string> = {
   KARGONOMI_API_KEY: "",
   KARGONOMI_API_TOKEN: "",
   KARGONOMI_WEBHOOK_SECRET: "",
-  CRON_SECRET: "",
+  CRON_SECRET: process.env.E2E_CRON_SECRET,
   TRENDYOL_API_KEY: "",
   TRENDYOL_API_SECRET: "",
   TRENDYOL_SUPPLIER_ID: "",

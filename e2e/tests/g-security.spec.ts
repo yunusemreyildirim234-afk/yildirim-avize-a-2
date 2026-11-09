@@ -60,7 +60,7 @@ test.describe("g) Güvenlik (anonim)", () => {
     expect(body.admin).toBe(false);
   });
 
-  test("zamanlanmış görev uçları CRON_SECRET boşken kapalı (401)", async ({ request }) => {
+  test("zamanlanmış görev uçları yetkisiz istekte kapalı (401)", async ({ request }) => {
     for (const p of ["/api/cron/reminders", "/api/cron/sync-shipments"]) {
       const res = await request.get(p);
       expect(res.status(), p).toBe(401);

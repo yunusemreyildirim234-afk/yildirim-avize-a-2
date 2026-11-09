@@ -7,6 +7,14 @@ export const PAYTR_TIMEOUT_MINUTES = RESERVATION_HOLD_MINUTES - 1;
 /** Bu süreyi (dakika) geçen AWAITING_PAYMENT + kartlı siparişler PAYMENT_FAILED yapılır (günlük cron'un eşiği = tutma süresi). */
 export const ABANDONED_CARD_MINUTES = RESERVATION_HOLD_MINUTES;
 
+/** Dekont yüklenmemiş, ödemesiz Havale siparişi bu süre (saat) sonunda otomatik iptal edilir; stok da bu süre boyunca ayrılı kalır. */
+export const BANK_ORDER_HOLD_HOURS = 48;
+
+/** Cron'un iptal edeceği Havale siparişi mi? Dekont yüklenmişse (müşteri ödediğini bildirmiş) asla iptal edilmez. */
+export function shouldCancelUnpaidBank(o: { status: string; paymentMethod: string | null; receiptUrl: string | null; createdAt: Date }, now: number): boolean {
+  return o.status === "PENDING_NEW" && o.paymentMethod === "BANK_TRANSFER" && o.receiptUrl === null && o.createdAt.getTime() < now - BANK_ORDER_HOLD_HOURS * 3_600_000;
+}
+
 /** Aynı variationId'li satırları toplam adede birleştirir; çıktı variationId'ye göre SIRALIDIR (stok satır kilitleri hep aynı sırada alınır, deadlock olmaz). Yalnızca stok kilitleme/arama içindir; sipariş kalemleri ve fiyat bu çıktıdan üretilmez. */
 export function mergeByVariation<T extends { variationId: string; quantity: number }>(lines: T[]): { variationId: string; quantity: number }[] {
   const m = new Map<string, number>();

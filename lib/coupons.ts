@@ -115,8 +115,8 @@ export async function reserveCouponLocked(tx: Prisma.TransactionClient, code: st
   return (await reserveCoupon(tx, code)) ? "OK" : "LIMIT";
 }
 
-/** Ödemesi başarısız olan veya iptal edilen siparişin kupon hakkını geri verir. */
-export async function releaseCoupon(code: string | null | undefined) {
+/** Ödemesi başarısız olan veya iptal edilen siparişin kupon hakkını geri verir. `db` verilirse çağıranın transaction'ında çalışır. */
+export async function releaseCoupon(code: string | null | undefined, db: Pick<Prisma.TransactionClient, "$executeRaw"> = prisma) {
   if (!code) return;
-  await prisma.$executeRaw`UPDATE "Coupon" SET "usedCount" = GREATEST(0, "usedCount" - 1) WHERE "code" = ${code}`;
+  await db.$executeRaw`UPDATE "Coupon" SET "usedCount" = GREATEST(0, "usedCount" - 1) WHERE "code" = ${code}`;
 }

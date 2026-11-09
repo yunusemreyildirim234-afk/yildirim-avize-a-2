@@ -414,6 +414,21 @@ export async function sendReceiptReminderEmail(data: { to: string; name: string;
   });
 }
 
+/** Süresi içinde ödenmeyen Havale siparişi otomatik iptal edilince müşteriye bilgi. */
+export async function sendBankOrderCancelledEmail(data: { to: string; name: string; orderId: string; hours: number }) {
+  return sendViaResend(process.env.RESEND_API_KEY, {
+    to: [data.to],
+    subject: `Havale siparişiniz iptal edildi - #${data.orderId.slice(0, 8)}`,
+    html: `<div style="font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 28px; background: #fafafa; border: 1px solid #e5e5e5; border-radius: 16px; color: #171717;">
+      <h1 style="text-align: center; font-size: 22px; letter-spacing: 1px; margin: 0 0 16px;">YILDIRIM AVİZE</h1>
+      <h2 style="font-size: 17px; margin: 0 0 10px;">Sayın ${esc(data.name)},</h2>
+      <p style="font-size: 14px; line-height: 1.6;">Havale/EFT siparişiniz için ${data.hours} saat içinde ödeme dekontu ulaşmadığından siparişiniz iptal edildi ve ürünler yeniden satışa açıldı.</p>
+      <p style="font-size: 14px; line-height: 1.6;">Ödemeyi yaptıysanız lütfen dekontunuzla bizimle iletişime geçin; siparişiniz için size yardımcı olalım.</p>
+      <p style="font-size: 12px; color: #737373; text-align: center;">Sipariş: ${data.orderId}<br />Yıldırım Avize | Tel: ${PHONE_DISPLAY}</p>
+    </div>`,
+  });
+}
+
 /** Müşteri dekont yükleyince yöneticilere bildirim. */
 export async function sendReceiptUploadedAdminEmail(data: { orderId: string; senderName: string; customerName: string; totalAmount: number }) {
   return sendViaResend(process.env.RESEND_API_KEY, {

@@ -8,6 +8,16 @@ export const PENDING_LIMIT_ERROR = "Bekleyen ödemeniz var, lütfen tamamlayın 
 export const phoneKey = (phone: string | null | undefined) => (phone ?? "").replace(/\D/g, "").slice(-10);
 export const emailKey = (email: string) => email.replace(/\+misafir[a-z0-9]+@/i, "@").trim().toLowerCase();
 
+export const BANK_PENDING_LIMIT_ERROR = "Ödemesi beklenen Havale/EFT siparişleriniz var. Yeni sipariş vermeden önce mevcut siparişinizin ödemesini tamamlayın veya bizimle iletişime geçin.";
+
+/** Havale: aynı e-posta/telefonun bekleyen sipariş sayısı sınırdaysa true. Eski sipariş iptal edilmez (müşteri ödemiş olabilir), yalnızca yenisi reddedilir. */
+export function bankPendingBlocked(rows: { phone: string | null; user: { email: string } }[], ctx: { email: string; phone: string }): boolean {
+  const email = emailKey(ctx.email);
+  const phone = phoneKey(ctx.phone);
+  const same = rows.filter((r) => emailKey(r.user.email) === email || (phone.length >= 7 && phoneKey(r.phone) === phone));
+  return same.length >= MAX_PENDING_PER_CONTACT;
+}
+
 export interface PendingRow {
   id: string;
   phone: string | null;

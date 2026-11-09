@@ -3,7 +3,7 @@ import { serverError, badRequest } from "@/lib/api-error";
 import { prisma } from "@/lib/db";
 import { rateLimit, tooMany } from "@/lib/rate-limit";
 import { isValidPhone, PHONE_ERROR } from "@/lib/phone";
-import { enforcePendingLimits, finalizeOrder, releasePreviousCardOrder, releaseStaleReservations, restoreOrderStock } from "@/lib/orders";
+import { bankPendingLimitReached, enforcePendingLimits, finalizeOrder, releasePreviousCardOrder, releaseStaleReservations, restoreOrderStock } from "@/lib/orders";
 import { getPaytrToken } from "@/lib/paytr";
 import { SHIPPING_LABELS } from "@/lib/pricing";
 import { getSessionUserId } from "@/lib/account";
@@ -14,7 +14,7 @@ import { priceCart } from "@/lib/cart-pricing";
 import { isPurchasablePrice, priceUnavailableMessage } from "@/lib/purchasable";
 import { releaseCoupon, reserveCouponLocked, validateCoupon } from "@/lib/coupons";
 import { reserveLines, StockShortError } from "@/lib/stock-reserve";
-import { PENDING_LIMIT_ERROR } from "@/lib/pending-orders";
+import { BANK_PENDING_LIMIT_ERROR, PENDING_LIMIT_ERROR } from "@/lib/pending-orders";
 import { bestEffort, createOrFindGuest } from "@/lib/best-effort";
 
 interface CartLine {
@@ -160,6 +160,15 @@ export async function POST(req: Request) {
     });
     const totals = priced;
 
+    // Havale: aynı e-posta/telefon için bekleyen sipariş sınırı (ürün ve kupon hataları önce gösterilir)
+    if (paymentMethod === "BANK_TRANSFER") {
+      const blocked = await bankPendingLimitReached({ email: String(email), phone }).catch((e) => {
+        console.error("[siparis] bekleyen havale denetimi başarısız:", (e as Error).message);
+        return false;
+      });
+      if (blocked) return NextResponse.json({ error: BANK_PENDING_LIMIT_ERROR }, { status: 429 });
+    }
+
     // 2. Müşteriyi bul veya oluştur
     // Sipariş yalnızca geçerli bir oturum varsa mevcut hesaba bağlanır; misafir, e-postayla başkasının hesabına bağlanamaz
     const sessionUserId = await getSessionUserId();
@@ -200,13 +209,11 @@ export async function POST(req: Request) {
           if (r === "LIMIT") throw new CouponLimitError();
           if (r === "USER_LIMIT") throw new CouponUserLimitError();
         }
-        // Kartlı sipariş: stok şimdi ayrılır (koşullu atomik UPDATE, stock >= adet) ve Order.stockDeducted ile işaretlenir; yetmezse sipariş açılmaz
-        if (paymentMethod === "CREDIT_CARD") {
-          await reserveLines(reservedLines, async (variationId, quantity) => (await tx.$executeRaw`UPDATE "ProductVariation" SET "stock" = "stock" - ${quantity} WHERE "id" = ${variationId} AND "stock" >= ${quantity}`) > 0);
-        }
+        // Kartlı ve Havale: stok şimdi ayrılır (koşullu atomik UPDATE, stock >= adet) ve Order.stockDeducted ile işaretlenir; yetmezse sipariş açılmaz
+        await reserveLines(reservedLines, async (variationId, quantity) => (await tx.$executeRaw`UPDATE "ProductVariation" SET "stock" = "stock" - ${quantity} WHERE "id" = ${variationId} AND "stock" >= ${quantity}`) > 0);
         return tx.order.create({
       data: {
-        stockDeducted: paymentMethod === "CREDIT_CARD",
+        stockDeducted: true,
         userId: user.id,
         totalAmount: totals.total,
         shippingType,
@@ -256,8 +263,8 @@ export async function POST(req: Request) {
 
     // 4a. Havale/EFT: sipariş hemen onaylanır
     if (paymentMethod === "BANK_TRANSFER") {
-      // Stok rezerve edilir, bildirimler gider; sipariş yönetici ödemeyi onaylayana kadar PENDING_NEW kalır
-      // Sipariş kaydedildi: sonlandırma/bildirim adımı hata verirse müşteri 500 görüp tekrar sipariş vermesin (stok düşümü bayrakla idempotenttir, yönetici onayında yeniden denenir)
+      // Stok sipariş işleminde ayrıldı, burada bildirimler gider; sipariş yönetici ödemeyi onaylayana kadar PENDING_NEW kalır
+      // Sipariş kaydedildi: bildirim adımı hata verirse müşteri 500 görüp tekrar sipariş vermesin
       await bestEffort("order/finalize", () => finalizeOrder(order.id, { awaitPayment: true }));
       return NextResponse.json({ success: true, orderId: order.id });
     }
