@@ -28,8 +28,9 @@ npm run report        # playwright-report/ klasörünü açar
 
 - Varsayılan: kök projede `next build` + `next start -p 3100` (üretim derlemesi).
 - Zaten çalışan yerel sunucu için: `E2E_BASE_URL=http://localhost:3100 npm test` (yalnızca localhost kabul edilir).
-- Sunucu ortamında `DATABASE_URL = E2E_DATABASE_URL`; Resend, PayTR, Kargonomi, CRON anahtarları **boş**:
-  e-posta gönderimi hata günlüğü yazıp atlanır, PayTR/Kargonomi istek atmadan hata fırlatır, cron uçları 401 döner.
+- Sunucu ortamında `DATABASE_URL = E2E_DATABASE_URL`; Resend, PayTR, Kargonomi anahtarları **boş**:
+  e-posta gönderimi hata günlüğü yazıp atlanır, PayTR/Kargonomi istek atmadan hata fırlatır.
+- `CRON_SECRET` her çalıştırmada rastgele üretilir (`E2E_CRON_SECRET`); yetkisiz istek 401 alır. `r-havale-sertlestirme` cron'u bu sırla çağırır, cron e2e dalındaki bütün uygun siparişlere uygulanır.
 
 ## Aşama 2: yönetim paneli (admin) testleri
 
@@ -69,7 +70,11 @@ Proje `orders`: yalnızca masaüstü, `workers: 1`, herkese açık testlerden so
 - **Hız sınırı**: `/api/order` bellek içi 10 dk'da 5 istek sınırı başarısız istekleri de sayar. Bir koşuda en çok 4 istek ulaşır (ana sipariş, kuponlu sipariş, kupon limit ret çağrısı, stok siparişi). Doğrulama testleri `/api/order`'ı tarayıcıda taklit eder; sunucuya gitmez. Aynı sunucu sürecinde 10 dk içinde ikinci koşu hız sınırına takılır (yeni `npm test` yeni süreç başlatır).
 - **Veri**: yönetim arayüzüyle "E2E Sipariş" önekli iki ürün (stok 5 / stok 2) ve API ile kişi başı limitli "E2EKUPON…" kuponu; müşteriler `e2e-siparis@example.invalid`, `e2e-siparis2@example.invalid`, `e2e-siparis3@example.invalid` (açıkça sahte). `afterAll`: sipariş/bildirim/misafir kullanıcı (yalnızca bu e-postalar), sonra ürünler, sonra kupon silinir.
 - **Kalıntı denetimi** (`admin/audit.ts`, yalnızca SELECT) sahte e-postalı kullanıcı, sipariş ve bildirim kalıntısını da arar.
-- **Bulgular** (siteye dokunulmaz): stok tükenince ürün sayfası 60 sn vitrin önbelleğinden eski stoğu gösterebilir; kararlı tekrarlanmadığı için o test `test.fixme` ile atlanır. Ayrıca `/siparis-onay/<id>` sahiplik kontrolü yapmaz (kimlik bilen görür) (annotation olarak raporlanır). Var olmayan sipariş kimliği HTTP 404 döner (testli); geçersiz telefon sunucuda 400 verir (ayrı `x-forwarded-for` ile, hız sınırı bütçesini yemez).
+- **Bulgular** (siteye dokunulmaz): stok tükenince ürün sayfası 60 sn vitrin önbelleğinden eski stoğu gösterebilir; kararlı tekrarlanmadığı için o test `test.fixme` ile atlanır. Var olmayan sipariş kimliği HTTP 404 döner (testli); geçersiz telefon sunucuda 400 verir (ayrı `x-forwarded-for` ile, hız sınırı bütçesini yemez).
+
+### Ödeme/sipariş sertleştirme testleri
+
+`tests/orders/r-havale-sertlestirme`, `s-paytr-anahtarsiz`, `t-siparis-erisim` (yardımcılar: `hardening-helpers.ts`). Siparişler SQL ile, tarihi geriye alınarak üretilir; `/api/order`'a 3 istek gider ve kendi `x-forwarded-for` sayacını kullanır (p-siparis bütçesini yemez). Kargo takip sınırı testi de ayrı IP başlığıyla çalışır. Test verisi `afterAll`'da silinir, vitrin `settleStorefront` ile yenilenir.
 
 ## Neon dalını uyanık tutma
 

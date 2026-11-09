@@ -447,9 +447,8 @@ test.describe("Havale siparişi (uçtan uca)", () => {
         await expect(page.getByText("Sipariş Takip Kodu")).toHaveCount(0);
         expect(r!.status(), `/siparis-onay/${id} HTTP durumu`).toBe(404);
       }
-      // BULGU (rapor): /siparis-onay/[id] oturum/sahiplik kontrolü yapmaz; kimliği (UUID) bilen herkes görür.
+      // İlk 24 saatteki misafir siparişi oturumsuz açılır; süre sonrası kısıtlı görünüm t-siparis-erisim testindedir.
       const res = await page.goto(`/siparis-onay/${mainOrderId}`, { waitUntil: "domcontentloaded" });
-      test.info().annotations.push({ type: "bulgu", description: `Oturumsuz ziyaretçi /siparis-onay/<id> sayfasını gördü (HTTP ${res!.status()}): sahiplik kontrolü yok, erişim yalnızca UUID'nin tahmin edilemezliğine bağlı` });
       expect(res!.status()).toBe(200);
       const html = await page.content();
       for (const secret of [CUSTOMER.email, CUSTOMER.phone, CUSTOMER.address]) expect(html, `sayfada "${secret}" olmamalı`).not.toContain(secret);

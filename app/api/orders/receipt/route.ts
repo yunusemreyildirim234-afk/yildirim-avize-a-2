@@ -7,6 +7,7 @@ import { ADMIN_COOKIE, verifyAdminSession } from "@/lib/session";
 import { notifyAdmins } from "@/lib/notifications";
 import { rateLimit, tooMany } from "@/lib/rate-limit";
 import { RECEIPT_MIMES, validateUpload } from "@/lib/uploads";
+import { isGuestOrderWindowOpen } from "@/lib/order-access";
 
 
 // Havale dekontu: sipariş numarası (tahmin edilemez UUID) ile, onay sayfasındaki erişim modeliyle aynı
@@ -32,7 +33,7 @@ export async function POST(req: Request) {
     // Misafir siparişi (üyeliksiz): sipariş 24 saatten yeniyse oturum aranmadan güncellenebilir.
     // Üyeye bağlı siparişte yalnızca sipariş sahibi veya yönetici değiştirebilir.
     const isGuestOrder = order.user.password === "guest_checkout";
-    const guestWindowOpen = isGuestOrder && Date.now() - order.createdAt.getTime() < 24 * 60 * 60 * 1000;
+    const guestWindowOpen = isGuestOrder && isGuestOrderWindowOpen(order.createdAt);
     if (!guestWindowOpen) {
       const isAdmin = Boolean(await verifyAdminSession((await cookies()).get(ADMIN_COOKIE)?.value));
       const uid = isAdmin ? null : await getSessionUserId();

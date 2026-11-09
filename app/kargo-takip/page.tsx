@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { headers } from "next/headers";
 import { prisma } from "@/lib/db";
 import OrderTracker from "@/components/OrderTracker";
 import { maskName } from "@/lib/mask-name";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const metadata: Metadata = {
   title: "Kargo & Sipariş Takibi",
@@ -12,7 +14,16 @@ export const metadata: Metadata = {
 
 // Sipariş sorgusu ayrı bir bileşendir: sayfa kabuğu (tek <main>, h1, form) hemen gelir; yalnızca sonuç alanı Suspense iskeletiyle bekler.
 async function OrderResult({ code }: { code: string }) {
-  const order = await prisma.order.findFirst({
+  const rl = rateLimit(new Request("http://localhost/kargo-takip", { headers: await headers() }), "kargo-takip", 20, 10 * 60_000);
+  if (rl.limited) {
+    return (
+      <p role="alert" className="text-sm text-center text-red-700 bg-red-50 border border-red-200 rounded-xl p-4">
+        Kısa sürede çok fazla sorgu yaptınız. Lütfen birkaç dakika sonra tekrar deneyin.
+      </p>
+    );
+  }
+
+  const found = await prisma.order.findFirst({
     where: { OR: [{ id: code }, { shippingTrackingCode: code }, { shippingBarcode: code }] },
     // Yalnızca sayfanın ve takip çubuğunun kullandığı alanlar (adres, telefon, fatura bilgileri istemciye gitmez)
     select: {
@@ -33,7 +44,7 @@ async function OrderResult({ code }: { code: string }) {
     },
   });
 
-  if (!order) {
+  if (!found) {
     return (
       <p role="alert" className="text-sm text-center text-red-600 bg-red-50 border border-red-200 rounded-xl p-4">
         Bu kodla eşleşen bir sipariş bulunamadı.
@@ -41,13 +52,18 @@ async function OrderResult({ code }: { code: string }) {
     );
   }
 
+  // Takip kodu/barkod koli etiketinde yazar: sipariş numarası yalnızca onu zaten bilen sorguda gösterilir
+  const { id, ...order } = found;
+
   return (
     <div className="bg-white rounded-2xl border border-neutral-200 p-6 text-xs space-y-3 shadow-sm">
+      {id === code && (
+        <div className="pb-3 border-b border-neutral-100">
+          <span className="text-neutral-400">Sipariş No</span>
+          <p className="font-mono font-bold text-neutral-800 break-all">{id}</p>
+        </div>
+      )}
       <div>
-        <span className="text-neutral-400">Sipariş No</span>
-        <p className="font-mono font-bold text-neutral-800 break-all">{order.id}</p>
-      </div>
-      <div className="pt-3 border-t border-neutral-100">
         <span className="text-neutral-400">Alıcı</span>
         <p className="font-semibold text-neutral-800">{maskName(order.user.name)}</p>
       </div>

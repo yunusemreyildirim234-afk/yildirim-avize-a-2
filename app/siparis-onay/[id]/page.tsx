@@ -11,6 +11,9 @@ import { gaItem, isPurchasable, purchaseEvent, purchaseOnceKey } from "@/lib/gtm
 import { feedBrand } from "@/lib/feed";
 import { coverImageOf } from "@/lib/variation-input";
 import { FREE_SHIPPING_THRESHOLD, SHIPPING_COST } from "@/lib/pricing";
+import { getSessionUserId } from "@/lib/account";
+import { canViewOrderDetails } from "@/lib/order-access";
+import { trackState } from "@/lib/orderStatus";
 
 export const metadata: Metadata = {
   title: "Siparişiniz Alındı",
@@ -21,9 +24,47 @@ export default async function OrderConfirmationPage({ params }: { params: Promis
   const { id } = await params;
   const order = await prisma.order.findUnique({
     where: { id },
-    include: { user: { select: { name: true } }, items: { include: { variation: { include: { product: { include: { variations: { orderBy: { position: "asc" }, select: { images: true } } } } } } } } },
+    include: { user: { select: { name: true, password: true } }, items: { include: { variation: { include: { product: { include: { variations: { orderBy: { position: "asc" }, select: { images: true } } } } } } } } },
   });
   if (!order) notFound();
+
+  const canSeeDetails = canViewOrderDetails({ userId: order.userId, isGuest: order.user.password === "guest_checkout", createdAt: order.createdAt }, await getSessionUserId());
+  const awaitsBankReceipt = order.paymentMethod === "BANK_TRANSFER" && order.status === "PENDING_NEW";
+
+  if (!canSeeDetails) {
+    const state = trackState(order);
+    const statusLabel = state.kind === "special" ? state.label : state.labels[state.current];
+    return (
+      <main className="min-h-screen bg-neutral-50 py-12 sm:py-16 px-4">
+        {order.status !== "PAYMENT_FAILED" && order.status !== "CANCELLED" && order.status !== "RETURNED" && <ClearCart orderId={order.id} createdAt={order.createdAt.toISOString()} />}
+        <div data-testid="kisitli-gorunum" className="max-w-xl mx-auto bg-white rounded-3xl border border-neutral-200 p-6 sm:p-12 space-y-6 shadow-sm">
+          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-neutral-900 text-center">Sipariş Durumu</h1>
+          <dl className="bg-neutral-50 border border-neutral-200 rounded-2xl p-5 text-xs space-y-3">
+            <div>
+              <dt className="text-neutral-500">Sipariş Numarası:</dt>
+              <dd className="font-mono font-bold text-neutral-800 break-all">{order.id}</dd>
+            </div>
+            <div className="pt-3 border-t border-neutral-200">
+              <dt className="text-neutral-500">Durum:</dt>
+              <dd className="font-bold text-neutral-900 text-sm">{statusLabel}</dd>
+            </div>
+          </dl>
+          {/* Hatırlatma e-postasındaki "Dekontumu Yükle" bağlantısı süre dolduktan sonra da çalışmalı; bu blok sipariş detayı içermez */}
+          {awaitsBankReceipt && (
+            <div className="space-y-4">
+              <BankTransferCard orderId={order.id} />
+              <ReceiptUpload orderId={order.id} uploaded={Boolean(order.receiptUrl)} />
+            </div>
+          )}
+          <p className="text-sm text-neutral-600 text-center">
+            Detaylar için{" "}
+            <Link href="/giris" className="font-semibold text-amber-800 underline underline-offset-2">giriş yapın</Link> veya{" "}
+            <Link href="/iletisim" className="font-semibold text-amber-800 underline underline-offset-2">bizimle iletişime geçin</Link>.
+          </p>
+        </div>
+      </main>
+    );
+  }
 
   const isPickup = order.shippingType === "BEYOGLU_MAGAZA_TESLIM";
   const awaitingPayment = order.status === "AWAITING_PAYMENT";
@@ -124,10 +165,10 @@ export default async function OrderConfirmationPage({ params }: { params: Promis
 
         {order.paymentMethod === "BANK_TRANSFER" && !paymentFailed && <BankTransferCard orderId={order.id} />}
 
-        {order.paymentMethod === "BANK_TRANSFER" && order.status === "PENDING_NEW" && (
+        {awaitsBankReceipt && (
           <div className="text-left space-y-2">
             <p className="text-xs text-neutral-600">Havaleyi yaptıktan sonra dekontunuzu yükleyerek ödemenizin hızla onaylanmasını sağlayabilirsiniz.</p>
-            <ReceiptUpload orderId={order.id} uploaded={Boolean(order.receiptUrl)} defaultSender={order.user.name} />
+            <ReceiptUpload orderId={order.id} uploaded={Boolean(order.receiptUrl)} />
           </div>
         )}
 

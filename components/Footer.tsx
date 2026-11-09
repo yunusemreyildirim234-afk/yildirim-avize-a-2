@@ -40,7 +40,6 @@ export default function Footer({ extraCategories = [], fixedOverrides = {}, show
             title="Yıldırım Avize Beyoğlu Şişhane mağaza konumu - Google Harita"
             src={MAP_SRC}
             loading="lazy"
-            referrerPolicy="no-referrer-when-downgrade"
             className="w-full h-48 rounded-2xl border border-zinc-800 grayscale-[40%] hover:grayscale-0 transition"
           />
           <a
