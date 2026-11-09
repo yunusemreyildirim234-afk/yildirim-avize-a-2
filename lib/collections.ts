@@ -56,3 +56,9 @@ export function moveKey(keys: readonly string[], i: number, d: -1 | 1): string[]
   [next[i], next[j]] = [next[j], next[i]];
   return next;
 }
+
+/** Koleksiyon kapağı: önce aktif ürünlerin ilk kapağı; yoksa (yedek sorgu yalnızca o zaman çalışır) vitrinde görünen ürünlerden; yoksa null. */
+export async function pickCover<T>(active: T[], loadVisible: () => Promise<T[]>, coverOf: (p: T) => string | null): Promise<string | null> {
+  const first = (list: T[]) => list.map(coverOf).find((u): u is string => Boolean(u)) ?? null;
+  return first(active) ?? first(await loadVisible());
+}

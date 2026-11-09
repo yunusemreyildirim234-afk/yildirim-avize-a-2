@@ -57,3 +57,18 @@ test("moveKey: yer değiştirir, sınırda değişmez, girdiyi bozmaz", () => {
   assert.deepEqual(moveKey(a, 2, 1), a);
   assert.deepEqual(a, ["x", "y", "z"]);
 });
+
+import { pickCover } from "../lib/collections.ts";
+
+test("pickCover: aktiflerde kapak varsa yedek sorgu çalışmaz", async () => {
+  let called = false;
+  const c = await pickCover([{ u: null }, { u: "a.jpg" }], async () => ((called = true), []), (p) => p.u);
+  assert.equal(c, "a.jpg");
+  assert.equal(called, false);
+});
+test("pickCover: aktif yoksa görünen ürünlerden", async () => {
+  assert.equal(await pickCover([], async () => [{ u: null }, { u: "b.jpg" }], (p) => p.u), "b.jpg");
+});
+test("pickCover: hiçbirinde yoksa null", async () => {
+  assert.equal(await pickCover([], async () => [{ u: null }], (p) => p.u), null);
+});
