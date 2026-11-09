@@ -2,15 +2,15 @@ import { NextResponse } from "next/server";
 import { serverError } from "@/lib/api-error";
 import { prisma } from "@/lib/db";
 import { CARD_SELECT } from "@/lib/products";
-import { clipQuery, searchWhere } from "@/lib/product-search";
+import { clipQuery } from "@/lib/product-search";
+import { searchProductIds } from "@/lib/listing";
 import { getLadderContext } from "@/lib/showcase";
 import { priceLadder } from "@/lib/price-ladder";
 import { rateLimit, tooMany } from "@/lib/rate-limit";
 import { coverImageOf } from "@/lib/variation-input";
-import { getVisibleWhere } from "@/lib/visibility";
 
 export async function GET(req: Request) {
-  // Kimliksiz ve indeksiz (contains) arama: IP başına dakikada 120 istek, sorgu en çok 80 karakter
+  // Kimliksiz arama: IP başına dakikada 120 istek, sorgu en çok 80 karakter
   const rl = rateLimit(req, "search", 120, 60_000);
   if (rl.limited) return tooMany(rl.retryAfter);
   const { searchParams } = new URL(req.url);
@@ -21,17 +21,12 @@ export async function GET(req: Request) {
   }
 
   try {
-    const code = q.trim();
+    // Normalize eşleşme lib/listing.ts'de tek yerdedir (/arama ile aynı sonuçlar); tam model kodu en üstte
+    const ids = await searchProductIds(q, 6);
+    if (ids.length === 0) return NextResponse.json({ products: [] });
     // Yalnızca arama listesinin ve fiyat merdiveninin kullandığı alanlar (açıklama, görsel dizisi, Trendyol alanları çekilmez)
-    // Koşul lib/product-search.ts'de tek yerde tanımlıdır (/arama sayfasıyla aynı sonuçlar)
-    const visible = await getVisibleWhere();
-    const [byCode, byText] = await Promise.all([
-      prisma.product.findFirst({ where: { AND: [visible, { modelCode: code }] }, select: CARD_SELECT }),
-      prisma.product.findMany({ where: { AND: [visible, searchWhere(q)] }, select: CARD_SELECT, take: 6 }),
-    ]);
-
-    // Tam model kodu eşleşmesi her zaman en üstte
-    const products = [...(byCode ? [byCode] : []), ...byText.filter((p) => p.id !== byCode?.id)].slice(0, 6);
+    const found = await prisma.product.findMany({ where: { id: { in: ids } }, select: CARD_SELECT });
+    const products = ids.flatMap((id) => found.filter((p) => p.id === id));
 
     const ctx = await getLadderContext();
     return NextResponse.json({ products: products.map((p) => ({ ...p, imageUrl: coverImageOf(p), ladder: priceLadder(p, ctx) })) });

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { normalizeSearch, queryWantsAccessory, titleScore, rankSearchRows } from "../lib/search-rank.ts";
+import { normalizeSearch, queryWantsAccessory, titleScore, rankSearchRows, searchText, matchesSearch } from "../lib/search-rank.ts";
 
 // Mevcut (güncellik) sırası dizi sırasıdır
 const R = (id, title, cat = "kristal") => ({ id, title, cat });
@@ -56,4 +56,26 @@ test("aksesuar başlığında tam öbek olsa da (Kristal Avize Taşı) sorguda a
   const rows = [R("t", "Kristal Avize Taşı Kontes Uyumlu", "aksesuar"), R("av", "Nova Model Kristal 6'lı Krom Avize", "kristal")];
   assert.deepEqual(rankSearchRows(rows, "kristal avize").map((r) => r.id), ["av", "t"]);
   assert.deepEqual(rankSearchRows(rows, "kristal avize taşı").map((r) => r.id), ["t", "av"]); // aksesuar sözcüğü (taş) var: bonus ve sıra korunur
+});
+
+test("Türkçe arama: büyük/küçük ve ASCII yazımlar aynı biçime iner", () => {
+  const groups = [
+    ["IŞIK", "ışık", "isik", "ISIK", "Işık"],
+    ["SARKIT", "sarkıt", "sarkit", "Sarkıt"],
+    ["AYDINLATMA", "aydınlatma", "aydinlatma"],
+    ["MASA LAMBASI", "masa lambası", "masa   lambasi"],
+    ["BEYAZ IŞIK", "beyaz ışık", "beyaz isik"],
+    ["İSTANBUL", "istanbul", "Istanbul"],
+    ["ŞANDELİER", "şandelier", "sandelier"],
+    ["PİRİNÇ", "pirinç", "pirinc"],
+  ];
+  for (const g of groups) assert.equal(new Set(g.map(normalizeSearch)).size, 1, g.join(" / "));
+});
+
+test("matchesSearch: alanlar, model kodu ve boş sorgu", () => {
+  const row = { search: searchText(["Sarkıt Avize", "Masa Lambası", "45 x 25", null, "Beyaz Işık", "BARKOD-1"]), mc: normalizeSearch("A12") };
+  for (const q of ["SARKIT", "sarkit", "MASA LAMBASI", "BEYAZ IŞIK", "beyaz isik", "45 x 25", "barkod 1", "a12", "A12"]) assert.equal(matchesSearch(row, q), true, q);
+  assert.equal(matchesSearch(row, "avize masa"), false, "öbek iki alana taşmaz");
+  assert.equal(matchesSearch(row, "a1"), false, "model kodu yalnızca tam eşleşir");
+  assert.equal(matchesSearch(row, "!!!"), false, "normalize sonucu boş sorgu eşleşmez");
 });

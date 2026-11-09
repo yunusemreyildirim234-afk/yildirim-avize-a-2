@@ -8,7 +8,8 @@ export function revalidateStorefront() {
   revalidatePath("/");
   revalidatePath("/urun/[id]", "page");
   revalidatePath("/kategori/[slug]", "page");
-  revalidateTag("storefront", "max");
+  // expire: 0 → menü, liste, kartlar ve kategori ayarları (hepsi "storefront" etiketli) birlikte hemen sona erer; sonraki istek taze okur, bayat veri sunulmaz
+  revalidateTag("storefront", { expire: 0 });
 }
 
 /** Route handler sarmalayıcı: yanıt başarılıysa (2xx) vitrin yenilenir. Hata yanıtlarında yenileme yapılmaz. */

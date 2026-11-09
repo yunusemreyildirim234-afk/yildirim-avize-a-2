@@ -7,7 +7,7 @@ import ProductListing from "@/components/ProductListing";
 import { getCategoryList } from "@/lib/category-list";
 import { withVisibleProducts } from "@/lib/categories";
 import { canonicalListing, pageHref, parseAdet, parsePage } from "@/lib/pagination";
-import { MAX_SEARCH_RESULTS, clipQuery, searchWhere } from "@/lib/product-search";
+import { MAX_SEARCH_RESULTS, clipQuery } from "@/lib/product-search";
 import { getListing, type Listing } from "@/lib/listing";
 import type { ProductWithVariations } from "@/lib/products";
 import { rateLimit } from "@/lib/rate-limit";
@@ -44,8 +44,8 @@ export default async function SearchPage({ searchParams }: Props) {
     limited = rateLimit(new Request("http://localhost/arama", { headers: h }), "search-page", 60, 60_000).limited;
     if (!limited) {
       try {
-        // Ortak liste katmanı: taban küme en çok MAX_SEARCH_RESULTS ürün; arama sorgusu için önbellek anahtarı üretilmez
-        listing = await getListing({ where: searchWhere(q), cached: false, cap: MAX_SEARCH_RESULTS }, query, { search: q });
+        // Ortak liste katmanı: önbellekli katalog normalize metinle bellekte süzülür; sorgu başına önbellek anahtarı üretilmez
+        listing = await getListing({ search: q }, query);
         total = listing.total;
         const fix = canonicalListing(query, total);
         if (fix) redirect(pageHref(path, fix.page, { q, ...listing.params }, fix.adet));

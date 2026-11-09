@@ -42,6 +42,13 @@ test.describe("e) Arama (salt okunur)", () => {
     expect(sizes[2]).toBe(sizes[3]);
   });
 
+  for (const group of [["IŞIK", "ışık", "isik", "ISIK"], ["SARKIT", "sarkıt", "sarkit"], ["AYDINLATMA", "aydınlatma"], ["MASA LAMBASI", "masa lambası"], ["BEYAZ IŞIK", "beyaz ışık"], ["İSTANBUL", "istanbul"], ["ŞANDELİER", "şandelier"], ["PİRİNÇ", "pirinç"]]) {
+    test(`Türkçe yazımlar aynı sonucu verir: ${group.join(" / ")}`, async ({ request }) => {
+      const results = await Promise.all(group.map((q) => count(request, q)));
+      for (const r of results) expect(r.ids).toEqual(results[0].ids);
+    });
+  }
+
   test("arama kutusu sonuç listesini gösterir", async ({ page }, info) => {
     await openOk(page, "/");
     // Odaklanınca mobil katman da DOM'a eklenir (masaüstünde gizli ikinci kutu): yalnızca görünür olanı seç.

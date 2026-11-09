@@ -4,6 +4,7 @@ import { VISIBLE_PRODUCT_WHERE, buildCategoryList, categoryKey, resolveCategoryN
 import { resolveCategoryRedirects, resolveCategorySettings, type CategoryRedirects, type CategorySettings } from "@/lib/category-settings";
 import { CATEGORIES } from "@/lib/site";
 import { getStocklessCategoryRows } from "@/lib/visibility";
+import { STOREFRONT_CACHE_VERSION } from "@/lib/storefront-cache-key";
 
 /**
  * Vitrin kategori listesi tek kaynağı: menü, mobil şerit, alt bilgi, sitemap ve /kategori/[slug] buradan beslenir.
@@ -19,7 +20,7 @@ export const getCategoryList = unstable_cache(
       CATEGORIES
     );
   },
-  ["sf-category-list"],
+  ["sf-category-list", STOREFRONT_CACHE_VERSION],
   { revalidate: 60, tags: ["storefront"] }
 );
 
@@ -32,7 +33,7 @@ export const getCategoryConfig = unstable_cache(
     const row = await prisma.siteConfig.findUnique({ where: { id: 1 }, select: { homepageConfig: true } });
     return { settings: resolveCategorySettings(row?.homepageConfig), redirects: resolveCategoryRedirects(row?.homepageConfig) };
   },
-  ["sf-category-config"],
+  ["sf-category-config", STOREFRONT_CACHE_VERSION],
   { revalidate: 60, tags: ["storefront"] }
 );
 

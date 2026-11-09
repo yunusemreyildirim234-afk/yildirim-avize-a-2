@@ -58,7 +58,7 @@ Yardımcılar: `admin-helpers.ts` (PNG üretici, form doldurma, temizlik), `db.t
 
 ### Bilgi: vitrin önbelleği ve geç görünürlük
 
-Yönetici işlemleri `revalidateTag("storefront","max")` çağırır; bu "eskiyi sun, arkada yenile" davranışıdır: değişiklikten hemen sonraki ilk istek eski veriyi görebilir.
+Yönetici işlemleri `revalidateTag("storefront", { expire: 0 })` çağırır: menü, liste ve kartlar birlikte hemen sona erer. Doğrudan SQL ile yapılan değişiklikler ise 60 sn eskiyi sunabilir.
 Testler vitrin durumunu bu yüzden `expect.poll` ile (en çok 30 sn) yoklar.
 
 ## Aşama 3: havale siparişi akışı
@@ -86,4 +86,4 @@ Hiçbir şey yazmaz, bağlantı bilgisi yazdırmaz; URL ya da `e2e_marker` yoksa
 - Aşama 1 (herkese açık testler) salt okunurdur: sipariş, kayıt, form gönderimi yoktur. `/api/events` (DB'ye yazar) testlerde 204 ile taklit edilir.
 - Tarayıcı dış alanlara gidemez; GTM/GA ve Trendyol CDN görselleri yerel taslakla karşılanır (testler çevrimdışı geçer).
 - `.env.e2e` içeriği hiçbir yerde okunup yazdırılmaz.
-- Build kök `.next` klasörünü paylaşır (`next.config.ts` değiştirilemez).
+- Build kök `.next` klasörünü paylaşır (`next.config.ts` değiştirilemez). e2e'den hemen önce kökte `npm run build` çalıştırma: canlı `.env` ile yazılan `.next/cache` girdileri e2e derlemesine taşınır (ör. b-menu "Sarkıt: kart yok"). e2e zaten kendi build'ini yapar.

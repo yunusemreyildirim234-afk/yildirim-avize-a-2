@@ -69,6 +69,32 @@ export const getProductsCached = (where: Prisma.ProductWhereInput = {}, take?: n
 export const countProductsCached = (where: Prisma.ProductWhereInput = {}) =>
   unstable_cache(() => countProducts(where), ["sf-count", productsCacheKey(where)], { revalidate: STOREFRONT_CACHE_SECONDS, tags: storefrontTags(where) })();
 
+class EmptyCacheResult extends Error {}
+
+/** Boş sonucu önbelleğe YAZMAZ: anlık boş okuma (toplu işlem ortası vb.) sonraki ziyaretçilere sunulmaz; gerçekten boşsa her istekte taze okunur. */
+export async function cacheNonEmpty<T>(key: string[], tags: string[], load: () => Promise<T[]>): Promise<T[]> {
+  const cached = unstable_cache(
+    async () => {
+      const rows = await load();
+      if (rows.length === 0) throw new EmptyCacheResult();
+      return rows;
+    },
+    key,
+    { revalidate: STOREFRONT_CACHE_SECONDS, tags }
+  );
+  try {
+    return await cached();
+  } catch (e) {
+    if (e instanceof EmptyCacheResult) return [];
+    throw e;
+  }
+}
+
+/** Liste kartları: görünürlüğü satır listesi belirlemiştir, burada yeniden süzülmez (liste "4 ürün" derken kartların boş gelmemesi için). */
+export const getCardsByIds = (ids: string[]) => prisma.product.findMany({ where: { id: { in: ids } }, select: CARD_LIST_SELECT });
+/** Kart girdisi satır sürümüne bağlıdır: satırlar değişince kartlar da yeni anahtardan okunur. */
+export const getCardsCached = (ids: string[], version: string) => cacheNonEmpty(["sf-cards", version, JSON.stringify(ids)], ["storefront"], () => getCardsByIds(ids));
+
 /** Ürün detayı: ürün + varyasyonlar + ONAYLI yorumlar (yorumcu adı). Kişiye bağlı değildir; tarihler ISO metin olarak döner (önbellek JSON'dur). */
 export const getProductDetail = unstable_cache(
   async (id: string) => {

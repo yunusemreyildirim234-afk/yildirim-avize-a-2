@@ -23,6 +23,24 @@ export function normalizeSearch(s: string): string {
     .trim();
 }
 
+/** Aranabilir metin: her alan ayrı normalize edilir, alanlar arasına sorguda bulunamayacak ayraç girer (öbek iki alana taşarak eşleşmesin). */
+export function searchText(fields: readonly (string | null | undefined)[]): string {
+  return fields.map((f) => normalizeSearch(f ?? "")).filter(Boolean).join("\n");
+}
+
+export interface SearchableRow {
+  /** searchText çıktısı */
+  search?: string;
+  /** normalizeSearch(modelCode): yalnızca tam eşleşir */
+  mc?: string | null;
+}
+
+/** Sorgu ile satır AYNI normalize işleminden geçer: IŞIK = ışık = isik = ISIK. Normalize sonucu boş sorgu hiçbir şeyle eşleşmez. */
+export function matchesSearch(row: SearchableRow, q: string): boolean {
+  const n = normalizeSearch(q);
+  return !!n && (row.mc === n || (row.search ?? "").includes(n));
+}
+
 const ACC = ACCESSORY_WORDS.map(normalizeSearch);
 
 /** Sorgu aksesuar anlamlı bir sözcük içeriyor mu? (tek sözcük: kelime başı eşleşmesi; çok sözcük: öbek) */

@@ -1,6 +1,7 @@
 import type { Prisma } from "@/generated/prisma/client";
 import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/db";
+import { STOREFRONT_CACHE_VERSION } from "@/lib/storefront-cache-key";
 import { DEFAULT_STOCKLESS_RULE, resolveStocklessRule, soldOutInactiveWhere, stocklessEnabled, stocklessShown, visibleWhere, type StocklessRule } from "@/lib/stockless";
 
 /**
@@ -15,7 +16,7 @@ export const getStocklessState = unstable_cache(
     const groups = await prisma.product.groupBy({ by: ["category"], where: soldOutInactiveWhere(rule.hiddenIds), _count: { _all: true } });
     return { rule, ...stocklessShown(rule, groups.map((g) => ({ category: g.category, count: g._count._all }))) };
   },
-  ["sf-stockless-state"],
+  ["sf-stockless-state", STOREFRONT_CACHE_VERSION],
   { revalidate: 60, tags: ["storefront"] }
 );
 
@@ -36,6 +37,12 @@ export async function getVisibleWhere(): Promise<Prisma.ProductWhereInput> {
   } catch {
     return { active: true };
   }
+}
+
+/** Önbelleğe girecek sorgular için: ayar okunamazsa hata fırlatır (yedek "yalnızca aktif" sonucu önbelleğe yazılmasın). */
+export async function getVisibleWhereStrict(): Promise<Prisma.ProductWhereInput> {
+  const st = await getStocklessState();
+  return visibleWhere(st.spellings, st.rule.hiddenIds);
 }
 
 /** Kategori sayılarına eklenecek (görünür) stoksuz ürün satırları. */

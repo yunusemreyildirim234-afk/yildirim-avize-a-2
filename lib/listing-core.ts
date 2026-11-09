@@ -36,6 +36,10 @@ export interface ListingRow {
   title?: string;
   /** categoryKey(ürün kategorisi) */
   cat: string;
+  /** Arama metni (lib/search-rank.ts searchText): ad, kategori, açıklama, ebat, renk, barkod, stok kodu */
+  search?: string;
+  /** normalizeSearch(modelCode); yalnızca tam eşleşir */
+  mc?: string | null;
   /** Kartta gösterilen fiyat (Product.basePrice) */
   price: number;
   created: number;
