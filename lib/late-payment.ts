@@ -20,6 +20,21 @@ export interface LatePaymentDeps {
   emailAdmin?: (m: { subject: string; html: string }) => Promise<unknown>;
   /** Sipariş özeti okuyucu (verilmezse prisma ile okunur). */
   loadOrder?: (orderId: string) => Promise<LateOrderInfo | null>;
+  /** Bu ödeme için daha önce uyarı üretildi mi? Sipariş başına tek uyarı için. */
+  alreadyReported?: (merchantOid: string) => Promise<boolean>;
+}
+
+const LATE_ALERT_TITLE = "Ödeme alındı ama sipariş";
+
+/** PayTR'den gelen tutar (kuruş, metin) sipariş toplamından küçük mü? Sayı değilse false. */
+export function isUnderpaid(totalAmountKurus: string, orderTotalTl: number): boolean {
+  return Number(totalAmountKurus) < Math.round(orderTotalTl * 100);
+}
+
+/** Geç ödeme uyarısı panel bildirimlerinde var mı (PayTR işlem no ile)? */
+export async function lateAlertExists(merchantOid: string): Promise<boolean> {
+  const { prisma } = await import("@/lib/db");
+  return (await prisma.notification.findFirst({ where: { type: "ORDER", title: { startsWith: LATE_ALERT_TITLE }, message: { contains: merchantOid } }, select: { id: true } })) !== null;
 }
 
 const esc = (v: string) => v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -63,11 +78,16 @@ export async function reportLatePayment(
     deps.warn("[paytr] yinelenen success bildirimi (işlem yapılmadı)", { merchant_oid: info.merchantOid, durum: info.orderStatus, status: info.payStatus });
     return false;
   }
+  // Kontrol hata verirse uyarı yine gider: yinelenen uyarı, kaçırılan uyarıdan iyidir
+  if (await deps.alreadyReported?.(info.merchantOid).catch(() => false)) {
+    deps.warn("[paytr] geç success uyarısı zaten üretilmiş (tekrar gönderilmedi)", { merchant_oid: info.merchantOid, durum: info.orderStatus });
+    return false;
+  }
   deps.log("[paytr] GEÇ SUCCESS: ödeme alınmış ama sipariş uygun durumda değil", { merchant_oid: info.merchantOid, durum: info.orderStatus, status: info.payStatus });
   let panelOk = false;
   try {
     await deps.notifyAdmins({
-      title: `Ödeme alındı ama sipariş #${info.orderId.slice(0, 8)} durumu ${info.orderStatus}`,
+      title: `${LATE_ALERT_TITLE} #${info.orderId.slice(0, 8)} durumu ${info.orderStatus}`,
       message: `PayTR başarılı ödeme bildirdi (${info.merchantOid}); sipariş durumu ${info.orderStatus}. Siparişi kontrol edin; gerekirse müşteriye iade/iletişim yapın.`,
       type: "ORDER",
       link: "/admin#siparisler",

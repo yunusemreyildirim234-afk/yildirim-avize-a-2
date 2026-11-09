@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { releaseCoupon } from "@/lib/coupons";
 import { finalizeOrder, restoreOrderStock } from "@/lib/orders";
 import { fromMerchantOid } from "@/lib/paytr";
-import { reportLatePayment } from "@/lib/late-payment";
+import { isUnderpaid, lateAlertExists, reportLatePayment } from "@/lib/late-payment";
 import { notifyAdmins } from "@/lib/notifications";
 
 const ok = () => new Response("OK", { status: 200, headers: { "Content-Type": "text/plain; charset=utf-8" } });
@@ -24,6 +24,12 @@ export async function POST(req: Request) {
   const merchantKey = (process.env.PAYTR_MERCHANT_KEY || process.env.MERCHANT_KEY || "").trim();
   const merchantSalt = (process.env.PAYTR_MERCHANT_SALT || process.env.MERCHANT_SALT || "").trim();
 
+  // Anahtar yoksa imza doğrulanamaz: hiçbir işlem yapılmaz (fail closed); "OK" dönülmediği için PayTR bildirimi başarısız sayar
+  if (!merchantKey || !merchantSalt) {
+    console.error("PayTR callback: merchant key/salt tanımlı değil, bildirim işlenmedi");
+    return new Response("PAYTR notification failed: not configured", { status: 500, headers: { "Content-Type": "text/plain" } });
+  }
+
   // Callback hash: HMAC-SHA256(merchant_oid + salt + status + total_amount, key) — salt yalnızca bir kez eklenir
   const hashStr = `${p.merchant_oid}${merchantSalt}${p.status}${p.total_amount}`;
   const token = createHmac("sha256", merchantKey).update(hashStr).digest("base64");
@@ -41,12 +47,16 @@ export async function POST(req: Request) {
   if (!current) return ok();
   if (!["AWAITING_PAYMENT", "PENDING_NEW"].includes(current.status)) {
     // Mevcut davranış aynen: durum, stok, kupon değişmez ve yanıt 200 OK. Ek olarak geç "success" kaydedilir ve yöneticiye bildirilir.
-    await reportLatePayment({ log: console.error, warn: console.warn, notifyAdmins }, { merchantOid: p.merchant_oid, orderId, orderStatus: current.status, payStatus: p.status }).catch(() => {});
+    await reportLatePayment({ log: console.error, warn: console.warn, notifyAdmins, alreadyReported: lateAlertExists }, { merchantOid: p.merchant_oid, orderId, orderStatus: current.status, payStatus: p.status }).catch(() => {});
     return ok();
   }
   // Yalnızca uyarı: taksit/vade farkı olabilir, ödeme reddedilmez
   if (Number(p.total_amount) !== Math.round(current.totalAmount * 100)) {
     console.warn("PayTR callback: total_amount sipariş tutarından farklı", { oid: p.merchant_oid, gelen: p.total_amount, siparis: Math.round(current.totalAmount * 100) });
+  }
+  if (p.status === "success" && isUnderpaid(p.total_amount, current.totalAmount)) {
+    // Yalnızca uyarı: sipariş davranışı değişmez
+    await notifyAdmins({ title: `Eksik ödeme uyarısı: #${orderId.slice(0, 8)}`, message: `PayTR tahsilatı ${Number(p.total_amount) / 100} ₺, sipariş toplamı ${current.totalAmount} ₺. Ödemeyi PayTR panelinden kontrol edin.`, type: "ORDER", link: "/admin#siparisler" });
   }
   if (p.status === "success") {
     // Ödendi → AWAITING_PAYMENT/PENDING_NEW siparişi PENDING (hazırlanıyor) olur; tekrar bildirimde işlem yapılmaz
