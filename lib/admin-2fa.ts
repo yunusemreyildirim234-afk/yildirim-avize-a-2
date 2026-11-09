@@ -4,6 +4,9 @@
 /** Doğrulanmış bekleyen yönetici girişi jetonunun amacı (müşteri "2fa-login" jetonundan ayrı). */
 export const ADMIN_2FA_PURPOSE = "admin-2fa-login";
 
+/** .env (ADMIN_USER / ADMIN_PASSWORD) girişi varsayılan KAPALI; yalnızca ADMIN_ENV_LOGIN=1 iken çalışır (acil kurtarma ve e2e). */
+export const adminEnvLoginEnabled = (value: string | undefined = process.env.ADMIN_ENV_LOGIN): boolean => value === "1";
+
 export interface AdminAccount {
   id: string;
   role: string;

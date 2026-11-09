@@ -59,6 +59,7 @@ const serverEnv: Record<string, string> = {
   TRENDYOL_TOKEN: "",
   GOOGLE_CLIENT_ID: "",
   GOOGLE_CLIENT_SECRET: "",
+  ADMIN_ENV_LOGIN: "1", // .env girişi üretimde varsayılan kapalı; e2e bu yolla giriş yapar
   ADMIN_USER: E2E_ADMIN_USER,
   ADMIN_PASSWORD: process.env.E2E_ADMIN_PASSWORD,
 };

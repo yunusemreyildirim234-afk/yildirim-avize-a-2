@@ -6,7 +6,7 @@ import { ADMIN_COOKIE, cookieOptions, safeCompare } from "@/lib/session";
 import { issueAdminToken } from "@/lib/admin-session";
 import { sendVerificationCodeEmail } from "@/lib/email";
 import { clientIp, consumeCode, createCode, issueProof, rateLimitRemaining, readProof } from "@/lib/verification";
-import { ADMIN_2FA_PURPOSE, canVerifyAdminCode, planAdminLogin } from "@/lib/admin-2fa";
+import { ADMIN_2FA_PURPOSE, adminEnvLoginEnabled, canVerifyAdminCode, planAdminLogin } from "@/lib/admin-2fa";
 
 // Kullanıcı bulunamadığında da aynı maliyetli scrypt doğrulaması çalışsın (hesap varlığı zamanlamadan anlaşılmasın)
 const DUMMY_HASH = hashPassword("dummy-admin-login-timing");
@@ -28,7 +28,7 @@ async function sendLoginCode(req: Request, email: string) {
   return { ok: true as const, retryAfter: 60 };
 }
 
-// Yönetici girişi: .env (ADMIN_USER / ADMIN_PASSWORD) veya veritabanındaki ADMIN rolüne sahip hesapla doğrular.
+// Yönetici girişi: .env (ADMIN_USER / ADMIN_PASSWORD; yalnızca ADMIN_ENV_LOGIN=1 iken) veya veritabanındaki ADMIN rolüne sahip hesapla doğrular.
 // Giriş adı bir yönetici hesabının e-postasıysa ve o hesapta 2FA açıksa, şifreden sonra e-posta kodu istenir; kod doğrulanmadan çerez verilmez.
 export async function POST(req: Request) {
   const rl = rateLimit(req, "admin-login", 10, 15 * 60_000);
@@ -65,7 +65,8 @@ export async function POST(req: Request) {
 
   const adminUser = process.env.ADMIN_USER;
   const adminPass = process.env.ADMIN_PASSWORD;
-  let ok = !!adminUser && !!adminPass && safeCompare(login, adminUser) && safeCompare(password, adminPass);
+  let ok = adminEnvLoginEnabled() && !!adminUser && !!adminPass && safeCompare(login, adminUser) && safeCompare(password, adminPass);
+  if (ok) console.warn("[admin-giris] .env yönetici girişi kullanıldı (ADMIN_ENV_LOGIN açık)");
 
   if (!ok) {
     const user = await prisma.user
