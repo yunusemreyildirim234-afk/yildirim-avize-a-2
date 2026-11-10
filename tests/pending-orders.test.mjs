@@ -36,17 +36,22 @@ test("çift serbest bırakma stoğu iki kez artırmaz", async () => {
 
 const row = (id, email, phone, over = {}) => ({ id, phone, userId: over.userId ?? "u-" + email, user: { email, password: over.password ?? "guest_checkout" } });
 
-test("aynı e-postalı eski bekleyen sipariş iptal edilir (misafir etiketi dahil)", () => {
+test("misafir: e-posta tek başına bekleyen siparişi değiştirmez; yalnızca tarayıcının bildiği sipariş kimliğiyle (misafir etiketi dahil)", () => {
   const rows = [row("a", "ali@x.com", "0555 111 22 33"), row("b", "ali+misafirab12@x.com", "05551112233"), row("c", "veli@x.com", "0532 000 00 00")];
-  const r = planPendingCleanup(rows, { email: "Ali@X.com", phone: "0 555 999 88 77" });
-  assert.deepEqual(r.cancelIds.sort(), ["a", "b"]);
-  assert.equal(r.blocked, false);
+  const who = { email: "Ali@X.com", phone: "0 555 999 88 77" };
+  const emailOnly = planPendingCleanup(rows, who);
+  assert.deepEqual(emailOnly.swapIds, [], "başkasının e-postasını yazan biri o kişinin siparişini kapatamaz");
+  assert.equal(emailOnly.blocked, true, "aynı e-postalı iki bekleyen sipariş sınırı doldurur");
+  assert.deepEqual(planPendingCleanup(rows, { ...who, previousOrderId: "b" }), { swapIds: ["b"], blocked: false });
+  assert.deepEqual(planPendingCleanup(rows, { ...who, previousOrderId: "c" }).swapIds, [], "kimlik biliniyor ama e-posta başkasının");
 });
 
-test("kayıtlı hesabın bekleyen siparişi oturumsuz iptal edilmez; oturumla edilir", () => {
-  const rows = [row("a", "ali@x.com", "0555 111 22 33", { password: "hash", userId: "U1" })];
-  assert.deepEqual(planPendingCleanup(rows, { email: "ali@x.com", phone: "0555 000 00 00" }).cancelIds, []);
-  assert.deepEqual(planPendingCleanup(rows, { email: "ali@x.com", phone: "0555 000 00 00", sessionUserId: "U1" }).cancelIds, ["a"]);
+test("kayıtlı hesabın bekleyen siparişi oturumsuz değiştirilmez (kimlik bilinse de); oturumla kendi siparişleri değiştirilir", () => {
+  const rows = [row("a", "ali@x.com", "0555 111 22 33", { password: "hash", userId: "U1" }), row("z", "ali@x.com", "0555 111 22 33", { password: "hash", userId: "U2" })];
+  assert.deepEqual(planPendingCleanup(rows, { email: "ali@x.com", phone: "0555 000 00 00" }).swapIds, []);
+  assert.deepEqual(planPendingCleanup(rows, { email: "ali@x.com", phone: "0555 000 00 00", previousOrderId: "a" }).swapIds, []);
+  assert.deepEqual(planPendingCleanup(rows, { email: "ali@x.com", phone: "0555 000 00 00", sessionUserId: "U1" }).swapIds, ["a"]);
+  assert.deepEqual(planPendingCleanup(rows, { email: "baska@x.com", phone: "0555 000 00 00", sessionUserId: "U1" }).swapIds, ["a"], "oturumda sahiplik userId ile; formdaki e-posta fark etmez");
 });
 
 test("aynı telefonla farklı e-postalardan bekleyen sayısı sınıra gelince engellenir", () => {

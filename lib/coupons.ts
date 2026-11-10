@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { isExpired } from "@/lib/coupon-expiry";
 import { COUPON_GENERIC_ERROR } from "@/lib/coupon-code";
 import { DEFAULT_COUPON_CODE, type CouponRule, type PriceLine } from "@/lib/pricing";
+import { heldCouponUses } from "@/lib/order-swap";
 
 export { COUPON_GENERIC_ERROR };
 export const COUPON_PRODUCT_ERROR = "Bu kupon yalnızca belirli bir üründe geçerlidir; ürün sepetinizde bulunmuyor.";
@@ -24,11 +25,12 @@ export async function ensureDefaultCoupon() {
 }
 
 /** Kişi başı limit sayımı: aynı e-posta (veya üye) için iptal edilmemiş siparişlerde bu kupon kaç kez kullanıldı. İstemci prisma veya transaction (kilit altında) olabilir. */
-export async function countUserCouponUses(db: Pick<Prisma.TransactionClient, "order">, code: string, email: string, userId?: string | null): Promise<number> {
+export async function countUserCouponUses(db: Pick<Prisma.TransactionClient, "order">, code: string, email: string, userId?: string | null, excludeOrderIds: string[] = []): Promise<number> {
   const [local, domain] = email.split("@");
   return db.order.count({
     where: {
       couponCode: code,
+      ...(excludeOrderIds.length ? { id: { notIn: excludeOrderIds } } : {}),
       status: { notIn: ["CANCELLED", "RETURNED", "PAYMENT_FAILED"] },
       user: {
         OR: [
@@ -48,6 +50,8 @@ export async function validateCoupon(opts: {
   email?: string | null;
   lines: PriceLine[];
   userId?: string | null; // giriş yapmış üye (kişi başı limit için)
+  /** Yeni siparişin yerine geçeceği bekleyen siparişler: onların tuttuğu kupon hakkı limitlerde sayılmaz (aynı transaction içinde iade edilecek). */
+  replacing?: { orderIds: string[]; couponCodes: (string | null)[] };
 }): Promise<CouponResult> {
   const code = opts.code.trim().toUpperCase();
   if (!code) return { ok: false, error: "Geçersiz veya süresi dolmuş kupon kodu." };
@@ -57,7 +61,7 @@ export async function validateCoupon(opts: {
   if (!coupon || !coupon.active) return { ok: false, error: "Geçersiz veya süresi dolmuş kupon kodu." };
   // Süresi dolmuş kupon: ayrıntı verilmez (tek genel hata). Yalnızca yeni doğrulamalarda kontrol edilir.
   if (isExpired(coupon.expiresAt)) return { ok: false, error: COUPON_GENERIC_ERROR };
-  if (coupon.usedCount >= coupon.maxUses) return { ok: false, error: "Bu kuponun kullanım hakkı dolmuştur." };
+  if (coupon.usedCount - heldCouponUses(coupon.code, opts.replacing?.couponCodes) >= coupon.maxUses) return { ok: false, error: "Bu kuponun kullanım hakkı dolmuştur." };
 
   if (coupon.userEmail) {
     const email = (opts.email ?? "").trim().toLowerCase();
@@ -73,7 +77,7 @@ export async function validateCoupon(opts: {
   if (coupon.perUserLimit) {
     const email = (opts.email ?? "").trim().toLowerCase();
     if (!email && !opts.userId) return { ok: false, error: "Bu kupon için lütfen giriş yapın veya e-posta adresinizi girin." };
-    const used = await countUserCouponUses(prisma, coupon.code, email, opts.userId);
+    const used = await countUserCouponUses(prisma, coupon.code, email, opts.userId, opts.replacing?.orderIds);
     if (used >= coupon.perUserLimit) return { ok: false, error: "Bu kuponu daha önce kullandınız." };
   }
 

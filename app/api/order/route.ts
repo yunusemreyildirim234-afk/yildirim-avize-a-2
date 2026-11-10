@@ -3,7 +3,8 @@ import { serverError, badRequest } from "@/lib/api-error";
 import { prisma } from "@/lib/db";
 import { rateLimit, requestIp, tooMany } from "@/lib/rate-limit";
 import { isValidPhone, PHONE_ERROR } from "@/lib/phone";
-import { bankPendingLimitReached, enforcePendingLimits, finalizeOrder, releasePreviousCardOrder, releaseStaleReservations, restoreOrderStock } from "@/lib/orders";
+import { bankPendingLimitReached, finalizeOrder, planPendingSwap, releaseStaleReservations, restoreOrderStock, type PendingSwap } from "@/lib/orders";
+import { swapAndCreate, type SwapTx } from "@/lib/order-swap";
 import { getPaytrToken } from "@/lib/paytr";
 import { SHIPPING_LABELS } from "@/lib/pricing";
 import { getSessionUserId } from "@/lib/account";
@@ -89,21 +90,19 @@ export async function POST(req: Request) {
     const formErr = shippingFormError({ name, address, stateId: buyerStateId, cityId: buyerCityId, isPickup: shippingType === "BEYOGLU_MAGAZA_TESLIM" });
     if (formErr) return NextResponse.json({ error: formErr.message, field: formErr.field }, { status: 400 });
 
-    // Kartlı ödeme ekranını kapatıp tekrar deneyen müşteri: yalnızca istemcinin bildiği önceki sipariş kimliği ve aynı e-posta/oturum ile
-    // kendi bekleyen kartlı siparişi (stok + kupon) yeni rezervasyondan ÖNCE serbest bırakılır; geçersiz kimlik sessizce yok sayılır.
-    if (paymentMethod === "CREDIT_CARD" && body.previousOrderId !== undefined) {
-      await releasePreviousCardOrder(body.previousOrderId, { email: String(email).trim().toLowerCase(), sessionUserId: await getSessionUserId() }).catch((e) => console.error("[siparis] önceki sipariş serbest bırakılamadı:", (e as Error).message));
-    }
-
     // Süresi (RESERVATION_HOLD_MINUTES, lib/stock-rules.ts) dolmuş bekleyen kartlı rezervasyonlar tembel serbest bırakılır (cron günde bir kez çalışır)
     await releaseStaleReservations().catch((e) => console.error("[siparis] süresi dolan rezervasyonlar serbest bırakılamadı:", (e as Error).message));
-    // Kartlı: aynı e-postalı eski bekleyen sipariş iptal edilir; aynı telefon/e-posta için bekleyen sınırı doluysa yeni sipariş açılmaz
+    // Kartlı "geri dön, tekrar dene": müşterinin kendi bekleyen kartlı siparişi burada KAPATILMAZ, yalnızca belirlenir (oturumdaki kullanıcının
+    // siparişleri ya da tarayıcının bildiği previousOrderId; e-posta tek başına yetmez). Kapatma, yeni sipariş kaydıyla AYNI transaction içindedir
+    // (lib/order-swap.ts): bu istek stok/kupon hatasıyla reddedilirse eski sipariş ödeme bekler hâlde kalır (açık ödeme sayfası geçerliliğini korur).
+    // Aynı telefon/e-posta için bekleyen sınırı doluysa yeni sipariş açılmaz.
+    let swap: PendingSwap = { blocked: false, swapIds: [], heldStock: new Map(), heldCoupons: [] };
     if (paymentMethod === "CREDIT_CARD") {
-      const pending = await enforcePendingLimits({ email: String(email), phone, sessionUserId: await getSessionUserId() }).catch((e) => {
+      swap = await planPendingSwap({ email: String(email), phone, sessionUserId: await getSessionUserId(), previousOrderId: body.previousOrderId }).catch((e) => {
         console.error("[siparis] bekleyen sipariş denetimi başarısız:", (e as Error).message);
-        return { blocked: false, cancelled: 0 };
+        return swap;
       });
-      if (pending.blocked) return NextResponse.json({ error: PENDING_LIMIT_ERROR }, { status: 429 });
+      if (swap.blocked) return NextResponse.json({ error: PENDING_LIMIT_ERROR }, { status: 429 });
     }
 
     // 1. Fiyatlar istemciden değil veritabanından hesaplanır
@@ -121,11 +120,13 @@ export async function POST(req: Request) {
       }
       // Aynı varyasyon birden fazla satırda gelebilir: toplam adet stokla karşılaştırılır
       const wanted = wantedByVariation.get(item.variationId) ?? quantity;
+      // Değiştirilecek eski siparişin ayırdığı stok aynı transaction içinde serbest kalacağı için müşterinin kullanılabilir stoğuna eklenir (son ürün senaryosu)
+      const held = swap.heldStock.get(item.variationId) ?? 0;
       // Kartlı sipariş: stok yetersiz görünüyorsa 45 dk'yı geçmiş ödeme bekleyen rezervasyonlar önce serbest bırakılır, kontrol bir kez daha yapılır
-      if (isShort(variation.stock, wanted) && paymentMethod === "CREDIT_CARD" && (await releaseStaleReservations([...wantedByVariation.keys()]))) {
+      if (isShort(variation.stock + held, wanted) && paymentMethod === "CREDIT_CARD" && (await releaseStaleReservations([...wantedByVariation.keys()]))) {
         variation = (await loadVariation()) ?? variation;
       }
-      if (isShort(variation.stock, wanted)) {
+      if (isShort(variation.stock + held, wanted)) {
         return NextResponse.json({ error: `"${variation.product.title}" için stok yetersiz.` }, { status: 400 });
       }
       orderLines.push({ variation, quantity, unitPrice: variation.product.basePrice + variation.extraPrice });
@@ -153,6 +154,7 @@ export async function POST(req: Request) {
         email: String(email).toLowerCase(),
         userId: await getSessionUserId(),
         lines: priced.lines.map((l) => ({ productId: l.productId, lineTotal: l.lineTotal })),
+        replacing: { orderIds: swap.swapIds, couponCodes: swap.heldCoupons },
       });
       if (!check.ok) return NextResponse.json({ error: check.error }, { status: 400 });
       priced = priceCart({ lines: priceLines, maxTotalDiscountPct: cap, shippingType, paymentMethod, coupon: check.rule });
@@ -206,7 +208,10 @@ export async function POST(req: Request) {
     class CouponUserLimitError extends Error {}
     const reservedLines = mergeByVariation(itemRows);
     const createOrderTx = () =>
-      prisma.$transaction(async (tx) => {
+      prisma.$transaction(async (tx) =>
+        // Önce müşterinin değiştirilecek eski bekleyen siparişi kapatılır (stok + kupon iade), sonra yenisi oluşturulur; aşağıdaki adımlardan biri
+        // hata verirse transaction geri alınır ve eski sipariş hiç kapanmamış olur
+        swapAndCreate(tx as unknown as SwapTx, swap.swapIds, (code) => releaseCoupon(code, tx), async () => {
         if (appliedCouponCode) {
           // Kupon satırı kilitlenir; kişi başı limit sayımı ve hak rezervasyonu kilit altında yapılır (eşzamanlı çift kullanım engellenir)
           const r = await reserveCouponLocked(tx, appliedCouponCode, { email: normalizedEmail, userId: sessionUserId });
@@ -241,7 +246,7 @@ export async function POST(req: Request) {
         },
       },
         });
-      }, { maxWait: 5000, timeout: 10000 });
+        }), { maxWait: 5000, timeout: 10000 });
     let order;
     try {
       try {

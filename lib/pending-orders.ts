@@ -26,25 +26,31 @@ export interface PendingRow {
 }
 
 /**
- * - Aynı e-postalı eski bekleyen sipariş otomatik iptal edilir (vazgeçip dönen müşteri kendi stoğunu kilitlemez);
- *   oturum varsa yalnızca kendi kullanıcısının, yoksa yalnızca misafir kaydının siparişi iptal edilir (kayıtlı hesaba oturumsuz dokunulmaz).
- * - İptal edilmeyenlerden aynı telefon/e-postalı olanlar sayılır; MAX_PENDING_PER_CONTACT ve üstü ise yeni sipariş reddedilir.
+ * Yeni kartlı sipariş, müşterinin hangi bekleyen siparişlerinin YERİNE geçer (swapIds) ve bekleyen sınırı dolu mu (blocked)?
+ * Bir bekleyen sipariş yalnızca kanıtlı sahiplikle değiştirilir; E-POSTA TEK BAŞINA YETMEZ (başkasının e-postasını yazan biri
+ * o kişinin ödeme sayfası açık siparişini kapatamaz):
+ * - Oturum varsa: oturumdaki kullanıcının kendi bekleyen siparişleri (userId eşleşmesi).
+ * - Oturum yoksa: yalnızca tarayıcının bildiği önceki sipariş kimliği (previousOrderId), e-posta aynı ve kayıt misafir ise
+ *   (kayıtlı hesabın siparişine oturumsuz dokunulmaz).
+ * Değiştirilmeyenlerden aynı telefon/e-postalı olanlar sayılır; MAX_PENDING_PER_CONTACT ve üstü ise yeni sipariş reddedilir.
+ * Değiştirme, yeni sipariş kaydıyla aynı transaction'da yapılır (lib/order-swap.ts); bu fonksiyon yalnızca karar verir.
  */
 export function planPendingCleanup(
   rows: PendingRow[],
-  ctx: { email: string; phone: string; sessionUserId?: string | null }
-): { cancelIds: string[]; blocked: boolean } {
+  ctx: { email: string; phone: string; sessionUserId?: string | null; previousOrderId?: string | null }
+): { swapIds: string[]; blocked: boolean } {
   const email = emailKey(ctx.email);
   const phone = phoneKey(ctx.phone);
-  const cancelIds: string[] = [];
+  const swapIds: string[] = [];
   let remaining = 0;
   for (const r of rows) {
     const sameEmail = emailKey(r.user.email) === email;
     const samePhone = phone.length >= 7 && phoneKey(r.phone) === phone;
-    if (!sameEmail && !samePhone) continue;
-    const mine = ctx.sessionUserId ? r.userId === ctx.sessionUserId : r.user.password === "guest_checkout";
-    if (sameEmail && mine) cancelIds.push(r.id);
-    else remaining++;
+    const mine = ctx.sessionUserId
+      ? r.userId === ctx.sessionUserId
+      : Boolean(ctx.previousOrderId) && r.id === ctx.previousOrderId && sameEmail && r.user.password === "guest_checkout";
+    if (mine) swapIds.push(r.id);
+    else if (sameEmail || samePhone) remaining++;
   }
-  return { cancelIds, blocked: remaining >= MAX_PENDING_PER_CONTACT };
+  return { swapIds, blocked: remaining >= MAX_PENDING_PER_CONTACT };
 }

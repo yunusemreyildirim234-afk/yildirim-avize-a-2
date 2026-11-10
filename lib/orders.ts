@@ -2,7 +2,7 @@ import { prisma } from "@/lib/db";
 import { sendOrderNotificationEmails, sendStockShortageEmail } from "@/lib/email";
 import { BANK_ORDER_HOLD_HOURS, mergeByVariation, RESERVATION_RELEASE_MINUTES } from "@/lib/stock-rules";
 import { releaseCoupon } from "@/lib/coupons";
-import { canReleasePrevious, isOrderId } from "@/lib/previous-order";
+import { isOrderId } from "@/lib/previous-order";
 import { bankPendingBlocked, planPendingCleanup, type PendingRow } from "@/lib/pending-orders";
 import { createShipmentForOrder } from "@/lib/kargonomi";
 import { notifyAdmins, notifyCustomer } from "@/lib/notifications";
@@ -76,17 +76,6 @@ export async function failAwaitingCardOrder(orderId: string): Promise<boolean> {
 }
 
 /**
- * Müşterinin kendi önceki ödenmemiş kartlı siparişini (istemcinin bildiği kimlikle) serbest bırakır: failAwaitingCardOrder (stok + kupon, idempotent).
- * Geçersiz / başkasına ait / zaten kapanmış kimlik sessizce yok sayılır. Serbest bırakıldıysa true.
- */
-export async function releasePreviousCardOrder(previousOrderId: unknown, who: { email: string; sessionUserId?: string | null }): Promise<boolean> {
-  if (!isOrderId(previousOrderId)) return false;
-  const prev = await prisma.order.findUnique({ where: { id: previousOrderId }, select: { status: true, paymentMethod: true, userId: true, user: { select: { email: true, password: true } } } });
-  if (!canReleasePrevious(prev, who)) return false;
-  return failAwaitingCardOrder(previousOrderId);
-}
-
-/**
  * Tutma süresi (RESERVATION_HOLD_MINUTES, lib/stock-rules.ts) dolmuş AWAITING_PAYMENT kartlı rezervasyonları tembel serbest bırakır (cron günde bir çalıştığı için
  * stok okunurken ve sipariş oluşturulurken çağrılır). variationIds verilirse yalnızca o varyasyonları tutanlar. Serbest bırakılan sayısı döner.
  * Her sipariş failAwaitingCardOrder ile kapanır: durum koşullu geçiş + bayrak koşullu iade; tekrar çağrı stoğu ikinci kez artırmaz.
@@ -109,21 +98,39 @@ export async function releaseStaleReservations(variationIds?: string[], now: num
   return n;
 }
 
+export interface PendingSwap {
+  blocked: boolean; // aynı telefon/e-posta için bekleyen sınırı dolu: yeni sipariş reddedilmeli
+  swapIds: string[]; // yeni siparişin yerine geçeceği (aynı transaction'da kapatılacak) bekleyen siparişler
+  heldStock: Map<string, number>; // bu siparişlerin ayırdığı stok (variationId → adet): ön stok kontrolünde müşterinin lehine sayılır
+  heldCoupons: (string | null)[]; // bu siparişlerin tuttuğu kupon kodları: kupon limiti doğrulamasında düşülür
+}
+
 /**
- * Yeni kartlı sipariş öncesi: aynı e-postalı eski bekleyen kartlı siparişleri iptal eder (stok + kupon iade) ve
- * aynı telefon/e-posta için bekleyen sayısı sınırdaysa blocked=true (yeni sipariş reddedilmeli) döner.
- * Yalnızca tutma süresi içindeki bekleyenler taranır (süresi dolanlar zaten serbest bırakılır).
+ * Yeni kartlı sipariş öncesi KARAR (hiçbir şey yazmaz): müşterinin hangi bekleyen kartlı siparişleri yenisiyle değiştirilecek
+ * (kural: lib/pending-orders.ts planPendingCleanup; e-posta tek başına yetmez) ve bekleyen sınırı dolu mu?
+ * Eski sipariş burada KAPATILMAZ: kapatma, yeni sipariş kaydıyla aynı transaction'da yapılır (lib/order-swap.ts); yeni sipariş
+ * reddedilirse eski sipariş ödeme bekler durumda kalır. Yalnızca tutma süresi içindeki bekleyenler taranır.
  */
-export async function enforcePendingLimits(who: { email: string; phone: string; sessionUserId?: string | null }, now: number = Date.now()): Promise<{ blocked: boolean; cancelled: number }> {
+export async function planPendingSwap(who: { email: string; phone: string; sessionUserId?: string | null; previousOrderId?: unknown }, now: number = Date.now()): Promise<PendingSwap> {
   const rows: PendingRow[] = await prisma.order.findMany({
     where: { status: "AWAITING_PAYMENT", paymentMethod: "CREDIT_CARD", createdAt: { gte: new Date(now - RESERVATION_RELEASE_MINUTES * 60_000) } },
     select: { id: true, phone: true, userId: true, user: { select: { email: true, password: true } } },
     take: 500,
   });
-  const plan = planPendingCleanup(rows, who);
-  let cancelled = 0;
-  for (const id of plan.cancelIds) if (await failAwaitingCardOrder(id).catch(() => false)) cancelled++;
-  return { blocked: plan.blocked, cancelled };
+  const plan = planPendingCleanup(rows, { ...who, previousOrderId: isOrderId(who.previousOrderId) ? who.previousOrderId : null });
+  const heldStock = new Map<string, number>();
+  const heldCoupons: (string | null)[] = [];
+  if (plan.swapIds.length > 0) {
+    const held = await prisma.order.findMany({
+      where: { id: { in: plan.swapIds }, status: "AWAITING_PAYMENT", stockDeducted: true },
+      select: { couponCode: true, items: { select: { variationId: true, quantity: true } } },
+    });
+    for (const o of held) {
+      heldCoupons.push(o.couponCode);
+      for (const i of o.items) heldStock.set(i.variationId, (heldStock.get(i.variationId) ?? 0) + i.quantity);
+    }
+  }
+  return { blocked: plan.blocked, swapIds: plan.swapIds, heldStock, heldCoupons };
 }
 
 /** Aynı e-posta/telefonun bekleyen Havale siparişi sınırda mı? Süresi (BANK_ORDER_HOLD_HOURS) geçenler sayılmaz. */
