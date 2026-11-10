@@ -6,7 +6,8 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import ProductReviews from "@/components/ProductReviews";
 import ProductQuestionForm from "@/components/ProductQuestionForm";
 import ProductCard from "@/components/ProductCard";
-import { getProductDetail, getProductsCached } from "@/lib/products";
+import { getLiveStocks, getProductDetail, getProductsCached } from "@/lib/products";
+import { applyLiveStock } from "@/lib/stock-freshness";
 import { getUserSession } from "@/lib/account";
 import { getStocklessRule } from "@/lib/visibility";
 import { getLowStockSetting } from "@/lib/low-stock-setting";
@@ -61,7 +62,10 @@ export default async function ProductDetailPage({ params }: Props) {
   const { id } = await params;
 
   // Veritabanından ilgili ürünü ve bağlı varyasyonlarını çekiyoruz
-  const product = await getProductDetail(id);
+  // Ürün bilgisi 60 sn önbellekli (süre dolunca ilk ziyaretçiye eski veri sunulur); stok ise her istekte canlı okunup üzerine yazılır.
+  // Canlı okuma hata verirse önbellekli stok kalır (sayfa açılır; sepet ve sipariş ucu stoğu zaten canlı doğrular).
+  const cachedProduct = await getProductDetail(id);
+  const product = cachedProduct ? applyLiveStock(cachedProduct, await getLiveStocks(id).catch(() => null)) : null;
 
   const ladderCtx = await getLadderContext();
 

@@ -18,6 +18,7 @@ import { reserveLines, StockShortError } from "@/lib/stock-reserve";
 import { BANK_PENDING_LIMIT_ERROR, PENDING_LIMIT_ERROR } from "@/lib/pending-orders";
 import { bestEffort, createOrFindGuest } from "@/lib/best-effort";
 import { recordConsent } from "@/lib/marketing";
+import { revalidateStorefrontSafe } from "@/lib/revalidate";
 
 interface CartLine {
   variationId: string;
@@ -269,6 +270,8 @@ export async function POST(req: Request) {
       }
       throw err;
     }
+    // Sipariş kaydı ve stok rezervasyonu commit edildi: vitrin önbelleği yenilenir (en iyi çaba; hata siparişi bozmaz)
+    revalidateStorefrontSafe();
 
     // Kampanya e-postası onayı: yalnızca açık true; sipariş oluştuktan sonra, best-effort. Abonelikten çıkmış kayıt yeniden açılmaz.
     if (body.marketingOptIn === true) {

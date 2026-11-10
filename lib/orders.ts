@@ -9,6 +9,7 @@ import { notifyAdmins, notifyCustomer } from "@/lib/notifications";
 import { cleanGuestEmail } from "@/lib/guest-email";
 import { restoreStockInTx, type RestoreTx } from "@/lib/stock-restore";
 import { finalizePaidOrder } from "@/lib/order-finalize";
+import { revalidateStorefrontSafe } from "@/lib/revalidate";
 
 // Havuz küçük (max 3): interaktif işlemler kısa sürede bitmeli veya hata vermeli
 const TX_OPTIONS = { maxWait: 5000, timeout: 10000 };
@@ -21,9 +22,11 @@ const TX_OPTIONS = { maxWait: 5000, timeout: 10000 };
  */
 export async function deductOrderStock(orderId: string) {
   const shortages: { variationId: string; quantity: number }[] = [];
+  let stockChanged = false;
   await prisma.$transaction(async (tx) => {
     const claimed = await tx.order.updateMany({ where: { id: orderId, stockDeducted: false }, data: { stockDeducted: true } });
     if (claimed.count === 0) return;
+    stockChanged = true;
     const items = await tx.orderItem.findMany({ where: { orderId }, select: { variationId: true, quantity: true } });
     for (const i of mergeByVariation(items)) {
       const n = await tx.$executeRaw`UPDATE "ProductVariation" SET "stock" = "stock" - ${i.quantity} WHERE "id" = ${i.variationId} AND "stock" >= ${i.quantity}`;
@@ -33,6 +36,7 @@ export async function deductOrderStock(orderId: string) {
       }
     }
   }, TX_OPTIONS);
+  if (stockChanged) revalidateStorefrontSafe(); // transaction bittikten sonra, en iyi çaba: vitrin stoğu bayat kalmasın
   if (shortages.length > 0) await reportShortage(orderId, shortages).catch((err) => console.error("[stok] uyarı gönderilemedi:", (err as Error).message));
 }
 
@@ -60,6 +64,7 @@ async function reportShortage(orderId: string, shortages: { variationId: string;
 export async function restoreOrderStock(orderId: string) {
   // Bayrak ve stok artışları tek transaction'da: biri başarısız olursa ikisi de geri alınır
   await prisma.$transaction(async (tx) => restoreStockInTx(tx as unknown as RestoreTx, orderId), TX_OPTIONS);
+  revalidateStorefrontSafe(); // transaction bittikten sonra, en iyi çaba (ödeme başarısız, süresi dolan rezervasyon, cron süpürmesi bu yoldan geçer)
 }
 
 /**
@@ -148,7 +153,7 @@ export async function bankPendingLimitReached(who: { email: string; phone: strin
  * koşullu geçişi yalnızca bir çağrı kazanır, tekrar çağrı veya yönetici onayıyla yarış çift iade üretmez. İptal edildiyse true.
  */
 export async function cancelUnpaidBankOrder(orderId: string): Promise<boolean> {
-  return prisma.$transaction(async (tx) => {
+  const cancelled = await prisma.$transaction(async (tx) => {
     const o = await tx.order.findUnique({ where: { id: orderId }, select: { couponCode: true } });
     const moved = await tx.order.updateMany({ where: { id: orderId, status: "PENDING_NEW", paymentMethod: "BANK_TRANSFER", receiptUrl: null }, data: { status: "CANCELLED" } });
     if (moved.count === 0) return false;
@@ -156,6 +161,8 @@ export async function cancelUnpaidBankOrder(orderId: string): Promise<boolean> {
     await releaseCoupon(o?.couponCode, tx);
     return true;
   }, TX_OPTIONS);
+  if (cancelled) revalidateStorefrontSafe(); // transaction bittikten sonra, en iyi çaba
+  return cancelled;
 }
 
 type FullOrder = Awaited<ReturnType<typeof loadOrder>>;

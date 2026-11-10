@@ -114,6 +114,9 @@ export const getProductDetail = unstable_cache(
   { revalidate: STOREFRONT_CACHE_SECONDS, tags: ["storefront"] }
 );
 
+/** Ürünün varyasyon stokları ÖNBELLEKSİZ (ürün sayfası her istekte okur; önbellekli detayın üzerine lib/stock-freshness.ts applyLiveStock ile yazılır). */
+export const getLiveStocks = (productId: string) => prisma.productVariation.findMany({ where: { productId }, select: { id: true, stock: true } });
+
 export type ProductWithVariations = Awaited<ReturnType<typeof getProducts>>[number];
 
 // Otomatik "İndirimliler": üstü çizili eski fiyatı olan (listPrice yalnızca basePrice'tan yüksekse tutulur) veya adet indirimi tanımlı ürünler

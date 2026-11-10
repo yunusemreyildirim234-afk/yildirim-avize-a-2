@@ -10,6 +10,7 @@ import { restoreStockInTx, type RestoreTx } from "@/lib/stock-restore";
 import { notifyAdmins, notifyCustomer } from "@/lib/notifications";
 import { ABANDONED_CARD_MINUTES, BANK_ORDER_HOLD_HOURS, shouldCancelUnpaidBank, shouldCloseAbandonedCard } from "@/lib/stock-rules";
 import { couponValueLabel, loadShowcaseCoupon } from "@/lib/showcase";
+import { revalidateStorefrontSafe } from "@/lib/revalidate";
 
 const HOUR = 60 * 60 * 1000;
 
@@ -118,6 +119,9 @@ export async function GET(req: Request) {
     await notifyCustomer({ userId: o.userId }, { title: "Siparişiniz iptal edildi", message: `#${short} numaralı Havale siparişiniz ${BANK_ORDER_HOLD_HOURS} saat içinde ödeme dekontu gelmediği için iptal edildi.`, type: "ORDER", link: `/siparis-onay/${o.id}` });
     await sendBankOrderCancelledEmail({ to: cleanGuestEmail(o.user.email), name: o.user.name, orderId: o.id, hours: BANK_ORDER_HOLD_HOURS }).catch(() => false);
   }
+
+  // Stok iade edildiyse (terk edilmiş kartlı ödeme, süpürme, havale iptali) vitrin önbelleği hemen sona erer ("storefront" etiketi, expire: 0); en iyi çaba
+  if (closed > 0 || bankCancelled > 0 || stuck.length > 0) revalidateStorefrontSafe();
 
   return NextResponse.json({ success: true, abandoned, receipts, closed, bankCancelled });
 }
