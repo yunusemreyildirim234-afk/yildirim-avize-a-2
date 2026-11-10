@@ -254,8 +254,11 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
             <span className="text-2xl font-bold text-neutral-900 mt-1 block">
               {countedOrders.length} adet
             </span>
-            <span className="text-[11px] text-neutral-400 mt-1 block">
-              Toplam kayıt: {orders.length} (iptal, iade ve ödemesi tamamlanmayanlar hariç)
+            <span className="text-[11px] text-neutral-600 font-semibold mt-1 block">
+              Geçerli: {countedOrders.length} · Tüm kayıt: {orders.length}
+            </span>
+            <span className="text-[11px] text-neutral-400 block">
+              Geçerli: iptal, iade ve ödemesi tamamlanmayanlar hariç
             </span>
           </div>
 
