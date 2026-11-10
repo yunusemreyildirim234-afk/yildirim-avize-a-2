@@ -1063,7 +1063,7 @@ export default function CartPage() {
               )}
 
               <div className="text-center pt-2 text-[10px] text-neutral-400">
-                🔒 256-Bit SSL & Aras Kargo ile Gönderim
+                🔒 256-Bit SSL{isPickup ? "" : " & Aras Kargo ile Gönderim"}
               </div>
             </form>
           </div>
