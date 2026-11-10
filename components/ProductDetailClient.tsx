@@ -146,7 +146,7 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
     <div className="bg-white rounded-3xl border border-neutral-200 overflow-hidden shadow-sm grid grid-cols-1 lg:grid-cols-2">
       {/* Sol: Büyük Boy Gerçek Avize Fotoğraf Alanı */}
       <div className="flex flex-col bg-neutral-900">
-      <div className="group/gal relative min-h-[320px] sm:min-h-[440px] flex-1 overflow-hidden flex items-center justify-center">
+      <div className="group/gal relative min-h-[320px] sm:min-h-[440px] flex-1 overflow-hidden flex items-center justify-center bg-white">
         {gallery.length > 0 ? (
           <div
             key={gallery.join("|")}
@@ -203,7 +203,7 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
           </>
         )}
 
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent pointer-events-none" />
 
         {/* Beyoğlu Mağaza Rozeti */}
         <div className="absolute bottom-4 left-4 right-4 sm:right-auto sm:bottom-6 sm:left-6 pointer-events-none bg-neutral-900/90 border border-neutral-700 text-neutral-200 text-xs px-4 py-2 rounded-full flex items-center gap-2 shadow-lg">

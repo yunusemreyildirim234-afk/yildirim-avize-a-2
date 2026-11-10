@@ -28,21 +28,21 @@ export function HoverMagnifier({ src, alt, onZoom, eager = true }: { src: string
       aria-label="Görseli büyüt"
       className="absolute inset-0 w-full h-full cursor-zoom-in"
     >
-      <img src={src} srcSet={imageSrcSet(src)} sizes="(min-width: 1024px) 50vw, 100vw" alt={alt} decoding="async" {...(eager ? { fetchPriority: "high" as const } : { loading: "lazy" as const })} className="w-full h-full object-cover" />
+      <img src={src} srcSet={imageSrcSet(src)} sizes="(min-width: 1024px) 50vw, 100vw" alt={alt} decoding="async" {...(eager ? { fetchPriority: "high" as const } : { loading: "lazy" as const })} className="w-full h-full object-contain" />
       <span className="absolute top-4 right-4 inline-flex items-center gap-1.5 bg-zinc-900/80 text-white text-[11px] font-semibold px-3 py-1.5 rounded-full">
         <ZoomIn aria-hidden="true" className="w-3.5 h-3.5" /> Büyüt
       </span>
       {pos && (
         <span
           aria-hidden="true"
-          className="hidden md:block absolute pointer-events-none rounded-full overflow-hidden border-2 border-white/80 shadow-xl bg-zinc-900"
+          className="hidden md:block absolute pointer-events-none rounded-full overflow-hidden border-2 border-white/80 shadow-xl bg-white"
           style={{ width: LENS, height: LENS, left: pos.x - LENS / 2, top: pos.y - LENS / 2 }}
         >
           <img
             src={src}
             alt=""
             draggable={false}
-            className="absolute max-w-none object-cover"
+            className="absolute max-w-none object-contain"
             style={{
               width: pos.w * LENS_ZOOM,
               height: pos.h * LENS_ZOOM,
