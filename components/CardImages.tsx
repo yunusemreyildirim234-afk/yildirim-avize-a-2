@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { isBlobImage, smallImage } from "@/lib/img";
 
 const DRAG_THRESHOLD = 8; // px: bunu aşan hareket sürükleme sayılır, bırakınca bağlantı tıklaması bastırılır
 const SIZES = "(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw";
@@ -45,7 +46,8 @@ export default function CardImages({
 
   const first = (
     <Image
-      src={images[0]}
+      src={smallImage(images[0])}
+      unoptimized={isBlobImage(images[0])}
       alt={alt}
       fill
       priority={priority}
@@ -105,7 +107,8 @@ export default function CardImages({
           <div key={src} className="relative shrink-0 w-full h-full snap-center">
             {armed && (
               <Image
-                src={src}
+                src={smallImage(src)}
+                unoptimized={isBlobImage(src)}
                 alt={`${alt} ${i + 2}. fotoğraf`}
                 fill
                 loading="lazy"

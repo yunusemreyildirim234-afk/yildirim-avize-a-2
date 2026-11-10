@@ -16,6 +16,7 @@ import { trackState } from "@/lib/orderStatus";
 import { WHATSAPP_NUMBER } from "@/lib/site";
 import CopyCodeButton from "@/components/CopyCodeButton";
 import { bankPaymentDeadline, breakdownOf, breakdownRows, formatIstanbul, orderCode } from "@/lib/order-display";
+import { smallImage } from "@/lib/img";
 
 export const metadata: Metadata = {
   title: "Siparişiniz Alındı",
@@ -141,7 +142,7 @@ export default async function OrderConfirmationPage({ params }: { params: Promis
                   className="w-[72px] h-[72px] rounded-xl bg-neutral-100 overflow-hidden shrink-0 border border-neutral-200 flex items-center justify-center"
                 >
                   {coverImageOf(item.variation.product) && (
-                    <img src={coverImageOf(item.variation.product)!} alt={item.variation.product.title} width={64} height={64} loading="lazy" decoding="async" className="w-full h-full object-cover" />
+                    <img src={smallImage(coverImageOf(item.variation.product)!)} alt={item.variation.product.title} width={64} height={64} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                   )}
                 </Link>
                 <span>

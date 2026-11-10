@@ -16,6 +16,7 @@ import { CATEGORIES } from "@/lib/site";
 import { buildCategoryList, productInCategory } from "@/lib/categories";
 import { uncategorizedCount } from "@/lib/category-settings";
 import { isShownAsSoldOut, type StocklessRule } from "@/lib/stockless";
+import { smallImage } from "@/lib/img";
 
 const NONE_KEY = "__kategorisiz__"; // "Kategorisiz (N)" çipi
 import { coverImageOf } from "@/lib/variation-input";
@@ -505,7 +506,7 @@ Yine de geri alınsın mı?`)) await doUndo(true);
                 className="w-16 h-16 rounded-xl bg-neutral-200 animate-pulse overflow-hidden shrink-0 border border-neutral-200 block"
               >
                 {coverImageOf(product) ? (
-                  <img src={coverImageOf(product)!} alt={product.title} width={64} height={64} loading="lazy" decoding="async" className="w-full h-full object-cover" />
+                  <img src={smallImage(coverImageOf(product)!)} alt={product.title} width={64} height={64} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-amber-400 text-xs font-serif"><Lightbulb aria-hidden="true" className="w-5 h-5" /></div>
                 )}

@@ -6,6 +6,7 @@ import { CartStepper, type QuickProduct } from "@/components/ProductQuickActions
 import PriceLadder from "@/components/PriceLadder";
 import { useWishlist } from "@/context/WishlistContext";
 import { FavoritesMarketingStrip } from "@/components/MarketingPrefs";
+import { smallImage } from "@/lib/img";
 
 export default function FavorilerimPage() {
   const { favorites, removeFavoriteUndoable, clearFavorites } = useWishlist();
@@ -79,7 +80,7 @@ export default function FavorilerimPage() {
                 <Link href={`/urun/${product.id}`} aria-label={`${product.title} ürün sayfası`} className="block w-full h-full">
                   {product.imageUrl ? (
                     <img
-                      src={product.imageUrl}
+                      src={smallImage(product.imageUrl)}
                       alt={product.title}
                       width={400}
                       height={400}

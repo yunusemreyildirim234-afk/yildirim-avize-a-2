@@ -13,6 +13,7 @@ import OrderStatusSelector from "@/components/OrderStatusSelector";
 import AdminKargonomiOrderActions from "@/components/AdminKargonomiOrderActions";
 import AdminOrderRequest from "@/components/AdminOrderRequest";
 import AdminReceiptActions from "@/components/AdminReceiptActions";
+import { smallImage } from "@/lib/img";
 
 export const dynamic = "force-dynamic";
 
@@ -122,7 +123,7 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
               const p = orderItemProductView(item.variation?.product);
               const thumb = p.image ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={p.image} alt={p.title ?? "Ürün"} loading="lazy" width={56} height={56} className="h-14 w-14 shrink-0 rounded bg-neutral-100 object-cover" />
+                <img src={smallImage(p.image)} alt={p.title ?? "Ürün"} loading="lazy" width={56} height={56} className="h-14 w-14 shrink-0 rounded bg-neutral-100 object-cover" />
               ) : (
                 <span aria-hidden="true" className="h-14 w-14 shrink-0 rounded bg-neutral-200" />
               );

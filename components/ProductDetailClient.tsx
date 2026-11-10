@@ -20,6 +20,7 @@ import { isPurchasablePrice } from "@/lib/purchasable";
 import { activeTier, bulkLabel, bulkTiersOf, unitPriceFor } from "@/lib/bulk-pricing";
 import { lowStockLabel, type LowStockSetting } from "@/lib/low-stock";
 import { bulbNoteFor, isAccessoryCategory } from "@/lib/bulb-note";
+import { smallImage } from "@/lib/img";
 
 interface Variation {
   id: string;
@@ -225,7 +226,7 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
               }`}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={src} alt="" width={72} height={72} loading="lazy" decoding="async" className="w-full h-full object-cover" />
+              <img src={smallImage(src)} alt="" width={72} height={72} loading="lazy" decoding="async" className="w-full h-full object-cover" />
             </button>
           ))}
         </div>

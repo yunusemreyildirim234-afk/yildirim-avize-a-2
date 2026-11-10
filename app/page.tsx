@@ -12,6 +12,7 @@ import { composeSection } from "@/lib/homepage-compose";
 import { getHomepageConfig, getSectionPools } from "@/lib/homepage";
 import MoreProducts from "@/components/MoreProducts";
 import { ADDRESS_LINE, LAT, LNG, PHONE_TEL, SITE_URL } from "@/lib/site";
+import { isBlobImage, smallImage } from "@/lib/img";
 
 export const revalidate = 60; // Genel (kişiselleştirmesiz) sayfa: 60 sn önbellek; yönetici işlemleri revalidateStorefront() ile anında yeniler
 
@@ -96,7 +97,8 @@ export default async function Home() {
                     <div className="relative aspect-[4/5] overflow-hidden bg-zinc-200">
                       {cover && (
                         <Image
-                          src={cover}
+                          src={smallImage(cover)}
+                          unoptimized={isBlobImage(cover)}
                           alt={c.title}
                           fill
                           sizes="(min-width: 1024px) 25vw, 50vw"

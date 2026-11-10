@@ -48,6 +48,7 @@ import { orderItemProductView } from "@/lib/order-item-product";
 import { adminOrderHref } from "@/lib/admin-order-detail";
 import { deleteButtonLabel, deleteConfirmText } from "@/lib/bulk-delete";
 import { inDateRange, matchesOrderSearch, resolveDateRange } from "@/lib/admin-order-search";
+import { smallImage } from "@/lib/img";
 
 // Büyük ve ilk görünümde kapalı bölümlerde duran bileşenler ayrı parçada yüklenir (davranış aynı)
 const AdminProductList = nextDynamic(() => import("@/components/AdminProductList"));
@@ -453,7 +454,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                           const p = orderItemProductView(item.variation?.product);
                           const thumb = p.image ? (
                             // eslint-disable-next-line @next/next/no-img-element
-                            <img src={p.image} alt={p.title ?? "Ürün"} loading="lazy" width={48} height={48} className="w-12 h-12 rounded object-cover bg-neutral-100 shrink-0" />
+                            <img src={smallImage(p.image)} alt={p.title ?? "Ürün"} loading="lazy" width={48} height={48} className="w-12 h-12 rounded object-cover bg-neutral-100 shrink-0" />
                           ) : (
                             <span aria-hidden="true" className="w-12 h-12 rounded bg-neutral-200 shrink-0" />
                           );

@@ -27,6 +27,7 @@ import { isValidPhone, PHONE_ERROR } from "@/lib/phone";
 import { bulbNoteFor } from "@/lib/bulb-note";
 import { clearCartChoices, loadCartChoices, saveCartChoices, tabStore } from "@/lib/cart-choices";
 import { forgetCardOrder, previousCardOrderId, rememberCardOrder } from "@/lib/pending-card-order";
+import { smallImage } from "@/lib/img";
 
 interface LocationItem {
   id: number;
@@ -545,7 +546,7 @@ export default function CartPage() {
                       className="w-[72px] h-[72px] rounded-xl bg-neutral-100 overflow-hidden shrink-0 border border-neutral-200 flex items-center justify-center"
                     >
                       {(item.imageUrl || images[item.productId]) && (
-                        <img src={item.imageUrl || images[item.productId]} alt={item.title} width={80} height={80} loading="lazy" decoding="async" className="w-full h-full object-cover" />
+                        <img src={smallImage(item.imageUrl || images[item.productId])} alt={item.title} width={80} height={80} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                       )}
                     </Link>
                     <div className="min-w-0">
