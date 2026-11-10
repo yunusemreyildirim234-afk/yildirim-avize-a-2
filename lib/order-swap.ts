@@ -8,6 +8,7 @@
 // "son ürün" ve "kişi başı tek kullanım" kuponunda da yeniden deneme çalışır.
 
 import { restoreStockInTx, type RestoreTx } from "./stock-restore.ts";
+import { isOrderId } from "./previous-order.ts";
 
 export interface SwapTx {
   order: {
@@ -45,4 +46,20 @@ export async function swapAndCreate<T>(tx: SwapTx, swapIds: string[], releaseCou
 export function heldCouponUses(code: string, heldCodes: readonly (string | null | undefined)[] | undefined): number {
   const key = code.trim().toUpperCase();
   return (heldCodes ?? []).filter((c) => typeof c === "string" && c.trim().toUpperCase() === key).length;
+}
+
+/**
+ * Fiyat teklifinde (/api/cart/quote) "değiştirilecek sipariş" planı aranmalı mı? Sipariş ucuyla aynı kapsam: yalnızca kartlı ödeme ve
+ * yalnızca kimlik kanıtı varken (oturum ya da tarayıcının bildiği geçerli sipariş kimliği). E-posta tek başına plan aratmaz.
+ */
+export function shouldPlanSwapForQuote(o: { paymentMethod: string; sessionUserId?: string | null; previousOrderId?: unknown }): boolean {
+  return o.paymentMethod === "CREDIT_CARD" && (Boolean(o.sessionUserId) || isOrderId(o.previousOrderId));
+}
+
+/**
+ * Müşterinin kullanabileceği stok: boş stok + yenisiyle değiştirilecek KENDİ bekleyen siparişinin ayırdığı adet
+ * (o sipariş yeni siparişle aynı transaction'da kapanıp stoğunu serbest bırakacağı için). Başkasının siparişi `held` içinde yer almaz.
+ */
+export function stockWithHeld(stock: number, held: ReadonlyMap<string, number> | undefined, variationId: string): number {
+  return stock + (held?.get(variationId) ?? 0);
 }

@@ -160,7 +160,9 @@ export default function CartPage() {
     maxTotalDiscountPct?: number | null;
     showcaseCode?: string | null; // vitrin kuponunun güncel adı
   }
-  const quoteSig = JSON.stringify([cart.map((i) => [i.variationId, i.quantity]), appliedCoupon?.code ?? "", shippingType, paymentMethod, appliedCoupon ? email : ""]);
+  // Açık kalmış kartlı ödeme denemesi (bu sekmede): teklif, o siparişin tuttuğu stok/kuponu müşterinin lehine sayabilsin diye kimliği ve e-posta gider
+  const prevOrderId = previousCardOrderId();
+  const quoteSig = JSON.stringify([cart.map((i) => [i.variationId, i.quantity]), appliedCoupon?.code ?? "", shippingType, paymentMethod, appliedCoupon || prevOrderId ? email : "", prevOrderId ?? ""]);
   const [quote, setQuote] = useState<(Quote & { sig: string }) | null>(null);
   const [priceNotice, setPriceNotice] = useState<{ from: number; to: number } | null>(null);
   const [priceAcked, setPriceAcked] = useState(true);
@@ -177,9 +179,10 @@ export default function CartPage() {
         body: JSON.stringify({
           items: cart.map((i) => ({ productId: i.productId, variationId: i.variationId, qty: i.quantity })),
           coupon: appliedCoupon?.code,
-          email: appliedCoupon ? email : undefined,
+          email: appliedCoupon || prevOrderId ? email : undefined,
           deliveryMethod: shippingType,
           paymentMethod,
+          ...(prevOrderId ? { previousOrderId: prevOrderId } : {}),
         }),
       });
       return res.ok ? ((await res.json()) as Quote) : null;

@@ -7,7 +7,8 @@ import { isPurchasablePrice, priceUnavailableMessage } from "@/lib/purchasable";
 import { SHIPPING_LABELS, type CouponRule } from "@/lib/pricing";
 import { COUPON_FAIL_LIMIT, COUPON_LIMITED_ERROR, validateCoupon } from "@/lib/coupons";
 import { getSessionUserId } from "@/lib/account";
-import { releaseStaleReservations } from "@/lib/orders";
+import { planPendingSwap, releaseStaleReservations, type PendingSwap } from "@/lib/orders";
+import { shouldPlanSwapForQuote, stockWithHeld } from "@/lib/order-swap";
 import { priceLadder } from "@/lib/price-ladder";
 import { getLadderContext } from "@/lib/showcase";
 
@@ -31,6 +32,14 @@ export async function POST(req: Request) {
 
   // Stok okunmadan önce süresi dolmuş ödeme bekleyen rezervasyonlar serbest bırakılır
   await releaseStaleReservations([...wanted.keys()]).catch(() => 0);
+  // "Geri dön, tekrar dene": müşterinin KENDİ bekleyen kartlı siparişinin tuttuğu stok ve kupon hakkı lehine sayılır (sipariş ucuyla aynı kural:
+  // lib/orders.ts planPendingSwap → oturumdaki kullanıcının siparişleri ya da tarayıcının bildiği previousOrderId + aynı e-posta; e-posta tek başına yetmez).
+  // Yalnızca okuma: hiçbir sipariş kapatılmaz. Plan okunamazsa teklif eskisi gibi (lehine sayım olmadan) döner.
+  const userId = await getSessionUserId();
+  let swap: PendingSwap = { blocked: false, swapIds: [], heldStock: new Map(), heldCoupons: [] };
+  if (shouldPlanSwapForQuote({ paymentMethod, sessionUserId: userId, previousOrderId: body.previousOrderId })) {
+    swap = await planPendingSwap({ email: typeof body.email === "string" ? body.email : "", phone: "", sessionUserId: userId, previousOrderId: body.previousOrderId }).catch(() => swap);
+  }
   const variations = await prisma.productVariation.findMany({
     where: { id: { in: [...wanted.keys()] } },
     select: {
@@ -75,13 +84,13 @@ export async function POST(req: Request) {
     coupon = { ok: false, error: COUPON_LIMITED_ERROR, limited: true };
   } else if (code) {
     // Oturum varsa e-posta hesaptan alınır; form e-postası yalnızca oturum yokken ve (kupon kısıtı varsa) doğrulamada kullanılır
-    const userId = await getSessionUserId();
     const sessionEmail = userId ? (await prisma.user.findUnique({ where: { id: userId }, select: { email: true } }))?.email ?? null : null;
     const check = await validateCoupon({
       code,
       email: sessionEmail ?? (typeof body.email === "string" ? body.email : null),
       userId,
       lines: priced.lines.map((l) => ({ productId: l.productId, lineTotal: l.lineTotal })),
+      replacing: { orderIds: swap.swapIds, couponCodes: swap.heldCoupons },
     });
     if (check.ok) {
       const withCoupon = priceCart({ lines: priceLines, maxTotalDiscountPct: cap, shippingType, paymentMethod, coupon: check.rule });
@@ -106,8 +115,8 @@ export async function POST(req: Request) {
       variationName: usable[i].v.variationValue,
       quantity: l.quantity,
       available: true as const,
-      stockShort: usable[i].v.stock < l.quantity,
-      stock: usable[i].v.stock,
+      stockShort: stockWithHeld(usable[i].v.stock, swap.heldStock, l.variationId) < l.quantity,
+      stock: stockWithHeld(usable[i].v.stock, swap.heldStock, l.variationId),
       price: l.price,
       bulk: l.tiers,
       tierQty: l.tierQty,
