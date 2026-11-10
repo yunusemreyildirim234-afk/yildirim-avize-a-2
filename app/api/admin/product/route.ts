@@ -10,6 +10,7 @@ import { normalizeEbat } from "@/lib/listing-core";
 import { schedulePriceDrops } from "@/lib/price-drop-notify";
 import { resolveStocklessHiddenIds, setStocklessHidden } from "@/lib/stockless";
 import { buildUndoToken, snapshotForDelete, snapshotProducts } from "@/lib/admin-undo";
+import { STOCK_CHANGED_ERROR, STOCK_PREV_MISSING_ERROR, planStockWrite } from "@/lib/stock-edit";
 
 // 1. Yeni Avize Ekleme (POST): ürün + tüm renkler TEK transaction'da; fotoğraflar önceden /api/admin/product-images ile yüklenir
 const isUniqueError = (e: unknown) => typeof e === "object" && e !== null && (e as { code?: string }).code === "P2002";
@@ -192,17 +193,25 @@ async function PATCHHandler(req: Request) {
 
     const { variationId, stock } = body;
 
+    if (typeof variationId !== "string") return NextResponse.json({ error: "Eksik parametre" }, { status: 400 });
+    // Stok mutlak yazılmaz (lib/stock-edit.ts): formdaki başlangıç değeriyle aynıysa hiç yazılmaz; değiştiyse yalnızca veritabanındaki stok
+    // hâlâ o başlangıç değerindeyse yazılır. Panel açıkken gelen siparişin rezervasyonu böylece ezilmez.
+    const plan = planStockWrite(Math.max(0, parseInt(stock) || 0), body.prevStock);
+    if (plan.kind === "INVALID") return NextResponse.json({ error: STOCK_PREV_MISSING_ERROR }, { status: 409 });
     const owner = await prisma.productVariation.findUnique({ where: { id: variationId }, select: { productId: true, extraPrice: true, product: { select: { basePrice: true } } } });
-    const before = owner ? await snapshotProducts([owner.productId]) : [];
-    const updated = await prisma.productVariation.update({
-      where: { id: variationId },
-      data: {
-        stock: Math.max(0, parseInt(stock) || 0),
-        ...(body.extraPrice !== undefined && Number(body.extraPrice) >= 0 ? { extraPrice: Number(body.extraPrice) } : {}),
-      },
-    });
+    if (!owner) return NextResponse.json({ error: "Varyasyon bulunamadı." }, { status: 404 });
+    const before = await snapshotProducts([owner.productId]);
+    if (plan.kind === "CAS") {
+      const written = await prisma.productVariation.updateMany({ where: { id: variationId, stock: plan.expected }, data: { stock: plan.next } });
+      if (written.count === 0) return NextResponse.json({ error: STOCK_CHANGED_ERROR }, { status: 409 });
+    }
+    const newExtra = body.extraPrice !== undefined && Number(body.extraPrice) >= 0 ? Number(body.extraPrice) : undefined;
+    const updated =
+      newExtra !== undefined
+        ? await prisma.productVariation.update({ where: { id: variationId }, data: { extraPrice: newExtra } })
+        : await prisma.productVariation.findUniqueOrThrow({ where: { id: variationId } });
 
-    if (owner && body.extraPrice !== undefined && Number(body.extraPrice) >= 0) {
+    if (newExtra !== undefined) {
       schedulePriceDrops([{ productId: owner.productId, oldPrice: owner.product.basePrice + owner.extraPrice, newPrice: owner.product.basePrice + updated.extraPrice }]);
     }
     return NextResponse.json({ success: true, variation: updated, snapshot: before.length ? await buildUndoToken(before) : null });

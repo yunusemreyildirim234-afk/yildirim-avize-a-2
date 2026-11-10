@@ -100,6 +100,7 @@ export default function AdminProductEditor({ product, onSaved, onSetActive, onSe
       const data = await api("PATCH", "/api/admin/product", {
         variationId: v.id,
         stock: Number(varEdits[v.id].stock),
+        prevStock: v.stock, // formun açıldığı andaki stok: sunucu yalnızca bu değer hâlâ geçerliyse yazar
         extraPrice: Number(varEdits[v.id].extraPrice),
       });
       onSaved?.(data.snapshot);

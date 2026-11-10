@@ -9,6 +9,7 @@ import { buildUndoToken, snapshotProducts, type UndoExtra } from "@/lib/admin-un
 import { bulkTiersOf, upsertTier } from "@/lib/bulk-pricing";
 import { FEATURED, getBestSellers } from "@/lib/products";
 import { nextPosition } from "@/lib/variation-input";
+import { STOCK_CHANGED_ERROR, StockConflict, applyStockEdits, planBulkStockSet } from "@/lib/stock-edit";
 import { planActive, planAddVariation, planBestSeller, planCategory, planFeatured } from "@/lib/bulk-plan";
 
 interface Plan {
@@ -151,7 +152,19 @@ async function POSTHandler(req: Request) {
       if (!Number.isFinite(value)) return NextResponse.json({ error: "Geçerli bir sayı giriniz." }, { status: 400 });
       if (body.mode === "set") {
         if (value < 0) return NextResponse.json({ error: "Stok negatif olamaz." }, { status: 400 });
-        await prisma.productVariation.updateMany({ where: { productId: { in: ids } }, data: { stock: value } });
+        // Mutlak yazım yok (lib/stock-edit.ts): her renk yalnızca stoğu hâlâ yöneticinin listede gördüğü değerdeyse yazılır; biri bile uyuşmazsa hiçbiri yazılmaz
+        const variationIds = (await prisma.productVariation.findMany({ where: { productId: { in: ids } }, select: { id: true } })).map((v) => v.id);
+        const stockPlan = planBulkStockSet(variationIds, body.expectedStock, value);
+        if (stockPlan.missing.length > 0) return NextResponse.json({ error: STOCK_CHANGED_ERROR }, { status: 409 });
+        try {
+          await prisma.$transaction(
+            (tx) => applyStockEdits(stockPlan.edits, async (id, expected, next) => (await tx.productVariation.updateMany({ where: { id, stock: expected }, data: { stock: next } })).count > 0),
+            { maxWait: 5000, timeout: 20000 },
+          );
+        } catch (e) {
+          if (e instanceof StockConflict) return NextResponse.json({ error: `${STOCK_CHANGED_ERROR} (${e.ids.length} renk)` }, { status: 409 });
+          throw e;
+        }
         return NextResponse.json({ snapshot: await done(), success: true, updated: ids.length, skipped });
       }
       // Artırma/azaltma: 0'ın altına inmez

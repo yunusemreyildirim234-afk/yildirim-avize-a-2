@@ -29,10 +29,11 @@ interface Props {
   extraCategories: string[]; // varsayılan listede olmayan mevcut koleksiyonlar
   onDone: () => void;
   maxTotalDiscountPct?: number | null; // genel toplam indirim üst sınırı (uyarı için)
+  expectedStock?: Record<string, number>; // seçili ürünlerin listede görünen stokları (variationId → stok); "stok = X" yalnızca bunlar hâlâ geçerliyse yazılır
 }
 
 // Seçili ürünler için toplu işlem çubuğu
-export default function AdminBulkBar({ ids, scopes, onApplied, extraCategories, categoryTitles = {}, onDone, maxTotalDiscountPct }: Props) {
+export default function AdminBulkBar({ ids, scopes, onApplied, extraCategories, categoryTitles = {}, onDone, maxTotalDiscountPct, expectedStock = {} }: Props) {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("stock");
   const [busy, setBusy] = useState(false);
@@ -130,7 +131,7 @@ export default function AdminBulkBar({ ids, scopes, onApplied, extraCategories, 
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (tab === "stock") return run({ action: "stock", mode: stockMode, value: Number(stockValue) });
+    if (tab === "stock") return run({ action: "stock", mode: stockMode, value: Number(stockValue), ...(stockMode === "set" ? { expectedStock } : {}) });
     if (tab === "rename") return run({ action: "rename", prefix, suffix });
     if (tab === "color") {
       return run({ action: "addVariation", variationValue: colorName, stock: Number(colorStock), extraPrice: Number(colorExtra) });
