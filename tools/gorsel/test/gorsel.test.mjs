@@ -19,76 +19,113 @@ async function piksel(buf, x, y) {
   return [...data];
 }
 
-test("beyaz zeminli dikey ürün: kırpılır, ürün KESİLMEZ; kare tuval kare, oran tuval oranı korur", async () => {
-  // 1200x1800 beyaz zemin, ortada 400x900 koyu ürün (x 400..800, y 450..1350)
-  const girdi = await resim(1200, 1800, "#ffffff", [[400, 450, 400, 900, "#3a2a1a"]]);
+/** Çıktıyı çözüp ham piksele erişir. */
+const ham = async (buf) => {
+  const { data, info } = await sharp(buf).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  return { w: info.width, h: info.height, at: (x, y) => [...data.subarray((y * info.width + x) * 3, (y * info.width + x) * 3 + 3)] };
+};
+const yakin = (a, b, tol = 6) => a.every((v, i) => Math.abs(v - b[i]) <= tol);
+
+test("gri stüdyo zeminli + Trendyol düz beyaz şeritleri: yalnızca şeritler atılır, PAY YOK, kenarda beyaz çerçeve yok", async () => {
+  // 1200x1800 beyaz; ortada 1200x1200 gri fotoğraf (y 300..1500), içinde koyu ürün
+  const girdi = await resim(1200, 1800, "#ffffff", [[0, 300, 1200, 1200, "#808080"], [450, 600, 300, 600, "#2a1a0a"]]);
   const s = await isle(girdi, ["kare", "oran"]);
-  assert.equal(s.beyazZemin, true);
   assert.equal(s.durum, "kirpildi");
-  // Korunan kutu ürünü tümüyle içerir ve pay bırakır
-  assert.ok(s.kutu.left <= 400 - 30 && s.kutu.top <= 450 - 30, JSON.stringify(s.kutu));
-  assert.ok(s.kutu.left + s.kutu.width >= 800 + 30 && s.kutu.top + s.kutu.height >= 1350 + 30, JSON.stringify(s.kutu));
-  assert.ok(s.kutu.width < 1200 && s.kutu.height < 1800);
-
-  const kare = await meta(s.ciktilar.kare.b);
-  assert.equal(kare.format, "webp");
-  assert.equal(kare.width, kare.height);
-  const oran = await meta(s.ciktilar.oran.b);
-  assert.ok(Math.abs(oran.width / oran.height - s.kutu.width / s.kutu.height) < 0.01);
-  // Kare tuvalin köşesi beyaz, ortası ürün rengi
-  const [r] = await piksel(s.ciktilar.kare.b, 2, 2);
-  assert.ok(r > 245);
-  const [mr] = await piksel(s.ciktilar.kare.b, Math.floor(kare.width / 2), Math.floor(kare.height / 2));
-  assert.ok(mr < 90);
-  // Küçük sürüm en çok 800 px
-  const k = await meta(s.ciktilar.kare.k);
-  assert.ok(Math.max(k.width, k.height) <= 800);
+  assert.deepEqual(s.kutu, { left: 0, top: 300, width: 1200, height: 1200 }); // tam şerit sınırı: pay eklenmedi
+  assert.equal(s.dolgu.tur, "renk");
+  const k = await ham(s.ciktilar.kare.b);
+  assert.deepEqual([k.w, k.h], [1200, 1200]);
+  for (const [x, y] of [[0, 0], [k.w - 1, 0], [0, k.h - 1], [k.w - 1, k.h - 1], [k.w >> 1, 0], [k.w >> 1, k.h - 1], [0, k.h >> 1], [k.w - 1, k.h >> 1]]) assert.ok(yakin(k.at(x, y), [128, 128, 128]), `kenar ${x},${y}: ${k.at(x, y)}`);
+  assert.ok(yakin(k.at(600, 600), [42, 26, 10], 12)); // ürün yerinde
+  const o = await meta(s.ciktilar.oran.b);
+  assert.deepEqual([o.width, o.height], [1200, 1200]);
 });
 
-test("soluk (kristal benzeri) kenar: pay sayesinde orijinal piksel olarak korunur", async () => {
-  // Koyu gövdenin iki yanında beyazdan neredeyse ayırt edilemeyen (#fcfcfc) 20 px'lik 'kristal' şeritler: eşik bunları ürün saymaz, pay geri getirir
-  const girdi = await resim(1000, 1000, "#ffffff", [[380, 300, 20, 400, "#fcfcfc"], [600, 300, 20, 400, "#fcfcfc"], [400, 300, 200, 400, "#202020"]]);
-  const s = await isle(girdi, ["oran"]);
+test("gri zeminli, kare olmayan fotoğraf: pay yok, boş kısımlar kenar rengiyle dolar, kenara dayalı ürün parçası kaybolmaz", async () => {
+  // 1200x1800 beyaz; 1200x800 gri fotoğraf (y 500..1300); kenara dayalı koyu parça (x 0..100)
+  const girdi = await resim(1200, 1800, "#ffffff", [[0, 500, 1200, 800, "#707070"], [0, 700, 100, 400, "#101010"]]);
+  const s = await isle(girdi, ["kare"]);
   assert.equal(s.durum, "kirpildi");
-  assert.ok(s.kutu.left <= 380 && s.kutu.left + s.kutu.width >= 620, JSON.stringify(s.kutu));
+  assert.deepEqual(s.kutu, { left: 0, top: 500, width: 1200, height: 800 });
+  assert.ok(["renk", "kenar"].includes(s.dolgu.tur));
+  const k = await ham(s.ciktilar.kare.b);
+  assert.deepEqual([k.w, k.h], [1200, 1200]);
+  // fotoğraf ortada (y 200..1000): üst/alt dolgu gri
+  assert.ok(yakin(k.at(600, 5), [112, 112, 112], 10), String(k.at(600, 5)));
+  assert.ok(yakin(k.at(1195, 1195), [112, 112, 112], 10), String(k.at(1195, 1195)));
+  assert.ok(yakin(k.at(50, 600), [16, 16, 16], 14));
+  for (let x = 0; x < k.w; x += 97) assert.ok(k.at(x, 0).every((v) => v < 200) && k.at(x, k.h - 1).every((v) => v < 200), `beyaz çerçeve x=${x}`);
 });
 
-test("belirgin soluk kenar (#f4f4f4) doğrudan ürün sayılır; kırık beyaz zeminde tuval zemin renginde olur (dikiş izi yok)", async () => {
-  const soluk = await isle(await resim(1000, 1000, "#ffffff", [[300, 300, 100, 400, "#f4f4f4"], [400, 300, 200, 400, "#202020"]]), ["oran"]);
-  assert.ok(soluk.kutu.left <= 300 - 20, JSON.stringify(soluk.kutu));
-  const kirik = await isle(await resim(900, 1500, "#f8f8f8", [[300, 400, 300, 700, "#202020"]]), ["kare"]);
-  assert.equal(kirik.durum, "kirpildi");
-  const m = await meta(kirik.ciktilar.kare.b);
-  assert.equal(m.width, m.height);
-  const [r] = await piksel(kirik.ciktilar.kare.b, 2, Math.floor(m.height / 2)); // eklenen tuval şeridi
-  assert.ok(r >= 246 && r <= 250, String(r));
+test("beyaz zeminli ürün (şeritli): HİÇ kırpılmaz, beyaz kare tuvale ortalanır, soluk kenarlarda piksel kaybı yok", async () => {
+  // 600x900 beyaz; ürün + açık gri (#f0f0f0) ve soluk kristal (#fcfcfc) parçalar
+  const girdi = await resim(600, 900, "#ffffff", [[100, 100, 400, 700, "#303030"], [60, 100, 40, 700, "#f0f0f0"], [500, 100, 30, 700, "#fcfcfc"]]);
+  const s = await isle(girdi, ["kare"]);
+  assert.equal(s.durum, "kirpilmadi");
+  assert.equal(s.dolgu.tur, "beyaz");
+  assert.deepEqual(s.kutu, { left: 0, top: 0, width: 600, height: 900 });
+  const k = await ham(s.ciktilar.kare.b);
+  assert.deepEqual([k.w, k.h], [900, 900]);
+  const dx = 150; // (900-600)/2
+  assert.ok(yakin(k.at(dx + 2, 2), [255, 255, 255], 3));
+  assert.ok(yakin(k.at(dx + 80, 400), [240, 240, 240], 4)); // açık gri parça korundu
+  assert.ok(yakin(k.at(dx + 515, 400), [252, 252, 252], 4)); // soluk kristal korundu
+  assert.ok(yakin(k.at(dx + 300, 450), [48, 48, 48], 8));
+  assert.ok(yakin(k.at(10, 450), [255, 255, 255], 2)); // yan dolgu beyaz
 });
 
-test("ortam fotoğrafı (zemin beyaz değil): kırpılmaz, tuval eklenmez, iki modda aynı oran", async () => {
-  const girdi = await resim(1200, 1800, "#8a7a6a", [[300, 300, 500, 900, "#f0e0c0"]]);
-  const s = await isle(girdi, ["kare", "oran"]);
-  assert.equal(s.beyazZemin, false);
-  assert.equal(s.durum, "zemin-beyaz-degil");
-  assert.deepEqual(s.kutu, { left: 0, top: 0, width: 1200, height: 1800 });
-  for (const t of ["kare", "oran"]) {
-    const m = await meta(s.ciktilar[t].b);
-    assert.deepEqual([m.width, m.height], [1067, 1600]);
+test("beyaza yakın (#f4f4f4) ve belirsiz (#e6e6e6) zeminli görsel: güvenli tarafta, kırpılmaz", async () => {
+  for (const zemin of ["#f4f4f4", "#e6e6e6"]) {
+    const s = await isle(await resim(800, 1200, "#ffffff", [[0, 100, 800, 1000, zemin], [350, 300, 100, 600, "#202020"]]), ["kare"]);
+    assert.equal(s.durum, "kirpilmadi", zemin);
+    assert.deepEqual(s.kutu, { left: 0, top: 0, width: 800, height: 1200 });
+    const k = await ham(s.ciktilar.kare.b);
+    assert.deepEqual([k.w, k.h], [1200, 1200]);
   }
 });
 
-test("aşırı kırpma güvenliği: ürün çok küçük kalacaksa kırpılmaz ve işaretlenir", async () => {
-  const girdi = await resim(1200, 1200, "#ffffff", [[550, 550, 100, 100, "#101010"]]);
-  const s = await isle(girdi, ["kare"]);
-  assert.equal(s.durum, "asiri-kirpma");
-  assert.deepEqual(s.kutu, { left: 0, top: 0, width: 1200, height: 1200 });
+test("saydam (PNG) görsel beyaza düzleşir ve beyaz zemin sayılır: kırpılmaz", async () => {
+  const urun = await sharp({ create: { width: 200, height: 300, channels: 3, background: "#303030" } }).png().toBuffer();
+  const png = await sharp({ create: { width: 500, height: 700, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } }).composite([{ input: urun, left: 150, top: 200 }]).png().toBuffer();
+  const s = await isle(png, ["kare"]);
+  assert.equal(s.durum, "kirpilmadi");
+  const k = await ham(s.ciktilar.kare.b);
+  assert.deepEqual([k.w, k.h], [700, 700]);
+  assert.ok(yakin(k.at(2, 2), [255, 255, 255], 2));
 });
 
-test("tümüyle beyaz ya da kenarsız görsel hata vermez; küçük görsel büyütülmez", async () => {
+test("ortam fotoğrafı (kenarlar tek renk değil, kare değil): kırpılmaz, kare tuvale konur, dolgu kenar pikselinden uzanır", async () => {
+  // 1000x1500; sol yarı koyu kahve, sağ yarı açık kahve, ortada nesne
+  const girdi = await resim(1000, 1500, "#5a4a3a", [[500, 0, 500, 1500, "#b09878"], [300, 500, 400, 500, "#e8d8b8"]]);
+  const s = await isle(girdi, ["kare"]);
+  assert.equal(s.durum, "kirpilmadi");
+  assert.deepEqual(s.kutu, { left: 0, top: 0, width: 1000, height: 1500 });
+  assert.equal(s.dolgu.tur, "kenar");
+  const k = await ham(s.ciktilar.kare.b);
+  assert.deepEqual([k.w, k.h], [1500, 1500]);
+  assert.ok(yakin(k.at(5, 700), [90, 74, 58], 10), String(k.at(5, 700))); // sol dolgu = sol kenar rengi
+  assert.ok(yakin(k.at(1495, 700), [176, 152, 120], 10), String(k.at(1495, 700))); // sağ dolgu = sağ kenar rengi
+  assert.ok(yakin(k.at(750, 750), [232, 216, 184], 10)); // nesne yerinde
+});
+
+test("tek renk stüdyo fotoğrafı (şeritsiz, kare değil): kırpılmaz, tek renkle doldurulur", async () => {
+  const s = await isle(await resim(800, 1000, "#6a7a8a", [[300, 400, 200, 200, "#f0f0f0"]]), ["kare"]);
+  assert.equal(s.durum, "kirpilmadi");
+  assert.equal(s.dolgu.tur, "renk");
+  const k = await ham(s.ciktilar.kare.b);
+  assert.deepEqual([k.w, k.h], [1000, 1000]);
+  assert.ok(yakin(k.at(3, 500), [106, 122, 138], 6));
+});
+
+test("tümüyle beyaz görsel hata vermez; küçük görsel büyütülmez; büyük sürüm ≤1600, küçük ≤800", async () => {
   const bos = await isle(await resim(600, 400, "#ffffff"), ["kare"]);
-  assert.ok(["kenar-yok", "asiri-kirpma"].includes(bos.durum), bos.durum);
-  const dolu = await isle(await resim(500, 500, "#ffffff", [[0, 250, 500, 250, "#222222"], [0, 0, 20, 20, "#ffffff"]]), ["oran"]);
-  const m = await meta(dolu.ciktilar.oran.b);
-  assert.ok(m.width <= 500 && m.height <= 500);
+  assert.equal(bos.durum, "kirpilmadi");
+  const buyuk = await isle(await resim(2400, 1800, "#ffffff", [[800, 600, 800, 600, "#202020"]]), ["kare"]);
+  const b = await meta(buyuk.ciktilar.kare.b);
+  const kk = await meta(buyuk.ciktilar.kare.k);
+  assert.deepEqual([b.width, b.height, kk.width, kk.height], [1600, 1600, 800, 800]);
+  const kucuk = await isle(await resim(300, 300, "#ffffff", [[100, 100, 100, 100, "#222222"]]), ["oran"]);
+  assert.equal((await meta(kucuk.ciktilar.oran.b)).width, 300);
 });
 
 test("kopyala (sahte Blob): iki sürüm yazar, manifest ve kota sayacı güncellenir; yeniden çalıştırma hiçbir şey yazmaz", async () => {
