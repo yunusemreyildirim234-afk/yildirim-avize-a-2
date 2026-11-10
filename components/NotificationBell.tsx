@@ -33,8 +33,10 @@ export default function NotificationBell() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
+  const scopeQs = pathname?.startsWith("/admin") ? "?scope=admin" : "?scope=user";
+
   const load = useCallback(() => {
-    fetch("/api/notifications", { cache: "no-store" })
+    fetch(`/api/notifications${scopeQs}`, { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (!d) return;
@@ -54,7 +56,7 @@ export default function NotificationBell() {
             const a = resolveLinkAction(window.location.pathname, n.link);
             if (a.kind === "navigate") router.push(a.href);
             else if (a.kind === "hash") goToHash(a.hash);
-            fetch("/api/notifications", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: n.id }) }).catch(() => {});
+            fetch(`/api/notifications${scopeQs}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: n.id }) }).catch(() => {});
           };
           toast.info(
             <div onClick={go} className={n.link ? "cursor-pointer" : ""}>
@@ -66,7 +68,7 @@ export default function NotificationBell() {
         }
       })
       .catch(() => {});
-  }, [router]);
+  }, [router, scopeQs]);
 
   useEffect(() => {
     // Sekme gizliyken istek atılmaz; tekrar görünür olunca hemen bir kez yenilenir.
@@ -96,7 +98,7 @@ export default function NotificationBell() {
   }, [open]);
 
   const post = (body: object) =>
-    fetch("/api/notifications", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).catch(() => {});
+    fetch(`/api/notifications${scopeQs}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).catch(() => {});
 
   const readAll = async () => {
     setItems((l) => l.map((n) => ({ ...n, read: true })));
@@ -109,7 +111,7 @@ export default function NotificationBell() {
     setItems([]);
     setUnread(0);
     try {
-      const res = await fetch("/api/notifications", { method: "DELETE" });
+      const res = await fetch(`/api/notifications${scopeQs}`, { method: "DELETE" });
       if (!res.ok) throw new Error();
     } catch {
       setItems(previous.items);

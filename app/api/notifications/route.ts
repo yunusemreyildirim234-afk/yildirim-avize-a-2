@@ -4,25 +4,22 @@ import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { ADMIN_COOKIE, verifyAdminSession } from "@/lib/session";
 import { getUserSession } from "@/lib/account";
+import { buildNotificationWhere, parseNotificationScope } from "@/lib/notification-scope";
 
-// Oturumdaki müşteri ve/veya yöneticiye ait bildirimleri kapsayan filtre
-async function scope(): Promise<Prisma.NotificationWhereInput | null> {
+// Oturumdaki müşteri ve/veya yöneticiye ait bildirimleri kapsayan filtre; ?scope=admin|user kümeyi tek tarafa daraltır
+async function scope(req: Request, mode: "read" | "delete" = "read") {
   const jar = await cookies();
   const [userSession, adminSession] = await Promise.all([
     getUserSession(),
     verifyAdminSession(jar.get(ADMIN_COOKIE)?.value),
   ]);
-  const or: Prisma.NotificationWhereInput[] = [];
-  if (userSession?.uid) {
-    const user = await prisma.user.findUnique({ where: { id: userSession.uid }, select: { id: true, email: true } });
-    if (user) or.push({ userId: user.id }, { userEmail: { equals: user.email, mode: "insensitive" } });
-  }
-  if (adminSession) or.push({ userId: null, userEmail: null });
-  return or.length ? { OR: or } : null;
+  const user = userSession?.uid ? await prisma.user.findUnique({ where: { id: userSession.uid }, select: { id: true, email: true } }) : null;
+  const wanted = parseNotificationScope(new URL(req.url).searchParams.get("scope"));
+  return buildNotificationWhere({ user, admin: Boolean(adminSession) }, wanted, mode) as Prisma.NotificationWhereInput | null;
 }
 
-export async function GET() {
-  const where = await scope();
+export async function GET(req: Request) {
+  const where = await scope(req);
   if (!where) return NextResponse.json({ items: [], unread: 0 });
   const [items, unread] = await Promise.all([
     prisma.notification.findMany({ where, orderBy: { createdAt: "desc" }, take: 40 }),
@@ -31,10 +28,10 @@ export async function GET() {
   return NextResponse.json({ items, unread });
 }
 
-// Oturumdaki müşterinin kendi bildirimlerini (yönetici oturumu varsa yönetici bildirimlerini de) tek seferde siler.
+// scope=admin|user yalnızca o kümeyi siler; scope yoksa müşteri oturumu varsa yalnızca müşterinin, yoksa yöneticinin kümesi silinir (çift oturumda diğer taraf silinmez).
 // Kapsam scope() ile sınırlıdır: müşteri yalnızca kendi kayıtlarını, yönetici kayıtları ise yalnızca geçerli yönetici oturumuyla silebilir.
-export async function DELETE() {
-  const where = await scope();
+export async function DELETE(req: Request) {
+  const where = await scope(req, "delete");
   if (!where) return NextResponse.json({ error: "Oturum yok" }, { status: 401 });
   const { count } = await prisma.notification.deleteMany({ where });
   return NextResponse.json({ success: true, deleted: count });
@@ -42,7 +39,7 @@ export async function DELETE() {
 
 // { all: true } tümünü, { id } tek bildirimi okundu yapar
 export async function POST(req: Request) {
-  const where = await scope();
+  const where = await scope(req);
   if (!where) return NextResponse.json({ error: "Oturum yok" }, { status: 401 });
   const body = await req.json().catch(() => ({}));
   const filter: Prisma.NotificationWhereInput =
