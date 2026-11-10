@@ -6,7 +6,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { argumanlar, bekleyenler, GUVENLI_SINIR, HOBBY_LIMIT, kaynakHash, kotaDurumu, sec, TUVALLER, urunKaynaklari } from "./lib/cekirdek.mjs";
+import { argumanlar, bekleyenler, GUVENLI_SINIR, HOBBY_LIMIT, blobMu, kaynakHash, kotaDurumu, sec, urunKaynaklari } from "./lib/cekirdek.mjs";
 import { baglan, pgDb } from "./lib/db.mjs";
 import { blobIstemcisi, indir } from "./lib/blob.mjs";
 import { isle, orijinalKucuk } from "./lib/gorsel.mjs";
@@ -24,8 +24,8 @@ async function urunleriOku() {
   }
 }
 
-/** Kuru çalıştırma: indirir, iki tuval varyantını da üretir, cikti/onizleme.html yazar. Blob'a ve veritabanına dokunmaz. */
-async function onizle(secili) {
+/** Kuru çalıştırma: indirir, seçili tuvalde (--tuval, varsayılan kare) v2 çıktısını üretir, cikti/onizleme.html yazar. Blob'a ve veritabanına dokunmaz. */
+async function onizle(secili, tuval) {
   const dizin = join(CIKTI, "onizleme");
   mkdirSync(dizin, { recursive: true });
   const kaydet = (ad, buf) => {
@@ -36,13 +36,18 @@ async function onizle(secili) {
   let n = 0;
   for (const u of secili) {
     const gorseller = [];
+    const ters = new Map(Object.entries(u.imageMap ?? {}));
     for (const url of urunKaynaklari(u)) {
       const h = kaynakHash(url);
       try {
         const buf = await indir(url);
-        const s = await isle(buf, TUVALLER);
-        const varyant = (t) => ({ dosya: kaydet(`${h}-${t}.webp`, s.ciktilar[t].k), w: s.ciktilar[t].w, h: s.ciktilar[t].h, baytB: s.ciktilar[t].b.length, baytK: s.ciktilar[t].k.length });
-        gorseller.push({ url, orijinal: kaydet(`${h}-orijinal.webp`, await orijinalKucuk(buf)), orijinalBayt: buf.length, kaynak: s.kaynak, kutu: s.kutu, durum: s.durum, kare: varyant("kare"), oran: varyant("oran") });
+        const s = await isle(buf, [tuval]);
+        const c = s.ciktilar[tuval];
+        // ÖNCE: ürün şu an v1 (ya da başka) Blob görseli tutuyorsa onun küçük (-k) sürümü
+        const v1 = ters.get(url);
+        let once = null;
+        if (blobMu(v1)) once = await indir(v1.replace(/-b.webp$/, "-k.webp")).then((b) => ({ dosya: kaydet(`${h}-once.webp`, b) })).catch(() => null);
+        gorseller.push({ url, orijinal: kaydet(`${h}-orijinal.webp`, await orijinalKucuk(buf)), orijinalBayt: buf.length, kaynak: s.kaynak, kutu: s.kutu, durum: s.durum, dolgu: s.dolgu, once, tuval, sonra: { dosya: kaydet(`${h}-v2-${tuval}.webp`, c.k), w: c.w, h: c.h, baytB: c.b.length, baytK: c.k.length } });
       } catch (e) {
         gorseller.push({ url, hata: e instanceof Error ? e.message : String(e) });
       }
@@ -62,7 +67,7 @@ export async function ana(argv) {
   const urunler = await urunleriOku();
   const secili = sec(urunler, a, (u) => urunKaynaklari(u).length > 0);
   if (secili.length === 0) return console.log("Kopyalanacak Trendyol görseli olan ürün yok.");
-  if (a.dryRun) return onizle(secili);
+  if (a.dryRun) return onizle(secili, a.tuval);
 
   const manifest = manifestOku();
   const is = bekleyenler(secili, manifest, a.tuval);

@@ -174,16 +174,22 @@ test("kopyala: hata olan görsel atlanır ve raporlanır; sonraki koşu kaldığ
   assert.equal(blob.dosyalar.size, 4);
 });
 
-test("onizlemeHtml: iki varyant yan yana, kırpma kutusu yüzdeyle, metin kaçışlı", () => {
+test("onizlemeHtml: orijinal + önce + sonra, etiketler, kırpma kutusu yüzdeyle, metin kaçışlı", () => {
   const v = { dosya: "onizleme/x.webp", w: 800, h: 800, baytB: 90000, baytK: 30000 };
   const html = onizlemeHtml([{ modelCode: "7", title: "Kristal <Avize> & Co", gorseller: [
-    { url: T("a"), orijinal: "onizleme/o.webp", orijinalBayt: 200000, kaynak: { w: 1200, h: 1800 }, kutu: { left: 300, top: 450, width: 600, height: 900 }, durum: "kirpildi", kare: v, oran: v },
-    { url: T("b"), hata: "indirilemedi: HTTP 404" },
+    { url: T("a"), orijinal: "onizleme/o.webp", orijinalBayt: 200000, kaynak: { w: 1200, h: 1800 }, kutu: { left: 0, top: 300, width: 1200, height: 1200 }, durum: "kirpildi", dolgu: { tur: "renk", renk: { r: 128, g: 128, b: 128 } }, once: { dosya: "onizleme/once.webp" }, tuval: "kare", sonra: v },
+    { url: T("b"), orijinal: "onizleme/o2.webp", orijinalBayt: 1, kaynak: { w: 1000, h: 1000 }, kutu: { left: 0, top: 0, width: 1000, height: 1000 }, durum: "kirpilmadi", dolgu: { tur: "beyaz", renk: { r: 255, g: 255, b: 255 } }, once: null, tuval: "kare", sonra: v },
+    { url: T("c"), hata: "indirilemedi: HTTP 404" },
   ] }], { tarih: "T" });
   assert.match(html, /Kristal &lt;Avize&gt; &amp; Co/);
-  assert.match(html, /left:25\.00%;top:25\.00%;width:50\.00%;height:50\.00%/);
-  assert.match(html, /\(a\) --tuval kare/);
-  assert.match(html, /\(b\) --tuval oran/);
+  assert.ok(html.includes("left:0.00%;top:16.67%;width:100.00%;height:66.67%"));
+  assert.ok(html.includes("Kırpıldı (yalnızca düz beyaz şeritler)"));
+  assert.ok(html.includes("Kırpılmadı"));
+  assert.ok(html.includes("dolgu: tek renk (rgb 128, 128, 128)"));
+  assert.ok(html.includes("dolgu: beyaz"));
+  assert.ok(html.includes("<strong>ÖNCE</strong> (şu an canlı, v1)"));
+  assert.ok(html.includes("v1 yok"));
+  assert.ok(html.includes("SONRA (v2, --tuval kare)"));
   assert.match(html, /HATA: indirilemedi: HTTP 404/);
-  assert.match(html, /1 ürün, 2 görsel · 1 uyarı/);
+  assert.match(html, /1 ürün, 3 görsel · 1 uyarı/);
 });
