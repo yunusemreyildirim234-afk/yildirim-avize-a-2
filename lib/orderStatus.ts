@@ -73,13 +73,14 @@ export const ORDER_GROUPS = [
   { key: "iade", label: "İade edilen", test: (o: GroupInput) => o.status === "RETURNED" },
   // Müşteri iptal/iade talebi var ve henüz karara bağlanmamış (diğer gruplarla çakışabilir)
   { key: "talep", label: "Talep bekleyen", test: (o: GroupInput) => o.cancelReturnStatus === "PENDING" },
-  { key: "odeme", label: "Ödeme bekliyor / başarısız", test: (o: GroupInput) => o.status === "AWAITING_PAYMENT" || o.status === "PAYMENT_FAILED" },
+  // Havale onayı bekleyen (PENDING_NEW) sipariş hem "Yeni gelen"de hem burada sayılır (talep çipi gibi çakışan grup); etiket bunu belirtir
+  { key: "odeme", label: "Ödeme bekliyor / başarısız (havale dahil)", test: (o: GroupInput) => o.status === "AWAITING_PAYMENT" || o.status === "PAYMENT_FAILED" || o.status === "PENDING_NEW" },
 ] as const;
 
 export type OrderGroupKey = (typeof ORDER_GROUPS)[number]["key"];
 export const ALL_GROUP_KEYS: OrderGroupKey[] = ORDER_GROUPS.map((g) => g.key);
 
-import { chipState } from "@/lib/filter-chips";
+import { chipState } from "./filter-chips.ts";
 
 /** ?durum= yokken açılışta seçili gruplar: iptal, iade, teslim edilen ve ödeme bekleyenler gizlidir. */
 export const DEFAULT_GROUP_KEYS: OrderGroupKey[] = ["yeni", "hazir", "kargoda", "talep"];
