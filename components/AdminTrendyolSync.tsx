@@ -56,7 +56,14 @@ async function call(body: object) {
   return data;
 }
 
-export default function AdminTrendyolSync({ initial = { modes: DEFAULT_SYNC_MODES, fromSaved: false } }: { initial?: { modes: SyncModes; fromSaved: boolean } }) {
+export default function AdminTrendyolSync({
+  initial = { modes: DEFAULT_SYNC_MODES, fromSaved: false },
+  uncopiedImages = 0,
+}: {
+  initial?: { modes: SyncModes; fromSaved: boolean };
+  /** Henüz Blob'a kopyalanmamış (Trendyol'dan doğrudan gösterilen) görsel sayısı */
+  uncopiedImages?: number;
+}) {
   const router = useRouter();
   const [settings, setSettings] = useState<Settings>({ ...initial.modes });
   const [saved, setSaved] = useState<Settings>({ ...initial.modes }); // kayıtlı değer: yalnızca formu önceden doldurur
@@ -169,6 +176,11 @@ export default function AdminTrendyolSync({ initial = { modes: DEFAULT_SYNC_MODE
 
   return (
     <div className="p-6 space-y-4">
+      {uncopiedImages > 0 && (
+        <p role="note" data-testid="kopyalanmamis-gorsel" className="text-xs text-amber-900 font-semibold bg-amber-50 border border-amber-300 rounded-lg p-3">
+          {uncopiedImages} görsel henüz kopyalanmadı; Trendyol adresinden doğrudan gösteriliyor. Kopyalamak için bilgisayarda <code className="font-mono">tools/gorsel</code> içinde önce <code className="font-mono">npm run kopyala</code>, sonra <code className="font-mono">npm run yaz</code> çalıştırılır.
+        </p>
+      )}
       <div className="space-y-1">
         <p className="text-xs text-neutral-600">Önce &quot;Önizle&quot; ile değişecekleri görün, sonra seçtiklerinizi uygulayın. Önizleme hiçbir şey yazmaz. Bu sürümde Geri Al yoktur.</p>
         <p className="text-xs text-amber-900 font-semibold">İlk &quot;Elle değiştirdiklerimi koru&quot; çalıştırması çoğunlukla yalnızca karşılaştırma kaydı kurar; stok/fiyatı ilk kez Trendyol&apos;a eşitlemek için o satırı &quot;Ezerek&quot; seçin.</p>

@@ -48,7 +48,7 @@ import { orderItemProductView } from "@/lib/order-item-product";
 import { adminOrderHref } from "@/lib/admin-order-detail";
 import { deleteButtonLabel, deleteConfirmText } from "@/lib/bulk-delete";
 import { inDateRange, matchesOrderSearch, resolveDateRange } from "@/lib/admin-order-search";
-import { smallImage } from "@/lib/img";
+import { countUncopiedImages, smallImage } from "@/lib/img";
 
 // Büyük ve ilk görünümde kapalı bölümlerde duran bileşenler ayrı parçada yüklenir (davranış aynı)
 const AdminProductList = nextDynamic(() => import("@/components/AdminProductList"));
@@ -241,7 +241,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
 
         {/* Trendyol ürün senkronizasyonu (varsayılan kapalı; bileşen state'i gövde gizliyken de korunur) */}
         <AdminSection id="trendyol" icon={<ShoppingBag aria-hidden="true" className="w-4 h-4 text-amber-600" />} title="Trendyol Ürünleri" description="Mağazadaki ürünleri, fiyat ve stokları Trendyol'dan önizleyip seçerek güncelleyin.">
-          <AdminTrendyolSync initial={resolveSyncModes(homeRaw)} />
+          <AdminTrendyolSync initial={resolveSyncModes(homeRaw)} uncopiedImages={countUncopiedImages(products.flatMap((p) => [p.images, [p.imageUrl], ...p.variations.map((v) => v.images)]))} />
         </AdminSection>
 
         {/* 1. Özet İstatistik Kartları */}
