@@ -168,6 +168,12 @@ export default function AdminCategories({ entries, settings, uncategorized, show
             </label>
           </div>
 
+          {entries.some((e) => e.fixed) && (
+            <p className="text-[11px] text-neutral-500">
+              <strong className="text-neutral-700">Sabit kategoriler:</strong> yalnızca sitede görünen ad değişir, sayfa adresi aynı kalır. Menüden gizlenen kategori menüde, alt bilgide, ana sayfada ve arama motorlarına bildirilen sayfa listesinde görünmez; adresi ve ürünleri çalışmaya devam eder.
+            </p>
+          )}
+
           <ul className="space-y-3">
             {entries.map((e) => {
               const s = settings[e.key];
@@ -228,7 +234,6 @@ export default function AdminCategories({ entries, settings, uncategorized, show
                       <option value="hide">Gizle</option>
                     </select>
                   </div>
-                  {e.fixed && <p className="text-[11px] text-neutral-500">Veritabanı adı ve adres değişmez; yalnızca sitede görünen ad değişir. Gizli kategori menü, alt bilgi, ana sayfa satırı ve sitemap&apos;ten çıkar; adresi ve ürünleri çalışmaya devam eder.</p>}
                 </li>
               );
             })}

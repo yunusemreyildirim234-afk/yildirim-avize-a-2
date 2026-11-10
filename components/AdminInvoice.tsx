@@ -24,7 +24,7 @@ export default function AdminInvoice({ orderId, state, meta }: Props) {
   const url = `/api/admin/orders/${orderId}/invoice`;
 
   if (state === "missing") {
-    return <p className="mt-2 text-[11px] text-neutral-500 border border-dashed border-neutral-300 rounded-lg px-3 py-2">Fatura özelliği için veritabanı güncellemesi bekleniyor.</p>;
+    return <p className="mt-2 text-[11px] text-neutral-500 border border-dashed border-neutral-300 rounded-lg px-3 py-2">Fatura özelliği henüz kullanıma hazır değil; siteyi kuran kişinin bir güncelleme yapması gerekiyor.</p>;
   }
   if (state === "error") {
     return <p className="mt-2 text-[11px] text-red-700 border border-red-200 bg-red-50 rounded-lg px-3 py-2">Fatura bilgisi şu anda okunamadı. Sayfayı yenileyip tekrar deneyin.</p>;

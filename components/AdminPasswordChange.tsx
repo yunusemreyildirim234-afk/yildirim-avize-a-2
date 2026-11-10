@@ -68,7 +68,7 @@ export default function AdminPasswordChange() {
   return (
     <div className="p-6 space-y-4">
       <div>
-        <p className="text-xs text-neutral-500">Ortak .env kimliği Vercel ortam değişkenlerinden değiştirilir. Bu bölüm yalnızca veritabanındaki yönetici hesapları içindir.</p>
+        <p className="text-xs text-neutral-500">Bu bölüm, kendi e-posta adresiyle giriş yapan yönetici hesaplarının şifresini değiştirir. Ortak (yedek) yönetici şifresi buradan değiştirilemez; onun için siteyi kuran kişiye başvurun.</p>
         <p className="text-xs text-amber-800 font-semibold mt-1">Şifre değişince tüm yönetici oturumları kapanır; diğer yöneticiler yeniden giriş yapmalıdır (bu oturum açık kalır).</p>
       </div>
 

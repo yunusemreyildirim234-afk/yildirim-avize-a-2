@@ -129,7 +129,7 @@ export default function AdminTwoFactor({ admins }: { admins: AdminRow[] }) {
         </p>
       </div>
 
-      {admins.length === 0 && <p className="text-xs text-neutral-500">Veritabanında yönetici hesabı bulunamadı.</p>}
+      {admins.length === 0 && <p className="text-xs text-neutral-500">Kayıtlı yönetici hesabı bulunamadı.</p>}
       <ul className="divide-y divide-neutral-100 border border-neutral-200 rounded-xl">
         {admins.map((a) => {
           const btn = twoFactorButton(a.twoFactorEnabled);
