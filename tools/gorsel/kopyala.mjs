@@ -47,7 +47,7 @@ async function onizle(secili, tuval) {
         const v1 = ters.get(url);
         let once = null;
         if (blobMu(v1)) once = await indir(v1.replace(/-b.webp$/, "-k.webp")).then((b) => ({ dosya: kaydet(`${h}-once.webp`, b) })).catch(() => null);
-        gorseller.push({ url, orijinal: kaydet(`${h}-orijinal.webp`, await orijinalKucuk(buf)), orijinalBayt: buf.length, kaynak: s.kaynak, kutu: s.kutu, durum: s.durum, dolgu: s.dolgu, once, tuval, sonra: { dosya: kaydet(`${h}-v2-${tuval}.webp`, c.k), w: c.w, h: c.h, baytB: c.b.length, baytK: c.k.length } });
+        gorseller.push({ url, orijinal: kaydet(`${h}-orijinal.webp`, await orijinalKucuk(buf)), orijinalBayt: buf.length, kaynak: s.kaynak, kutu: s.kutu, durum: s.durum, dolgu: s.dolgu, once, tuval, sonra: { dosya: kaydet(`${h}-v2-${tuval}.webp`, c.k), buyuk: kaydet(`${h}-v2-${tuval}-b.webp`, c.b), w: c.w, h: c.h, baytB: c.b.length, baytK: c.k.length } });
       } catch (e) {
         gorseller.push({ url, hata: e instanceof Error ? e.message : String(e) });
       }

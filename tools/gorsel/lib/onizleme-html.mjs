@@ -7,15 +7,15 @@ const DURUM = {
   kirpildi: ["Kırpıldı (yalnızca düz beyaz şeritler)", "ok"],
   kirpilmadi: ["Kırpılmadı", "bilgi"],
 };
-const DOLGU = { beyaz: "dolgu: beyaz", renk: "dolgu: tek renk", kenar: "dolgu: kenar pikseli uzatıldı" };
-const dolguEtiketi = (d) => (d ? `${DOLGU[d.tur] ?? d.tur}${d.tur === "renk" ? ` (rgb ${d.renk.r}, ${d.renk.g}, ${d.renk.b})` : ""}` : "");
+const DOLGU = { beyaz: "dolgu: beyaz", bulanik: "dolgu: bulanık arka plan", yok: "dolgu yok (kareye çok yakın)" };
+const dolguEtiketi = (d) => (d ? DOLGU[d.tur] ?? d.tur : "");
 
 /**
- * urunler: [{ modelCode, title, gorseller: [{ url, orijinal, orijinalBayt, kaynak: {w,h}, kutu, durum, dolgu, once: { dosya } | null, sonra: { dosya, w, h, baytB, baytK }, tuval, hata? }] }]
+ * urunler: [{ modelCode, title, gorseller: [{ url, orijinal, orijinalBayt, kaynak: {w,h}, kutu, durum, dolgu, once: { dosya } | null, sonra: { dosya, buyuk, w, h, baytB, baytK }, tuval, hata? }] }]
  * dosya alanları sayfaya göre göreli yoldur.
  */
 export function onizlemeHtml(urunler, { tarih = new Date().toISOString() } = {}) {
-  const sekil = (baslik, v) => `<figure><div class="cerceve"><img loading="lazy" src="${kac(v.dosya)}" alt=""></div><figcaption><strong>${baslik}</strong><br>${v.w} × ${v.h} px · büyük ${kb(v.baytB)} · küçük ${kb(v.baytK)}</figcaption></figure>`;
+  const sekil = (baslik, v) => `<figure><div class="cerceve"><a href="${kac(v.buyuk ?? v.dosya)}" target="_blank" rel="noopener"><img loading="lazy" src="${kac(v.dosya)}" alt=""></a></div><figcaption><strong>${baslik}</strong><br>${v.w} × ${v.h} px · büyük ${kb(v.baytB)} · küçük ${kb(v.baytK)}</figcaption></figure>`;
   const satir = (g) => {
     if (g.hata) return `<div class="satir"><p class="rozet uyari">HATA: ${kac(g.hata)}</p><p class="adres">${kac(g.url)}</p></div>`;
     const [etiket, sinif] = DURUM[g.durum] ?? [g.durum, "bilgi"];
@@ -29,6 +29,9 @@ ${sekil(`SONRA (v2, --tuval ${g.tuval})`, g.sonra)}
 </div></div>`;
   };
   const bolum = (u) => `<section><h2>${kac(u.modelCode ?? "—")} · ${kac(u.title)}</h2>${u.gorseller.map(satir).join("\n")}</section>`;
+  // Dikiş kontrolü için bulanık dolgulu ilk görselin büyük (tam boy) hâli
+  const ornek = urunler.flatMap((u) => u.gorseller).find((g) => !g.hata && g.dolgu?.tur === "bulanik");
+  const buyukOrnek = ornek ? `<section><h2>Dikiş kontrolü (büyük örnek: bulanık dolgulu ilk görsel)</h2><p class="ozet">Fotoğraf ile dolgu birleşiminde dikey/yatay çizgi olmamalı. Tam boy için görsele tıklayın.</p><a href="${kac(ornek.sonra.buyuk ?? ornek.sonra.dosya)}" target="_blank" rel="noopener"><img class="dev" src="${kac(ornek.sonra.buyuk ?? ornek.sonra.dosya)}" alt=""></a></section>` : "";
   const toplam = urunler.reduce((n, u) => n + u.gorseller.length, 0);
   const uyari = urunler.reduce((n, u) => n + u.gorseller.filter((g) => g.hata).length, 0);
   return `<!doctype html>
@@ -40,6 +43,7 @@ h1{font-size:20px;margin:0 0 4px}h2{font-size:16px;margin:32px 0 8px;padding-top
 .uclu{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:start}
 @media(max-width:800px){.uclu{grid-template-columns:1fr}}
 figure{margin:0}.cerceve{background:#52525b;padding:8px;border-radius:8px;display:flex;justify-content:center}
+.dev{display:block;width:min(100%,1000px);height:auto;background:#52525b}
 .cerceve.bos{align-items:center;min-height:120px;color:#d4d4d8;font-size:12px}
 .cerceve img{display:block;max-width:100%;max-height:420px;height:auto}
 .ust{position:relative;display:inline-block;line-height:0}.kutu{position:absolute;border:2px solid #ef4444;box-sizing:border-box;pointer-events:none}
@@ -50,6 +54,7 @@ figcaption{font-size:12px;color:#d4d4d8;margin-top:6px}
 <h1>Görsel önizleme (kuru çalıştırma)</h1>
 <p class="ozet">${urunler.length} ürün, ${toplam} görsel · ${uyari} uyarı · ${kac(tarih)}</p>
 <p class="ozet">Koyu zemin, tuvalin kenarlarını gösterir. Her görsel kare tuvaldedir; hiçbir ürün pikseli kesilmez, kırpma yalnızca düz beyaz şeritleri atar. Hiçbir şey yüklenmedi, veritabanına yazılmadı.</p>
+${buyukOrnek}
 ${urunler.map(bolum).join("\n")}
 </body></html>
 `;
