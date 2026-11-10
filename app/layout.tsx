@@ -9,6 +9,8 @@ import CookieBanner from "@/components/CookieBanner";
 import GoogleTagManager from "@/components/GoogleTagManager";
 import ToastLinkRouter from "@/components/ToastLinkRouter";
 import SkipLink from "@/components/SkipLink";
+import HideOnAdmin from "@/components/HideOnAdmin";
+import AdminTopBar from "@/components/AdminTopBar";
 import { getGalleryPhotoCount } from "@/lib/customer-gallery";
 import { getExtraCategoryLinks, getFixedCategoryOverrides } from "@/lib/category-list";
 import { CartProvider } from "@/context/CartContext";
@@ -86,9 +88,14 @@ export default async function RootLayout({
         <SkipLink />
         <CartProvider>
           <WishlistProvider>
-            <Navbar extraCategories={extraCategories} fixedOverrides={fixedOverrides} showGallery={showGallery} />
+            {/* Yönetim panelinde mağaza menüsü ve alt bilgi yerine sade admin üst çubuğu */}
+            <HideOnAdmin fallback={<AdminTopBar />}>
+              <Navbar extraCategories={extraCategories} fixedOverrides={fixedOverrides} showGallery={showGallery} />
+            </HideOnAdmin>
             {children}
-            <Footer extraCategories={extraCategories} fixedOverrides={fixedOverrides} showGallery={showGallery} />
+            <HideOnAdmin>
+              <Footer extraCategories={extraCategories} fixedOverrides={fixedOverrides} showGallery={showGallery} />
+            </HideOnAdmin>
             <WhatsAppButton />
             <CookieBanner />
             <GoogleTagManager />
