@@ -8,6 +8,7 @@ import { createShipmentForOrder } from "@/lib/kargonomi";
 import { notifyAdmins, notifyCustomer } from "@/lib/notifications";
 import { cleanGuestEmail } from "@/lib/guest-email";
 import { restoreStockInTx, type RestoreTx } from "@/lib/stock-restore";
+import { finalizePaidOrder } from "@/lib/order-finalize";
 
 // Havuz küçük (max 3): interaktif işlemler kısa sürede bitmeli veya hata vermeli
 const TX_OPTIONS = { maxWait: 5000, timeout: 10000 };
@@ -221,27 +222,25 @@ export async function finalizeOrder(orderId: string, opts: { awaitPayment?: bool
     return true;
   }
 
-  const claimed = await prisma.order.updateMany({
-    where: { id: orderId, status: { in: ["AWAITING_PAYMENT", "PENDING_NEW"] } },
-    data: { status: "PENDING" },
+  // Gönderi + bildirim + e-posta en iyi çabadır (lib/order-finalize.ts): hata callback'i 500'e düşürüp bu adımları kalıcı olarak atlatmaz
+  return finalizePaidOrder({
+    claim: async () => (await prisma.order.updateMany({ where: { id: orderId, status: { in: ["AWAITING_PAYMENT", "PENDING_NEW"] } }, data: { status: "PENDING" } })).count > 0,
+    deductStock: () => deductOrderStock(orderId),
+    announce: async () => announceNewOrder(await createShipmentIfNeeded(await loadOrder(orderId))),
   });
-  if (claimed.count === 0) return false;
-
-  await deductOrderStock(orderId);
-  const order = await createShipmentIfNeeded(await loadOrder(orderId));
-  await announceNewOrder(order);
-  return true;
 }
 
 /** Yönetici havale ödemesini onaylar: PENDING_NEW → PENDING (hazırlanıyor), gönderi oluşturulur, müşteriye bildirim gider. */
 export async function confirmBankPayment(orderId: string): Promise<boolean> {
-  const claimed = await prisma.order.updateMany({ where: { id: orderId, status: "PENDING_NEW" }, data: { status: "PENDING" } });
-  if (claimed.count === 0) return false;
-  await deductOrderStock(orderId); // rezerve edilmemişse (eski kayıtlar) düşer; bayrak çift düşümü engeller
-  const order = await createShipmentIfNeeded(await loadOrder(orderId));
-  await notifyCustomer(
-    { userId: order.userId },
-    { title: "Ödemeniz onaylandı", message: `#${order.id.slice(0, 8)} siparişinizin havale ödemesi onaylandı, siparişiniz hazırlanıyor.`, type: "ORDER", link: "/giris#siparisler" }
-  );
-  return true;
+  return finalizePaidOrder({
+    claim: async () => (await prisma.order.updateMany({ where: { id: orderId, status: "PENDING_NEW" }, data: { status: "PENDING" } })).count > 0,
+    deductStock: () => deductOrderStock(orderId), // rezerve edilmemişse (eski kayıtlar) düşer; bayrak çift düşümü engeller
+    announce: async () => {
+      const order = await createShipmentIfNeeded(await loadOrder(orderId));
+      await notifyCustomer(
+        { userId: order.userId },
+        { title: "Ödemeniz onaylandı", message: `#${order.id.slice(0, 8)} siparişinizin havale ödemesi onaylandı, siparişiniz hazırlanıyor.`, type: "ORDER", link: "/giris#siparisler" }
+      );
+    },
+  });
 }

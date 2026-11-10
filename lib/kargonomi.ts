@@ -48,10 +48,14 @@ export function kargonomiHeaders(): Record<string, string> {
   return { Authorization: `Bearer ${token}`, Accept: "application/json" };
 }
 
+/** Kargonomi yanıt vermezse istek bu süre (ms) sonunda kesilir; asılı kalan çağrı ödeme bildirimini veya yönetici işlemini kilitlemesin. */
+export const KARGONOMI_TIMEOUT_MS = 15_000;
+
 export async function kargonomiRaw(path: string, init: RequestInit = {}): Promise<Response> {
   return fetch(`${BASE_URL}${path}`, {
     ...init,
     cache: "no-store",
+    signal: init.signal ?? AbortSignal.timeout(KARGONOMI_TIMEOUT_MS),
     headers: { ...kargonomiHeaders(), ...(init.headers as Record<string, string> | undefined) },
   });
 }

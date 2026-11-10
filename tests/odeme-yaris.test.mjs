@@ -88,3 +88,35 @@ test("bulgu 2: ödeme bekleyen sipariş son 2 saatte oluşturulduysa silinemez; 
   assert.equal(isPaymentInFlight({ status: "AWAITING_PAYMENT", createdAt: ago(121) }, now), false);
   for (const s of ["PAYMENT_FAILED", "CANCELLED", "PENDING", "PENDING_NEW", "DELIVERED"]) assert.equal(isPaymentInFlight({ status: s, createdAt: ago(5) }, now), false, s);
 });
+
+// ---- Bulgu 6: ödeme sonrası yan etkiler en iyi çaba; Kargonomi çağrıları zaman aşımlı ----
+import { readFileSync } from "node:fs";
+import { finalizePaidOrder } from "../lib/order-finalize.ts";
+
+test("bulgu 6: gönderi/e-posta adımı hata verse de sipariş işlenmiş sayılır (callback 500 dönmez), hata loglanır", async () => {
+  const logs = [];
+  const calls = [];
+  const done = await finalizePaidOrder({
+    claim: async () => { calls.push("claim"); return true; },
+    deductStock: async () => { calls.push("stock"); },
+    announce: async () => { calls.push("announce"); throw new Error("Resend yanıt vermedi"); },
+    log: (...a) => logs.push(a.join(" ")),
+  });
+  assert.equal(done, true);
+  assert.deepEqual(calls, ["claim", "stock", "announce"]);
+  assert.ok(logs[0].includes("Resend yanıt vermedi"));
+});
+
+test("bulgu 6: sahiplenme kaybedilirse stok ve bildirim adımı hiç çalışmaz; stok hatası yutulmaz", async () => {
+  const calls = [];
+  assert.equal(await finalizePaidOrder({ claim: async () => false, deductStock: async () => calls.push("stock"), announce: async () => calls.push("announce") }), false);
+  assert.deepEqual(calls, []);
+  await assert.rejects(finalizePaidOrder({ claim: async () => true, deductStock: async () => { throw new Error("stok tx"); }, announce: async () => calls.push("announce") }), /stok tx/);
+  assert.deepEqual(calls, [], "stok düşümü başarısızsa bildirim gitmez");
+});
+
+test("bulgu 6: Kargonomi istekleri AbortSignal.timeout ile sınırlı ve tek fetch noktasından geçer", () => {
+  const src = readFileSync(new URL("../lib/kargonomi.ts", import.meta.url), "utf8");
+  assert.match(src, /signal:\s*init\.signal\s*\?\?\s*AbortSignal\.timeout\(KARGONOMI_TIMEOUT_MS\)/);
+  assert.equal(src.match(/\bfetch\(/g).length, 1, "zaman aşımsız ikinci bir fetch eklenmemeli");
+});
