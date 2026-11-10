@@ -15,14 +15,14 @@ import { canViewOrderDetails } from "@/lib/order-access";
 import { trackState } from "@/lib/orderStatus";
 import { WHATSAPP_NUMBER } from "@/lib/site";
 import CopyCodeButton from "@/components/CopyCodeButton";
-import { bankPaymentDeadline, breakdownOf, breakdownRows, formatIstanbul } from "@/lib/order-display";
+import { bankPaymentDeadline, breakdownOf, breakdownRows, formatIstanbul, orderCode } from "@/lib/order-display";
 
 export const metadata: Metadata = {
   title: "Siparişiniz Alındı",
   robots: { index: false, follow: false },
 };
 
-const waLink = (id: string) => `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Merhaba, ${id} numaralı siparişim hakkında bilgi almak istiyorum.`)}`;
+const waLink = (id: string) => `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Merhaba, ${orderCode(id)} kodlu siparişim hakkında bilgi almak istiyorum.`)}`;
 
 function ClosedNote({ id, returned }: { id: string; returned: boolean }) {
   return (
@@ -57,8 +57,8 @@ export default async function OrderConfirmationPage({ params }: { params: Promis
           <h1 className="text-2xl sm:text-3xl font-serif font-bold text-neutral-900 text-center">Sipariş Durumu</h1>
           <dl className="bg-neutral-50 border border-neutral-200 rounded-2xl p-5 text-xs space-y-3">
             <div>
-              <dt className="text-neutral-500">Sipariş Numarası:</dt>
-              <dd className="font-mono font-bold text-neutral-800 break-all">{order.id}</dd>
+              <dt className="text-neutral-500">Sipariş Kodu:</dt>
+              <dd className="font-mono font-bold text-neutral-800 break-all">{orderCode(order.id)}</dd>
             </div>
             <div className="pt-3 border-t border-neutral-200">
               <dt className="text-neutral-500">Durum:</dt>
@@ -107,7 +107,7 @@ export default async function OrderConfirmationPage({ params }: { params: Promis
       {purchase && <GtmEvent event={purchase} onceKey={purchaseOnceKey(order.id)} />}
       {awaitingPayment && <GtmAwaitPayment />}
       {!paymentFailed && order.status !== "CANCELLED" && order.status !== "RETURNED" && <ClearCart orderId={order.id} createdAt={order.createdAt.toISOString()} />}
-      <div className="max-w-xl mx-auto bg-white rounded-3xl border border-neutral-200 p-6 sm:p-12 text-center space-y-6 shadow-sm">
+      <div data-testid="tam-gorunum" className="max-w-xl mx-auto bg-white rounded-3xl border border-neutral-200 p-6 sm:p-12 text-center space-y-6 shadow-sm">
         <div
           aria-hidden="true"
           className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto text-2xl font-bold ${closed ? "bg-neutral-200 text-neutral-500" : "bg-emerald-100 text-emerald-600"}`}
@@ -129,8 +129,8 @@ export default async function OrderConfirmationPage({ params }: { params: Promis
 
         <div className="bg-neutral-50 border border-neutral-200 rounded-2xl p-5 text-xs text-left space-y-3">
           <div>
-            <span className="text-neutral-400">Sipariş Takip Kodu:</span>
-            <p className="font-mono font-bold text-neutral-800 break-all">{order.id} <CopyCodeButton text={order.id} label="Takip kodu kopyalandı" /></p>
+            <span className="text-neutral-400">Sipariş Kodu:</span>
+            <p className="font-mono font-bold text-neutral-800 break-all">{orderCode(order.id)} <CopyCodeButton text={orderCode(order.id)} label="Sipariş kodu kopyalandı" /></p>
           </div>
           <ul className="pt-3 border-t border-neutral-200 space-y-3">
             {order.items.map((item) => (

@@ -72,7 +72,7 @@ test.describe("Sipariş sayfalarına erişim", () => {
       const res = await g.page.goto(`/siparis-onay/${orderId}`, { waitUntil: "domcontentloaded" });
       expect(res!.status(), "kısıtlı görünümde de 404 yok").toBe(200);
       // loading.tsx iskeleti önce gelir: sayfanın gerçek içeriği beklenir
-      await g.page.getByTestId("kisitli-gorunum").or(g.page.getByText("Sipariş Takip Kodu:")).waitFor();
+      await g.page.getByTestId("kisitli-gorunum").or(g.page.getByTestId("tam-gorunum")).waitFor();
       return { restricted: (await g.page.getByTestId("kisitli-gorunum").count()) === 1, main: await g.page.getByRole("main").innerText(), html: await g.page.content() };
     } finally {
       await g.ctx.close();
@@ -85,7 +85,7 @@ test.describe("Sipariş sayfalarına erişim", () => {
   };
   const expectRestricted = (v: Awaited<ReturnType<typeof view>>, orderId: string) => {
     expect(v.restricted).toBe(true);
-    expect(v.main).toContain(orderId);
+    expect(v.main).toContain(orderId.slice(0, 8)); // Sipariş Kodu: ilk 8 hane
     expect(v.main).toContain("giriş yapın");
     for (const s of [title, NOTE, barcode, "1.234,50", "E2E Müşteri", "E2E Üye"]) expect(v.html, `kısıtlı görünümde "${s}" olmamalı`).not.toContain(s);
   };

@@ -1,3 +1,4 @@
+import { orderCode } from "@/lib/order-display";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { headers } from "next/headers";
@@ -62,8 +63,8 @@ async function OrderResult({ code }: { code: string }) {
     <div className="bg-white rounded-2xl border border-neutral-200 p-6 text-xs space-y-3 shadow-sm">
       {id === code && (
         <div className="pb-3 border-b border-neutral-100">
-          <span className="text-neutral-400">Sipariş No</span>
-          <p className="font-mono font-bold text-neutral-800 break-all">{id}</p>
+          <span className="text-neutral-400">Sipariş Kodu</span>
+          <p className="font-mono font-bold text-neutral-800 break-all">{orderCode(id)}</p>
         </div>
       )}
       <div>

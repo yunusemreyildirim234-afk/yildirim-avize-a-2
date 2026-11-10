@@ -25,7 +25,7 @@ interface EmailOrderData {
 }
 
 import { ADDRESS_LINE, ADMIN_EMAILS, BANK_INFO, PHONE_DISPLAY, SITE_URL } from "@/lib/site";
-import { bankPaymentDeadline, breakdownOf, breakdownRows, deliveryAddressText, formatIstanbul, type BreakdownRow } from "@/lib/order-display";
+import { orderCode, bankPaymentDeadline, breakdownOf, breakdownRows, deliveryAddressText, formatIstanbul, type BreakdownRow } from "@/lib/order-display";
 import { IADE_TALIMATI } from "@/lib/legal-texts";
 import { buildCampaignFooter, unsubscribeHeaders } from "@/lib/marketing";
 
@@ -130,7 +130,7 @@ export async function sendOrderNotificationEmails(data: EmailOrderData) {
         <div>Alıcı Adı: <strong>${BANK_INFO.holder}</strong></div>
         <div>IBAN: <strong style="font-family: monospace;">${BANK_INFO.iban}</strong></div>
         ${bankDeadline ? `<div style="margin-top: 8px;">Son ödeme: <strong>${bankDeadline}</strong> (bu süre içinde dekont ulaşmazsa sipariş otomatik iptal edilir)</div>` : ""}
-        <div style="margin-top: 10px; color: #b91c1c; font-weight: bold;">Lütfen havale/EFT açıklama kısmına Sipariş Numaranızı (${data.orderId}) yazmayı unutmayınız.</div>
+        <div style="margin-top: 10px; color: #b91c1c; font-weight: bold;">Lütfen havale/EFT açıklama kısmına Sipariş Kodunuzu (${orderCode(data.orderId)}) yazmayı unutmayınız.</div>
       </div>
       `
       : "";
@@ -141,7 +141,7 @@ export async function sendOrderNotificationEmails(data: EmailOrderData) {
         `<tr><td style="padding: 6px 0; color: #171717;">${i.quantity}x ${esc(i.title)}<br /><span style="font-size: 11px; color: #737373;">${esc(i.variationName)}</span></td><td style="padding: 6px 0; text-align: right; font-weight: 600; color: #171717; white-space: nowrap;">${(i.price * i.quantity).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</td></tr>`
     )
     .join("");
-  const shortId = data.orderId.slice(0, 8);
+  const shortId = orderCode(data.orderId);
   const noteBlock = data.orderNote
     ? `<div style="background-color: #ffffff; padding: 14px 18px; border-radius: 12px; border: 1px solid #e5e5e5; margin: 0 0 25px 0; font-size: 13px; color: #171717;"><div style="font-size: 12px; font-weight: bold; color: #92400e; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">Sipariş Notunuz</div>${multiline(data.orderNote)}</div>`
     : "";
@@ -180,7 +180,7 @@ export async function sendOrderNotificationEmails(data: EmailOrderData) {
         <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
           <tr>
             <td style="padding: 6px 0; color: #737373;">Sipariş Kodu:</td>
-            <td style="padding: 6px 0; text-align: right; font-family: monospace; font-weight: bold; color: #171717;">${data.orderId}</td>
+            <td style="padding: 6px 0; text-align: right; font-family: monospace; font-weight: bold; color: #171717;">${shortId}</td>
           </tr>
           <tr>
             <td style="padding: 6px 0; color: #737373;">Teslimat Türü:</td>
@@ -223,7 +223,7 @@ export async function sendOrderNotificationEmails(data: EmailOrderData) {
     <div style="font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #171717;">
       <h2 style="margin: 0 0 12px;">Yeni Sipariş Geldi: #${shortId}</h2>
       <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-        <tr><td style="padding: 4px 0; color: #737373;">Sipariş No</td><td style="padding: 4px 0; text-align: right; font-family: monospace;">${data.orderId}</td></tr>
+        <tr><td style="padding: 4px 0; color: #737373;">Sipariş Kodu</td><td style="padding: 4px 0; text-align: right; font-family: monospace;">${shortId}</td></tr>
         <tr><td style="padding: 4px 0; color: #737373;">Müşteri</td><td style="padding: 4px 0; text-align: right; font-weight: bold;">${esc(data.customerName)}</td></tr>
         <tr><td style="padding: 4px 0; color: #737373;">E-posta</td><td style="padding: 4px 0; text-align: right;">${esc(data.customerEmail)}</td></tr>
         <tr><td style="padding: 4px 0; color: #737373;">Telefon</td><td style="padding: 4px 0; text-align: right;">${esc(data.customerPhone || "-")}</td></tr>
@@ -439,13 +439,13 @@ export async function sendReceiptReminderEmail(data: { to: string; name: string;
   const url = `${SITE_URL}/siparis-onay/${data.orderId}`;
   return sendViaResend(process.env.RESEND_API_KEY, {
     to: [data.to],
-    subject: `Havale dekontunuzu bekliyoruz - #${data.orderId.slice(0, 8)}`,
+    subject: `Havale dekontunuzu bekliyoruz - #${orderCode(data.orderId)}`,
     html: `<div style="font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 28px; background: #fafafa; border: 1px solid #e5e5e5; border-radius: 16px; color: #171717;">
       <h1 style="text-align: center; font-size: 22px; letter-spacing: 1px; margin: 0 0 16px;">YILDIRIM AVİZE</h1>
       <h2 style="font-size: 17px; margin: 0 0 10px;">Sayın ${esc(data.name)},</h2>
       <p style="font-size: 14px; line-height: 1.6;">Siparişinizin onaylanması için havale dekontunuzu bekliyoruz. Aşağıdaki bağlantıdan dekontunuzu yükleyebilir veya sipariş detaylarını görebilirsiniz.</p>
       <p style="text-align: center; margin: 22px 0 8px;"><a href="${url}" style="display: inline-block; background: #d97706; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 14px; padding: 12px 28px; border-radius: 10px;">Dekontumu Yükle</a></p>
-      <p style="font-size: 12px; color: #737373; text-align: center;">Sipariş: ${data.orderId}<br />Yıldırım Avize | Tel: ${PHONE_DISPLAY}</p>
+      <p style="font-size: 12px; color: #737373; text-align: center;">Sipariş Kodu: ${orderCode(data.orderId)}<br />Yıldırım Avize | Tel: ${PHONE_DISPLAY}</p>
     </div>`,
   });
 }
@@ -454,13 +454,13 @@ export async function sendReceiptReminderEmail(data: { to: string; name: string;
 export async function sendBankOrderCancelledEmail(data: { to: string; name: string; orderId: string; hours: number }) {
   return sendViaResend(process.env.RESEND_API_KEY, {
     to: [data.to],
-    subject: `Havale siparişiniz iptal edildi - #${data.orderId.slice(0, 8)}`,
+    subject: `Havale siparişiniz iptal edildi - #${orderCode(data.orderId)}`,
     html: `<div style="font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 28px; background: #fafafa; border: 1px solid #e5e5e5; border-radius: 16px; color: #171717;">
       <h1 style="text-align: center; font-size: 22px; letter-spacing: 1px; margin: 0 0 16px;">YILDIRIM AVİZE</h1>
       <h2 style="font-size: 17px; margin: 0 0 10px;">Sayın ${esc(data.name)},</h2>
       <p style="font-size: 14px; line-height: 1.6;">Havale/EFT siparişiniz için ${data.hours} saat içinde ödeme dekontu ulaşmadığından siparişiniz iptal edildi ve ürünler yeniden satışa açıldı.</p>
       <p style="font-size: 14px; line-height: 1.6;">Ödemeyi yaptıysanız lütfen dekontunuzla bizimle iletişime geçin; siparişiniz için size yardımcı olalım.</p>
-      <p style="font-size: 12px; color: #737373; text-align: center;">Sipariş: ${data.orderId}<br />Yıldırım Avize | Tel: ${PHONE_DISPLAY}</p>
+      <p style="font-size: 12px; color: #737373; text-align: center;">Sipariş Kodu: ${orderCode(data.orderId)}<br />Yıldırım Avize | Tel: ${PHONE_DISPLAY}</p>
     </div>`,
   });
 }
@@ -469,9 +469,9 @@ export async function sendBankOrderCancelledEmail(data: { to: string; name: stri
 export async function sendReceiptUploadedAdminEmail(data: { orderId: string; senderName: string; customerName: string; totalAmount: number }) {
   return sendViaResend(process.env.RESEND_API_KEY, {
     to: ADMIN_EMAILS,
-    subject: `Dekont Yüklendi: #${data.orderId.slice(0, 8)} - ${data.customerName}`,
+    subject: `Dekont Yüklendi: #${orderCode(data.orderId)} - ${data.customerName}`,
     html: `<p><strong>${esc(data.customerName)}</strong> havale dekontu yükledi.</p>
-      <p>Gönderici: <strong>${esc(data.senderName)}</strong><br />Tutar: <strong>${data.totalAmount.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</strong><br />Sipariş: <code>${data.orderId}</code></p>
+      <p>Gönderici: <strong>${esc(data.senderName)}</strong><br />Tutar: <strong>${data.totalAmount.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</strong><br />Sipariş Kodu: <code>${orderCode(data.orderId)}</code></p>
       <p><a href="${SITE_URL}/admin#siparisler">Yönetim panelinde incele ve ödemeyi onayla</a></p>`,
   });
 }
@@ -480,9 +480,9 @@ export async function sendReceiptUploadedAdminEmail(data: { orderId: string; sen
 export async function sendStockShortageEmail(data: { orderId: string; items: { product: string; color: string; quantity: number }[] }) {
   return sendViaResend(process.env.RESEND_API_KEY, {
     to: ADMIN_EMAILS,
-    subject: `Stok yetersiz: #${data.orderId.slice(0, 8)}`,
+    subject: `Stok yetersiz: #${orderCode(data.orderId)}`,
     html: `<p>Ödemesi alınan siparişte stok yetersiz kaldı; stok 0'a çekildi. Siparişi kontrol edip müşteriyle iletişime geçin.</p>
-      <p>Sipariş: <code>${esc(data.orderId)}</code></p>
+      <p>Sipariş Kodu: <code>${orderCode(data.orderId)}</code></p>
       <ul>${data.items.map((i) => `<li>${esc(i.product)} — ${esc(i.color)} — ${i.quantity} adet</li>`).join("")}</ul>`,
   });
 }
@@ -499,9 +499,9 @@ export async function sendRequestAdminEmail(data: { type: string; orderId: strin
   const label = REQUEST_LABEL[data.type] ?? data.type;
   return sendViaResend(process.env.RESEND_API_KEY, {
     to: ADMIN_EMAILS,
-    subject: `${label} Talebi: #${data.orderId.slice(0, 8)} - ${data.customerName}`,
+    subject: `${label} Talebi: #${orderCode(data.orderId)} - ${data.customerName}`,
     html: `<p><strong>${esc(data.customerName)}</strong> (${esc(data.customerEmail)}) <strong>${label.toLowerCase()} talebi</strong> oluşturdu.</p>
-      <p>Sipariş: <code>${data.orderId}</code></p>
+      <p>Sipariş Kodu: <code>${orderCode(data.orderId)}</code></p>
       <p>Neden: ${data.reason ? multiline(data.reason) : "-"}</p>
       <p style="color:#737373;font-size:12px">Onaylamak veya reddetmek için yönetim panelindeki sipariş tablosunu kullanın.</p>`,
   });
@@ -513,11 +513,11 @@ export async function sendRequestDecisionEmail(data: { to: string; name: string;
   const result = data.approved ? `${label} talebiniz onaylandı` : `${label} talebiniz onaylanmadı`;
   return sendViaResend(process.env.RESEND_API_KEY, {
     to: [data.to],
-    subject: `${result} - #${data.orderId.slice(0, 8)}`,
+    subject: `${result} - #${orderCode(data.orderId)}`,
     html: `<div style="font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #171717;">
       <h2 style="margin: 0 0 12px;">Sayın ${esc(data.name)},</h2>
       <p style="font-size: 15px; font-weight: bold; color: ${data.approved ? "#059669" : "#b91c1c"};">${result}.</p>
-      <p style="font-size: 13px; color: #525252;">Sipariş: ${data.orderId}</p>
+      <p style="font-size: 13px; color: #525252;">Sipariş Kodu: ${orderCode(data.orderId)}</p>
       ${data.note ? `<p style="font-size: 14px;">${multiline(data.note)}</p>` : ""}
       ${
         data.approved && data.type === "RETURN"
@@ -538,7 +538,7 @@ export async function sendShippedEmail(data: { to: string; name: string; orderId
     html: `<div style="font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 28px; background: #fafafa; border: 1px solid #e5e5e5; border-radius: 16px; color: #171717;">
       <h1 style="text-align: center; font-size: 22px; letter-spacing: 1px; margin: 0 0 16px;">YILDIRIM AVİZE</h1>
       <h2 style="font-size: 17px; margin: 0 0 10px;">Sayın ${esc(data.name)},</h2>
-      <p style="font-size: 14px; line-height: 1.6;"><strong>#${esc(data.orderId.slice(0, 8))}</strong> numaralı siparişiniz korumalı kolide <strong>${esc(data.carrier)}</strong>'ya teslim edildi.</p>
+      <p style="font-size: 14px; line-height: 1.6;"><strong>#${esc(orderCode(data.orderId))}</strong> numaralı siparişiniz korumalı kolide <strong>${esc(data.carrier)}</strong>'ya teslim edildi.</p>
       <p style="text-align: center; margin: 18px 0;"><span style="display: inline-block; font-family: monospace; font-size: 20px; font-weight: bold; letter-spacing: 2px; background: #ffffff; border: 2px dashed #d97706; border-radius: 10px; padding: 10px 20px; color: #92400e;">${esc(data.trackingNumber)}</span></p>
       <p style="text-align: center; margin: 22px 0 8px;"><a href="${esc(live)}" style="display: inline-block; background: #171717; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 14px; padding: 12px 28px; border-radius: 10px;">Kargomu Takip Et</a></p>
       <p style="font-size: 12px; color: #737373; text-align: center;">Yıldırım Avize | Tel: ${PHONE_DISPLAY}</p>
@@ -548,7 +548,7 @@ export async function sendShippedEmail(data: { to: string; name: string; orderId
 
 /** Teslim edilen siparişin PDF faturası (e-postaya EK olarak; indirme bağlantısı verilmez). */
 export async function sendInvoiceEmail(data: { to: string; name: string; orderId: string; fileName: string; pdf: Buffer }) {
-  const no = `#${data.orderId.slice(0, 8)}`;
+  const no = `#${orderCode(data.orderId)}`;
   return sendViaResend(process.env.RESEND_API_KEY, {
     to: [data.to],
     subject: `Yıldırım Avize | ${no} numaralı siparişinizin faturası`,

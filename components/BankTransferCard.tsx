@@ -4,6 +4,8 @@ import { toast } from "sonner";
 import { useState } from "react";
 import { Check, Copy, Landmark } from "lucide-react";
 import { BANK_INFO } from "@/lib/site";
+import { orderCode } from "@/lib/order-display";
+import CopyCodeButton from "@/components/CopyCodeButton";
 
 const IBAN_GROUPED = BANK_INFO.iban.replace(/(.{4})/g, "$1 ").trim();
 
@@ -59,13 +61,15 @@ export default function BankTransferCard({ orderId }: { orderId?: string }) {
 
       {orderId && (
         <div className="rounded-xl bg-white border border-neutral-200 px-3 py-2">
-          <span className="text-neutral-500">Sipariş Numaranız (açıklamaya yazın):</span>
-          <p className="font-mono font-bold text-neutral-900 break-all">{orderId}</p>
+          <span className="text-neutral-500">Sipariş Kodunuz (açıklamaya yazın):</span>
+          <p className="font-mono font-bold text-neutral-900 text-[13px] flex flex-wrap items-center gap-2">
+            {orderCode(orderId)} <CopyCodeButton text={orderCode(orderId)} label="Sipariş kodu kopyalandı" />
+          </p>
         </div>
       )}
 
       <p role="note" className="rounded-xl bg-red-50 border border-red-200 text-red-800 font-semibold px-3 py-2.5">
-        Lütfen havale/EFT açıklama kısmına Sipariş Numaranızı yazmayı unutmayınız.
+        Lütfen havale/EFT açıklama kısmına Sipariş Kodunuzu yazmayı unutmayınız.
       </p>
     </div>
   );

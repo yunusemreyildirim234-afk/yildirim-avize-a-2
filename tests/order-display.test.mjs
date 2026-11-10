@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { bankPaymentDeadline, breakdownOf, breakdownRows, deliveryAddressText, formatIstanbul, orderBreakdown, orderShippingFee } from "../lib/order-display.ts";
+import { bankPaymentDeadline, breakdownOf, breakdownRows, deliveryAddressText, formatIstanbul, orderBreakdown, orderCode, orderShippingFee } from "../lib/order-display.ts";
 import { readFileSync } from "node:fs";
 import { BANK_ORDER_HOLD_HOURS } from "../lib/stock-rules.ts";
 
@@ -62,4 +62,28 @@ test("E1/E2/E3: şablon: döküm ortak yardımcıdan, havalede bekleme metni, si
   assert.match(src, /Teslimat Adresi<\/td>/);
   const page = readFileSync(new URL("../app/siparis-onay/[id]/page.tsx", import.meta.url), "utf8");
   assert.match(page, /breakdownRows\(breakdown\)/, "onay sayfası aynı satır listesini kullanır");
+});
+
+test("M5: Sipariş Kodu = sipariş kimliğinin ilk 8 hanesi (yönetim listesindeki kısaltmayla aynı)", () => {
+  assert.equal(orderCode("556c47cc-c15d-4115-9d19-33e1bd64b8e9"), "556c47cc");
+  assert.equal(orderCode("abc"), "abc");
+  const admin = readFileSync(new URL("../app/admin/page.tsx", import.meta.url), "utf8");
+  assert.match(admin, /order\.id\.slice\(0, 8\)/, "yönetim listesi de ilk 8 haneyi gösterir");
+});
+
+test("M5: havale kartı, onay sayfası ve e-postalar tam kimliği değil 8 haneli kodu gösterir/kopyalar; tek ad: Sipariş Kodu", () => {
+  const read = (p) => readFileSync(new URL(p, import.meta.url), "utf8");
+  const card = read("../components/BankTransferCard.tsx");
+  assert.match(card, /CopyCodeButton text=\{orderCode\(orderId\)\}/);
+  assert.ok(!/\{orderId\}<\/p>/.test(card));
+  const page = read("../app/siparis-onay/[id]/page.tsx");
+  assert.match(page, /CopyCodeButton text=\{orderCode\(order\.id\)\}/);
+  const mail = read("../lib/email.ts");
+  assert.match(mail, /Sipariş Kodunuzu \(\$\{orderCode\(data\.orderId\)\}\)/);
+  for (const [name, src] of [["kart", card], ["sayfa", page], ["e-posta", mail]]) {
+    assert.ok(!/Sipariş Numaran|Sipariş Numarası|Sipariş Takip Kodu|Sipariş No</.test(src), `${name}: eski adlandırma kalmamalı`);
+  }
+  // Tam kimlik e-postada yalnızca bağlantılarda kalır
+  const outside = mail.replace(/\/siparis-onay\/\$\{data\.orderId\}/g, "").replace(/orderCode\(data\.orderId\)/g, "");
+  assert.ok(!/\$\{(esc\()?data\.orderId\)?\}/.test(outside), "e-posta gövdesinde çıplak tam kimlik kalmamalı");
 });

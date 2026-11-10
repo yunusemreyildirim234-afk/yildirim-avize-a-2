@@ -191,7 +191,7 @@ test.describe("Havale siparişi (uçtan uca)", () => {
 
       // Onay sayfası
       await expect(page.getByRole("heading", { level: 1 })).toHaveText("Teşekkürler, Siparişiniz Alındı!");
-      await expect(page.getByText(mainOrderId, { exact: true }).first()).toBeVisible(); // sipariş kodu hem özette hem havale kartında
+      await expect(page.getByText(mainOrderId.slice(0, 8), { exact: true }).first()).toBeVisible(); // sipariş kodu hem özette hem havale kartında
       await expect(page.getByRole("main").getByText(A.title, { exact: true })).toBeVisible();
       await expect(page.getByText("1x", { exact: false }).first()).toBeVisible();
       const shownTotal = trNumber(await page.getByText("Toplam:", { exact: true }).locator("xpath=following-sibling::p[1]").innerText());
@@ -457,7 +457,7 @@ test.describe("Havale siparişi (uçtan uca)", () => {
         const r = await page.goto(`/siparis-onay/${encodeURIComponent(id)}`, { waitUntil: "domcontentloaded" });
         await expect(page.getByRole("heading", { level: 1 })).toHaveText("Bu Işık Söndü");
         await expect(page.getByText("Hata 404")).toBeVisible();
-        await expect(page.getByText("Sipariş Takip Kodu")).toHaveCount(0);
+        await expect(page.getByText("Sipariş Kodu")).toHaveCount(0);
         expect(r!.status(), `/siparis-onay/${id} HTTP durumu`).toBe(404);
       }
       // İlk 24 saatteki misafir siparişi oturumsuz açılır; süre sonrası kısıtlı görünüm t-siparis-erisim testindedir.
@@ -467,7 +467,7 @@ test.describe("Havale siparişi (uçtan uca)", () => {
       for (const secret of [CUSTOMER.email, CUSTOMER.phone, CUSTOMER.address]) expect(html, `sayfada "${secret}" olmamalı`).not.toContain(secret);
       // Aynı kimlikle kargo takibi: yalnızca durum bilgisi, kişisel veri yok
       await page.goto(`/kargo-takip?code=${mainOrderId}`, { waitUntil: "domcontentloaded" });
-      await expect(page.getByText(mainOrderId, { exact: true }).first()).toBeVisible();
+      await expect(page.getByText(mainOrderId.slice(0, 8), { exact: true }).first()).toBeVisible();
       const track = await page.content();
       for (const secret of [CUSTOMER.email, CUSTOMER.phone, CUSTOMER.address]) expect(track).not.toContain(secret);
       // Sipariş geçmişi ve fatura: oturumsuz erişimde bu sipariş görünmez / reddedilir
