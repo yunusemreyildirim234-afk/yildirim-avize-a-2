@@ -3,6 +3,7 @@
 import { toast } from "sonner";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { canTransition } from "@/lib/order-undo";
 
 interface Props {
   orderId: string;
@@ -19,6 +20,7 @@ export default function OrderStatusSelector({ orderId, initialStatus, shippingTy
     // Onay metinleri koddan teyitli: Teslim/Kargo -> yalnızca site içi bildirim (e-posta gitmez, app/api/admin/order-status); İptal/İade -> stok ve kupon iadesi (lib/order-undo.ts)
     const CONFIRM: Record<string, string> = {
       CANCELLED: "Stok ve kupon iade edilecek. Geri Al ile geri alınabilir.",
+      ...(["CANCELLED", "PAYMENT_FAILED"].includes(status) ? { PENDING: "Sipariş yeniden açılacak: stok yeniden düşülecek (yetmezse işlem reddedilir) ve kupon hakkı yeniden kullanılmış sayılacak. Bu işlemin Geri Al'ı yoktur; vazgeçerseniz siparişi yeniden İptal yapın. Emin misiniz?" } : {}),
       RETURNED: "Sipariş 'İade Edildi' yapılacak; stok ve kupon iade edilecek (müşteriye bildirim gitmez). Emin misiniz?",
       DELIVERED: "Sipariş 'Teslim Edildi' yapılacak ve müşteriye site içi bildirim gidecek (e-posta gitmez). Emin misiniz?",
       SHIPPED: "Sipariş 'Kargoya Verildi' yapılacak ve müşteriye site içi bildirim gidecek (e-posta gitmez). Emin misiniz?",
@@ -105,17 +107,17 @@ export default function OrderStatusSelector({ orderId, initialStatus, shippingTy
         {(status === "AWAITING_PAYMENT" || status === "PAYMENT_FAILED" || status === "PENDING_NEW") && (
           <option value={status}>{status === "AWAITING_PAYMENT" ? "Ödeme Bekleniyor" : status === "PENDING_NEW" ? "Havale Onayı Bekleniyor" : "Ödeme Başarısız"}</option>
         )}
-        <option value="PENDING">⏳ Hazırlanıyor</option>
+        <option value="PENDING" disabled={!canTransition(status, "PENDING")}>⏳ Hazırlanıyor</option>
 
         {isBeyoglu ? (
-          <option value="READY_FOR_PICKUP">📍 Mağazada Teslime Hazır</option>
+          <option value="READY_FOR_PICKUP" disabled={!canTransition(status, "READY_FOR_PICKUP")}>📍 Mağazada Teslime Hazır</option>
         ) : (
-          <option value="SHIPPED">📦 Kargoya Verildi</option>
+          <option value="SHIPPED" disabled={!canTransition(status, "SHIPPED")}>📦 Kargoya Verildi</option>
         )}
 
-        <option value="DELIVERED">✓ Teslim Edildi</option>
-        <option value="CANCELLED">✕ İptal Edildi</option>
-        <option value="RETURNED">↩ İade Edildi</option>
+        <option value="DELIVERED" disabled={!canTransition(status, "DELIVERED")}>✓ Teslim Edildi</option>
+        <option value="CANCELLED" disabled={!canTransition(status, "CANCELLED")}>✕ İptal Edildi</option>
+        <option value="RETURNED" disabled={!canTransition(status, "RETURNED")}>↩ İade Edildi</option>
       </select>
 
       {loading && <span className="text-[10px] text-neutral-400 animate-spin">⌛</span>}

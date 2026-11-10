@@ -115,6 +115,16 @@ export async function reserveCouponLocked(tx: Prisma.TransactionClient, code: st
   return (await reserveCoupon(tx, code)) ? "OK" : "LIMIT";
 }
 
+/**
+ * YÖNETİCİ ZORLAMALI: iptal/başarısız siparişi yeniden açarken kupon hakkını KOŞULSUZ yeniden sayar (usedCount + 1).
+ * Aktiflik, süre ve limit denetlenmez: müşteri indirimi sipariş anında geçerli kuponla zaten almıştır; burada yalnızca sayaç,
+ * iptalde yapılan −1'in tersi olarak dengelenir. Yeni sipariş için ASLA kullanılmaz (orada reserveCouponLocked / reserveCoupon).
+ */
+export async function forceReserveCoupon(tx: Pick<Prisma.TransactionClient, "$executeRaw">, code: string): Promise<boolean> {
+  const n = await tx.$executeRaw`UPDATE "Coupon" SET "usedCount" = "usedCount" + 1 WHERE "code" = ${code}`;
+  return n > 0;
+}
+
 /** Ödemesi başarısız olan veya iptal edilen siparişin kupon hakkını geri verir. `db` verilirse çağıranın transaction'ında çalışır. */
 export async function releaseCoupon(code: string | null | undefined, db: Pick<Prisma.TransactionClient, "$executeRaw"> = prisma) {
   if (!code) return;
