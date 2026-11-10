@@ -142,7 +142,7 @@ test("kopyala (sahte Blob): iki sürüm yazar, manifest ve kota sayacı güncell
   assert.ok(kayit >= 9);
   const k = manifestKaydi(manifest, "p1", T("a"), "kare");
   assert.equal(k.b, `https://sahte.public.blob.vercel-storage.com/${blobYolu("p1", T("a"), "kare", "b")}`);
-  assert.match(k.k, /-kr-k\.webp$/);
+  assert.match(k.k, /-kr-v2-k.webp$/);
   assert.equal(blob.dosyalar.get(blobYolu("p1", T("a"), "kare", "b")).length, k.baytB);
 
   const r2 = await kopyala({ ...ortak, is });
@@ -170,7 +170,7 @@ test("kopyala: hata olan görsel atlanır ve raporlanır; sonraki koşu kaldığ
   // İkinci koşu: büyük sürüm zaten var (put "already exists" → head), küçük sürüm yüklenir
   const r2 = await kopyala({ ...ortak, is, indir: async () => girdi });
   assert.deepEqual(r2, { tamam: 2, hatalar: [] });
-  assert.ok(manifestKaydi(manifest, "p1", T("a"), "kare").b.endsWith("-kr-b.webp"));
+  assert.ok(manifestKaydi(manifest, "p1", T("a"), "kare").b.endsWith("-kr-v2-b.webp"));
   assert.equal(blob.dosyalar.size, 4);
 });
 

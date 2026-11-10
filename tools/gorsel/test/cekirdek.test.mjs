@@ -21,8 +21,8 @@ test("argumanlar: varsayılanlar, bayraklar ve hatalar", () => {
 
 test("blobYolu belirlenimci; tuval ve boyut yolu ayırır", () => {
   assert.equal(blobYolu("p1", T("a"), "kare", "b"), blobYolu("p1", T("a"), "kare", "b"));
-  assert.match(blobYolu("p1", T("a"), "kare", "b"), /^urun\/p1\/[0-9a-f]{16}-kr-b\.webp$/);
-  assert.match(blobYolu("p1", T("a"), "oran", "k"), /-or-k\.webp$/);
+  assert.match(blobYolu("p1", T("a"), "kare", "b"), /^urun\/p1\/[0-9a-f]{16}-kr-v2-b.webp$/);
+  assert.match(blobYolu("p1", T("a"), "oran", "k"), /-or-v2-k.webp$/);
   assert.notEqual(blobYolu("p1", T("a"), "kare", "b"), blobYolu("p1", T("b"), "kare", "b"));
 });
 
@@ -96,7 +96,7 @@ test("yaz → geri-al: partili, koşullu; geri alma eski değerleri AYNEN dönd�
   assert.deepEqual({ yazilan: ozet.yazilan, atlanan: ozet.atlanan, parti: ozet.parti }, { yazilan: 45, atlanan: [], parti: 3 }); // 20 + 20 + 5
   assert.equal(db.partiSayisi(), 3);
   const sonra = await db.urunleriOku();
-  assert.equal(sonra.flatMap((u) => urunKaynaklari(u)).length, 0);
+  assert.equal(sonra.filter((u) => u.images.some((x) => x.includes("dsmcdn"))).length, 0); // artık hiçbir ürün Trendyol adresi tutmuyor
   assert.deepEqual(sonra.find((u) => u.id === "elle").images, ["/api/product-images/x"]);
   assert.equal(sonra.find((u) => u.id === "p3").imageMap[T("a3")], B("p3", "a3"));
 
@@ -153,4 +153,26 @@ test("yedekIcerigi: yazmadan önceki ürün ve renk değerleri", () => {
   hazirla(m, u);
   const y = yedekIcerigi([yazPlani(u, m, "kare").plan], { islem: "yaz" });
   assert.deepEqual(y, { islem: "yaz", urunler: [{ id: "p1", modelCode: "7", images: [T("a")], imageUrl: T("a"), varyasyonlar: [{ id: "v1", images: [T("r")] }] }] });
+});
+
+test("v2: v1 manifest kayıtları görmezden gelinir ama silinmez; v1 taşınmış ürün imageMap ile v2'ye yeniden taşınır, geri-al Trendyol'a döner", () => {
+  const V1 = (ad) => `https://sahte.public.blob.vercel-storage.com/urun/p1/${ad}-kr-b.webp`;
+  const V2 = (ad) => `https://sahte.public.blob.vercel-storage.com/urun/p1/${ad}-kr-v2-b.webp`;
+  const m = bosManifest();
+  m.gorseller.p1 = { [T("a")]: { kare: { b: V1("a"), k: "k" } } }; // eski v1 kaydı
+  // ürün şu an v1 Blob adresini tutuyor; eski Trendyol adresi imageMap'te
+  const u = urun("p1", "1", [V1("a")], { imageMap: { [T("a")]: V1("a") }, variations: [{ id: "v1", images: [V1("a")] }] });
+  assert.deepEqual(urunKaynaklari(u), [T("a")]);
+  assert.deepEqual(bekleyenler([u], m, "kare"), [{ productId: "p1", url: T("a") }]); // v2 için hâlâ yüklenmemiş
+  assert.deepEqual(yazPlani(u, m, "kare"), { plan: null, eksik: 1 });
+  manifesteYaz(m, "p1", T("a"), "kare", { b: V2("a"), k: "k" });
+  assert.deepEqual(m.gorseller.p1[T("a")].kare, { b: V1("a"), k: "k" }); // v1 kaydı duruyor
+  const { plan } = yazPlani(u, m, "kare");
+  assert.deepEqual(plan.yeni, { images: [V2("a")], imageUrl: V2("a") });
+  assert.deepEqual(plan.varyasyonlar, [{ id: "v1", eski: [V1("a")], yeni: [V2("a")] }]);
+  assert.deepEqual(plan.imageMapEk, { [T("a")]: V2("a") });
+  // v2 yazıldıktan sonra tekrar plan yok; geri-al Trendyol'a döner
+  const yazildi = urun("p1", "1", [V2("a")], { imageMap: { [T("a")]: V2("a") }, variations: [{ id: "v1", images: [V2("a")] }] });
+  assert.equal(yazPlani(yazildi, m, "kare").plan, null);
+  assert.deepEqual(geriAlPlani(yazildi).yeni, { images: [T("a")], imageUrl: T("a") });
 });

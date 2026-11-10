@@ -7,6 +7,7 @@ export const GUVENLI_SINIR = 1800; // bu ayki toplam yazma bunu aşacaksa kopyal
 export const PARTI = 20;
 export const TUVALLER = ["kare", "oran"];
 const TUVAL_KISA = { kare: "kr", oran: "or" };
+export const SURUM = "v2"; // görsel işleme sürümü: Blob yoluna ve manifest anahtarına girer; v1 dosyaları/kayıtları silinmez
 
 const TRENDYOL_RE = /^https:\/\/([a-z0-9-]+\.)*dsmcdn\.com\//i;
 const BLOB_RE = /^https:\/\/[a-z0-9-]+\.public\.blob\.vercel-storage\.com\//i;
@@ -45,8 +46,8 @@ export function argumanlar(argv) {
 
 export const kaynakHash = (url) => createHash("sha1").update(url).digest("hex").slice(0, 16);
 
-/** Belirlenimci Blob yolu (rastgele sonek yok): aynı kaynak her zaman aynı yola gider. boyut: "b" (≤1600) | "k" (≤800). */
-export const blobYolu = (productId, url, tuval, boyut) => `urun/${productId}/${kaynakHash(url)}-${TUVAL_KISA[tuval]}-${boyut}.webp`;
+/** Belirlenimci Blob yolu (rastgele sonek yok): aynı kaynak her zaman aynı yola gider. boyut: "b" (≤1600) | "k" (≤800). Sürüm (-v2) yolu v1 dosyalarından ayırır. */
+export const blobYolu = (productId, url, tuval, boyut) => `urun/${productId}/${kaynakHash(url)}-${TUVAL_KISA[tuval]}-${SURUM}-${boyut}.webp`;
 
 /** Model koduna göre (sayısal, boşlar sonda), eşitlikte kimliğe göre sıralar. Üç betik de aynı sırayı kullanır. */
 export function sirala(urunler) {
@@ -56,8 +57,14 @@ export function sirala(urunler) {
 
 const tumAdresler = (u) => [...u.images, u.imageUrl, ...u.variations.flatMap((v) => v.images)].filter((x) => typeof x === "string" && x);
 
-/** Ürünün (genel + kapak + renk) henüz kopyalanmamış tekil Trendyol adresleri. */
-export const urunKaynaklari = (u) => tekil(tumAdresler(u).filter(trendyolMu));
+/** Blob adresi → özgün Trendyol adresi (syncSnapshot.imageMap tersi). Daha önce (v1) taşınmış ürünler yeniden işlenebilsin diye. */
+const tersMap = (u) => Object.fromEntries(Object.entries(u.imageMap ?? {}).filter(([, b]) => typeof b === "string").map(([k, b]) => [b, k]));
+
+/** Ürünün (genel + kapak + renk) tekil Trendyol kaynak adresleri: şu an Trendyol olanlar + imageMap ile eski Trendyol adresine çözülebilen Blob adresleri. */
+export const urunKaynaklari = (u) => {
+  const ters = tersMap(u);
+  return tekil(tumAdresler(u).map((x) => (trendyolMu(x) ? x : ters[x] ?? x)).filter(trendyolMu));
+};
 
 /** --urun (model kodları) ve --ornek (ilk N uygun ürün) süzgeci. Bilinmeyen model kodu hatadır. */
 export function sec(urunler, { ornek, urun }, uygunMu) {
@@ -75,13 +82,15 @@ export function sec(urunler, { ornek, urun }, uygunMu) {
 // ---------- Manifest ve kota ----------
 
 export const bosManifest = () => ({ surum: 1, yazmalar: {}, gorseller: {} });
+// v2 kayıtları "<tuval>-v2" anahtarında tutulur; eski v1 ("kare"/"oran") kayıtlarına dokunulmaz.
+const anahtar = (tuval) => `${tuval}-${SURUM}`;
 export const ayAnahtari = (d = new Date()) => d.toISOString().slice(0, 7);
 
 /** Manifestteki kayıt: { b, k, ... } ya da yoksa null. */
-export const manifestKaydi = (m, productId, url, tuval) => m.gorseller[productId]?.[url]?.[tuval] ?? null;
+export const manifestKaydi = (m, productId, url, tuval) => m.gorseller[productId]?.[url]?.[anahtar(tuval)] ?? null;
 
 export function manifesteYaz(m, productId, url, tuval, kayit) {
-  ((m.gorseller[productId] ??= {})[url] ??= {})[tuval] = kayit;
+  ((m.gorseller[productId] ??= {})[url] ??= {})[anahtar(tuval)] = kayit;
 }
 
 /** Her Blob yazma DENEMESİ sayılır (başarısız deneme de kotadan düşebilir). */
@@ -126,7 +135,8 @@ export function yazPlani(u, m, tuval) {
     else eksik++;
   }
   if (eksik > 0 || kaynaklar.length === 0) return { plan: null, eksik };
-  return { plan: planOlustur(u, (x) => esleme[x] ?? x, esleme), eksik: 0 };
+  const ters = tersMap(u);
+  return { plan: planOlustur(u, (x) => esleme[trendyolMu(x) ? x : ters[x]] ?? x, esleme), eksik: 0 };
 }
 
 /** Blob → Trendyol (syncSnapshot.imageMap tersinden). imageMap'e ve Blob dosyalarına dokunulmaz. Geri alınacak adres yoksa null. */
