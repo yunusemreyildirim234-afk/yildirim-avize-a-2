@@ -7,6 +7,14 @@ export const PAYTR_TIMEOUT_MINUTES = RESERVATION_HOLD_MINUTES - 1;
 /** Bu süreyi (dakika) geçen AWAITING_PAYMENT + kartlı siparişler PAYMENT_FAILED yapılır (günlük cron'un eşiği = tutma süresi). */
 export const ABANDONED_CARD_MINUTES = RESERVATION_HOLD_MINUTES;
 
+/** Ödeme bekleyen (AWAITING_PAYMENT) sipariş bu süre (saat) boyunca yönetici tarafından silinemez: ödeme sayfası açık olabilir, silinirse gelen ödemenin kaydı kalmaz. */
+export const DELETE_GUARD_HOURS = 2;
+
+/** Müşteri hâlâ ödeme yapıyor olabilir mi? Yalnızca AWAITING_PAYMENT ve son DELETE_GUARD_HOURS saat içinde oluşturulmuş sipariş. */
+export function isPaymentInFlight(o: { status: string; createdAt: Date }, now: number): boolean {
+  return o.status === "AWAITING_PAYMENT" && o.createdAt.getTime() > now - DELETE_GUARD_HOURS * 3_600_000;
+}
+
 /** Dekont yüklenmemiş, ödemesiz Havale siparişi bu süre (saat) sonunda otomatik iptal edilir; stok da bu süre boyunca ayrılı kalır. */
 export const BANK_ORDER_HOLD_HOURS = 48;
 

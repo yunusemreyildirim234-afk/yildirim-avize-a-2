@@ -5,6 +5,7 @@ import { withStorefrontRevalidate } from "@/lib/revalidate";
 import { serverError } from "@/lib/api-error";
 import { planStatusChange } from "@/lib/order-undo";
 import { restoreStockInTx, type RestoreTx } from "@/lib/stock-restore";
+import { DELETE_GUARD_HOURS, isPaymentInFlight } from "@/lib/stock-rules";
 
 // Seçili siparişleri (ve bağlı kalem, fatura, dekont kayıtlarını) kalıcı siler. Silmeden ÖNCE, aynı işlem içinde: stoğu düşülmüş (stockDeducted)
 // siparişlerin ayrılmış stoğu iade edilir (bayrak koşullu, idempotent) ve henüz iade edilmemiş kupon hakkı geri verilir (iptal akışıyla aynı karar: planStatusChange).
@@ -22,7 +23,15 @@ async function DELETEHandler(req: Request) {
     .catch(() => true);
 
   try {
-    const existing = await prisma.order.findMany({ where: { id: { in: ids } }, select: { id: true, status: true, stockDeducted: true, couponCode: true } });
+    const existing = await prisma.order.findMany({ where: { id: { in: ids } }, select: { id: true, status: true, stockDeducted: true, couponCode: true, createdAt: true } });
+    // Ödeme sayfası açık olabilecek sipariş silinmez: müşteri öderse PayTR bildirimi kayıtsız kalır (para alınır, sipariş yok)
+    const inFlight = existing.filter((o) => isPaymentInFlight(o, Date.now()));
+    if (inFlight.length > 0) {
+      return NextResponse.json(
+        { error: `Silinemedi: ${inFlight.map((o) => `#${o.id.slice(0, 8)}`).join(", ")} son ${DELETE_GUARD_HOURS} saat içinde oluşturulmuş ve hâlâ ödeme bekliyor; müşteri ödeme sayfasında olabilir. Önce durumu "İptal" veya "Ödeme başarısız" yapın ya da sürenin dolmasını bekleyin. Hiçbir sipariş silinmedi.` },
+        { status: 409 },
+      );
+    }
     // İade + bağımlı kayıtların silinmesi (foreign key sırası) TEK işlemde: biri başarısız olursa hiçbiri uygulanmaz
     const deleted = await prisma.$transaction(
       async (tx) => {

@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { releaseCoupon } from "@/lib/coupons";
 import { finalizeOrder, restoreOrderStock } from "@/lib/orders";
 import { fromMerchantOid } from "@/lib/paytr";
-import { finalizeOrReport, isUnderpaid, lateAlertExists, reportLatePayment } from "@/lib/late-payment";
+import { MISSING_ORDER_STATUS, finalizeOrReport, isUnderpaid, lateAlertExists, reportLatePayment } from "@/lib/late-payment";
 import { notifyAdmins } from "@/lib/notifications";
 
 const ok = () => new Response("OK", { status: 200, headers: { "Content-Type": "text/plain; charset=utf-8" } });
@@ -44,7 +44,11 @@ export async function POST(req: Request) {
 
   // İdempotency: sipariş zaten işlenmişse (PENDING/SHIPPED/DELIVERED/PAYMENT_FAILED/CANCELLED vb.) stok ve kupon işlemleri tekrarlanmaz
   const current = await prisma.order.findUnique({ where: { id: orderId }, select: { status: true, totalAmount: true } });
-  if (!current) return ok();
+  if (!current) {
+    // Sipariş kaydı yok (yönetici silmiş olabilir) ama PayTR para çekildiğini bildiriyor: sessizce geçilmez, yöneticiye uyarı + log (işlem no ile tekilleştirilir)
+    await reportLatePayment({ log: console.error, warn: console.warn, notifyAdmins, alreadyReported: lateAlertExists }, { merchantOid: p.merchant_oid, orderId, orderStatus: MISSING_ORDER_STATUS, payStatus: p.status }).catch(() => {});
+    return ok();
+  }
   if (!["AWAITING_PAYMENT", "PENDING_NEW"].includes(current.status)) {
     // Mevcut davranış aynen: durum, stok, kupon değişmez ve yanıt 200 OK. Ek olarak geç "success" kaydedilir ve yöneticiye bildirilir.
     await reportLatePayment({ log: console.error, warn: console.warn, notifyAdmins, alreadyReported: lateAlertExists }, { merchantOid: p.merchant_oid, orderId, orderStatus: current.status, payStatus: p.status }).catch(() => {});

@@ -60,3 +60,31 @@ test("bulgu 1: sahiplenme kaybedilip sipariş de silinmişse 'kayıt yok' uyarı
   assert.equal(await finalizeOrReport(broken.deps), "LATE");
   assert.equal(broken.alerts.length, 1);
 });
+
+// ---- Bulgu 2: silinmiş siparişe gelen ödeme + ödeme bekleyen siparişin silinmesi ----
+import { DELETE_GUARD_HOURS, isPaymentInFlight } from "../lib/stock-rules.ts";
+
+test("bulgu 2: sipariş kaydı yokken success uyarı üretir; failed üretmez; aynı işlem no ikinci kez uyarmaz", async () => {
+  const alerts = [];
+  const seen = new Set();
+  const deps = { log: () => {}, warn: () => {}, notifyAdmins: async (n) => { alerts.push(n); }, loadOrder: async () => null, emailAdmin: async () => true, alreadyReported: async (oid) => seen.has(oid) };
+  const info = { merchantOid: "OID9", orderId: "abcdef12-3456", orderStatus: MISSING_ORDER_STATUS, siteUrl: "https://x.test" };
+  assert.equal(await reportLatePayment(deps, { ...info, payStatus: "failed" }), false);
+  assert.equal(alerts.length, 0);
+  assert.equal(await reportLatePayment(deps, { ...info, payStatus: "success" }), true);
+  assert.equal(alerts.length, 1);
+  assert.ok(alerts[0].title.includes(MISSING_ORDER_STATUS) && alerts[0].message.includes("OID9"));
+  seen.add("OID9"); // PayTR aynı bildirimi yineler
+  assert.equal(await reportLatePayment(deps, { ...info, payStatus: "success" }), false);
+  assert.equal(alerts.length, 1);
+});
+
+test("bulgu 2: ödeme bekleyen sipariş son 2 saatte oluşturulduysa silinemez; eski veya başka durumdaki silinebilir", () => {
+  const now = Date.UTC(2026, 0, 1, 12);
+  const ago = (min) => new Date(now - min * 60_000);
+  assert.equal(DELETE_GUARD_HOURS, 2);
+  assert.equal(isPaymentInFlight({ status: "AWAITING_PAYMENT", createdAt: ago(5) }, now), true);
+  assert.equal(isPaymentInFlight({ status: "AWAITING_PAYMENT", createdAt: ago(119) }, now), true);
+  assert.equal(isPaymentInFlight({ status: "AWAITING_PAYMENT", createdAt: ago(121) }, now), false);
+  for (const s of ["PAYMENT_FAILED", "CANCELLED", "PENDING", "PENDING_NEW", "DELIVERED"]) assert.equal(isPaymentInFlight({ status: s, createdAt: ago(5) }, now), false, s);
+});
