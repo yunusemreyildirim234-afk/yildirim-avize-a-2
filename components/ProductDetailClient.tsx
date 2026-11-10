@@ -19,7 +19,7 @@ import { SITE_URL, WHATSAPP_NUMBER } from "@/lib/site";
 import { isPurchasablePrice } from "@/lib/purchasable";
 import { activeTier, bulkLabel, bulkTiersOf, unitPriceFor } from "@/lib/bulk-pricing";
 import { lowStockLabel, type LowStockSetting } from "@/lib/low-stock";
-import { bulbNoteFor } from "@/lib/bulb-note";
+import { bulbNoteFor, isAccessoryCategory } from "@/lib/bulb-note";
 
 interface Variation {
   id: string;
@@ -284,6 +284,7 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
                 </span>
               </li>
             )}
+            {!isAccessoryCategory(product.category) && (
             <li className="flex items-start gap-2.5 rounded-xl border border-neutral-200 bg-neutral-50 px-3.5 py-2.5 text-neutral-800">
               <span aria-hidden="true">📏</span>
               <span>
@@ -291,6 +292,7 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
                 <a href="/iletisim" className="text-amber-700 underline font-semibold">İletişim</a> bölümünden bize ulaşabilir veya sipariş notunda zincir/bakla payını belirtebilirsiniz.
               </span>
             </li>
+            )}
           </ul>
 
           <div className="pt-4">

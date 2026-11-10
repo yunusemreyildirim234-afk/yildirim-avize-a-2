@@ -15,6 +15,7 @@ import { reviewEligibility, type ReviewEligibility } from "@/lib/reviews";
 import JsonLd from "@/components/JsonLd";
 import { CATEGORIES, SITE_URL } from "@/lib/site";
 import { getCategoryList, getCategorySettings } from "@/lib/category-list";
+import { isAccessoryCategory } from "@/lib/bulb-note";
 import { categoryKey } from "@/lib/categories";
 import { categoryDisplayTitle } from "@/lib/category-settings";
 import { defaultOffer, feedBrand } from "@/lib/feed";
@@ -154,8 +155,9 @@ export default async function ProductDetailPage({ params }: Props) {
 
         {similar.length > 0 && (
           <section aria-labelledby="benzer" className="mt-10">
-            <h2 id="benzer" className="text-lg font-serif font-bold text-neutral-900 mb-4">
-              Benzer Avize Modelleri
+            {/* Aksesuarlarda (avize taşı vb.) "Benzer Avize Modelleri" başlığı görünmez; ekran okuyucu için bölüm adı kalır */}
+            <h2 id="benzer" className={isAccessoryCategory(product.category) ? "sr-only" : "text-lg font-serif font-bold text-neutral-900 mb-4"}>
+              {isAccessoryCategory(product.category) ? "Benzer Ürünler" : "Benzer Avize Modelleri"}
             </h2>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {similar.map((p) => (

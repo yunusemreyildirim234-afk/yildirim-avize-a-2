@@ -3,7 +3,7 @@ import JsonLd from "@/components/JsonLd";
 const FAQS = [
   {
     q: "Ampuller avizeye dahil midir? Hangi ampulü almalıyım?",
-    a: "Güvenli kargo taşımacılığı ve kişisel ışık rengi (gün ışığı / beyaz / sarı) tercihleriniz doğrultusunda ampuller ürünlerimize dahil değildir. Ürün detayında belirtilen standart duy tipine (E14, E27 veya G9) uygun tüm tasarruflu LED ampulleri güvenle tercih edebilirsiniz.",
+    a: "Ampuller, ürün sayfasında 'LED ampul hediye' yazan ürünlerde hediye olarak gönderilir; diğer ürünlerde ürüne dahil değildir. Ürün detayında belirtilen standart duy tipine (E14, E27 veya G9) uygun tüm tasarruflu LED ampulleri güvenle tercih edebilirsiniz.",
   },
   {
     q: "Ödeme seçenekleri ve taksit imkanı var mı?",
