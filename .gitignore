@@ -62,3 +62,10 @@ e2e/test-results
 e2e/playwright-report
 !e2e/.env.e2e.example
 e2e/.auth
+
+# tools/gorsel (görsel kopyalama alt projesi)
+tools/gorsel/node_modules
+tools/gorsel/cikti
+tools/gorsel/yedek-*.json
+tools/gorsel/.env*
+!tools/gorsel/.env.example
