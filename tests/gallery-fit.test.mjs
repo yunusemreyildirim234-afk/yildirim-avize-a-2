@@ -10,5 +10,19 @@ test("ürün ana görseli ve büyüteç kesmez: object-contain, beyaz zemin", ()
   assert.ok(!main.includes("object-cover"));
   assert.equal((main.match(/object-contain/g) ?? []).length, 2);
   assert.match(main, /shadow-xl bg-white/);
-  assert.match(detail, /flex-1 overflow-hidden flex items-center justify-center bg-white/);
+});
+
+test("ana fotoğraf kutusu kare (aspect-square), esnemez; sol sütun masaüstünde üste hizalı ve sticky", () => {
+  assert.match(detail, /relative aspect-square w-full overflow-hidden flex items-center justify-center bg-white/);
+  assert.ok(!detail.includes("flex-1 overflow-hidden flex items-center justify-center"), "kutu flex-1 ile esnememeli");
+  assert.ok(!detail.includes("min-h-[320px] sm:min-h-[440px]"), "sabit min yükseklik kalmamalı");
+  assert.match(detail, /grid grid-cols-1 lg:grid-cols-2 lg:items-start/); // sağ sütun uzasa da sol sütun uzamaz/ortalanmaz
+  assert.match(detail, /overflow-clip/); // overflow-hidden sticky'yi bozar
+  assert.match(detail, /bg-neutral-900 lg:sticky lg:top-24/); // Navbar h-20 (80px) + pay
+});
+
+test("küçük resim şeridi kare kutunun hemen altında", () => {
+  const kutu = detail.indexOf("aspect-square w-full overflow-hidden");
+  const serit = detail.indexOf('role="tablist"');
+  assert.ok(kutu > 0 && serit > kutu);
 });

@@ -143,10 +143,10 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
   };
 
   return (
-    <div className="bg-white rounded-3xl border border-neutral-200 overflow-hidden shadow-sm grid grid-cols-1 lg:grid-cols-2">
+    <div className="bg-white rounded-3xl border border-neutral-200 overflow-clip shadow-sm grid grid-cols-1 lg:grid-cols-2 lg:items-start">
       {/* Sol: Büyük Boy Gerçek Avize Fotoğraf Alanı */}
-      <div className="flex flex-col bg-neutral-900">
-      <div className="group/gal relative min-h-[320px] sm:min-h-[440px] flex-1 overflow-hidden flex items-center justify-center bg-white">
+      <div className="flex flex-col bg-neutral-900 lg:sticky lg:top-24 lg:rounded-3xl lg:overflow-hidden">
+      <div className="group/gal relative aspect-square w-full overflow-hidden flex items-center justify-center bg-white">
         {gallery.length > 0 ? (
           <div
             key={gallery.join("|")}
