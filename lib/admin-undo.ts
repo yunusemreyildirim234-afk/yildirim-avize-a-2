@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { signSession, verifySession } from "@/lib/session";
 import { bulkTiersOf } from "@/lib/bulk-pricing";
 import { normalizeEbat } from "@/lib/listing-core";
-import { productUploadIds } from "@/lib/variation-input";
+import { MAX_EDIT_IMAGES, productUploadIds } from "@/lib/variation-input";
 import { isUndoValue, variationUndoEntry, type VarState, type VarUndoEntry } from "@/lib/undo-variation";
 
 // Yönetici "Geri Al" altyapısı.
@@ -118,7 +118,7 @@ const pct = (v: unknown, what: string): number | null => {
 const bool = (v: unknown, what: string): boolean => (typeof v === "boolean" ? v : (bad(what) as never));
 const id = (v: unknown, what: string): string => (typeof v === "string" && ID_RE.test(v) ? v : (bad(what) as never));
 const images = (v: unknown): string[] => {
-  if (!Array.isArray(v) || v.length > 20) return bad("images");
+  if (!Array.isArray(v) || v.length > MAX_EDIT_IMAGES) return bad("images");
   return v.map((u) => (typeof u === "string" && u.length <= 1000 && /^(https?:\/\/|\/)/.test(u) ? u : (bad("images") as never)));
 };
 const tiers = (v: unknown) => {

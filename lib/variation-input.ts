@@ -3,6 +3,8 @@ import { parseSize, secenekColorName, titleTr, variationAttrs, type VariationAtt
 
 export const MAX_PRODUCT_IMAGES = 10;
 export const MAX_VARIATION_IMAGES = 5;
+/** Düzenleme / geri alma sırasında bir üründeki toplam genel görsel üst sınırı (Trendyol ürünlerinde 20'yi aşabilir). */
+export const MAX_EDIT_IMAGES = 30;
 export const MAX_VARIATIONS = 30;
 export const MAX_COLOR_LEN = 60;
 export const MAX_STOCK = 99999;

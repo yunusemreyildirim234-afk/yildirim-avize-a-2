@@ -5,7 +5,7 @@ import { serverError } from "@/lib/api-error";
 import { adminGuard } from "@/lib/admin-guard";
 import { prisma } from "@/lib/db";
 import { attachUploads, pruneUploads } from "@/lib/product-images";
-import { MAX_PRODUCT_IMAGES, parseImageUrls, parseVariations, uploadedIdsOf } from "@/lib/variation-input";
+import { MAX_EDIT_IMAGES, MAX_PRODUCT_IMAGES, parseImageUrls, parseVariations, uploadedIdsOf } from "@/lib/variation-input";
 import { normalizeEbat } from "@/lib/listing-core";
 import { schedulePriceDrops } from "@/lib/price-drop-notify";
 import { resolveStocklessHiddenIds, setStocklessHidden } from "@/lib/stockless";
@@ -178,8 +178,8 @@ async function PATCHHandler(req: Request) {
       if (typeof body.isFeatured === "boolean") data.isFeatured = body.isFeatured;
       if (typeof body.isBestSeller === "boolean") data.isBestSeller = body.isBestSeller;
       if (Array.isArray(body.images)) {
-        // Trendyol'dan gelen ürünlerde 10'dan çok görsel olabilir (eski üst sınır 20); yüklenen görseller en fazla 10
-        const parsed = parseImageUrls(body.images, 20, "Ürün fotoğrafları");
+        // Trendyol'dan gelen ürünlerde 10'dan çok görsel olabilir (üst sınır MAX_EDIT_IMAGES = 30); yüklenen görseller en fazla 10
+        const parsed = parseImageUrls(body.images, MAX_EDIT_IMAGES, "Ürün fotoğrafları");
         if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: 400 });
         if (uploadedIdsOf(parsed.value).length > MAX_PRODUCT_IMAGES) return NextResponse.json({ error: `Yüklenen ürün fotoğrafı en fazla ${MAX_PRODUCT_IMAGES} olabilir.` }, { status: 400 });
         data.images = parsed.value;
