@@ -6,7 +6,7 @@ const CSP_REPORT_ONLY = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' https://www.paytr.com",
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://cdn.dsmcdn.com https://*.dsmcdn.com https://images.unsplash.com https://lh3.googleusercontent.com https://www.google.com https://maps.gstatic.com https://*.googleapis.com",
+  "img-src 'self' data: blob: https://cdn.dsmcdn.com https://*.dsmcdn.com https://*.public.blob.vercel-storage.com https://images.unsplash.com https://lh3.googleusercontent.com https://www.google.com https://maps.gstatic.com https://*.googleapis.com",
   "font-src 'self' data:",
   "connect-src 'self' https://www.paytr.com",
   "frame-src https://www.paytr.com https://www.google.com",
@@ -45,6 +45,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       { protocol: "https", hostname: "cdn.dsmcdn.com" },
       { protocol: "https", hostname: "**.dsmcdn.com" },
+      { protocol: "https", hostname: "*.public.blob.vercel-storage.com" },
       { protocol: "https", hostname: "images.unsplash.com" },
       { protocol: "https", hostname: "lh3.googleusercontent.com" },
     ],
