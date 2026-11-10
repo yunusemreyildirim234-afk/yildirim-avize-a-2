@@ -23,6 +23,7 @@ import { resolveCollectionKeys } from "@/lib/collections";
 import { resolveHiddenBestSellers } from "@/lib/homepage-compose";
 import { getCategoryList, getCategorySettings } from "@/lib/category-list";
 import { uncategorizedCount } from "@/lib/category-settings";
+import { productInCategory } from "@/lib/categories";
 import { resolveStocklessRule } from "@/lib/stockless";
 import AdminDiscountSettings from "@/components/AdminDiscountSettings";
 import AdminLowStock from "@/components/AdminLowStock";
@@ -120,7 +121,8 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const [homeConfig, homePools, homeRaw] = await Promise.all([getHomepageConfig(), getSectionPools(), getHomepageRaw()]);
   const categoryList = await getCategoryList().catch(() => []);
   const categorySettings = await getCategorySettings();
-  const categoryEntries = categoryList.map((c) => ({ key: c.key, slug: c.slug, title: c.title, count: c.count, fixed: c.fixed }));
+  // Kategori satırı: "yayında" = vitrin sayısı (c.count), "toplam" = pasifler dahil o kategorideki tüm ürünler (Tüm Ürünler filtresindeki sayı)
+  const categoryEntries = categoryList.map((c) => ({ key: c.key, slug: c.slug, title: c.title, count: c.count, total: products.filter((p) => productInCategory(p.category, c)).length, fixed: c.fixed }));
   const collectionOptions = (await getCategoryList().catch(() => [])).map((c) => ({ key: c.key, title: c.title, count: c.count })); // ana sayfa koleksiyon seçenekleri
   // Çok Satanlar: bölüm havuzu (100) aynı sıralamanın uzun hâlidir; ilk 48 = getBestSellers(48) (ikinci sorgu yapılmaz)
   const showcase = { featured: featuredIds.map((p) => p.id), bestSellers: homePools.bestsellers.slice(0, 48).map((p) => p.id), manualFeatured: flaggedFeatured.length };

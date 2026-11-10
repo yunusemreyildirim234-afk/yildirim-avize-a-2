@@ -5,13 +5,14 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ChevronDown, FolderTree, PackageX } from "lucide-react";
 import { useOpenOnHash } from "@/components/useOpenOnHash";
-import { MAX_CATEGORY_NAME, type CategorySettings } from "@/lib/category-settings";
+import { MAX_CATEGORY_NAME, categoryCountLabel, type CategorySettings } from "@/lib/category-settings";
 
 export interface CategoryRowInfo {
   key: string;
   slug: string;
   title: string; // sabit kategoride varsayılan başlık; diğerlerinde kategori adı
-  count: number;
+  count: number; // vitrinde yayında olan ürün
+  total: number; // pasifler dahil tüm ürün
   fixed: boolean;
 }
 
@@ -175,7 +176,7 @@ export default function AdminCategories({ entries, settings, uncategorized, show
                 <li key={e.key} className="rounded-xl border border-neutral-200 p-3 space-y-2">
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
                     <span className="font-bold text-neutral-900 text-sm">{e.fixed ? s?.title ?? e.title : e.title}</span>
-                    <span className="text-neutral-500">{e.count} ürün</span>
+                    <span className="text-neutral-500">{categoryCountLabel(e.count, e.total)}</span>
                     {e.count === 0 && <span className="rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-semibold text-amber-800">vitrinde ürün yok</span>}
                     <span className="font-mono text-neutral-400">/kategori/{e.slug}</span>
                     {e.fixed && <span className="rounded-full bg-neutral-100 border border-neutral-200 px-2 py-0.5 text-[10px] font-semibold text-neutral-600">Sabit</span>}

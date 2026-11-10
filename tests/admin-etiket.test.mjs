@@ -22,3 +22,10 @@ test("A6: 'Yeni gelen' davranışı değişmedi: havale bekleyen ve hazırlanan 
   assert.equal(matchesGroups({ status: "PENDING_NEW" }, ["odeme"]), true, "yalnızca ödeme çipi seçiliyken de listelenir");
   assert.equal(matchesGroups({ status: "AWAITING_PAYMENT" }, DEFAULT_GROUP_KEYS), false, "kart denemeleri açılışta hâlâ gizli");
 });
+
+test("A12: kategori etiketi 'yayında / toplam' biçiminde; toplam yayındakinden küçük gösterilmez", async () => {
+  const { categoryCountLabel } = await import("../lib/category-settings.ts");
+  assert.equal(categoryCountLabel(11, 18), "11 yayında / 18 toplam");
+  assert.equal(categoryCountLabel(0, 4), "0 yayında / 4 toplam");
+  assert.equal(categoryCountLabel(5, 3), "5 yayında / 5 toplam", "önbellek gecikmesinde tutarsız etiket çıkmaz");
+});

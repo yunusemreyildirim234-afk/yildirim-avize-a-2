@@ -159,3 +159,8 @@ export function planDelete(list: readonly CategoryEntry[], key: string): DeleteP
 
 /** Kategorisiz (boş / yalnız boşluk) ürün sayısı. */
 export const uncategorizedCount = (products: readonly { category: string }[]): number => products.filter((p) => !p.category || !p.category.trim()).length;
+
+/** Yönetim paneli kategori satırı etiketi: vitrinde yayında olan / pasifler dahil toplam ürün. */
+export function categoryCountLabel(visible: number, total: number): string {
+  return `${visible} yayında / ${Math.max(visible, total)} toplam`;
+}
