@@ -173,3 +173,28 @@ test("uç ve arayüz kablolaması: admin oturumu, süre, Blob yok → 503, hata 
   assert.match(route, /revalidateStorefront\(\)/);
   assert.doesNotMatch(route, /\.env/);
 });
+
+test("onay metni: N görsel = 2N yazma, kalan kota 2N'den azsa uyarı, Ezerek notu", async () => {
+  const { copyConfirmText, BLOB_USED_ESTIMATE, BLOB_HOBBY_LIMIT } = await import("../lib/image-copy-ui.ts");
+  assert.equal(BLOB_USED_ESTIMATE, 1320);
+  const kucuk = copyConfirmText(100);
+  assert.match(kucuk, /100 görsel = 200 Blob yazması/);
+  assert.match(kucuk, /ayda 2000, bu ay yaklaşık 1320/);
+  assert.doesNotMatch(kucuk, /UYARI/);
+  const buyuk = copyConfirmText(BLOB_HOBBY_LIMIT);
+  assert.match(buyuk, /UYARI/);
+  assert.doesNotMatch(copyConfirmText(10, "KEEP"), /Ezerek/);
+  assert.match(copyConfirmText(10, "OVERWRITE"), /Ezerek/);
+});
+
+test("arayüz: düğme, ilerleme çubuğu, durdur, hata listesi, Ezerek uyarısı eşitleme alanına bağlı", () => {
+  const ui = readFileSync(new URL("../components/AdminImageCopy.tsx", import.meta.url), "utf8");
+  assert.match(ui, /Görselleri depoya kopyala/);
+  assert.match(ui, /role="progressbar"/);
+  assert.match(ui, /Durdur/);
+  assert.match(ui, /window\.confirm\(copyConfirmText/);
+  assert.match(ui, /\/api\/admin\/gorsel-kopyala/);
+  assert.match(ui, /imagesMode === "OVERWRITE"/);
+  const sync = readFileSync(new URL("../components/AdminTrendyolSync.tsx", import.meta.url), "utf8");
+  assert.match(sync, /<AdminImageCopy pending=\{uncopiedImages\} imagesMode=\{settings\.IMAGES\}/);
+});
