@@ -89,21 +89,25 @@ export default async function Home() {
                     key={c.slug}
                     role="listitem"
                     href={`/kategori/${c.slug}`}
-                    className="group relative aspect-[4/5] rounded-2xl overflow-hidden bg-zinc-200 border border-zinc-200 shrink-0 snap-start w-[calc(50%-8px)] lg:w-[calc(25%-12px)]"
+                    data-testid="koleksiyon-kart"
+                    className="group flex flex-col rounded-2xl overflow-hidden bg-white border border-zinc-200 shrink-0 snap-start w-[calc(50%-8px)] lg:w-[calc(25%-12px)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600"
                   >
-                    {cover && (
-                      <Image
-                        src={cover}
-                        alt={c.title}
-                        fill
-                        sizes="(min-width: 1024px) 25vw, 50vw"
-                        className="object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/75 via-zinc-950/10 to-transparent" />
-                    <div className="absolute bottom-0 p-4 sm:p-5 text-white">
-                      <h3 className="font-serif font-bold text-base sm:text-lg leading-tight">{c.title}</h3>
-                      <span className="text-xs text-zinc-200">Keşfet →</span>
+                    {/* Fotoğraf alanı: oran (4/5) ve kırpma (object-cover) eskisiyle aynı; yazı artık fotoğrafın üstünde değil */}
+                    <div className="relative aspect-[4/5] overflow-hidden bg-zinc-200">
+                      {cover && (
+                        <Image
+                          src={cover}
+                          alt={c.title}
+                          fill
+                          sizes="(min-width: 1024px) 25vw, 50vw"
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                      )}
+                    </div>
+                    {/* Düz zeminli başlık şeridi: açık temada beyaz/koyu yazı, koyu temada renk ölçeği ters döner. Uzun başlık kesilmez, alt satıra iner. */}
+                    <div className="flex-1 border-t border-zinc-200 bg-white px-3 py-3 sm:px-4 sm:py-3.5">
+                      <h3 className="font-serif font-bold text-sm sm:text-lg leading-snug text-zinc-900 break-words">{c.title}</h3>
+                      <span className="mt-1 block text-xs font-semibold text-amber-800 group-hover:underline">Keşfet →</span>
                     </div>
                   </Link>
                 );
