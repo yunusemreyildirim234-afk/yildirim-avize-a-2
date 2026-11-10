@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import ImagePicker from "@/components/ImagePicker";
 import { itemsFromUrls, newKey, uploadFile, type PickerItem } from "@/lib/client-upload";
-import { replaceAt } from "@/lib/image-list";
+import { replaceAt, urlsToAppend } from "@/lib/image-list";
 import { MAX_EDIT_IMAGES, MAX_VARIATION_IMAGES } from "@/lib/variation-input";
 import { BulkColorChange, VariationNameEdit } from "@/components/VariationNameTools";
 
@@ -169,6 +169,22 @@ export default function AdminProductEditor({ product, onSaved, onSetActive, onSe
     }
   };
 
+  // "Genel galeriden seç": yalnızca yüklenmiş (dosyası bekleyen olmayan) genel fotoğraflar; mevcut adresler kullanılır, yükleme yok
+  const [pickFor, setPickFor] = useState<string | null>(null);
+  const [picked, setPicked] = useState<string[]>([]);
+  const galleryUrls = images.filter((i) => !i.file).map((i) => i.src);
+  const openPick = (id: string) => {
+    setPickFor((cur) => (cur === id ? null : id));
+    setPicked([]);
+  };
+  const togglePick = (src: string) => setPicked((p) => (p.includes(src) ? p.filter((u) => u !== src) : [...p, src]));
+  const applyPick = (id: string) => {
+    const add = urlsToAppend((varImages[id] ?? []).map((i) => i.src), picked, MAX_VARIATION_IMAGES);
+    if (add.length > 0) setVarImages((m) => ({ ...m, [id]: [...(m[id] ?? []), ...itemsFromUrls(add)] }));
+    setPickFor(null);
+    setPicked([]);
+  };
+
   const saveVariationImages = (v: EditorVariation) =>
     run(() => api("PATCH", "/api/admin/product/variation", { variationId: v.id, images: (varImages[v.id] ?? []).map((i) => i.src) }), "✓ Renk fotoğrafları kaydedildi.");
 
@@ -327,9 +343,50 @@ export default function AdminProductEditor({ product, onSaved, onSetActive, onSe
                   onAddFiles={uploadInto((fn) => setVarImages((m) => ({ ...m, [v.id]: fn(m[v.id] ?? []) })), MAX_VARIATION_IMAGES)}
                   onChange={(next) => setVarImages((m) => ({ ...m, [v.id]: next }))}
                 />
+                <button type="button" disabled={busy} onClick={() => openPick(v.id)} aria-expanded={pickFor === v.id} className="font-semibold text-neutral-700 hover:underline mr-3">
+                  Genel galeriden seç
+                </button>
                 <button type="button" disabled={busy} onClick={() => saveVariationImages(v)} className="font-semibold text-emerald-700 hover:underline">
                   Fotoğrafları Kaydet
                 </button>
+                {pickFor === v.id && (
+                  <div className="rounded-lg border border-neutral-200 bg-white p-2 space-y-2" data-testid="gallery-pick">
+                    {galleryUrls.length === 0 ? (
+                      <p className="text-neutral-500">Genel galeride yüklenmiş fotoğraf yok.</p>
+                    ) : (
+                      <ul className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                        {galleryUrls.map((src, gi) => {
+                          const has = (varImages[v.id] ?? []).some((i) => i.src === src);
+                          const on = picked.includes(src);
+                          return (
+                            <li key={src}>
+                              <button
+                                type="button"
+                                disabled={has}
+                                aria-pressed={on}
+                                aria-label={`Genel fotoğraf ${gi + 1}${has ? " (zaten ekli)" : ""}`}
+                                onClick={() => togglePick(src)}
+                                className={`relative block w-full aspect-square rounded border-2 overflow-hidden ${on ? "border-amber-500" : "border-transparent"} ${has ? "opacity-40 cursor-not-allowed" : "hover:border-amber-300"}`}
+                              >
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={src} alt="" className="w-full h-full object-contain bg-white" />
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                    <div className="flex flex-wrap items-center gap-3">
+                      <button type="button" disabled={picked.length === 0} onClick={() => applyPick(v.id)} className="bg-neutral-900 hover:bg-amber-600 disabled:opacity-50 text-white font-semibold px-3 py-1.5 rounded-lg">
+                        Seçilenleri ekle ({picked.length})
+                      </button>
+                      <button type="button" onClick={() => setPickFor(null)} className="text-neutral-500 hover:underline">
+                        Vazgeç
+                      </button>
+                      <span className="text-neutral-500">Eklenenler listeye girer; kalıcı olması için &ldquo;Fotoğrafları Kaydet&rdquo;e basın (en fazla {MAX_VARIATION_IMAGES}).</span>
+                    </div>
+                  </div>
+                )}
               </div>
             </li>
           ))}
