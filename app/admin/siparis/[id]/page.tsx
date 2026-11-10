@@ -7,7 +7,8 @@ import { ADDRESS_LINE } from "@/lib/site";
 import { istanbulDateTimeParts } from "@/lib/format-date";
 import { orderItemProductView } from "@/lib/order-item-product";
 import { bankPaymentDeadline, breakdownOf, breakdownRows, deliveryAddressText, formatIstanbul, formatTl, orderCode } from "@/lib/order-display";
-import { paymentMethodLabel } from "@/lib/admin-order-detail";
+import { buildFis, paymentMethodLabel } from "@/lib/admin-order-detail";
+import AdminPrintButton from "@/components/AdminPrintButton";
 import OrderStatusSelector from "@/components/OrderStatusSelector";
 import AdminKargonomiOrderActions from "@/components/AdminKargonomiOrderActions";
 import AdminOrderRequest from "@/components/AdminOrderRequest";
@@ -35,11 +36,32 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
   const isPickup = order.shippingType === "BEYOGLU_MAGAZA_TESLIM";
   const dt = istanbulDateTimeParts(order.createdAt);
   const rows = breakdownRows(breakdownOf(order.items, order.shippingType, order.totalAmount));
+  const fis = buildFis({ ...order, items: order.items.map((i) => ({ quantity: i.quantity, variationValue: i.variation?.variationValue, title: orderItemProductView(i.variation?.product).title })) }, ADDRESS_LINE);
+  const fisTime = dt ? `${dt.date} ${dt.time}` : "-";
   const awaitsReceipt = order.paymentMethod === "BANK_TRANSFER" && order.status === "PENDING_NEW";
 
   return (
-    <main className="min-h-screen bg-neutral-100 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-5xl space-y-5">
+    <main className="min-h-screen bg-neutral-100 py-8 px-4 sm:px-6 lg:px-8 print:min-h-0 print:bg-white print:p-0">
+      {/* Hazırlık fişi: yalnızca yazdırmada görünür; fiyat/indirim/toplam yok (depo ve kargo çalışanı için) */}
+      <section data-testid="hazirlik-fisi" aria-label="Hazırlık fişi" className="hidden print:block text-black">
+        <h1 className="text-xl font-bold">Hazırlık Fişi — {fis.code}</h1>
+        <p className="text-sm">Tarih: {fisTime}</p>
+        <p className="mt-3 text-sm"><strong>{fis.isPickup ? "Mağazadan teslim" : "Teslimat adresi"}:</strong> {fis.address}</p>
+        <p className="text-sm"><strong>Telefon:</strong> {fis.phone}</p>
+        <p className="text-sm"><strong>Ödeme yöntemi:</strong> {fis.payment}</p>
+        <table className="mt-4 w-full border-collapse text-sm">
+          <thead>
+            <tr className="border-b-2 border-black text-left"><th className="py-1">Ürün</th><th className="py-1">Varyasyon</th><th className="py-1 text-right">Adet</th></tr>
+          </thead>
+          <tbody>
+            {fis.items.map((i, idx) => (
+              <tr key={idx} className="border-b border-neutral-400"><td className="py-1 pr-2">{i.title}</td><td className="py-1 pr-2">{i.variation}</td><td className="py-1 text-right font-bold">{i.quantity}</td></tr>
+            ))}
+          </tbody>
+        </table>
+        {fis.note && <p className="mt-4 whitespace-pre-line border border-black p-2 text-sm"><strong>Sipariş notu:</strong> {fis.note}</p>}
+      </section>
+      <div className="mx-auto max-w-5xl space-y-5 print:hidden">
         <Link href="/admin?durum=tumu#siparisler" className="inline-flex min-h-10 items-center gap-1.5 text-xs font-semibold text-neutral-700 hover:text-amber-700">
           <ArrowLeft aria-hidden="true" className="h-3.5 w-3.5" /> Sipariş listesine dön
         </Link>
@@ -51,7 +73,8 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
             <p className="mt-1 break-all font-mono text-[11px] text-neutral-500">Tam kimlik: {order.id}</p>
             <p className="mt-1 text-xs text-neutral-600">{dt ? `${dt.date} ${dt.time}` : "—"}</p>
           </div>
-          <div className="sm:w-64">
+          <div className="flex flex-col gap-2 sm:w-64">
+            <AdminPrintButton label="Hazırlık fişi yazdır" />
             {awaitsReceipt && <div className="mb-2"><AdminReceiptActions orderId={order.id} hasReceipt={Boolean(order.receiptUrl)} senderName={order.receiptSenderName} /></div>}
             <OrderStatusSelector orderId={order.id} initialStatus={order.status} shippingType={order.shippingType} />
           </div>
