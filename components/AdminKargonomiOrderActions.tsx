@@ -57,6 +57,11 @@ export default function AdminKargonomiOrderActions({ order }: Props) {
   const tracking = order.shippingTrackingCode || order.shippingBarcode;
   const payable = ["PENDING", "SHIPPED"].includes(order.status);
 
+  // İptal/iade edilmiş siparişte barkod oluşturulamaz: düğme ve "ödeme onaylanınca" notu gösterilmez
+  if (!order.labelCreated && ["CANCELLED", "RETURNED"].includes(order.status)) {
+    return <span className="text-[11px] text-neutral-400">—</span>;
+  }
+
   if (!order.labelCreated) {
     return (
       <div className="space-y-1.5 min-w-[11rem]">
