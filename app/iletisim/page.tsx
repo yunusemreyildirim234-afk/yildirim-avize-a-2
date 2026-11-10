@@ -2,6 +2,7 @@
 
 import { toast } from "sonner";
 import { useState } from "react";
+import Link from "next/link";
 
 export default function IletisimPage() {
   const [name, setName] = useState("");
@@ -294,6 +295,11 @@ export default function IletisimPage() {
                   >
                     {loading ? "Gönderiliyor..." : "Mesajı İlet →"}
                   </button>
+                  <p className="text-[11px] text-neutral-500">
+                    Kişisel verileriniz{" "}
+                    <Link href="/aydinlatma-metni" className="font-semibold text-amber-800 underline underline-offset-2">aydınlatma metni</Link>{" "}
+                    kapsamında işlenir.
+                  </p>
                 </form>
               )}
             </div>
