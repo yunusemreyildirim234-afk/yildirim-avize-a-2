@@ -79,3 +79,39 @@ test("bulgu 9: yeniden oluşturma da tek istekle sınırlı (etiketi olan sipari
   assert.equal(a.log.shipments + b.log.shipments, 1);
   assert.deepEqual(order, { status: "SHIPPED", labelCreated: true });
 });
+
+// ---- Kargonomi zaman aşımı: kilit bırakılır, yönetici "gönderi açılmış olabilir" uyarısını görür ----
+import { KARGONOMI_TIMEOUT_MESSAGE, isTimeoutError } from "../lib/shipping-claim.ts";
+
+test("zaman aşımı: gerçek AbortSignal.timeout hatası tanınır, sahiplenme bırakılır, mesaj panel kontrolünü söyler", async () => {
+  const order = { status: "PENDING", labelCreated: false };
+  const read = { ...order };
+  const hang = (signal) => new Promise((_, rej) => signal.addEventListener("abort", () => rej(signal.reason)));
+  let caught;
+  try {
+    await createShippingOnce({
+      claim: async () => { order.labelCreated = !read.labelCreated; return true; },
+      open: () => hang(AbortSignal.timeout(10)), // Kargonomi yanıt vermiyor
+      finish: async () => true,
+      release: async () => { order.labelCreated = read.labelCreated; },
+    });
+  } catch (e) {
+    caught = e;
+  }
+  assert.equal(isTimeoutError(caught), true);
+  assert.deepEqual(order, { status: "PENDING", labelCreated: false }, "kilit bırakıldı");
+  assert.equal(KARGONOMI_TIMEOUT_MESSAGE, "Kargonomi yanıt vermedi. Gönderi açılmış olabilir, yeniden denemeden önce Kargonomi panelini kontrol edin.");
+});
+
+test("zaman aşımı ayrımı: AbortError ve cause içindeki zaman aşımı evet; sıradan hata hayır", () => {
+  assert.equal(isTimeoutError(Object.assign(new Error("x"), { name: "AbortError" })), true);
+  assert.equal(isTimeoutError(new TypeError("fetch failed", { cause: Object.assign(new Error("t"), { name: "TimeoutError" }) })), true);
+  assert.equal(isTimeoutError(new Error("Kargonomi hatası (422)")), false);
+  assert.equal(isTimeoutError(null), false);
+});
+
+test("zaman aşımı: rota bu hatayı yakalayıp sabit mesajı döner", async () => {
+  const { readFileSync } = await import("node:fs");
+  const src = readFileSync(new URL("../app/api/admin/orders/[id]/create-shipping/route.ts", import.meta.url), "utf8");
+  assert.match(src, /if \(isTimeoutError\(error\)\)[\s\S]{0,200}error: KARGONOMI_TIMEOUT_MESSAGE/);
+});

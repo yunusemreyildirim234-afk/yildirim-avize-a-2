@@ -4,6 +4,14 @@
 /** Barkod yalnızca ödemesi onaylanmış (hazırlanıyor) veya zaten kargodaki siparişte oluşturulur. */
 export const SHIPPABLE_STATUSES = ["PENDING", "SHIPPED"];
 
+export const KARGONOMI_TIMEOUT_MESSAGE = "Kargonomi yanıt vermedi. Gönderi açılmış olabilir, yeniden denemeden önce Kargonomi panelini kontrol edin.";
+
+/** İstek zaman aşımına uğradı / kesildi mi? (AbortSignal.timeout → "TimeoutError", elle kesme → "AbortError"; fetch bunu `cause` içinde de taşıyabilir) */
+export function isTimeoutError(e: unknown): boolean {
+  const name = (x: unknown) => (x && typeof x === "object" ? String((x as { name?: unknown }).name ?? "") : "");
+  return ["TimeoutError", "AbortError"].includes(name(e)) || ["TimeoutError", "AbortError"].includes(name((e as { cause?: unknown } | null)?.cause));
+}
+
 export type ShippingResult<T> = { outcome: "CLAIM_LOST" } | { outcome: "STATUS_CHANGED"; shipped: T } | { outcome: "OK"; shipped: T };
 
 export interface ShippingDeps<T> {

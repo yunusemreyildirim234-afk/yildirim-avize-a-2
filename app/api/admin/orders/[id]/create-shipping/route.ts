@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db";
 import { KargonomiError, createShipmentForOrder, refreshOrderShipment } from "@/lib/kargonomi";
 import { sendShippedEmail } from "@/lib/email";
 import { notifyCustomer } from "@/lib/notifications";
-import { SHIPPABLE_STATUSES, createShippingOnce } from "@/lib/shipping-claim";
+import { KARGONOMI_TIMEOUT_MESSAGE, SHIPPABLE_STATUSES, createShippingOnce, isTimeoutError } from "@/lib/shipping-claim";
 
 /** Aras Kargo barkodunu Kargonomi'de oluşturur, siparişi "kargoya verildi" yapar ve müşteriyi bilgilendirir (yönetici oturumu proxy.ts ile doğrulanır). */
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
@@ -71,6 +71,11 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 
     return NextResponse.json({ success: true, order: updated });
   } catch (error) {
+    // Zaman aşımı: istek Kargonomi'ye ulaşmış ve gönderi açılmış olabilir. Sahiplenme bırakılmıştır (yeniden denenebilir) ama yönetici önce paneli kontrol etmelidir.
+    if (isTimeoutError(error)) {
+      console.error("[admin/create-shipping] Kargonomi zaman aşımı");
+      return NextResponse.json({ error: KARGONOMI_TIMEOUT_MESSAGE }, { status: 504 });
+    }
     const status = error instanceof KargonomiError && error.status >= 400 && error.status < 600 ? error.status : 502;
     console.error("[admin/create-shipping]", (error as Error).message);
     const message = error instanceof KargonomiError ? error.message : "Kargo kaydı oluşturulamadı. Lütfen tekrar deneyin.";
