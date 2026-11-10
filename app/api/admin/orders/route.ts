@@ -6,8 +6,9 @@ import { serverError } from "@/lib/api-error";
 import { planStatusChange } from "@/lib/order-undo";
 import { restoreStockInTx, type RestoreTx } from "@/lib/stock-restore";
 import { DELETE_GUARD_HOURS, isPaymentInFlight } from "@/lib/stock-rules";
+import { orderNotificationLink } from "@/lib/order-display";
 
-// Seçili siparişleri (ve bağlı kalem, fatura, dekont kayıtlarını) kalıcı siler. Silmeden ÖNCE, aynı işlem içinde: stoğu düşülmüş (stockDeducted)
+// Seçili siparişleri (ve bağlı kalem, fatura, dekont kayıtlarını, onay sayfasına giden müşteri bildirimlerini) kalıcı siler. Silmeden ÖNCE, aynı işlem içinde: stoğu düşülmüş (stockDeducted)
 // siparişlerin ayrılmış stoğu iade edilir (bayrak koşullu, idempotent) ve henüz iade edilmemiş kupon hakkı geri verilir (iptal akışıyla aynı karar: planStatusChange).
 async function DELETEHandler(req: Request) {
   const denied = await adminGuard();
@@ -40,6 +41,8 @@ async function DELETEHandler(req: Request) {
           if (plan.restoreStock) await restoreStockInTx(tx as unknown as RestoreTx, o.id);
           if (plan.releaseCoupon && o.couponCode) await tx.$executeRaw`UPDATE "Coupon" SET "usedCount" = GREATEST(0, "usedCount" - 1) WHERE "code" = ${o.couponCode}`;
         }
+        // Silinen siparişin onay sayfasına giden müşteri bildirimleri de silinir (bağlantı artık 404 verirdi)
+        await tx.notification.deleteMany({ where: { link: { in: ids.map(orderNotificationLink) } } });
         await tx.receiptFile.deleteMany({ where: { orderId: { in: ids } } });
         if (invoiceTable) await tx.orderInvoice.deleteMany({ where: { orderId: { in: ids } } });
         await tx.orderItem.deleteMany({ where: { orderId: { in: ids } } });

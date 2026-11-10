@@ -87,3 +87,15 @@ test("M5: havale kartı, onay sayfası ve e-postalar tam kimliği değil 8 hanel
   const outside = mail.replace(/\/siparis-onay\/\$\{data\.orderId\}/g, "").replace(/orderCode\(data\.orderId\)/g, "");
   assert.ok(!/\$\{(esc\()?data\.orderId\)?\}/.test(outside), "e-posta gövdesinde çıplak tam kimlik kalmamalı");
 });
+
+test("A8/C2: sipariş silinirken onay sayfasına giden müşteri bildirimi de aynı transaction'da silinir", async () => {
+  const { orderNotificationLink } = await import("../lib/order-display.ts");
+  assert.equal(orderNotificationLink("abc-1"), "/siparis-onay/abc-1");
+  const read = (p) => readFileSync(new URL(p, import.meta.url), "utf8");
+  // Bildirim oluşturulurken yazılan bağlantı, silmede aranan bağlantıyla aynı biçimde olmalı
+  assert.match(read("../lib/orders.ts"), /link: `\/siparis-onay\/\$\{order\.id\}`/);
+  const route = read("../app/api/admin/orders/route.ts");
+  const tx = route.indexOf("prisma.$transaction(");
+  const del = route.indexOf("tx.notification.deleteMany({ where: { link: { in: ids.map(orderNotificationLink) } } })");
+  assert.ok(tx > 0 && del > tx && del < route.indexOf("tx.order.deleteMany("), "bildirim silme, sipariş silmeyle aynı transaction'da ve ondan önce");
+});

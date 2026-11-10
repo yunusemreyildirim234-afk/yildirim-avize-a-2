@@ -62,3 +62,6 @@ export function deliveryAddressText(o: { shippingType: string; address?: string 
   const region = [o.buyerCityName, o.buyerStateName].filter(Boolean).join(" / ");
   return [o.address?.trim(), region].filter(Boolean).join(", ") || "-";
 }
+
+/** Müşterinin "Siparişiniz Alındı" bildirimindeki bağlantı; sipariş silinirken bildirim bu bağlantıyla bulunup silinir. */
+export const orderNotificationLink = (orderId: string) => `/siparis-onay/${orderId}`;
