@@ -58,7 +58,7 @@ test("/api/marketing-consent artık kayıt yazmaz", () => {
 });
 
 test("sepet ayrı /api/marketing-consent isteği atmaz, bayrağı siparişe ekler", () => {
-  const src = readFileSync(new URL("../app/sepet/page.tsx", import.meta.url), "utf8");
+  const src = readFileSync(new URL("../app/sepet/page.tsx", import.meta.url), "utf8").replace(/\r\n/g, "\n"); // Windows'ta CRLF çalışma kopyası
   assert.doesNotMatch(src, /fetch\("\/api\/marketing-consent"/);
   assert.match(src, /marketingOptIn,\n/);
 });
