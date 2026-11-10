@@ -8,7 +8,7 @@ test.describe("i) Alt bilgi SSS bağlantısı", () => {
     await link.click();
     await expect(page).toHaveURL(/\/#sss-baslik$/);
     await expect(page.locator("#sss-baslik")).toBeInViewport();
-    await expect(page.locator("#sss-baslik")).toHaveText(/Kargolama, Garanti/);
+    await expect(page.locator("#sss-baslik")).toHaveText(/Kargolama & Montaj/);
     // Sabit menü başlığı örtmemeli: kaydırma bitince başlığın üstü menünün altında olmalı (gerçek konum ölçümü)
     await expect
       .poll(async () =>
