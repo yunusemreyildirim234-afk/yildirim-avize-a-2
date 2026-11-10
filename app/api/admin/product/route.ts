@@ -11,6 +11,32 @@ import { schedulePriceDrops } from "@/lib/price-drop-notify";
 import { resolveStocklessHiddenIds, setStocklessHidden } from "@/lib/stockless";
 import { buildUndoToken, snapshotForDelete, snapshotProducts } from "@/lib/admin-undo";
 import { STOCK_CHANGED_ERROR, STOCK_PREV_MISSING_ERROR, planStockWrite } from "@/lib/stock-edit";
+import { isTextOverwrite, normalizeDescription, snapshotDescription } from "@/lib/product-description";
+import { resolveSyncModes } from "@/lib/trendyol-modes";
+
+const PRODUCT_ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
+
+// 0. Açıklama düzenleyicisi için okuma (GET ?productId=): güncel açıklama, Trendyol'un son gönderdiği metin (syncSnapshot.description) ve
+// eşitlemede "Başlık ve açıklama" grubunun "Ezerek" olup olmadığı. Yalnızca yönetici; hiçbir şey yazmaz.
+export async function GET(req: Request) {
+  const denied = await adminGuard();
+  if (denied) return denied;
+  try {
+    const productId = new URL(req.url).searchParams.get("productId") ?? "";
+    if (!PRODUCT_ID_RE.test(productId)) return NextResponse.json({ error: "Geçersiz istek." }, { status: 400 });
+    const [product, config] = await Promise.all([
+      prisma.product.findUnique({ where: { id: productId }, select: { description: true, syncSnapshot: true } }),
+      prisma.siteConfig.findUnique({ where: { id: 1 }, select: { homepageConfig: true } }),
+    ]);
+    if (!product) return NextResponse.json({ error: "Ürün bulunamadı." }, { status: 404 });
+    return NextResponse.json(
+      { description: product.description, trendyolDescription: snapshotDescription(product.syncSnapshot), textOverwrite: isTextOverwrite(resolveSyncModes(config?.homepageConfig).modes) },
+      { headers: { "Cache-Control": "no-store" } }
+    );
+  } catch (error) {
+    return serverError("admin/product", error);
+  }
+}
 
 // 1. Yeni Avize Ekleme (POST): ürün + tüm renkler TEK transaction'da; fotoğraflar önceden /api/admin/product-images ile yüklenir
 const isUniqueError = (e: unknown) => typeof e === "object" && e !== null && (e as { code?: string }).code === "P2002";
@@ -119,6 +145,16 @@ async function PATCHHandler(req: Request) {
         await tx.siteConfig.upsert({ where: { id: 1 }, create: { id: 1, homepageConfig: cfg as object }, update: { homepageConfig: cfg as object } });
       });
       return NextResponse.json({ success: true, stocklessHidden: body.stocklessHidden });
+    }
+
+    // Açıklama düzenleme (M15): yalnızca açıklama alanı yazılır; metin lib/product-description.ts ile temizlenir, sınırı aşan reddedilir.
+    // Eşitlemede açıklama "Koruyarak" modundaysa elle değişiklik anlık görüntü farkından tanınır ve korunur (syncSnapshot'a dokunulmaz).
+    if (typeof body.productId === "string" && "description" in body) {
+      const description = normalizeDescription(body.description);
+      if (!description.ok) return NextResponse.json({ error: description.error }, { status: 400 });
+      const written = await prisma.product.updateMany({ where: { id: body.productId }, data: { description: description.value } });
+      if (written.count === 0) return NextResponse.json({ error: "Ürün bulunamadı." }, { status: 404 });
+      return NextResponse.json({ success: true, description: description.value });
     }
 
     // Tekil ürün düzenleme: başlık, fiyat, görseller (varsa model kodu ile birlikte)

@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Boxes, ChevronDown, ExternalLink, Lightbulb, Pencil, Search, Trash2, Undo2 } from "lucide-react";
+import { AlertTriangle, Boxes, ChevronDown, ExternalLink, FileText, Lightbulb, Pencil, Search, Trash2, Undo2 } from "lucide-react";
 import { useOpenOnHash } from "@/components/useOpenOnHash";
 import { useRouter } from "next/navigation";
 import AdminBulkBar from "@/components/AdminBulkBar";
 import AdminSelectionPanel, { scrollToRow } from "@/components/AdminSelectionPanel";
 import { addAll, chipLabel, nextLastId, removeAll, removeId, toggleId } from "@/lib/admin-selection";
 import AdminProductEditor from "@/components/AdminProductEditor";
+import AdminDescriptionEditor from "@/components/AdminDescriptionEditor";
 import { activeConfirmMessage } from "@/lib/bulk-plan";
 import SmartFilterChips from "@/components/SmartFilterChips";
 import { bulkTiersOf, tierBadgeLabel, tierValueLabel } from "@/lib/bulk-pricing";
@@ -142,6 +143,7 @@ export default function AdminProductList({ products, maxTotalDiscountPct, showca
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => { if (flashTimer.current) clearTimeout(flashTimer.current); }, []);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [descId, setDescId] = useState<string | null>(null); // açıklaması düzenlenen ürün
   const [chips, setChips] = useState<string[]>([]);
   const [catChips, setCatChips] = useState<string[]>([]); // kategori çipleri (anahtar: categoryKey); diğer çiplerle KESİŞİR
   const PAGE = 8;
@@ -600,6 +602,15 @@ Yine de geri alınsın mı?`)) await doUndo(true);
             </button>
             <button
               type="button"
+              data-testid="aciklama-duzenle"
+              onClick={() => setDescId((id) => (id === product.id ? null : product.id))}
+              aria-expanded={descId === product.id}
+              className="inline-flex min-h-10 items-center gap-1.5 text-neutral-600 hover:text-amber-700 text-xs font-medium px-3 rounded-lg hover:bg-amber-50 transition-colors"
+            >
+              <FileText aria-hidden="true" className="w-3.5 h-3.5" /> {descId === product.id ? "Açıklamayı kapat" : "Açıklamayı düzenle"}
+            </button>
+            <button
+              type="button"
               disabled={loadingId === product.id}
               onClick={() => handleDeleteProduct(product.id, product.title)}
               className="ml-4 inline-flex min-h-10 items-center gap-1.5 border border-red-200 text-red-700 hover:bg-red-50 text-xs font-semibold px-3 rounded-lg transition-colors disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-red-600"
@@ -609,6 +620,7 @@ Yine de geri alınsın mı?`)) await doUndo(true);
             </button>
             </div>
           </div>
+          {descId === product.id && <AdminDescriptionEditor key={product.id} productId={product.id} title={product.title} />}
           {editingId === product.id && (
             <AdminProductEditor
               key={`${product.id}:${product.variations.map((v) => `${v.id}${v.variationValue}${v.stock}${v.extraPrice}${(v.images ?? []).join(",")}`).join("|")}`}
