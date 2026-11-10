@@ -4,9 +4,9 @@ import { adminGuard } from "@/lib/admin-guard";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { sendRequestDecisionEmail } from "@/lib/email";
-import { restoreOrderStock } from "@/lib/orders";
 import { releaseCoupon } from "@/lib/coupons";
-import { planStatusChange } from "@/lib/order-undo";
+import { RequestRefusal, decideRequestInTx } from "@/lib/order-request";
+import type { StatusChangeTx } from "@/lib/order-undo";
 
 // Yönetici iptal/iade talebini onaylar veya reddeder (proxy yalnızca yöneticiye açar)
 async function POSTHandler(req: Request) {
@@ -23,25 +23,22 @@ async function POSTHandler(req: Request) {
   if (!order || !order.cancelReturnType) return NextResponse.json({ error: "Talep bulunamadı." }, { status: 404 });
   if (order.cancelReturnStatus !== "PENDING") return NextResponse.json({ error: "Talep zaten sonuçlandırılmış." }, { status: 409 });
 
-  const isCancel = order.cancelReturnType === "CANCEL";
-  await prisma.order.update({
-    where: { id: orderId },
-    data: {
-      cancelReturnStatus: approve ? "APPROVED" : "REJECTED",
-      cancelReturnNote: note || null,
-      // Onayda sipariş durumu da güncellenir; reddedilirse mevcut durum korunur
-      ...(approve ? { status: isCancel ? "CANCELLED" : "RETURNED" } : {}),
-    },
-  });
-
-  // Onaylanan iptalde VE iadede (RETURNED) stok/kupon iadesi order-status ile aynı karardan (planStatusChange): stok bayrak koşullu (idempotent),
-  // kupon durum zaten PAYMENT_FAILED/CANCELLED/RETURNED ise daha önce iade edilmiştir
-  if (approve) {
-    const plan = planStatusChange(order.status, isCancel ? "CANCELLED" : "RETURNED", order.stockDeducted);
-    if (plan.restoreStock) await restoreOrderStock(orderId);
-    if (plan.releaseCoupon) await releaseCoupon(order.couponCode).catch(() => {});
+  // Karar + sipariş durumu + stok + kupon TEK transaction'da (lib/order-request.ts): koşullu sahiplenme çift tıklamada çift iadeyi ve çift e-postayı engeller;
+  // onay anında güncel durum yeniden okunur (kargoya verilmiş/teslim edilmiş sipariş iptal edilmez). Reddedilirse hiçbir şey yazılmaz.
+  let result;
+  try {
+    result = await prisma.$transaction(
+      (tx) => decideRequestInTx(tx as unknown as StatusChangeTx, { orderId, type: order.cancelReturnType as string, approve, note: note || null }, (code) => releaseCoupon(code, tx)),
+      { maxWait: 5000, timeout: 10000 },
+    );
+  } catch (e) {
+    if (e instanceof RequestRefusal) return NextResponse.json({ error: e.message }, { status: 409 });
+    console.error("[admin/order-request]", (e as Error).message);
+    return NextResponse.json({ error: "Talep sonuçlandırılamadı. Lütfen tekrar deneyin." }, { status: 500 });
   }
+  if (result.outcome === "ALREADY_DECIDED") return NextResponse.json({ error: "Talep zaten sonuçlandırılmış." }, { status: 409 });
 
+  // E-posta transaction dışında ve yalnızca kararı kazanan istekte gönderilir
   const emailed = await sendRequestDecisionEmail({
     to: cleanGuestEmail(order.user.email),
     name: order.user.name,
