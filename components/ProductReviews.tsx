@@ -97,7 +97,7 @@ export default function ProductReviews({
       </div>
 
       {reviews.length === 0 ? (
-        <p className="text-sm text-neutral-500">Bu ürün için henüz yorum yapılmamış. İlk yorumu siz yazın.</p>
+        <p className="text-sm text-neutral-500">Bu ürün için henüz yorum yapılmamış.{typeof eligibility === "object" && eligibility.state === "can" ? " İlk yorumu siz yazın." : ""}</p>
       ) : (
         <>
           <SmartFilterChips label="Yıldıza göre yorum filtresi" options={starOptions} selected={starFilter} total={reviews.length} onChange={setStarFilter} />
