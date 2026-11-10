@@ -47,7 +47,7 @@ E-posta, şifre ve rol değişmez. Onaylıyor musunuz?`)) return;
         <AdminDeleteButton
           endpoint="/api/admin/activity"
           payload={{ keys: [r.key] }}
-          label="Kaydı Sil"
+          label="Hareket kaydını sil"
           confirmText={guest ? "Bu misafirin 3 günlük hareket kayıtları silinecek." : "Bu üyenin 3 günlük hareket kayıtları silinecek (üye hesabı silinmez)."}
           disabled={quiet}
           className={`min-h-9 ${r.userId ? "ml-4" : "ml-auto"}`}

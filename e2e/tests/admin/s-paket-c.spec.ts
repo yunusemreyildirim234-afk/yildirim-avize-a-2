@@ -92,12 +92,12 @@ test.describe("Admin paket C: stok düğmeleri, silme düğmeleri, Trendyol vars
     await expect(radio("Görseller", "Elle değiştirdiklerimi koru")).toBeChecked();
   });
 
-  test("müşteri hareketleri: 'Düzenle' ve 'Kaydı Sil' aynı yükseklikte, ayrık (yalnızca düzenlenebilir üye varsa)", async ({ page }) => {
+  test("müşteri hareketleri: 'Düzenle' ve 'Hareket kaydını sil' aynı yükseklikte, ayrık (yalnızca düzenlenebilir üye varsa)", async ({ page }) => {
     await openAdmin(page);
     await expandPanel(page, /Müşteriler & Son 3 Gün/);
-    const li = page.locator("li", { has: page.getByRole("button", { name: "Düzenle", exact: true }) }).filter({ has: page.getByRole("button", { name: "Kaydı Sil" }) }).first();
+    const li = page.locator("li", { has: page.getByRole("button", { name: "Düzenle", exact: true }) }).filter({ has: page.getByRole("button", { name: "Hareket kaydını sil" }) }).first();
     test.skip((await li.count()) === 0, "E2E veritabanında düzenlenebilir üyenin hareket kaydı yok");
-    const [e, d] = [(await li.getByRole("button", { name: "Düzenle", exact: true }).boundingBox())!, (await li.getByRole("button", { name: "Kaydı Sil" }).boundingBox())!];
+    const [e, d] = [(await li.getByRole("button", { name: "Düzenle", exact: true }).boundingBox())!, (await li.getByRole("button", { name: "Hareket kaydını sil" }).boundingBox())!];
     expect(Math.abs(e.height - d.height)).toBeLessThanOrEqual(1);
     expect(d.x - (e.x + e.width)).toBeGreaterThanOrEqual(12);
   });
