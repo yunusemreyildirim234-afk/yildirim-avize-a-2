@@ -1,7 +1,8 @@
 "use client";
 
 import { toast } from "sonner";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { sortByNameTr } from "@/lib/sort-tr";
 import { ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -141,6 +142,7 @@ export default function CartPage() {
 
   // Mağazadan teslimde il/ilçe/adres istenmez; mağaza adresi varsayılan atanır
   const isPickup = shippingType === "BEYOGLU_MAGAZA_TESLIM";
+  const sortedStates = useMemo(() => sortByNameTr(states), [states]); // Kargonomi plaka sırasıyla verir; listede Türkçe alfabetik
   const effectiveAddress = isPickup ? ADDRESS_LINE : address;
 
   // Yerel hesap (sunucuyla birebir: satır yuvarlanmaz, birim fiyat × adet). Sunucu teklifi gelene kadar yedek olarak kullanılır.
@@ -700,20 +702,20 @@ export default function CartPage() {
             </div>
 
             {/* Teslimat Tercihi */}
-            <div className="bg-white rounded-3xl border border-neutral-200 p-6 space-y-3 shadow-sm">
-              <label className="text-xs font-bold text-neutral-700 uppercase tracking-wider block">
+            <fieldset className="bg-white rounded-3xl border border-neutral-200 p-6 space-y-3 shadow-sm min-w-0">
+              <legend className="float-left w-full text-xs font-bold text-neutral-700 uppercase tracking-wider">
                 Teslimat Yöntemini Seçin:
-              </label>
+              </legend>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div
-                  onClick={() => setShippingType("BEYOGLU_MAGAZA_TESLIM")}
-                  className={`p-4 rounded-2xl border cursor-pointer transition-all ${
+              <div className="clear-both grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <label
+                  className={`block p-4 rounded-2xl border cursor-pointer transition-all has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-amber-600 ${
                     shippingType === "BEYOGLU_MAGAZA_TESLIM"
                       ? "border-amber-600 bg-amber-50/60 ring-2 ring-amber-600/20"
                       : "border-neutral-200 hover:border-neutral-300"
                   }`}
                 >
+                  <input type="radio" name="teslimat-yontemi" value="BEYOGLU_MAGAZA_TESLIM" checked={shippingType === "BEYOGLU_MAGAZA_TESLIM"} onChange={() => setShippingType("BEYOGLU_MAGAZA_TESLIM")} className="sr-only" />
                   <div className="flex items-center justify-between text-xs font-semibold text-neutral-900">
                     <span>📍 Mağazadan Teslim</span>
                     <span className="text-emerald-600 font-bold">Ücretsiz • %3 İndirim{!applied.pickup && notApplied}</span>
@@ -721,16 +723,16 @@ export default function CartPage() {
                   <p className="text-[11px] text-neutral-500 mt-1">
                     Şişhane merkezimizden görerek teslimat. Sepet tutarına ekstra %3 indirim uygulanır{!applied.pickup ? " (bu sepette uygulanmaz)" : ""}.
                   </p>
-                </div>
+                </label>
 
-                <div
-                  onClick={() => setShippingType("STANDART_KARGO")}
-                  className={`p-4 rounded-2xl border cursor-pointer transition-all ${
+                <label
+                  className={`block p-4 rounded-2xl border cursor-pointer transition-all has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-amber-600 ${
                     shippingType === "STANDART_KARGO"
                       ? "border-amber-600 bg-amber-50/60 ring-2 ring-amber-600/20"
                       : "border-neutral-200 hover:border-neutral-300"
                   }`}
                 >
+                  <input type="radio" name="teslimat-yontemi" value="STANDART_KARGO" checked={shippingType === "STANDART_KARGO"} onChange={() => setShippingType("STANDART_KARGO")} className="sr-only" />
                   <div className="flex items-center justify-between text-xs font-semibold text-neutral-900">
                     <span>📦 Adrese Teslim</span>
                     <span className="text-neutral-700 font-bold">
@@ -740,9 +742,9 @@ export default function CartPage() {
                   <p className="text-[11px] text-neutral-500 mt-1">
                     {FREE_SHIPPING_THRESHOLD} ₺ ve üzeri siparişlerde kargo ücretsiz.
                   </p>
-                </div>
+                </label>
               </div>
-            </div>
+            </fieldset>
 
             {/* Ödeme Bilgileri */}
             <div className="bg-white rounded-3xl border border-neutral-200 p-6 sm:p-8 space-y-6 shadow-sm">
@@ -817,7 +819,9 @@ export default function CartPage() {
                 Teslimat Bilgileri:
               </label>
 
-              <input aria-label="Adınız Soyadınız (En az 2 kelime)"
+              <div>
+              <label htmlFor="co-name" className="text-[11px] font-semibold text-neutral-700 block mb-1">Adınız Soyadınız</label>
+              <input id="co-name"
                 autoComplete="name"
                 required
                 type="text"
@@ -826,7 +830,10 @@ export default function CartPage() {
                 onChange={(e) => setName(e.target.value)}
                 className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
               />
-              <input aria-label="E-posta Adresiniz"
+              </div>
+              <div>
+              <label htmlFor="co-email" className="text-[11px] font-semibold text-neutral-700 block mb-1">E-posta Adresiniz</label>
+              <input id="co-email"
                 autoComplete="email"
                 required
                 type="email"
@@ -835,6 +842,7 @@ export default function CartPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
               />
+              </div>
               <div className="text-[11px] text-neutral-600">
                 <label className="flex items-start gap-2 cursor-pointer max-sm:py-2.5 max-sm:min-h-11">
                   <input
@@ -853,7 +861,9 @@ export default function CartPage() {
                   kapsamında işlenir.
                 </p>
               </div>
-              <input aria-label="Telefon Numaranız (Örn: 0555 123 45 67)"
+              <div>
+              <label htmlFor="co-phone" className="text-[11px] font-semibold text-neutral-700 block mb-1">Telefon Numaranız</label>
+              <input id="co-phone"
                 autoComplete="tel"
                 required
                 type="tel"
@@ -866,6 +876,7 @@ export default function CartPage() {
                 }}
                 className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
               />
+              </div>
 
               {isPickup && (
                 <p className="text-xs text-neutral-600 bg-neutral-50 border border-neutral-200 rounded-xl p-3">
@@ -878,16 +889,17 @@ export default function CartPage() {
               <>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-[10px] font-semibold text-neutral-500 uppercase block mb-1">
+                  <label htmlFor="co-state" className="text-[11px] font-semibold text-neutral-700 block mb-1">
                     İl (Şehir)
                   </label>
                   <select
+                    id="co-state"
                     autoComplete="address-level1"
                     value={buyerStateId}
                     onChange={(e) => { setBuyerStateId(Number(e.target.value)); setBuyerCityId(0); }}
                     className="w-full text-base sm:text-xs p-2.5 rounded-xl border border-neutral-300 bg-white focus:outline-none focus:border-amber-600"
                   >
-                    {states.map((st) => (
+                    {sortedStates.map((st) => (
                       <option key={st.id} value={st.id}>
                         {st.name}
                       </option>
@@ -896,10 +908,11 @@ export default function CartPage() {
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-semibold text-neutral-500 uppercase block mb-1">
+                  <label htmlFor="co-city" className="text-[11px] font-semibold text-neutral-700 block mb-1">
                     İlçe
                   </label>
                   <select
+                    id="co-city"
                     autoComplete="address-level2"
                     value={buyerCityId}
                     onChange={(e) => setBuyerCityId(Number(e.target.value))}
@@ -915,7 +928,9 @@ export default function CartPage() {
                 </div>
               </div>
 
-              <textarea aria-label="Açık Teslimat Adresiniz (Mahalle, Sokak, Bina ve Daire No)"
+              <div>
+              <label htmlFor="co-address" className="text-[11px] font-semibold text-neutral-700 block mb-1">Açık Teslimat Adresiniz</label>
+              <textarea id="co-address"
                 autoComplete="street-address"
                 required
                 rows={2}
@@ -924,6 +939,7 @@ export default function CartPage() {
                 onChange={(e) => setAddress(e.target.value)}
                 className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
               />
+              </div>
               </>
               )}
 
