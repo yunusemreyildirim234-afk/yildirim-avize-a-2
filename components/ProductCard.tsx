@@ -7,6 +7,7 @@ import { getLadderContext } from "@/lib/showcase";
 import { priceLadder } from "@/lib/price-ladder";
 import { coverImageOf, galleryOf } from "@/lib/variation-input";
 import { CartStepper, FavoriteButton } from "@/components/ProductQuickActions";
+import { isPurchasablePrice } from "@/lib/purchasable";
 import { lowStockLabel } from "@/lib/low-stock";
 import { getLowStockSetting } from "@/lib/low-stock-setting";
 
@@ -28,6 +29,7 @@ export default async function ProductCard({
       ? Math.round((1 - product.basePrice / product.listPrice) * 100)
       : 0;
 
+  const priceOnRequest = !isPurchasablePrice(product.basePrice); // fiyatı 0/altı: ürün sayfasıyla aynı dil
   const bulk = bulkTiersOf(product);
   // Kapak: varsayılan (ilk stoklu) rengin fotoğrafı varsa o, yoksa ürün kapağı
   const cover = coverImageOf(product);
@@ -92,12 +94,16 @@ export default async function ProductCard({
             <h3 className="font-serif text-sm sm:text-[15px] font-semibold leading-snug tracking-tight line-clamp-2 mt-0.5 sm:mt-1 sm:min-h-[2.6em]">{product.title}</h3>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className={`text-base sm:text-lg font-bold tabular-nums ${discount > 0 ? priceTone(dark).sale : ""}`}>{product.basePrice.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
-            {discount > 0 && product.listPrice && (
+            {priceOnRequest ? (
+              <span data-testid="fiyat-icin-sorun" className="text-sm sm:text-base font-semibold">Fiyat için sorun</span>
+            ) : (
+              <span className={`text-base sm:text-lg font-bold tabular-nums ${discount > 0 ? priceTone(dark).sale : ""}`}>{product.basePrice.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
+            )}
+            {!priceOnRequest && discount > 0 && product.listPrice && (
               <span className="text-xs line-through text-zinc-500">{product.listPrice.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
             )}
           </div>
-          <PriceLadder steps={ladder} size="card" dark={dark} itemsTotal={product.basePrice} />
+          {!priceOnRequest && <PriceLadder steps={ladder} size="card" dark={dark} itemsTotal={product.basePrice} />}
         </div>
       </Link>
 

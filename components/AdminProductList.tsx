@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { isPurchasablePrice } from "@/lib/purchasable";
 import { AlertTriangle, Boxes, ChevronDown, ExternalLink, FileText, Lightbulb, Pencil, Search, Trash2, Undo2 } from "lucide-react";
 import { useOpenOnHash } from "@/components/useOpenOnHash";
 import { useRouter } from "next/navigation";
@@ -523,6 +524,12 @@ Yine de geri alınsın mı?`)) await doUndo(true);
                 <span className="text-xs font-semibold text-neutral-600">
                   {product.basePrice.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺
                 </span>
+                {!isPurchasablePrice(product.basePrice) && (
+                  <p data-testid="fiyat-sifir-rozet" className="mt-1.5 inline-flex max-w-full items-start gap-1.5 rounded-md border border-red-300 bg-red-50 px-2 py-1 text-[11px] font-semibold text-red-900">
+                    <AlertTriangle aria-hidden="true" className="mt-px h-3.5 w-3.5 shrink-0 text-red-700" />
+                    <span>Fiyatı 0: satış engelli, fiyat girin</span>
+                  </p>
+                )}
                 <DiscountBadges product={product} disabled={loadingId === product.id} onRemove={(payload, label) => removeFromProduct(product.id, payload, label)} />
                 {stockedInactive(product) && (
                   <p data-testid="stoklu-pasif-rozet" className="mt-1.5 flex flex-wrap sm:inline-flex max-w-full items-start gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-950">
