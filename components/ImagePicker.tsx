@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import type { PickerItem } from "@/lib/client-upload";
+import { downloadImage, UPLOAD_QUOTA_NOTE, type PickerItem } from "@/lib/client-upload";
 
 // Çoklu fotoğraf seçici: önizleme, sıra değiştir, sil; ilk görsel kapaktır. Dosya işleme (yükleme/önizleme) üst bileşendedir.
 export default function ImagePicker({
@@ -11,6 +11,8 @@ export default function ImagePicker({
   onChange,
   disabled = false,
   label,
+  productTitle,
+  onReplaceFile,
 }: {
   items: PickerItem[];
   max: number;
@@ -18,8 +20,14 @@ export default function ImagePicker({
   onChange: (items: PickerItem[]) => void;
   disabled?: boolean;
   label: string;
+  /** İndirilen dosya adı için ürün adı (verilmezse İndir düğmesi gösterilmez). */
+  productTitle?: string;
+  /** Verilirse her görselde "Değiştir" çıkar: seçilen dosya aynı sıradaki görselin yerine konur. */
+  onReplaceFile?: (index: number, file: File) => void | Promise<void>;
 }) {
   const input = useRef<HTMLInputElement>(null);
+  const replaceInput = useRef<HTMLInputElement>(null);
+  const replaceIndex = useRef(0);
   const move = (i: number, d: -1 | 1) => {
     const next = [...items];
     const j = i + d;
@@ -48,6 +56,28 @@ export default function ImagePicker({
                   Kapak yap
                 </button>
               )}
+              {(productTitle !== undefined || onReplaceFile) && (
+                <div className="flex gap-1">
+                  {productTitle !== undefined && (
+                    <button type="button" onClick={() => void downloadImage(it.src, productTitle, i)} className="flex-1 min-h-8 rounded border border-neutral-300 bg-white text-[11px] font-semibold text-neutral-700 hover:border-amber-600">
+                      İndir
+                    </button>
+                  )}
+                  {onReplaceFile && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        replaceIndex.current = i;
+                        replaceInput.current?.click();
+                      }}
+                      disabled={disabled}
+                      className="flex-1 min-h-8 rounded border border-neutral-300 bg-white text-[11px] font-semibold text-neutral-700 hover:border-amber-600 disabled:opacity-30"
+                    >
+                      Değiştir
+                    </button>
+                  )}
+                </div>
+              )}
               <div className="flex items-center justify-between gap-1">
                 <button type="button" onClick={() => move(i, -1)} disabled={disabled || i === 0} aria-label={`${i + 1}. fotoğrafı öne al`} className="min-w-8 min-h-8 rounded border border-neutral-300 bg-white disabled:opacity-30">
                   ▲
@@ -66,13 +96,24 @@ export default function ImagePicker({
       <input
         ref={input}
         type="file"
-        accept="image/jpeg,image/png,image/webp"
+        accept="image/jpeg,image/png,image/webp,image/avif"
         multiple
         hidden
         onChange={(e) => {
           const files = Array.from(e.target.files ?? []);
           e.target.value = "";
           if (files.length) onAddFiles(files.slice(0, Math.max(0, max - items.length)));
+        }}
+      />
+      <input
+        ref={replaceInput}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/avif"
+        hidden
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          e.target.value = "";
+          if (file && onReplaceFile) void onReplaceFile(replaceIndex.current, file);
         }}
       />
       <button
@@ -83,6 +124,7 @@ export default function ImagePicker({
       >
         {full ? `En fazla ${max} fotoğraf` : `+ Fotoğraf Ekle (${items.length}/${max})`}
       </button>
+      <p className="text-[11px] text-neutral-500">{UPLOAD_QUOTA_NOTE}</p>
     </div>
   );
 }

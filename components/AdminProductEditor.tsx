@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import ImagePicker from "@/components/ImagePicker";
 import { itemsFromUrls, newKey, uploadFile, type PickerItem } from "@/lib/client-upload";
-import { MAX_VARIATION_IMAGES } from "@/lib/variation-input";
+import { replaceAt } from "@/lib/image-list";
+import { MAX_EDIT_IMAGES, MAX_VARIATION_IMAGES } from "@/lib/variation-input";
 import { BulkColorChange, VariationNameEdit } from "@/components/VariationNameTools";
 
 export interface EditorVariation {
@@ -136,7 +137,7 @@ export default function AdminProductEditor({ product, onSaved, onSetActive, onSe
   const addImage = () => {
     const url = newImage.trim();
     if (!/^(https:\/\/|\/(?!\/))/.test(url)) return alert("Geçerli bir görsel URL'si girin (https://...).");
-    setImages((list) => (list.length >= 20 ? list : [...list, { key: newKey(), src: url }]));
+    setImages((list) => (list.length >= MAX_EDIT_IMAGES ? list : [...list, { key: newKey(), src: url }]));
     setNewImage("");
   };
 
@@ -145,9 +146,22 @@ export default function AdminProductEditor({ product, onSaved, onSetActive, onSe
     setBusy(true);
     try {
       for (const f of files) {
-        const src = await uploadFile(f);
+        const src = await uploadFile(f, product.id);
         set((l) => (l.length >= max ? l : [...l, { key: newKey(), src }]));
       }
+    } catch (err) {
+      alert((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // "Değiştir": yeni görsel Blob'a yüklenir ve AYNI sıradaki görselin yerine konur (eski Blob dosyası silinmez; eski Neon satırı kaydedilince yetim kalırsa temizlenir)
+  const replaceIn = (set: (fn: (l: PickerItem[]) => PickerItem[]) => void) => async (index: number, file: File) => {
+    setBusy(true);
+    try {
+      const src = await uploadFile(file, product.id);
+      set((l) => (l[index] ? replaceAt(l, index, { ...l[index], src }) : l));
     } catch (err) {
       alert((err as Error).message);
     } finally {
@@ -225,7 +239,7 @@ export default function AdminProductEditor({ product, onSaved, onSetActive, onSe
       {/* Görseller */}
       <section className="space-y-2">
         <h4 className="font-semibold text-neutral-700">Genel fotoğraflar (ilk görsel kapak olur; renk fotoğraflarından bağımsızdır)</h4>
-        <ImagePicker label="Ürün fotoğrafı" items={images} max={20} disabled={busy} onAddFiles={uploadInto(setImages, 20)} onChange={setImages} />
+        <ImagePicker label="Ürün fotoğrafı" items={images} max={MAX_EDIT_IMAGES} disabled={busy} productTitle={title} onReplaceFile={replaceIn(setImages)} onAddFiles={uploadInto(setImages, MAX_EDIT_IMAGES)} onChange={setImages} />
         <div className="flex gap-2">
           <input
             aria-label="Yeni görsel URL"
@@ -308,6 +322,8 @@ export default function AdminProductEditor({ product, onSaved, onSetActive, onSe
                   items={varImages[v.id] ?? []}
                   max={MAX_VARIATION_IMAGES}
                   disabled={busy}
+                  productTitle={`${title} ${v.variationValue}`}
+                  onReplaceFile={replaceIn((fn) => setVarImages((m) => ({ ...m, [v.id]: fn(m[v.id] ?? []) })))}
                   onAddFiles={uploadInto((fn) => setVarImages((m) => ({ ...m, [v.id]: fn(m[v.id] ?? []) })), MAX_VARIATION_IMAGES)}
                   onChange={(next) => setVarImages((m) => ({ ...m, [v.id]: next }))}
                 />
@@ -327,7 +343,7 @@ export default function AdminProductEditor({ product, onSaved, onSetActive, onSe
             Renk Ekle
           </button>
           <div className="basis-full">
-            <ImagePicker label="Yeni renk fotoğrafı" items={newColorImages} max={MAX_VARIATION_IMAGES} disabled={busy} onAddFiles={uploadInto(setNewColorImages, MAX_VARIATION_IMAGES)} onChange={setNewColorImages} />
+            <ImagePicker label="Yeni renk fotoğrafı" items={newColorImages} max={MAX_VARIATION_IMAGES} disabled={busy} productTitle={title} onReplaceFile={replaceIn(setNewColorImages)} onAddFiles={uploadInto(setNewColorImages, MAX_VARIATION_IMAGES)} onChange={setNewColorImages} />
           </div>
         </form>
       </section>

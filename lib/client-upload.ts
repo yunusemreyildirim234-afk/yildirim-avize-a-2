@@ -1,5 +1,6 @@
-// Yönetici paneli (yalnızca istemci): ürün/renk fotoğrafı yükleme. Her dosya AYRI istektir; sıkıştırma lib/client-image.ts ile yapılır.
-import { compressImageToWebP } from "@/lib/client-image";
+// Yönetici paneli (yalnızca istemci): ürün/renk fotoğrafı yükleme. Her dosya AYRI istektir; küçültme lib/client-image.ts ile yapılır.
+import { shrinkForUpload } from "@/lib/client-image";
+import { downloadBaseName } from "@/lib/image-list";
 
 export interface PickerItem {
   key: string;
@@ -16,18 +17,43 @@ export const releaseItem = (i: PickerItem) => {
   if (i.file) URL.revokeObjectURL(i.src);
 };
 
-/** Dosyayı ~1600px WebP'ye sıkıştırır ve yükler; yüklenen görselin göreli adresini döndürür. */
-export async function uploadFile(file: File): Promise<string> {
-  const small = await compressImageToWebP(file, { maxWidth: 1600, maxHeight: 1600, quality: 0.78 });
+/** Yönetici uyarısı: her yükleme Blob'a iki dosya (-b ve -k) yazar. */
+export const UPLOAD_QUOTA_NOTE = "Bu yükleme 2 depolama yazması harcar (Blob Hobby: ayda 2000).";
+
+/** Dosyayı (gerekirse ~2400 px WebP'ye küçültüp) Blob'a yükler; kare tuvali ve -b/-k üretimini sunucu yapar. Dönen: "...-b.webp" adresi. */
+export async function uploadFile(file: File, productId?: string): Promise<string> {
+  const small = await shrinkForUpload(file);
   const form = new FormData();
   form.append("file", small);
-  const res = await fetch("/api/admin/product-images", { method: "POST", body: form });
+  if (productId) form.append("productId", productId);
+  const res = await fetch("/api/admin/product-images", { method: "POST", body: form }).catch(() => null);
+  if (!res) throw new Error(`"${file.name}" yüklenemedi: bağlantı hatası.`);
   const data = await res.json().catch(() => ({}));
-  if (!res.ok || typeof data.url !== "string") throw new Error(data.error || `"${file.name}" yüklenemedi.`);
+  if (!res.ok || typeof data.url !== "string") throw new Error(data.error || (res.status === 413 ? `"${file.name}" çok büyük (en fazla 4 MB).` : `"${file.name}" yüklenemedi.`));
   return data.url;
 }
 
-/** Ürüne bağlanmamış yüklemeleri siler (form iptal/hata); sessizce başarısız olabilir, kalanlar 24 saatte temizlenir. */
+/** Görseli indirir. Blob başka kaynaktır: önce fetch ile adlı indirme, olmazsa ?download=1 adresi. */
+export async function downloadImage(url: string, productTitle: string, index: number) {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(String(res.status));
+    const blob = await res.blob();
+    const ext = (blob.type.split("/")[1] || "webp").replace("jpeg", "jpg");
+    const href = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = href;
+    a.download = `${downloadBaseName(productTitle, index)}.${ext}`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(href), 10_000);
+  } catch {
+    window.open(url.startsWith("http") ? `${url}${url.includes("?") ? "&" : "?"}download=1` : url, "_blank", "noopener");
+  }
+}
+
+/** Ürüne bağlanmamış yüklemeleri siler (form iptal/hata); sessizce başarısız olabilir. Yalnızca eski (Neon) yüklemeler silinir; Blob dosyalarına dokunulmaz. */
 export async function discardUploaded(urls: string[]) {
   if (urls.length === 0) return;
   await fetch("/api/admin/product-images", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ urls }) }).catch(() => {});

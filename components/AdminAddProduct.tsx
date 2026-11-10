@@ -5,6 +5,7 @@ import { PackagePlus } from "lucide-react";
 import { useOpenOnHash } from "@/components/useOpenOnHash";
 import { useRouter } from "next/navigation";
 import ImagePicker from "@/components/ImagePicker";
+import { replaceAt } from "@/lib/image-list";
 import { discardUploaded, itemsFromFiles, releaseItem, uploadFile, type PickerItem } from "@/lib/client-upload";
 import { MAX_PRODUCT_IMAGES, MAX_VARIATIONS, MAX_VARIATION_IMAGES } from "@/lib/variation-input";
 import { COLLECTION_OPTIONS } from "@/lib/site";
@@ -49,6 +50,8 @@ export default function AdminAddProduct({ extraCategories = [], categoryTitles =
     row.items.filter((p) => !next.includes(p)).forEach(releaseItem);
     patchRow(row.key, { items: next });
   };
+  // "Değiştir": henüz yüklenmemiş (veya yüklenmiş) görselin yerine seçilen dosya AYNI sıraya konur; yükleme gönderimde yapılır
+  const swapAt = (items: PickerItem[], index: number, file: File) => replaceAt(items, index, itemsFromFiles([file])[0]);
   const addRow = () => {
     if (rows.length >= MAX_VARIATIONS) return;
     setRows((list) => [...list, { key: nextKey, name: "", stock: "10", extraPrice: "0", items: [] }]);
@@ -198,6 +201,8 @@ export default function AdminAddProduct({ extraCategories = [], categoryTitles =
               max={MAX_PRODUCT_IMAGES}
               disabled={loading}
               onAddFiles={(files) => setPhotos((list) => [...list, ...itemsFromFiles(files)].slice(0, MAX_PRODUCT_IMAGES))}
+              productTitle={title}
+              onReplaceFile={(i, f) => setPhotoItems(swapAt(photos, i, f))}
               onChange={setPhotoItems}
             />
           </div>
@@ -240,6 +245,8 @@ export default function AdminAddProduct({ extraCategories = [], categoryTitles =
                     max={MAX_VARIATION_IMAGES}
                     disabled={loading}
                     onAddFiles={(files) => patchRow(r.key, { items: [...r.items, ...itemsFromFiles(files)].slice(0, MAX_VARIATION_IMAGES) })}
+                    productTitle={`${title} ${r.name}`}
+                    onReplaceFile={(i, f) => setRowItems(r, swapAt(r.items, i, f))}
                     onChange={(next) => setRowItems(r, next)}
                   />
                 </div>
