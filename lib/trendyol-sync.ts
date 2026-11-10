@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { prisma } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { buildIncoming, fetchTrendyolProducts } from "@/lib/trendyol";
+import { applyImageMaps } from "@/lib/image-map";
 import { GROUPS, planSync, seciliPlan, type ExistingProduct, type Mode, type Plan, type ProductPlan, type Settings } from "@/lib/trendyol-plan";
 
 const CHUNK = 100;
@@ -20,7 +21,7 @@ export function parseSettings(raw: unknown): Settings {
 
 /** Trendyol'dan OKUR (yazmaz), mevcut ürünlerle karşılaştırıp planı üretir. Önizleme ve uygulama aynı fonksiyonu kullanır. */
 export async function buildPlan(ayarlar: Settings): Promise<Plan> {
-  const incoming = buildIncoming(await fetchTrendyolProducts());
+  const gelen = buildIncoming(await fetchTrendyolProducts());
   const rows = await prisma.product.findMany({
     where: { trendyolMainId: { not: null } },
     select: {
@@ -29,7 +30,8 @@ export async function buildPlan(ayarlar: Settings): Promise<Plan> {
       variations: { select: { id: true, barcode: true, variationValue: true, extraPrice: true, stock: true, stockCode: true, salePrice: true, listPrice: true, syncStock: true, syncSnapshot: true } },
     },
   });
-  const mevcut = rows as unknown as ExistingProduct[];
+  // Blob'a kopyalanmış görseller: Trendyol adresleri ürünün imageMap'iyle çevrilir (kopyalar geri ezilmez)
+  const { incoming, existing: mevcut } = applyImageMaps(gelen, rows as unknown as ExistingProduct[]);
   const reserved = await prisma.orderItem.groupBy({
     by: ["variationId"],
     _sum: { quantity: true },
