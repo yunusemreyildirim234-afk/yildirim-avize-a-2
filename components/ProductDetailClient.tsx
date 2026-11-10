@@ -19,6 +19,7 @@ import { SITE_URL, WHATSAPP_NUMBER } from "@/lib/site";
 import { isPurchasablePrice } from "@/lib/purchasable";
 import { activeTier, bulkLabel, bulkTiersOf, unitPriceFor } from "@/lib/bulk-pricing";
 import { lowStockLabel, type LowStockSetting } from "@/lib/low-stock";
+import { bulbNoteFor } from "@/lib/bulb-note";
 
 interface Variation {
   id: string;
@@ -88,6 +89,7 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
     t?.scrollIntoView?.({ block: "nearest", inline: "nearest", behavior: reducedMotion() ? "auto" : "smooth" });
   }, [activeImage]);
 
+  const bulbNote = bulbNoteFor(product.title, product.category);
   const currentPrice = product.basePrice + (selectedVariation?.extraPrice || 0);
   const listShown = product.listPrice && product.listPrice > product.basePrice ? product.listPrice + (selectedVariation?.extraPrice || 0) : null;
   const bulk = bulkTiersOf(product);
@@ -266,12 +268,22 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
           </p>
 
           <ul className="space-y-2 pt-1 text-xs">
-            <li className="flex items-start gap-2.5 rounded-xl border border-amber-300 bg-amber-50 px-3.5 py-2.5 text-amber-950">
-              <span aria-hidden="true">💡</span>
-              <span>
-                <strong>Ampul Dahil Değildir</strong> (Standart E14/E27 LED ampullerle uyumludur)
-              </span>
-            </li>
+            {bulbNote === "gift" && (
+              <li className="flex items-start gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2.5 text-emerald-950">
+                <span aria-hidden="true">💡</span>
+                <span>
+                  <strong>LED Ampul Hediye</strong> – Ürünle birlikte LED ampuller hediye olarak gönderilir.
+                </span>
+              </li>
+            )}
+            {bulbNote === "not-included" && (
+              <li className="flex items-start gap-2.5 rounded-xl border border-amber-300 bg-amber-50 px-3.5 py-2.5 text-amber-950">
+                <span aria-hidden="true">💡</span>
+                <span>
+                  <strong>Ampul Dahil Değildir</strong> (Standart E14/E27 LED ampullerle uyumludur)
+                </span>
+              </li>
+            )}
             <li className="flex items-start gap-2.5 rounded-xl border border-neutral-200 bg-neutral-50 px-3.5 py-2.5 text-neutral-800">
               <span aria-hidden="true">📏</span>
               <span>

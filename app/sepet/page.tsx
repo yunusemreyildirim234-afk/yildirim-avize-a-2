@@ -23,6 +23,7 @@ import { COUPON_GENERIC_ERROR, couponPlaceholder, staleCouponMessage } from "@/l
 import { beginCheckoutEvent, gaItem } from "@/lib/gtm-events";
 import { activeTier, bulkLabel, type BulkRule } from "@/lib/bulk-pricing";
 import { isValidPhone, PHONE_ERROR } from "@/lib/phone";
+import { bulbNoteFor } from "@/lib/bulb-note";
 import { clearCartChoices, loadCartChoices, saveCartChoices, tabStore } from "@/lib/cart-choices";
 import { forgetCardOrder, previousCardOrderId, rememberCardOrder } from "@/lib/pending-card-order";
 
@@ -551,12 +552,21 @@ export default function CartPage() {
                     <span className="inline-block text-xs bg-amber-50 text-amber-800 font-medium px-2.5 py-0.5 rounded-md mt-1">
                       {item.variationName}
                     </span>
-                    <span className="mt-1.5 flex items-start gap-1.5 text-[11px] leading-snug text-amber-900 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1 w-fit max-w-full">
-                      <span aria-hidden="true">💡</span>
-                      <span>
-                        <strong>Ampul Dahil Değildir</strong> (Standart E14/E27 LED ampullerle uyumludur)
+                    {bulbNoteFor(item.title) === "gift" ? (
+                      <span className="mt-1.5 flex items-start gap-1.5 text-[11px] leading-snug text-emerald-900 bg-emerald-50 border border-emerald-200 rounded-lg px-2 py-1 w-fit max-w-full">
+                        <span aria-hidden="true">💡</span>
+                        <span>
+                          <strong>LED ampul hediye</strong>
+                        </span>
                       </span>
-                    </span>
+                    ) : (
+                      <span className="mt-1.5 flex items-start gap-1.5 text-[11px] leading-snug text-amber-900 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1 w-fit max-w-full">
+                        <span aria-hidden="true">💡</span>
+                        <span>
+                          <strong>Ampul Dahil Değildir</strong> (Standart E14/E27 LED ampullerle uyumludur)
+                        </span>
+                      </span>
+                    )}
                     <div className="text-sm font-bold text-neutral-900 mt-2">
                       {(pricedOf(item.variationId)?.unitPrice ?? item.price).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺
                       {(pricedOf(item.variationId)?.unitPrice ?? item.price) < item.price && (
