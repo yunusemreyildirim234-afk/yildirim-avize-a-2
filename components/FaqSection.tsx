@@ -15,7 +15,7 @@ const FAQS = [
   },
   {
     q: "Eksik veya hasarlı taş/parça çıkarsa ne yapmalıyım?",
-    a: "Kargo açılışında herhangi bir kristal taşta çatlak veya eksik parça fark ederseniz WhatsApp destek hattımıza fotoğrafını iletmeniz yeterlidir. Kusurlu veya eksik parçalar hiçbir kargo ve ürün ücreti talep edilmeksizin 24 saat içinde adresinize ücretsiz olarak kargolanır.",
+    a: "Kargo açılışında herhangi bir kristal taşta çatlak veya eksik parça fark ederseniz WhatsApp destek hattımıza fotoğrafını iletmeniz yeterlidir. Kusurlu veya eksik parçalar hiçbir kargo ve ürün ücreti talep edilmeksizin 1 iş günü içinde adresinize ücretsiz olarak kargolanır.",
   },
   {
     q: "Kurumsal fatura alabilir miyim?",
