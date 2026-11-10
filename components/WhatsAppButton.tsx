@@ -12,11 +12,13 @@ export default function WhatsAppButton() {
   const message = "Merhaba Yıldırım Avize Destek Hattı, ürünleriniz ve sipariş süreci hakkında bilgi almak istiyorum.";
   const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
 
-  const base =
-    "flex items-center gap-2.5 text-white p-3.5 sm:px-5 sm:py-3 rounded-full shadow-xl transition-all duration-300 hover:scale-105";
+  // Ürün ve sepet sayfalarında mobilde düğmeler küçük ve yan yana durur: fiyatın / satır silme düğmesinin üstüne binen alan en aza iner
+  const compact = pathname?.startsWith("/urun") || pathname?.startsWith("/sepet");
+
+  const base = `flex items-center gap-2.5 text-white ${compact ? "p-2.5" : "p-3.5"} sm:px-5 sm:py-3 rounded-full shadow-xl transition-all duration-300 hover:scale-105`;
 
   return (
-    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 flex flex-col items-end gap-3">
+    <div className={`fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 flex ${compact ? "flex-row sm:flex-col" : "flex-col"} items-end gap-3`}>
       <a
         href={`tel:${PHONE_TEL}`}
         aria-label={`Bizi arayın: ${PHONE_DISPLAY}`}
