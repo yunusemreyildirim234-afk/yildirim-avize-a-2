@@ -203,6 +203,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         {/* Yapışkan "bölüme git" çubuğu (tüm bölümlere bağlantı; kapalı bölümü açar) */}
         <AdminSectionNav
           items={[
+            { id: "siparisler", label: "Siparişler" },
             { id: "kargonomi", label: "Kargonomi" },
             { id: "trendyol", label: "Trendyol" },
             { id: "yeni-avize", label: "Yeni Avize" },
@@ -214,7 +215,6 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
             { id: "ana-sayfa", label: "Ana Sayfa" },
             { id: "kuponlar", label: "Promosyon Kodları" },
             { id: "urunler", label: "Tüm Ürünler" },
-            { id: "siparisler", label: "Siparişler" },
             { id: "mesajlar", label: "Mesajlar" },
             { id: "yorumlar", label: "Yorumlar" },
             { id: "kurumsal", label: "Kurumsal" },
@@ -371,8 +371,8 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-neutral-700">
-                <thead className="bg-neutral-50 text-neutral-500 uppercase tracking-wider text-[10px] border-b border-neutral-200">
+              <table className="w-full max-sm:block text-left text-xs text-neutral-700">
+                <thead className="max-sm:hidden bg-neutral-50 text-neutral-500 uppercase tracking-wider text-[10px] border-b border-neutral-200">
                   <tr>
                     <th className="p-4">Sipariş ID & Tarih</th>
                     <th className="p-4">Müşteri & Adres</th>
@@ -382,10 +382,10 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                     <th className="p-4">Sipariş Durumu</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-neutral-100 font-medium align-top">
+                <tbody className="max-sm:block divide-y divide-neutral-100 font-medium align-top">
                   {visibleOrders.map((order) => (
-                    <tr key={order.id} className="hover:bg-neutral-50/80 transition-colors">
-                      <td className="p-4 font-mono text-[11px] text-neutral-500">
+                    <tr key={order.id} className="max-sm:flex max-sm:flex-col max-sm:border-b max-sm:border-neutral-200 hover:bg-neutral-50/80 transition-colors">
+                      <td data-label="Sipariş ID & Tarih" className="max-sm:flex max-sm:flex-col max-sm:before:content-[attr(data-label)] max-sm:before:text-[10px] max-sm:before:uppercase max-sm:before:tracking-wider max-sm:before:text-neutral-400 max-sm:before:mb-1 p-4 font-mono text-[11px] text-neutral-500">
                         {order.id.slice(0, 8)}...
                         <time dateTime={order.createdAt.toISOString()} className="block text-[10px] text-neutral-400 mt-0.5">
                           {(() => {
@@ -401,7 +401,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                           })()}
                         </time>
                       </td>
-                      <td className="p-4">
+                      <td data-label="Müşteri & Adres" className="max-sm:flex max-sm:flex-col max-sm:before:content-[attr(data-label)] max-sm:before:text-[10px] max-sm:before:uppercase max-sm:before:tracking-wider max-sm:before:text-neutral-400 max-sm:before:mb-1 p-4">
                         <span className="font-bold text-neutral-900 block">{order.user.name}</span>
                         <span className="text-neutral-500 text-[11px] block">{cleanGuestEmail(order.user.email)}</span>
                         {order.phone && (
@@ -428,7 +428,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                           </span>
                         )}
                       </td>
-                      <td className="p-4">
+                      <td data-label="Alınan Avize" className="max-sm:flex max-sm:flex-col max-sm:before:content-[attr(data-label)] max-sm:before:text-[10px] max-sm:before:uppercase max-sm:before:tracking-wider max-sm:before:text-neutral-400 max-sm:before:mb-1 p-4">
                         {order.items.map((item) => {
                           const p = orderItemProductView(item.variation?.product);
                           const thumb = p.image ? (
@@ -459,7 +459,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                           );
                         })}
                       </td>
-                      <td className="p-4 space-y-1">
+                      <td data-label="Teslimat & Tutar" className="max-sm:flex max-sm:flex-col max-sm:before:content-[attr(data-label)] max-sm:before:text-[10px] max-sm:before:uppercase max-sm:before:tracking-wider max-sm:before:text-neutral-400 max-sm:before:mb-1 p-4 space-y-1">
                         {order.shippingType === "BEYOGLU_MAGAZA_TESLIM" ? (
                           <span className="inline-flex items-center gap-1 bg-amber-100 text-amber-900 text-[11px] font-semibold px-2.5 py-1 rounded-full">
                             <MapPin aria-hidden="true" className="w-3.5 h-3.5 shrink-0" /> Mağazadan Teslim
@@ -479,7 +479,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                           isPickup={order.shippingType === "BEYOGLU_MAGAZA_TESLIM"}
                         />
                       </td>
-                      <td className="p-4">
+                      <td data-label="Kargonomi API İşlemleri" className="max-sm:flex max-sm:flex-col max-sm:before:content-[attr(data-label)] max-sm:before:text-[10px] max-sm:before:uppercase max-sm:before:tracking-wider max-sm:before:text-neutral-400 max-sm:before:mb-1 p-4">
                         {/* İstemciye yalnızca gereken alanlar gider (tam sipariş nesnesi müşteri kaydını, parola özetini de taşırdı) */}
                         <AdminKargonomiOrderActions
                           order={{
@@ -496,7 +496,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                           }}
                         />
                       </td>
-                      <td className="p-4">
+                      <td data-label="Sipariş Durumu" className="max-sm:order-first max-sm:bg-neutral-50 max-sm:flex max-sm:flex-col max-sm:before:content-[attr(data-label)] max-sm:before:text-[10px] max-sm:before:uppercase max-sm:before:tracking-wider max-sm:before:text-neutral-400 max-sm:before:mb-1 p-4">
                         {order.status === "AWAITING_PAYMENT" && (
                           <span className="inline-block mb-2 bg-yellow-100 text-yellow-900 border border-yellow-300 text-[11px] font-bold px-2.5 py-1 rounded-full">
                             Sipariş Denemesi (Ödeme Tamamlanmadı)
