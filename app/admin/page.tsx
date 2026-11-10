@@ -46,6 +46,7 @@ import { ORDER_GROUPS, isCountedOrder, matchesGroups, parseGroupParam, type Orde
 import { getInvoiceMeta } from "@/lib/invoice";
 import { orderItemProductView } from "@/lib/order-item-product";
 import { adminOrderHref } from "@/lib/admin-order-detail";
+import { inDateRange, matchesOrderSearch, resolveDateRange } from "@/lib/admin-order-search";
 
 // Büyük ve ilk görünümde kapalı bölümlerde duran bileşenler ayrı parçada yüklenir (davranış aynı)
 const AdminProductList = nextDynamic(() => import("@/components/AdminProductList"));
@@ -110,8 +111,10 @@ async function getAdminData() {
   return { orders, products, messages, coupons, customers, reviews, company };
 }
 
-export default async function AdminPage({ searchParams }: { searchParams: Promise<{ durum?: string }> }) {
-  const durumParam = (await searchParams).durum;
+export default async function AdminPage({ searchParams }: { searchParams: Promise<{ durum?: string; q?: string; tarih?: string; bas?: string; bit?: string }> }) {
+  const sp = await searchParams;
+  const durumParam = sp.durum;
+  const orderFilters = { q: sp.q, tarih: sp.tarih, bas: sp.bas, bit: sp.bit };
   const selectedGroups = parseGroupParam(durumParam);
   const { orders, products, messages, coupons, customers, reviews, company } = await getAdminData();
   const extraCategories = await getExtraCategoryNames(); // yönetim panelinden eklenen kategoriler (form/toplu işlem seçenekleri)
@@ -154,7 +157,12 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   // Sayaçlar: yalnızca ödemesi alınmış, iptal/iade edilmemiş siparişler "geçerli" sayılır (lib/orderStatus.ts)
   const countedOrders = orders.filter((o) => isCountedOrder(o.status));
   const attempts = orders.filter((o) => o.status === "AWAITING_PAYMENT");
-  const groupCounts = Object.fromEntries(ORDER_GROUPS.map((g) => [g.key, orders.filter((o) => g.test(o)).length])) as Record<OrderGroupKey, number>;
+  // Arama + tarih aralığı: durum çiplerinden önce uygulanır; çip sayaçları ve "Tümü" aynı kümeden çıkar (liste = çip seçimi ∩ arama ∩ tarih).
+  // Süzme sunucudadır: sipariş listesi zaten tek sorguda tümüyle yüklenir, istemciye ek veri/JS gitmez ve sonuç adres çubuğunda paylaşılabilir.
+  const dateRange = resolveDateRange(sp.tarih, sp.bas, sp.bit, new Date());
+  const scopedOrders = orders.filter((o) => matchesOrderSearch(o, sp.q ?? "") && inDateRange(o.createdAt, dateRange));
+  const allGroupCounts = Object.fromEntries(ORDER_GROUPS.map((g) => [g.key, orders.filter((o) => g.test(o)).length])) as Record<OrderGroupKey, number>; // bölüm rozetleri süzgeçten bağımsız
+  const groupCounts = Object.fromEntries(ORDER_GROUPS.map((g) => [g.key, scopedOrders.filter((o) => g.test(o)).length])) as Record<OrderGroupKey, number>;
   const pendingMessages = messages.filter((m) => m.status === "PENDING").length;
   // Bekleyen havale: yalnızca zaten yüklü sipariş listesinden türer (ek sorgu yok)
   const pendingTransfer = orders.filter((o) => o.status === "PENDING_NEW" && o.paymentMethod === "BANK_TRANSFER");
@@ -166,7 +174,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const openShipmentCount = orders.filter((o) => Boolean(o.kargonomiShipmentId) && ["PENDING", "SHIPPED"].includes(o.status)).length;
 
   // Liste: seçili durum gruplarına göre süzülür
-  const visibleOrders = orders.filter((o) => matchesGroups(o, selectedGroups));
+  const visibleOrders = scopedOrders.filter((o) => matchesGroups(o, selectedGroups));
 
   // Fatura bilgileri ana sipariş sorgusundan ayrı okunur; tablo yoksa panelin geri kalanı çalışır
   const deliveredIds = visibleOrders.filter((o) => o.status === "DELIVERED").map((o) => o.id);
@@ -350,12 +358,12 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           title="Gelen Siparişler, Durum & Kargonomi Yönetimi"
           description="Kargonomi gönderisi oluşturabilir, fiyat tekliflerini onaylayabilir ve PDF barkod çıktısı alabilirsiniz."
           badges={[
-            { label: `${groupCounts.yeni} yeni gelen`, tone: groupCounts.yeni > 0 ? "amber" : "neutral" },
-            ...(groupCounts.talep > 0 ? [{ label: `${groupCounts.talep} talep bekliyor`, tone: "red" as const }] : []),
+            { label: `${allGroupCounts.yeni} yeni gelen`, tone: allGroupCounts.yeni > 0 ? "amber" : "neutral" },
+            ...(allGroupCounts.talep > 0 ? [{ label: `${allGroupCounts.talep} talep bekliyor`, tone: "red" as const }] : []),
             ...(attempts.length > 0 ? [{ label: `${attempts.length} deneme`, tone: "neutral" as const }] : []),
           ]}
         >
-          <AdminOrderFilters param={durumParam} counts={groupCounts} total={orders.length} />
+          <AdminOrderFilters param={durumParam} counts={groupCounts} total={scopedOrders.length} filters={orderFilters} />
           <div className="flex flex-wrap items-center justify-end gap-3 px-6 pt-4">
             {visibleOrders.length > 0 && (
               <AdminDeleteButton
@@ -373,7 +381,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
             </div>
           ) : visibleOrders.length === 0 ? (
             <div className="p-12 text-center text-neutral-400 text-xs">
-              Seçili durum filtrelerine uyan sipariş yok. Yukarıdan başka bir filtre seçebilir veya &quot;Tümü&quot;nü açabilirsiniz.
+              Seçili durum, arama ve tarih filtrelerine uyan sipariş yok. Yukarıdan başka bir filtre seçebilir, aramayı temizleyebilir veya &quot;Tümü&quot;nü açabilirsiniz.
             </div>
           ) : (
             <div className="overflow-x-auto">
