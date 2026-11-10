@@ -4,7 +4,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import ProductListing from "@/components/ProductListing";
-import { getCategoryList } from "@/lib/category-list";
+import { getCategoryList, getCategorySettings } from "@/lib/category-list";
+import { categoryDisplayTitle } from "@/lib/category-settings";
 import { withVisibleProducts } from "@/lib/categories";
 import { canonicalListing, pageHref, parseAdet, parsePage } from "@/lib/pagination";
 import { MAX_SEARCH_RESULTS, clipQuery } from "@/lib/product-search";
@@ -60,7 +61,9 @@ export default async function SearchPage({ searchParams }: Props) {
 
   const { adet, size } = parseAdet(query.adet);
   const page = parsePage(query.sayfa);
-  const categories = products.length === 0 ? withVisibleProducts(await getCategoryList().catch(() => [])).slice(0, 8) : [];
+  const categorySettings = products.length === 0 ? await getCategorySettings() : {};
+  // Sabit kategorilerin yönetimden verilen görünen adı (örn. "Sarkıt Modelleri") varsayılan addan önce gelir
+  const categories = products.length === 0 ? withVisibleProducts(await getCategoryList().catch(() => [])).slice(0, 8).map((c) => (c.fixed ? { ...c, title: categoryDisplayTitle(categorySettings, c.key, c.title) } : c)) : [];
 
   const emptyBlock = (
         <div className="bg-zinc-50 rounded-3xl border border-zinc-200 p-8 sm:p-12 text-center max-w-xl mx-auto space-y-4">

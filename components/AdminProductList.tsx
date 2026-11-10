@@ -461,7 +461,7 @@ Yine de geri alınsın mı?`)) await doUndo(true);
 
       <AdminSelectionPanel chips={chipItems} lastId={lastId} onRemove={dropOne} onClear={() => { setSelected(new Set()); setLastId(null); }} onChipClick={focusProduct}>
         {selected.size > 0 && (
-          <AdminBulkBar maxTotalDiscountPct={maxTotalDiscountPct} ids={[...selected]} scopes={scopes} onApplied={(snapshot, label) => setUndo({ snapshot, label })} extraCategories={extraCategories} onDone={() => { setSelected(new Set()); setLastId(null); }} />
+          <AdminBulkBar maxTotalDiscountPct={maxTotalDiscountPct} ids={[...selected]} scopes={scopes} onApplied={(snapshot, label) => setUndo({ snapshot, label })} extraCategories={extraCategories} categoryTitles={categoryTitles} onDone={() => { setSelected(new Set()); setLastId(null); }} />
         )}
       </AdminSelectionPanel>
       {notice && <p role="status" className="px-5 sm:px-6 py-2 text-[11px] text-amber-900 bg-amber-100/60 border-b border-amber-200">{notice}</p>}

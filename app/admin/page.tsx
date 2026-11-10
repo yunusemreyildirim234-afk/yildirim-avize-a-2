@@ -283,7 +283,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         </div>
 
         {/* 2. Hızlı Avize Ekleme Modülü */}
-        <AdminAddProduct extraCategories={extraCategories} />
+        <AdminAddProduct extraCategories={extraCategories} categoryTitles={Object.fromEntries(Object.entries(categorySettings).flatMap(([k, s]) => (s.title ? [[k, s.title]] : [])))} />
 
         <AdminDiscountSettings initial={discountCap} />
         <AdminLowStock initial={resolveLowStock(homeRaw)} />

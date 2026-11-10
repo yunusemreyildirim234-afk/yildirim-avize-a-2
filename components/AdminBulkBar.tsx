@@ -4,6 +4,7 @@ import { useState } from "react";
 import { activeConfirmMessage, resultMessage } from "@/lib/bulk-plan";
 import { useRouter } from "next/navigation";
 import { COLLECTION_OPTIONS } from "@/lib/site";
+import { categoryKey } from "@/lib/categories";
 
 type Tab = "stock" | "rename" | "color" | "collection" | "discount" | "showcase" | "active";
 
@@ -24,13 +25,14 @@ interface Props {
   /** Seçili ürünlerde tanımlı indirimler (kaldırma menüsü için) */
   scopes: { normal: boolean; tiers: number[] };
   onApplied: (snapshot: unknown, label: string) => void;
+  categoryTitles?: Record<string, string>; // sabit kategorilerin yönetimden verilen görünen adı (categoryKey → ad)
   extraCategories: string[]; // varsayılan listede olmayan mevcut koleksiyonlar
   onDone: () => void;
   maxTotalDiscountPct?: number | null; // genel toplam indirim üst sınırı (uyarı için)
 }
 
 // Seçili ürünler için toplu işlem çubuğu
-export default function AdminBulkBar({ ids, scopes, onApplied, extraCategories, onDone, maxTotalDiscountPct }: Props) {
+export default function AdminBulkBar({ ids, scopes, onApplied, extraCategories, categoryTitles = {}, onDone, maxTotalDiscountPct }: Props) {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("stock");
   const [busy, setBusy] = useState(false);
@@ -292,7 +294,7 @@ export default function AdminBulkBar({ ids, scopes, onApplied, extraCategories, 
             <select aria-label="Koleksiyon" value={collection} onChange={(e) => setCollection(e.target.value)} className={input}>
               {COLLECTION_OPTIONS.map((c) => (
                 <option key={c.value} value={c.value}>
-                  {c.label}
+                  {categoryTitles[categoryKey(c.value)] ?? c.label}
                 </option>
               ))}
               {extraCategories.map((c) => (

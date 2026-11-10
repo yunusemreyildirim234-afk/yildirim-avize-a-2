@@ -8,6 +8,7 @@ import ImagePicker from "@/components/ImagePicker";
 import { discardUploaded, itemsFromFiles, releaseItem, uploadFile, type PickerItem } from "@/lib/client-upload";
 import { MAX_PRODUCT_IMAGES, MAX_VARIATIONS, MAX_VARIATION_IMAGES } from "@/lib/variation-input";
 import { COLLECTION_OPTIONS } from "@/lib/site";
+import { categoryKey } from "@/lib/categories";
 
 const NEW_CATEGORY = "__new__";
 
@@ -21,7 +22,7 @@ interface ColorRow {
 const firstRow = (): ColorRow => ({ key: 1, name: "Parlak Gold", stock: "10", extraPrice: "0", items: [] });
 const field = "w-full p-2.5 rounded-lg border border-neutral-300 focus:outline-none focus:border-amber-600 focus-visible:ring-2 focus-visible:ring-amber-600/30";
 
-export default function AdminAddProduct({ extraCategories = [] }: { extraCategories?: string[] }) {
+export default function AdminAddProduct({ extraCategories = [], categoryTitles = {} }: { extraCategories?: string[]; categoryTitles?: Record<string, string> }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   useOpenOnHash("yeni-avize", setOpen);
@@ -148,7 +149,7 @@ export default function AdminAddProduct({ extraCategories = [] }: { extraCategor
               {/* Sabit kategoriler (veritabanı değerleri aynen) + yönetim panelinden eklenenler */}
               {COLLECTION_OPTIONS.map((c) => (
                 <option key={c.value} value={c.value}>
-                  {c.label}
+                  {categoryTitles[categoryKey(c.value)] ?? c.label}
                 </option>
               ))}
               {extraCategories.map((c) => (
