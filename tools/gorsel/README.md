@@ -37,12 +37,14 @@ Bayraklar: `--ornek N` (model koduna göre ilk N uygun ürün; üç betikte ayn�
 
 - **Karar (v2): ürünün hiçbir pikseli kesilmez.** Tüm görseller KARE tuvale konur. Kırpma yalnızca Trendyol'un eklediği DÜZ BEYAZ
   şeritleri (her kanal ≥253) atar ve yalnızca fotoğrafın kendi zemini belirgin biçimde beyaz DEĞİLSE yapılır:
-  - Zemin gri/renkli (kenar halkası medyanı, en koyu kanalda <215) ve şerit tek eksendeyse: yalnızca düz beyaz şeritler atılır,
-    **pay eklenmez**; kare tuvalin boş kısımları kenar renkleriyle doldurulur (kenar tek renkse o renk, değilse kenar pikselleri uzatılır).
-  - Zemin beyaz/açık/saydam (kristal, cam, abajur), **belirsiz** (≥215) ya da şerit iki eksendeyse (ürün sınırı): **hiç kırpılmaz**,
-    olduğu gibi beyaz kare tuvale ortalanır.
-  - Ortam fotoğrafı (kenarlar beyaz değil, tam kare değil): kırpılmaz, kare tuvale konur, dolgu kenar rengi.
-  Önizlemede her görsel için "Kırpıldı / Kırpılmadı" ve dolgu etiketi görünür.
+  - Zemin gri/renkli (kenar halkası medyanı, en koyu kanalda <215) ve şerit tek eksendeyse: yalnızca düz beyaz şeritler atılır, **pay eklenmez**.
+  - Zemin beyaz/açık/saydam (kristal, cam, abajur), **belirsiz** (≥215) ya da şerit iki eksendeyse (ürün sınırı): **hiç kırpılmaz**.
+  - **Dolgu** (kırpılan alan kare değilse; fotoğraf bütün halde ortalanır, pikselleri BİREBİR korunur):
+    - en/boy oranı 1 ± %3: dolgu yok (kenar pikseli birkaç px uzatılır);
+    - kutu kenarları ≥245 (beyaz/açık): saf beyaz dolgu;
+    - değilse: aynı fotoğrafın kareyi dolduracak büyütülmüş, güçlü bulanıklaştırılmış hâli (bulanık arka plan); fotoğraf kenarının hemen dışında
+      kenar pikseli uzatması ~%1,5 genişlikte yumuşakça bulanığa geçer (dikiş görünmez). Tek renkli zeminde sonuç zaten düz renge yakındır.
+  Önizlemede her görsel için "Kırpıldı / Kırpılmadı" ve "dolgu: beyaz / bulanık arka plan" etiketi ile dikiş kontrolü için büyük bir örnek görünür.
 - **Tuval:** `kare` (varsayılan) = yukarıdaki kare tuval; `oran` = tuval yok, aynı güvenli kırpma, oran korunur.
 - **Boyutlar:** her görselden iki dosya: `...-b.webp` (en çok 1600 px; veritabanına bu yazılır) ve `...-k.webp` (en çok 800 px;
   site `lib/img.ts` ile türetir).
