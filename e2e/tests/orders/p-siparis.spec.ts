@@ -217,7 +217,7 @@ test.describe("Havale siparişi (uçtan uca)", () => {
     // E-posta anahtarı boş: e-posta gönderilemedi ama sipariş başarılı ve bildirimler/stok tamam
     const admin = await rows<{ message: string; link: string }>(`select message, link from "Notification" where "userId" is null and "userEmail" is null and title = $1`, [`Yeni Sipariş: #${mainOrderId.slice(0, 8)}`]);
     expect(admin, "yönetici bildirimi").toHaveLength(1);
-    expect(admin[0].link).toBe("/admin#siparisler");
+    expect(admin[0].link).toBe(`/admin/siparis/${mainOrderId}`);
     expect(admin[0].message).toContain("Havale (onay bekliyor)");
     const cust = await rows<{ link: string }>(`select link from "Notification" where "userId" = $1 and title = 'Siparişiniz Alındı'`, [o.userId]);
     expect(cust).toHaveLength(1);
@@ -243,12 +243,12 @@ test.describe("Havale siparişi (uçtan uca)", () => {
     await expect(time).toHaveText(/^\d{2}\.\d{2}\.\d{4}\s+\d{2}:\d{2}$/);
     expect((await time.innerText()).replace(/\s+/g, " ").trim()).toBe(o.istanbul);
 
-    // Zil: gerçek (sentetik değil) "Yeni Sipariş" bildirimi → /admin#siparisler
+    // Zil: gerçek (sentetik değil) "Yeni Sipariş" bildirimi → /admin/siparis/<id>
     await page.goto("/", { waitUntil: "domcontentloaded" });
     await page.getByRole("button", { name: /^Bildirimler/ }).click();
     await page.getByRole("link", { name: new RegExp(`Yeni Sipariş: #${mainOrderId.slice(0, 8)}`) }).click();
-    await page.waitForURL(/\/admin#siparisler/);
-    await expect(page.locator("#siparisler > button")).toHaveAttribute("aria-expanded", "true", { timeout: 30_000 });
+    await page.waitForURL(new RegExp(`/admin/siparis/${mainOrderId}$`));
+    await expect(page.getByRole("heading", { level: 1, name: mainOrderId.slice(0, 8) })).toBeVisible({ timeout: 30_000 });
   });
 
   test("kuponlu havale siparişi: indirim doğru, kullanım sayısı artar, kişi başı limit aşılınca ikinci kullanım reddedilir", async ({ browser, baseURL }) => {

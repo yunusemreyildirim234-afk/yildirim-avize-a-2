@@ -6,6 +6,7 @@ import { isOrderId } from "@/lib/previous-order";
 import { bankPendingBlocked, planPendingCleanup, type PendingRow } from "@/lib/pending-orders";
 import { createShipmentForOrder } from "@/lib/kargonomi";
 import { notifyAdmins, notifyCustomer } from "@/lib/notifications";
+import { adminOrderHref } from "@/lib/admin-order-detail";
 import { cleanGuestEmail } from "@/lib/guest-email";
 import { restoreStockInTx, type RestoreTx } from "@/lib/stock-restore";
 import { finalizePaidOrder } from "@/lib/order-finalize";
@@ -55,7 +56,7 @@ async function reportShortage(orderId: string, shortages: { variationId: string;
     title: `Stok yetersiz: #${orderId.slice(0, 8)}`,
     message: rows.map((r) => `${r.product} (${r.color}) x${r.quantity}`).join("; "),
     type: "ORDER",
-    link: "/admin#siparisler",
+    link: adminOrderHref(orderId),
   });
   await sendStockShortageEmail({ orderId, items: rows });
 }
@@ -193,7 +194,7 @@ async function announceNewOrder(order: FullOrder) {
     title: `Yeni Sipariş: #${order.id.slice(0, 8)}`,
     message: `${order.user.name} • ${order.totalAmount.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺${order.paymentMethod === "BANK_TRANSFER" ? " • Havale (onay bekliyor)" : ""}`,
     type: "ORDER",
-    link: "/admin#siparisler",
+    link: adminOrderHref(order.id),
   });
 
   await sendOrderNotificationEmails({

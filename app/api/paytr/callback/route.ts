@@ -5,6 +5,7 @@ import { finalizeOrder, restoreOrderStock } from "@/lib/orders";
 import { fromMerchantOid } from "@/lib/paytr";
 import { MISSING_ORDER_STATUS, finalizeOrReport, isUnderpaid, lateAlertExists, reportLatePayment } from "@/lib/late-payment";
 import { notifyAdmins } from "@/lib/notifications";
+import { adminOrderHref } from "@/lib/admin-order-detail";
 
 const ok = () => new Response("OK", { status: 200, headers: { "Content-Type": "text/plain; charset=utf-8" } });
 
@@ -60,7 +61,7 @@ export async function POST(req: Request) {
   }
   if (p.status === "success" && isUnderpaid(p.total_amount, current.totalAmount)) {
     // Yalnızca uyarı: sipariş davranışı değişmez
-    await notifyAdmins({ title: `Eksik ödeme uyarısı: #${orderId.slice(0, 8)}`, message: `PayTR tahsilatı ${Number(p.total_amount) / 100} ₺, sipariş toplamı ${current.totalAmount} ₺. Ödemeyi PayTR panelinden kontrol edin.`, type: "ORDER", link: "/admin#siparisler" });
+    await notifyAdmins({ title: `Eksik ödeme uyarısı: #${orderId.slice(0, 8)}`, message: `PayTR tahsilatı ${Number(p.total_amount) / 100} ₺, sipariş toplamı ${current.totalAmount} ₺. Ödemeyi PayTR panelinden kontrol edin.`, type: "ORDER", link: adminOrderHref(orderId) });
   }
   if (p.status === "success") {
     // Ödendi → AWAITING_PAYMENT/PENDING_NEW siparişi PENDING (hazırlanıyor) olur; tekrar bildirimde işlem yapılmaz
