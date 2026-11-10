@@ -125,7 +125,7 @@ export default function ContractModal({ kind, data, onClose }: { kind: "pre" | "
           {kind === "pre" ? (
             <>
               <h3 className={h}>4. ÜRÜNÜN TEMEL NİTELİKLERİ</h3>
-              <p>Ürünlerin temel nitelikleri, ölçüleri ve satış fiyatı ilgili ürün sayfasında yer almaktadır. Ampuller ürüne dahil değildir. Özel ölçü, zincir/kablo/bakla uzunluğu talepleri sipariş notunda belirtilebilir. {MONTAJ_NOTU}</p>
+              <p>Ürünlerin temel nitelikleri, ölçüleri ve satış fiyatı ilgili ürün sayfasında yer almaktadır. Ampuller, ürün sayfasında &apos;LED ampul hediye&apos; yazan ürünlerde hediye olarak gönderilir; diğer ürünlerde ürüne dahil değildir. Özel ölçü, zincir/kablo/bakla uzunluğu talepleri sipariş notunda belirtilebilir. {MONTAJ_NOTU}</p>
               <h3 className={h}>5. TESLİMAT</h3>
               <p>Ürünler, seçilen teslimat yöntemine göre (mağazadan teslim veya sigortalı korumalı koli ile kargo) teslim edilir. {TESLIMAT_SURESI} Kargo bedeli yukarıda belirtilmiştir. {ODEME}</p>
               <h3 className={h}>6. CAYMA HAKKI</h3>
