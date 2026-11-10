@@ -202,6 +202,11 @@ async function announceNewOrder(order: FullOrder) {
     totalAmount: order.totalAmount,
     shippingType: order.shippingType,
     paymentMethod: order.paymentMethod,
+    couponCode: order.couponCode,
+    createdAt: order.createdAt,
+    address: order.address,
+    buyerCityName: order.buyerCityName,
+    buyerStateName: order.buyerStateName,
     kargonomiShipmentId: order.kargonomiShipmentId,
     shippingBarcode: order.shippingBarcode,
     items: order.items.map((i) => ({

@@ -10,13 +10,12 @@ import { GtmAwaitPayment, GtmEvent } from "@/components/GtmEvent";
 import { gaItem, isPurchasable, purchaseEvent, purchaseOnceKey } from "@/lib/gtm-events";
 import { feedBrand } from "@/lib/feed";
 import { coverImageOf } from "@/lib/variation-input";
-import { FREE_SHIPPING_THRESHOLD, SHIPPING_COST } from "@/lib/pricing";
 import { getSessionUserId } from "@/lib/account";
 import { canViewOrderDetails } from "@/lib/order-access";
 import { trackState } from "@/lib/orderStatus";
 import { WHATSAPP_NUMBER } from "@/lib/site";
 import CopyCodeButton from "@/components/CopyCodeButton";
-import { bankPaymentDeadline, formatIstanbul, orderBreakdown } from "@/lib/order-display";
+import { bankPaymentDeadline, breakdownOf, breakdownRows, formatIstanbul } from "@/lib/order-display";
 
 export const metadata: Metadata = {
   title: "Siparişiniz Alındı",
@@ -88,10 +87,8 @@ export default async function OrderConfirmationPage({ params }: { params: Promis
   const awaitingPayment = order.status === "AWAITING_PAYMENT";
   const paymentFailed = order.status === "PAYMENT_FAILED";
   // Ölçüm (GTM): yalnızca ödemesi alınmış kartlı veya oluşturulmuş havale siparişi; kargo = sabit kural (mağazadan teslim 0, eşik üstü 0, aksi 100 ₺)
-  const itemsSum = order.items.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
-  const shippingFee = isPickup || itemsSum >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
-  const breakdown = orderBreakdown(itemsSum, shippingFee, order.totalAmount);
-  const tl = (n: number) => `${n.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺`;
+  const breakdown = breakdownOf(order.items, order.shippingType, order.totalAmount);
+  const shippingFee = breakdown.shipping;
   // Dekont yüklenmemiş havale siparişi bu süre sonunda otomatik iptal edilir (shouldCancelUnpaidBank ile aynı koşul)
   const awaitsBankDeadline = awaitsBankReceipt && order.receiptUrl === null;
   const purchase = isPurchasable(order.status)
@@ -164,10 +161,10 @@ export default async function OrderConfirmationPage({ params }: { params: Promis
             </div>
           )}
           <div className="pt-3 border-t border-neutral-200 space-y-1">
-            <p className="flex justify-between text-neutral-600"><span>Ürünler</span><span>{tl(breakdown.itemsSum)}</span></p>
-            <p className="flex justify-between text-neutral-600"><span>Kargo</span><span>{breakdown.shipping === 0 ? "Ücretsiz" : tl(breakdown.shipping)}</span></p>
-            {breakdown.discount > 0 && <p className="flex justify-between text-emerald-700"><span>İndirimler</span><span>-{tl(breakdown.discount)}</span></p>}
-            <p className="flex justify-between font-bold text-neutral-900 text-sm pt-1"><span>Toplam</span><span>{tl(breakdown.total)}</span></p>
+            {/* E-postalarla aynı satır listesi (lib/order-display.ts) */}
+            {breakdownRows(breakdown).map((r) => (
+              <p key={r.label} className={`flex justify-between ${r.kind === "total" ? "font-bold text-neutral-900 text-sm pt-1" : r.kind === "discount" ? "text-emerald-700" : "text-neutral-600"}`}><span>{r.label}</span><span>{r.value}</span></p>
+            ))}
             {awaitsBankDeadline && <p className="text-amber-800 font-semibold pt-1">Son ödeme: {formatIstanbul(bankPaymentDeadline(order.createdAt))}</p>}
           </div>
           <div className="pt-3 border-t border-neutral-200">

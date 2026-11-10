@@ -12,6 +12,11 @@ interface EmailOrderData {
   totalAmount: number;
   shippingType: string;
   paymentMethod?: string | null;
+  couponCode?: string | null;
+  createdAt?: Date | null;
+  address?: string | null;
+  buyerCityName?: string | null; // ilçe
+  buyerStateName?: string | null; // il
   kargonomiShipmentId?: number | null;
   shippingProviderName?: string | null;
   shippingTrackingCode?: string | null;
@@ -19,7 +24,8 @@ interface EmailOrderData {
   items: Array<{ title: string; variationName: string; quantity: number; price: number }>;
 }
 
-import { ADMIN_EMAILS, BANK_INFO, PHONE_DISPLAY, SITE_URL } from "@/lib/site";
+import { ADDRESS_LINE, ADMIN_EMAILS, BANK_INFO, PHONE_DISPLAY, SITE_URL } from "@/lib/site";
+import { bankPaymentDeadline, breakdownOf, breakdownRows, deliveryAddressText, formatIstanbul, type BreakdownRow } from "@/lib/order-display";
 import { IADE_TALIMATI } from "@/lib/legal-texts";
 import { buildCampaignFooter, unsubscribeHeaders } from "@/lib/marketing";
 
@@ -54,8 +60,28 @@ async function sendViaResend(apiKey: string | undefined, payload: Record<string,
   return false;
 }
 
+/** Tutar dökümü satırları (lib/order-display.ts breakdownRows; /siparis-onay ile aynı liste) e-posta tablosu olarak. */
+function breakdownHtml(rows: BreakdownRow[]): string {
+  return rows
+    .map((r) => {
+      const style =
+        r.kind === "total"
+          ? "padding: 10px 0 4px; border-top: 1px solid #e5e5e5; font-size: 15px; font-weight: bold; color: #171717;"
+          : `padding: 4px 0; color: ${r.kind === "discount" ? "#047857" : "#525252"};`;
+      const valueStyle = r.kind === "total" ? "font-size: 18px; color: #d97706;" : "";
+      return `<tr><td style="${style}">${r.label}</td><td style="${style} text-align: right; white-space: nowrap; ${valueStyle}">${r.value}</td></tr>`;
+    })
+    .join("");
+}
+
 export async function sendOrderNotificationEmails(data: EmailOrderData) {
   const apiKey = process.env.RESEND_API_KEY;
+  const isBank = data.paymentMethod === "BANK_TRANSFER";
+  const totalsRows = breakdownHtml(breakdownRows(breakdownOf(data.items.map((i) => ({ unitPrice: i.price, quantity: i.quantity })), data.shippingType, data.totalAmount)));
+  const deliveryText = esc(deliveryAddressText(data, ADDRESS_LINE));
+  const orderUrl = `${SITE_URL}/siparis-onay/${data.orderId}`;
+  const adminOrderUrl = `${SITE_URL}/admin?durum=tumu#siparisler`;
+  const bankDeadline = isBank && data.createdAt ? formatIstanbul(bankPaymentDeadline(data.createdAt)) : null;
 
   const isBeyoglu = data.shippingType === "BEYOGLU_MAGAZA_TESLIM";
   const shippingText = isBeyoglu
@@ -103,6 +129,7 @@ export async function sendOrderNotificationEmails(data: EmailOrderData) {
         <div>Banka: <strong>${BANK_INFO.bank}</strong></div>
         <div>Alıcı Adı: <strong>${BANK_INFO.holder}</strong></div>
         <div>IBAN: <strong style="font-family: monospace;">${BANK_INFO.iban}</strong></div>
+        ${bankDeadline ? `<div style="margin-top: 8px;">Son ödeme: <strong>${bankDeadline}</strong> (bu süre içinde dekont ulaşmazsa sipariş otomatik iptal edilir)</div>` : ""}
         <div style="margin-top: 10px; color: #b91c1c; font-weight: bold;">Lütfen havale/EFT açıklama kısmına Sipariş Numaranızı (${data.orderId}) yazmayı unutmayınız.</div>
       </div>
       `
@@ -142,7 +169,11 @@ export async function sendOrderNotificationEmails(data: EmailOrderData) {
 
       <h2 style="color: #171717; font-size: 18px; margin-top: 0;">Sayın ${esc(data.customerName)},</h2>
       <p style="color: #525252; font-size: 14px; line-height: 1.6;">
-        Yıldırım Avize'yi tercih ettiğiniz için teşekkür ederiz. Seçtiğiniz avizeler merkezimizde ustalarımız tarafından son kalite kontrolleri ve ışık testleri yapılmak üzere sıraya alınmıştır.
+        ${
+          isBank
+            ? "Yıldırım Avize'yi tercih ettiğiniz için teşekkür ederiz. Ödemeniz bekleniyor. Havale/EFT açıklamasına sipariş kodunuzu yazın; ödemeniz onaylandığında siparişiniz hazırlanacaktır."
+            : "Yıldırım Avize'yi tercih ettiğiniz için teşekkür ederiz. Seçtiğiniz avizeler merkezimizde ustalarımız tarafından son kalite kontrolleri ve ışık testleri yapılmak üzere sıraya alınmıştır."
+        }
       </p>
 
       <div style="background-color: #ffffff; padding: 20px; border-radius: 12px; border: 1px solid #e5e5e5; margin: 25px 0;">
@@ -155,17 +186,20 @@ export async function sendOrderNotificationEmails(data: EmailOrderData) {
             <td style="padding: 6px 0; color: #737373;">Teslimat Türü:</td>
             <td style="padding: 6px 0; text-align: right; font-weight: 600; color: #171717;">${shippingText}</td>
           </tr>
-          <tr>
-            <td style="padding: 12px 0 6px 0; border-top: 1px solid #f5f5f5; font-size: 15px; font-weight: bold; color: #171717;">Toplam Tutar:</td>
-            <td style="padding: 12px 0 6px 0; border-top: 1px solid #f5f5f5; text-align: right; font-size: 18px; font-weight: bold; color: #d97706;">${data.totalAmount.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</td>
-          </tr>
         </table>
+        <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #f5f5f5; font-size: 13px;">
+          <div style="color: #737373;">Teslimat Adresi:</div>
+          <div style="color: #171717; font-weight: 600; margin-top: 2px;">${deliveryText}</div>
+        </div>
       </div>
 
       <div style="background-color: #ffffff; padding: 16px 20px; border-radius: 12px; border: 1px solid #e5e5e5; margin: 0 0 25px 0;">
         <div style="font-size: 12px; font-weight: bold; color: #92400e; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Ürünleriniz</div>
         <table style="width: 100%; border-collapse: collapse; font-size: 13px;">${itemRows}</table>
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; border-top: 1px solid #f5f5f5;">${totalsRows}</table>
       </div>
+
+      <p style="text-align: center; margin: 0 0 25px 0;"><a href="${orderUrl}" style="display: inline-block; background: #171717; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 14px; padding: 12px 28px; border-radius: 10px;">Siparişi görüntüle</a></p>
 
       ${noteBlock}
 
@@ -194,14 +228,16 @@ export async function sendOrderNotificationEmails(data: EmailOrderData) {
         <tr><td style="padding: 4px 0; color: #737373;">E-posta</td><td style="padding: 4px 0; text-align: right;">${esc(data.customerEmail)}</td></tr>
         <tr><td style="padding: 4px 0; color: #737373;">Telefon</td><td style="padding: 4px 0; text-align: right;">${esc(data.customerPhone || "-")}</td></tr>
         <tr><td style="padding: 4px 0; color: #737373;">Teslimat</td><td style="padding: 4px 0; text-align: right;">${isBeyoglu ? "Mağazadan Teslim" : "Adrese Teslim"}</td></tr>
-        <tr><td style="padding: 4px 0; color: #737373;">Ödeme</td><td style="padding: 4px 0; text-align: right;">${data.paymentMethod === "BANK_TRANSFER" ? "Havale / EFT" : "Kredi Kartı"}</td></tr>
+        <tr><td style="padding: 4px 0; color: #737373; vertical-align: top;">Teslimat Adresi</td><td style="padding: 4px 0; text-align: right;">${deliveryText}</td></tr>
+        <tr><td style="padding: 4px 0; color: #737373;">Ödeme</td><td style="padding: 4px 0; text-align: right;">${isBank ? "Havale / EFT (onay bekliyor)" : "Kredi Kartı"}</td></tr>
         <tr><td style="padding: 4px 0; color: #737373;">Fatura</td><td style="padding: 4px 0; text-align: right;">${invoiceText}</td></tr>
-        <tr><td style="padding: 8px 0 4px; border-top: 1px solid #e5e5e5; font-weight: bold;">Tutar</td><td style="padding: 8px 0 4px; border-top: 1px solid #e5e5e5; text-align: right; font-size: 18px; font-weight: bold; color: #d97706;">${data.totalAmount.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</td></tr>
       </table>
       ${adminNoteBlock}
       <h3 style="margin: 20px 0 6px; font-size: 14px;">Ürünler</h3>
       <table style="width: 100%; border-collapse: collapse; font-size: 13px;">${itemRows}</table>
-      <p style="color: #737373; font-size: 12px; margin-top: 20px;">Detaylar için yönetim paneline giriş yapın.</p>
+      <h3 style="margin: 20px 0 6px; font-size: 14px;">Tutar Dökümü</h3>
+      <table style="width: 100%; border-collapse: collapse; font-size: 13px;">${totalsRows}${data.couponCode ? `<tr><td style="padding: 4px 0; color: #737373;">Kupon</td><td style="padding: 4px 0; text-align: right; font-family: monospace;">${esc(data.couponCode)}</td></tr>` : ""}</table>
+      <p style="margin-top: 20px;"><a href="${adminOrderUrl}" style="display: inline-block; background: #171717; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 13px; padding: 10px 22px; border-radius: 10px;">Siparişi panelde aç</a></p>
     </div>
   `;
 
