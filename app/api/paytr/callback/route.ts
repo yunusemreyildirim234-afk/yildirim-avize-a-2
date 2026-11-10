@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { releaseCoupon } from "@/lib/coupons";
 import { finalizeOrder, restoreOrderStock } from "@/lib/orders";
 import { fromMerchantOid } from "@/lib/paytr";
-import { isUnderpaid, lateAlertExists, reportLatePayment } from "@/lib/late-payment";
+import { finalizeOrReport, isUnderpaid, lateAlertExists, reportLatePayment } from "@/lib/late-payment";
 import { notifyAdmins } from "@/lib/notifications";
 
 const ok = () => new Response("OK", { status: 200, headers: { "Content-Type": "text/plain; charset=utf-8" } });
@@ -60,7 +60,12 @@ export async function POST(req: Request) {
   }
   if (p.status === "success") {
     // Ödendi → AWAITING_PAYMENT/PENDING_NEW siparişi PENDING (hazırlanıyor) olur; tekrar bildirimde işlem yapılmaz
-    await finalizeOrder(orderId);
+    // Sahiplenme kaybedildiyse (okuma ile güncelleme arasında sipariş kapatılmış) sessizce geçilmez: güncel durumla geç ödeme uyarısı üretilir
+    await finalizeOrReport({
+      finalize: () => finalizeOrder(orderId),
+      readStatus: async () => (await prisma.order.findUnique({ where: { id: orderId }, select: { status: true } }))?.status ?? null,
+      report: (orderStatus) => reportLatePayment({ log: console.error, warn: console.warn, notifyAdmins, alreadyReported: lateAlertExists }, { merchantOid: p.merchant_oid, orderId, orderStatus, payStatus: p.status }).catch(() => {}),
+    });
   } else {
     const failed = await prisma.order.updateMany({ where: { id: orderId, status: "AWAITING_PAYMENT" }, data: { status: "PAYMENT_FAILED" } });
     if (failed.count > 0) {

@@ -210,23 +210,27 @@ async function announceNewOrder(order: FullOrder) {
  * Havale siparişleri (PENDING_NEW) için `awaitPayment: true`: durum ödeme onayına kadar PENDING_NEW kalır,
  * stok sipariş işleminde zaten ayrılmıştır, yalnızca e-posta/bildirimler gider; gönderi ve hazırlanıyor durumu confirmBankPayment ile gelir.
  * Kartlı akış tekrar çağrılırsa tekrar işlem yapmaz.
+ * Dönüş: sipariş bu çağrıda sahiplenildiyse true. false = durum bu arada değişmiş (iptal/başarısız/silinmiş ya da zaten işlenmiş);
+ * çağıran (PayTR callback) güncel durumu yeniden okuyup geç ödeme olarak raporlar.
  */
-export async function finalizeOrder(orderId: string, opts: { awaitPayment?: boolean } = {}) {
+export async function finalizeOrder(orderId: string, opts: { awaitPayment?: boolean } = {}): Promise<boolean> {
   if (opts.awaitPayment) {
     const order = await loadOrder(orderId);
-    if (order.status === "PENDING_NEW") await announceNewOrder(order);
-    return;
+    if (order.status !== "PENDING_NEW") return false;
+    await announceNewOrder(order);
+    return true;
   }
 
   const claimed = await prisma.order.updateMany({
     where: { id: orderId, status: { in: ["AWAITING_PAYMENT", "PENDING_NEW"] } },
     data: { status: "PENDING" },
   });
-  if (claimed.count === 0) return;
+  if (claimed.count === 0) return false;
 
   await deductOrderStock(orderId);
   const order = await createShipmentIfNeeded(await loadOrder(orderId));
   await announceNewOrder(order);
+  return true;
 }
 
 /** Yönetici havale ödemesini onaylar: PENDING_NEW → PENDING (hazırlanıyor), gönderi oluşturulur, müşteriye bildirim gider. */

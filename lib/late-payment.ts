@@ -26,6 +26,26 @@ export interface LatePaymentDeps {
 
 const LATE_ALERT_TITLE = "Ödeme alındı ama sipariş";
 
+/** Sipariş kaydı bulunamadığında (yönetici silmiş) uyarıda gösterilen durum etiketi. */
+export const MISSING_ORDER_STATUS = "SİLİNMİŞ (kayıt yok)";
+
+/**
+ * Başarılı ödeme bildirimi: sipariş sahiplenilir (finalize). Sahiplenilemediyse callback'in durumu okumasıyla sahiplenme arasına
+ * başka bir işlem girmiştir (bayat rezervasyon bırakma, yeni sipariş denemesi, cron, yönetici): güncel durum YENİDEN okunur ve geç ödeme
+ * olarak raporlanır (zararsız yineleme ayrımını reportLatePayment yapar). Saf çekirdek: bağımlılıklar parametredir.
+ */
+export async function finalizeOrReport(deps: {
+  finalize: () => Promise<boolean>;
+  readStatus: () => Promise<string | null>;
+  report: (orderStatus: string) => Promise<unknown>;
+}): Promise<"FINALIZED" | "LATE"> {
+  if (await deps.finalize()) return "FINALIZED";
+  // Durum okunamazsa da uyarı gider: kaçırılan uyarı, belirsiz uyarıdan kötüdür
+  const status = await deps.readStatus().catch(() => "OKUNAMADI");
+  await deps.report(status ?? MISSING_ORDER_STATUS);
+  return "LATE";
+}
+
 /** PayTR'den gelen tutar (kuruş, metin) sipariş toplamından küçük mü? Sayı değilse false. */
 export function isUnderpaid(totalAmountKurus: string, orderTotalTl: number): boolean {
   return Number(totalAmountKurus) < Math.round(orderTotalTl * 100);
