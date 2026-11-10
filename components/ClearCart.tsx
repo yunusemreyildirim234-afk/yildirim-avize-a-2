@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useCart } from "@/context/CartContext";
+import { clearCartChoices, tabStore } from "@/lib/cart-choices";
 import { forgetCardOrder } from "@/lib/pending-card-order";
 
 // Sipariş onay sayfası açıldığında sepeti temizler
@@ -20,6 +21,7 @@ export default function ClearCart({ orderId, createdAt }: { orderId: string; cre
       // depolama kapalıysa yine de bir kez çalışır
     }
     clearCart();
+    clearCartChoices(tabStore());
     // eslint-disable-next-line react-hooks/exhaustive-deps -- yalnızca ilk açılışta çalışmalı
   }, []);
   return null;

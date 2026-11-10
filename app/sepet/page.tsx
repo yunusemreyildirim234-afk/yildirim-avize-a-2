@@ -23,6 +23,7 @@ import { COUPON_GENERIC_ERROR, couponPlaceholder, staleCouponMessage } from "@/l
 import { beginCheckoutEvent, gaItem } from "@/lib/gtm-events";
 import { activeTier, bulkLabel, type BulkRule } from "@/lib/bulk-pricing";
 import { isValidPhone, PHONE_ERROR } from "@/lib/phone";
+import { clearCartChoices, loadCartChoices, saveCartChoices, tabStore } from "@/lib/cart-choices";
 import { forgetCardOrder, previousCardOrderId, rememberCardOrder } from "@/lib/pending-card-order";
 
 interface LocationItem {
@@ -241,6 +242,39 @@ export default function CartPage() {
   const itemsShown = fresh ? quote.totals.itemsTotal : totalPrice;
   const shipProgress = shippingProgress(itemsShown, FREE_SHIPPING_THRESHOLD);
 
+  // Yenilemede kupon kodu ve ödeme yöntemi bu sekmede korunur (sessionStorage); kupon sunucuda yeniden doğrulanır, geçersizse sessizce silinir
+  const [choicesReady, setChoicesReady] = useState(false);
+  const [pendingCoupon, setPendingCoupon] = useState("");
+  useEffect(() => {
+    const saved = loadCartChoices(tabStore());
+    /* eslint-disable react-hooks/set-state-in-effect -- sessionStorage yalnızca istemcide, ilk render sonrası okunur */
+    if (saved.paymentMethod) setPaymentMethod(saved.paymentMethod);
+    setPendingCoupon(saved.coupon);
+    setChoicesReady(true);
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, []);
+  useEffect(() => {
+    if (!pendingCoupon || cart.length === 0) return;
+    const code = pendingCoupon;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- tek seferlik geri yükleme; aynı kod tekrar denenmez
+    setPendingCoupon("");
+    fetch("/api/coupon", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code, email, lines: localTotals.lines.map((l) => ({ productId: l.productId, lineTotal: l.lineTotal })) }),
+    })
+      .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
+      .then(({ ok, data }) => {
+        if (ok && data.rule) setAppliedCoupon(data.rule as CouponRule);
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- yalnızca bekleyen kupon ve sepet dolunca bir kez
+  }, [pendingCoupon, cart.length]);
+  useEffect(() => {
+    if (!choicesReady) return;
+    saveCartChoices(tabStore(), { coupon: appliedCoupon?.code ?? pendingCoupon, paymentMethod });
+  }, [choicesReady, appliedCoupon, pendingCoupon, paymentMethod]);
+
   const handleApplyCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
     setCouponError("");
@@ -381,6 +415,7 @@ export default function CartPage() {
         window.scrollTo({ top: 0, behavior: "smooth" });
       } else if (data.success) {
         clearCart();
+        clearCartChoices(tabStore());
         forgetCardOrder();
         router.push(`/siparis-onay/${data.orderId}`);
       } else {
