@@ -35,12 +35,19 @@ Bayraklar: `--ornek N` (model koduna göre ilk N uygun ürün; üç betikte ayn�
 
 ## Nasıl çalışır
 
-- **Kırpma:** yalnızca dört köşesi beyaza yakın görseller kırpılır; kırpılan kutunun çevresine orijinal görselden %6 pay geri eklenir.
-  Ortam fotoğraflarına dokunulmaz. Ürün çok küçük kalacaksa kırpma atlanır ve önizlemede turuncu rozetle işaretlenir.
-- **Tuval:** `kare` = kırpılan ürün zemin renginde kare tuvale ortalanır; `oran` = yalnızca kırpılır.
+- **Karar (v2): ürünün hiçbir pikseli kesilmez.** Tüm görseller KARE tuvale konur. Kırpma yalnızca Trendyol'un eklediği DÜZ BEYAZ
+  şeritleri (her kanal ≥253) atar ve yalnızca fotoğrafın kendi zemini belirgin biçimde beyaz DEĞİLSE yapılır:
+  - Zemin gri/renkli (kenar halkası medyanı, en koyu kanalda <215) ve şerit tek eksendeyse: yalnızca düz beyaz şeritler atılır,
+    **pay eklenmez**; kare tuvalin boş kısımları kenar renkleriyle doldurulur (kenar tek renkse o renk, değilse kenar pikselleri uzatılır).
+  - Zemin beyaz/açık/saydam (kristal, cam, abajur), **belirsiz** (≥215) ya da şerit iki eksendeyse (ürün sınırı): **hiç kırpılmaz**,
+    olduğu gibi beyaz kare tuvale ortalanır.
+  - Ortam fotoğrafı (kenarlar beyaz değil, tam kare değil): kırpılmaz, kare tuvale konur, dolgu kenar rengi.
+  Önizlemede her görsel için "Kırpıldı / Kırpılmadı" ve dolgu etiketi görünür.
+- **Tuval:** `kare` (varsayılan) = yukarıdaki kare tuval; `oran` = tuval yok, aynı güvenli kırpma, oran korunur.
 - **Boyutlar:** her görselden iki dosya: `...-b.webp` (en çok 1600 px; veritabanına bu yazılır) ve `...-k.webp` (en çok 800 px;
   site `lib/img.ts` ile türetir).
-- **Blob yolu belirlenimci:** `urun/<ürün kimliği>/<kaynak adresin özeti>-<kr|or>-<b|k>.webp`; üzerine yazma kapalı.
+- **Blob yolu belirlenimci ve sürümlü:** `urun/<ürün kimliği>/<kaynak adresin özeti>-<kr|or>-v2-<b|k>.webp`; üzerine yazma kapalı.
+  Eski v1 dosyaları (`...-kr-b.webp`) SİLİNMEZ. Manifestte v2 kayıtları `kare-v2` / `oran-v2` anahtarındadır; v1 kayıtları durur.
 - **Devam edilebilir:** durum `cikti/manifest.json` içindedir. Yeniden çalıştırınca bitenler atlanır. **Bu dosyayı silmeyin.**
 - **Kota:** her Blob yazma denemesi manifestte aylık sayılır. `kopyala` başlamadan kalan hakkı yazar; ayın toplamı 1800'ü aşacaksa durur
   (`--siniri-as` + EVET ile aşılabilir). Sayaç yalnızca bu betiğin yazmalarını bilir; gerçek kullanım Vercel panelindedir.
@@ -53,6 +60,25 @@ Bayraklar: `--ornek N` (model koduna göre ilk N uygun ürün; üç betikte ayn�
   `yaz`/`geri-al` çalışırken admin panelden eşitleme başlatmayın.
 - **Yeni Trendyol ürünleri:** eşitlemeden sonra `npm run kopyala` ve `npm run yaz` yeniden çalıştırılır; yalnızca yeni görseller işlenir.
   Admin paneldeki "N görsel henüz kopyalanmadı" uyarısı bunu hatırlatır.
+
+## v1 → v2 yeniden yükleme (kare tuval)
+
+Daha önce v1 ile taşınmış ürünlerin Trendyol kaynağı `syncSnapshot.imageMap` ile bulunur. `kopyala` v2 dosyalarını YENİ yola yükler,
+`yaz` ürün adreslerini v2'ye çevirir (imageMap v2 ile güncellenir). `geri-al` yine eski Trendyol adreslerine döner.
+
+```
+npm run onizleme -- --ornek 10             # kuru: önce (v1 canlı) / sonra (v2) yan yana; hiçbir şey yüklenmez
+npm run onizleme -- --urun 12,34,56        # belirli model kodları
+npm run kopyala  -- --ornek 10             # 10 ürünü v2 olarak Blob'a yükler (veritabanı DEĞİŞMEZ)
+npm run yaz      -- --ornek 10 --dry-run   # ne yazılacağını gösterir
+npm run yaz      -- --ornek 10             # veritabanını v2 adreslerine çevirir (EVET ister)
+npm run kopyala                            # kalan tüm ürünler
+npm run yaz
+```
+
+**Kota (Vercel Blob Hobby, aylık 2000 yazma; güvenli sınır 1800):** görsel başına 2 yazma (büyük + küçük). Bu ay şu an 66 yazma kullanıldı.
+10 ürünü yeniden yüklemek +66 → 132. 226 ürün ≈ +1188 → toplam ≈ **1320** (2000 altında). `kopyala` başlamadan planlanan yazmayı ve
+kalan hakkı yazar; 1800'ü aşacaksa durur. Gerçek kullanım Vercel panelindedir.
 
 ## Test edilmeyen kısım
 
