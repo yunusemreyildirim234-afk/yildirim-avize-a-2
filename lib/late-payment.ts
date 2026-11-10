@@ -1,5 +1,7 @@
 // Geç gelen PayTR "success" bildirimi için kayıt + yönetici uyarısı (panel bildirimi + e-posta). Saf yardımcı: dış bağımlılıklar parametre olarak verilir (test edilebilir).
 
+import { adminOrderHref } from "./admin-order-detail.ts";
+
 /** Ödemesi sorunsuz işlenmiş siparişte tekrar gelen "success" zararsız yinelemedir (PayTR aynı bildirimi tekrarlayabilir): yalnızca uyarı logu. */
 const BENIGN_DUPLICATE = ["PENDING", "READY_FOR_PICKUP", "SHIPPED", "DELIVERED"];
 
@@ -69,7 +71,7 @@ export function buildLatePaymentEmail(d: { orderId: string; orderStatus: string;
     html: `<p>PayTR başarılı ödeme bildirdi, ancak sipariş artık ödeme beklemiyor. Müşteriden para çekilmiş olabilir.</p>
       <p>Sipariş no: <code>${esc(d.orderId)}</code><br />PayTR işlem no: <code>${esc(d.merchantOid)}</code><br />Mevcut durum: <strong>${esc(d.orderStatus)}</strong><br />Tutar: <strong>${esc(tutar)}</strong><br />Müşteri: ${esc(ad)}<br />Telefon: ${esc(tel)}</p>
       <p>Ne yapmalı: PayTR panelinden iade edin veya stok varsa siparişi elle işleme alın.</p>
-      <p><a href="${esc(d.siteUrl)}/admin#siparisler">Yönetim panelinde siparişleri aç</a></p>`,
+      <p><a href="${esc(d.siteUrl)}${adminOrderHref(d.orderId)}">Yönetim panelinde siparişleri aç</a></p>`,
   };
 }
 
@@ -110,7 +112,7 @@ export async function reportLatePayment(
       title: `${LATE_ALERT_TITLE} #${info.orderId.slice(0, 8)} durumu ${info.orderStatus}`,
       message: `PayTR başarılı ödeme bildirdi (${info.merchantOid}); sipariş durumu ${info.orderStatus}. Siparişi kontrol edin; gerekirse müşteriye iade/iletişim yapın.`,
       type: "ORDER",
-      link: "/admin#siparisler",
+      link: adminOrderHref(info.orderId),
     });
     panelOk = true;
   } catch (e) {

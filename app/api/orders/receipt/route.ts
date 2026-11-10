@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { getSessionUserId } from "@/lib/account";
 import { ADMIN_COOKIE, verifyAdminSession } from "@/lib/session";
 import { notifyAdmins } from "@/lib/notifications";
+import { adminOrderHref } from "@/lib/admin-order-detail";
 import { rateLimit, tooMany } from "@/lib/rate-limit";
 import { RECEIPT_MIMES, validateUpload } from "@/lib/uploads";
 import { isGuestOrderWindowOpen } from "@/lib/order-access";
@@ -55,7 +56,7 @@ export async function POST(req: Request) {
     title: `Dekont Yüklendi: #${orderId.slice(0, 8)}`,
     message: `${order.user.name} • Gönderici: ${senderName}`,
     type: "ORDER",
-    link: "/admin#siparisler",
+    link: adminOrderHref(orderId),
   });
   await sendReceiptUploadedAdminEmail({ orderId, senderName, customerName: order.user.name, totalAmount: order.totalAmount }).catch(() => false);
 

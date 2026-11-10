@@ -8,6 +8,7 @@ import { releaseCoupon } from "@/lib/coupons";
 import { cancelUnpaidBankOrder, restoreOrderStock } from "@/lib/orders";
 import { restoreStockInTx, type RestoreTx } from "@/lib/stock-restore";
 import { notifyAdmins, notifyCustomer } from "@/lib/notifications";
+import { adminOrderHref } from "@/lib/admin-order-detail";
 import { ABANDONED_CARD_MINUTES, BANK_ORDER_HOLD_HOURS, shouldCancelUnpaidBank, shouldCloseAbandonedCard } from "@/lib/stock-rules";
 import { couponValueLabel, loadShowcaseCoupon } from "@/lib/showcase";
 import { revalidateStorefrontSafe } from "@/lib/revalidate";
@@ -115,7 +116,7 @@ export async function GET(req: Request) {
     if (!cancelled) continue;
     bankCancelled++;
     const short = o.id.slice(0, 8);
-    await notifyAdmins({ title: `Havale siparişi otomatik iptal: #${short}`, message: `${BANK_ORDER_HOLD_HOURS} saat içinde dekont gelmedi; stok ve kupon iade edildi.`, type: "ORDER", link: "/admin#siparisler" });
+    await notifyAdmins({ title: `Havale siparişi otomatik iptal: #${short}`, message: `${BANK_ORDER_HOLD_HOURS} saat içinde dekont gelmedi; stok ve kupon iade edildi.`, type: "ORDER", link: adminOrderHref(o.id) });
     await notifyCustomer({ userId: o.userId }, { title: "Siparişiniz iptal edildi", message: `#${short} numaralı Havale siparişiniz ${BANK_ORDER_HOLD_HOURS} saat içinde ödeme dekontu gelmediği için iptal edildi.`, type: "ORDER", link: `/siparis-onay/${o.id}` });
     await sendBankOrderCancelledEmail({ to: cleanGuestEmail(o.user.email), name: o.user.name, orderId: o.id, hours: BANK_ORDER_HOLD_HOURS }).catch(() => false);
   }

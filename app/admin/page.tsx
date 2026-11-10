@@ -45,6 +45,7 @@ import { getCompanyInfo } from "@/lib/company";
 import { ORDER_GROUPS, isCountedOrder, matchesGroups, parseGroupParam, type OrderGroupKey } from "@/lib/orderStatus";
 import { getInvoiceMeta } from "@/lib/invoice";
 import { orderItemProductView } from "@/lib/order-item-product";
+import { adminOrderHref } from "@/lib/admin-order-detail";
 
 // Büyük ve ilk görünümde kapalı bölümlerde duran bileşenler ayrı parçada yüklenir (davranış aynı)
 const AdminProductList = nextDynamic(() => import("@/components/AdminProductList"));
@@ -391,7 +392,9 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                   {visibleOrders.map((order) => (
                     <tr key={order.id} className="max-sm:flex max-sm:flex-col max-sm:border-b max-sm:border-neutral-200 hover:bg-neutral-50/80 transition-colors">
                       <td data-label="Sipariş ID & Tarih" className="max-sm:flex max-sm:flex-col max-sm:before:content-[attr(data-label)] max-sm:before:text-[10px] max-sm:before:uppercase max-sm:before:tracking-wider max-sm:before:text-neutral-400 max-sm:before:mb-1 p-4 font-mono text-[11px] text-neutral-500">
-                        {order.id.slice(0, 8)}...
+                        <Link href={adminOrderHref(order.id)} className="inline-flex min-h-8 items-center font-semibold text-amber-700 underline hover:text-amber-900" aria-label={`Sipariş ${order.id.slice(0, 8)} detayı`}>
+                          {order.id.slice(0, 8)}
+                        </Link>
                         <time dateTime={order.createdAt.toISOString()} className="block text-[10px] text-neutral-400 mt-0.5">
                           {(() => {
                             const dt = istanbulDateTimeParts(order.createdAt);

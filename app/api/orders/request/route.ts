@@ -5,6 +5,7 @@ import { sendRequestAdminEmail } from "@/lib/email";
 import { requestTypeFor } from "@/lib/orderStatus";
 import { rateLimit, tooMany } from "@/lib/rate-limit";
 import { notifyAdmins } from "@/lib/notifications";
+import { adminOrderHref } from "@/lib/admin-order-detail";
 import { requestNoticeTitle } from "@/lib/request-notice";
 
 // Teslim edilmemiş siparişte iptal, teslim edilmiş siparişte iade talebi
@@ -44,7 +45,7 @@ export async function POST(req: Request) {
     title: requestNoticeTitle(type, order.id),
     message: `${order.user.name}${reason ? ` • ${reason.slice(0, 120)}` : ""}`,
     type: "ORDER",
-    link: "/admin#siparisler",
+    link: adminOrderHref(order.id),
   }).catch((e) => console.error("[talep] panel bildirimi yazılamadı:", (e as Error).message));
 
   await sendRequestAdminEmail({

@@ -27,6 +27,7 @@ interface EmailOrderData {
 import { ADDRESS_LINE, ADMIN_EMAILS, BANK_INFO, PHONE_DISPLAY, SITE_URL } from "@/lib/site";
 import { orderCode, bankPaymentDeadline, breakdownOf, breakdownRows, deliveryAddressText, formatIstanbul, type BreakdownRow } from "@/lib/order-display";
 import { IADE_TALIMATI } from "@/lib/legal-texts";
+import { adminOrderHref } from "@/lib/admin-order-detail";
 import { buildCampaignFooter, unsubscribeHeaders } from "@/lib/marketing";
 
 const DEFAULT_FROM = "Yıldırım Avize <siparis@yildirimavize.com.tr>";
@@ -80,7 +81,7 @@ export async function sendOrderNotificationEmails(data: EmailOrderData) {
   const totalsRows = breakdownHtml(breakdownRows(breakdownOf(data.items.map((i) => ({ unitPrice: i.price, quantity: i.quantity })), data.shippingType, data.totalAmount)));
   const deliveryText = esc(deliveryAddressText(data, ADDRESS_LINE));
   const orderUrl = `${SITE_URL}/siparis-onay/${data.orderId}`;
-  const adminOrderUrl = `${SITE_URL}/admin?durum=tumu#siparisler`;
+  const adminOrderUrl = `${SITE_URL}${adminOrderHref(data.orderId)}`;
   const bankDeadline = isBank && data.createdAt ? formatIstanbul(bankPaymentDeadline(data.createdAt)) : null;
 
   const isBeyoglu = data.shippingType === "BEYOGLU_MAGAZA_TESLIM";
@@ -472,7 +473,7 @@ export async function sendReceiptUploadedAdminEmail(data: { orderId: string; sen
     subject: `Dekont Yüklendi: #${orderCode(data.orderId)} - ${data.customerName}`,
     html: `<p><strong>${esc(data.customerName)}</strong> havale dekontu yükledi.</p>
       <p>Gönderici: <strong>${esc(data.senderName)}</strong><br />Tutar: <strong>${data.totalAmount.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</strong><br />Sipariş Kodu: <code>${orderCode(data.orderId)}</code></p>
-      <p><a href="${SITE_URL}/admin#siparisler">Yönetim panelinde incele ve ödemeyi onayla</a></p>`,
+      <p><a href="${SITE_URL}${adminOrderHref(data.orderId)}">Yönetim panelinde incele ve ödemeyi onayla</a></p>`,
   });
 }
 

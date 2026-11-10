@@ -58,7 +58,7 @@ test("E1/E2/E3: şablon: döküm ortak yardımcıdan, havalede bekleme metni, si
   assert.match(src, /Ödemeniz bekleniyor\. Havale\/EFT açıklamasına sipariş kodunuzu yazın; ödemeniz onaylandığında siparişiniz hazırlanacaktır\./);
   assert.match(src, /isBank\s*\?[^:]*Ödemeniz bekleniyor[^:]*:\s*"[^"]*ışık testleri/, "ışık testi metni yalnızca kartlı siparişte");
   assert.match(src, /formatIstanbul\(bankPaymentDeadline\(data\.createdAt\)\)/);
-  assert.match(src, /\/admin\?durum=tumu#siparisler/);
+  assert.ok(src.includes("adminOrderUrl = `${SITE_URL}${adminOrderHref(data.orderId)}`"), "yönetici e-postası sipariş detay sayfasına bağlanır");
   assert.match(src, /Teslimat Adresi<\/td>/);
   const page = readFileSync(new URL("../app/siparis-onay/[id]/page.tsx", import.meta.url), "utf8");
   assert.match(page, /breakdownRows\(breakdown\)/, "onay sayfası aynı satır listesini kullanır");

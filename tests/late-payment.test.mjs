@@ -22,7 +22,7 @@ const mkDeps = (over = {}) => {
 test("e-posta konusu ve gövdesi: numara, durum, tutar, müşteri, telefon, yönlendirme, bağlantı", () => {
   const m = buildLatePaymentEmail({ orderId: "abcdef12-3456", orderStatus: "PAYMENT_FAILED", merchantOid: "OID1", siteUrl: "https://x.test", order });
   assert.equal(m.subject, "Ödeme alındı ama sipariş iptal/başarısız: #abcdef12");
-  for (const s of ["abcdef12-3456", "PAYMENT_FAILED", "1.234,50", "0555 111 22 33", "PayTR panelinden iade edin", "https://x.test/admin#siparisler"]) assert.ok(m.html.includes(s), s);
+  for (const s of ["abcdef12-3456", "PAYMENT_FAILED", "1.234,50", "0555 111 22 33", "PayTR panelinden iade edin", "https://x.test/admin/siparis/abcdef12-3456"]) assert.ok(m.html.includes(s), s);
   assert.ok(!m.html.includes("<b>Veli"), "müşteri adı kaçışlanmalı");
 });
 
