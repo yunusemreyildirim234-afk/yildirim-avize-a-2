@@ -15,6 +15,8 @@ import { getSessionUserId } from "@/lib/account";
 import { canViewOrderDetails } from "@/lib/order-access";
 import { trackState } from "@/lib/orderStatus";
 import { WHATSAPP_NUMBER } from "@/lib/site";
+import CopyCodeButton from "@/components/CopyCodeButton";
+import { bankPaymentDeadline, formatIstanbul, orderBreakdown } from "@/lib/order-display";
 
 export const metadata: Metadata = {
   title: "Siparişiniz Alındı",
@@ -88,6 +90,10 @@ export default async function OrderConfirmationPage({ params }: { params: Promis
   // Ölçüm (GTM): yalnızca ödemesi alınmış kartlı veya oluşturulmuş havale siparişi; kargo = sabit kural (mağazadan teslim 0, eşik üstü 0, aksi 100 ₺)
   const itemsSum = order.items.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
   const shippingFee = isPickup || itemsSum >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
+  const breakdown = orderBreakdown(itemsSum, shippingFee, order.totalAmount);
+  const tl = (n: number) => `${n.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺`;
+  // Dekont yüklenmemiş havale siparişi bu süre sonunda otomatik iptal edilir (shouldCancelUnpaidBank ile aynı koşul)
+  const awaitsBankDeadline = awaitsBankReceipt && order.receiptUrl === null;
   const purchase = isPurchasable(order.status)
     ? purchaseEvent({
         id: order.id,
@@ -127,7 +133,7 @@ export default async function OrderConfirmationPage({ params }: { params: Promis
         <div className="bg-neutral-50 border border-neutral-200 rounded-2xl p-5 text-xs text-left space-y-3">
           <div>
             <span className="text-neutral-400">Sipariş Takip Kodu:</span>
-            <p className="font-mono font-bold text-neutral-800 break-all">{order.id}</p>
+            <p className="font-mono font-bold text-neutral-800 break-all">{order.id} <CopyCodeButton text={order.id} label="Takip kodu kopyalandı" /></p>
           </div>
           <ul className="pt-3 border-t border-neutral-200 space-y-3">
             {order.items.map((item) => (
@@ -157,9 +163,12 @@ export default async function OrderConfirmationPage({ params }: { params: Promis
               <p className="font-medium text-neutral-800 whitespace-pre-line">{order.orderNote}</p>
             </div>
           )}
-          <div className="pt-3 border-t border-neutral-200">
-            <span className="text-neutral-400">Toplam:</span>
-            <p className="font-bold text-neutral-900 text-sm">{order.totalAmount.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</p>
+          <div className="pt-3 border-t border-neutral-200 space-y-1">
+            <p className="flex justify-between text-neutral-600"><span>Ürünler</span><span>{tl(breakdown.itemsSum)}</span></p>
+            <p className="flex justify-between text-neutral-600"><span>Kargo</span><span>{breakdown.shipping === 0 ? "Ücretsiz" : tl(breakdown.shipping)}</span></p>
+            {breakdown.discount > 0 && <p className="flex justify-between text-emerald-700"><span>İndirimler</span><span>-{tl(breakdown.discount)}</span></p>}
+            <p className="flex justify-between font-bold text-neutral-900 text-sm pt-1"><span>Toplam</span><span>{tl(breakdown.total)}</span></p>
+            {awaitsBankDeadline && <p className="text-amber-800 font-semibold pt-1">Son ödeme: {formatIstanbul(bankPaymentDeadline(order.createdAt))}</p>}
           </div>
           <div className="pt-3 border-t border-neutral-200">
             <span className="text-neutral-400">Teslimat:</span>
@@ -168,6 +177,9 @@ export default async function OrderConfirmationPage({ params }: { params: Promis
                 ? "📍 Mağazadan Teslim – Şişhane merkezimizden teslim alınacak"
                 : "📦 Adrese Teslim – korumalı koli ile adresinize gönderilecek"}
             </p>
+            {!isPickup && order.address && (
+              <p className="text-neutral-600 mt-1">{order.address}{order.buyerCityName || order.buyerStateName ? `, ${[order.buyerCityName, order.buyerStateName].filter(Boolean).join(" / ")}` : ""}</p>
+            )}
             {order.kargonomiShipmentId && (
               <p className="text-neutral-600 mt-1">
                 Kargo kaydı: <strong className="font-mono">#{order.kargonomiShipmentId}</strong>
