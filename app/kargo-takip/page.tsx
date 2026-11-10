@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { prisma } from "@/lib/db";
 import OrderTracker from "@/components/OrderTracker";
 import { maskName } from "@/lib/mask-name";
+import Link from "next/link";
 import { rateLimit } from "@/lib/rate-limit";
 
 export const metadata: Metadata = {
@@ -29,6 +30,7 @@ async function OrderResult({ code }: { code: string }) {
     select: {
       id: true,
       status: true,
+      paymentMethod: true,
       shippingType: true,
       kargonomiStatus: true,
       kargonomiStatusLabel: true,
@@ -53,7 +55,8 @@ async function OrderResult({ code }: { code: string }) {
   }
 
   // Takip kodu/barkod koli etiketinde yazar: sipariş numarası yalnızca onu zaten bilen sorguda gösterilir
-  const { id, ...order } = found;
+  const { id, paymentMethod, ...order } = found;
+  const awaitsBankPayment = paymentMethod === "BANK_TRANSFER" && order.status === "PENDING_NEW";
 
   return (
     <div className="bg-white rounded-2xl border border-neutral-200 p-6 text-xs space-y-3 shadow-sm">
@@ -69,7 +72,20 @@ async function OrderResult({ code }: { code: string }) {
       </div>
       <div className="pt-3 border-t border-neutral-100">
         <span className="text-neutral-400 block mb-2">Sipariş Durumu</span>
-        <OrderTracker order={order} />
+        {awaitsBankPayment ? (
+          <div>
+            <p className="text-sm font-bold text-amber-800">Ödeme bekleniyor</p>
+            <p className="text-neutral-600 mt-1">Havale/EFT ödemeniz onaylandığında siparişiniz hazırlanmaya başlayacaktır.</p>
+            {/* Sipariş numarasını zaten bilen sorgu için: erişim kuralları onay sayfasında uygulanır */}
+            {id === code && (
+              <Link href={`/siparis-onay/${id}`} className="inline-block mt-2 font-semibold text-amber-800 underline underline-offset-2">
+                Havale bilgileri ve dekont yükleme →
+              </Link>
+            )}
+          </div>
+        ) : (
+          <OrderTracker order={order} />
+        )}
       </div>
       {order.kargonomiShipmentId && (
         <div className="pt-3 border-t border-neutral-100 space-y-1">
