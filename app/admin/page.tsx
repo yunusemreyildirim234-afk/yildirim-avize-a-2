@@ -46,6 +46,7 @@ import { ORDER_GROUPS, isCountedOrder, matchesGroups, parseGroupParam, type Orde
 import { getInvoiceMeta } from "@/lib/invoice";
 import { orderItemProductView } from "@/lib/order-item-product";
 import { adminOrderHref } from "@/lib/admin-order-detail";
+import { deleteButtonLabel, deleteConfirmText } from "@/lib/bulk-delete";
 import { inDateRange, matchesOrderSearch, resolveDateRange } from "@/lib/admin-order-search";
 
 // Büyük ve ilk görünümde kapalı bölümlerde duran bileşenler ayrı parçada yüklenir (davranış aynı)
@@ -174,6 +175,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const openShipmentCount = orders.filter((o) => Boolean(o.kargonomiShipmentId) && ["PENDING", "SHIPPED"].includes(o.status)).length;
 
   // Liste: seçili durum gruplarına göre süzülür
+  const bulkFilters = { ...orderFilters, durum: durumParam, dateActive: dateRange !== null };
   const visibleOrders = scopedOrders.filter((o) => matchesGroups(o, selectedGroups));
 
   // Fatura bilgileri ana sipariş sorgusundan ayrı okunur; tablo yoksa panelin geri kalanı çalışır
@@ -369,8 +371,10 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
               <AdminDeleteButton
                 endpoint="/api/admin/orders"
                 ids={visibleOrders.map((o) => o.id)}
-                label={`Listelenen ${visibleOrders.length} siparişi sil`}
-                confirmText={`Listelenen ${visibleOrders.length} sipariş ve bağlı fatura/dekont kayıtları silinecek; ayrılmış stok iade edilir.`}
+                label={deleteButtonLabel(visibleOrders.length, bulkFilters)}
+                confirmText={deleteConfirmText(visibleOrders.length, bulkFilters)}
+                expectedCount={visibleOrders.length}
+                typeToConfirm
               />
             )}
             <AdminShipmentSync />

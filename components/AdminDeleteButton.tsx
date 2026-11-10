@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2, Undo2 } from "lucide-react";
+import { DELETE_CONFIRM_WORD, isDeleteConfirmed } from "@/lib/bulk-delete";
 
 const DELAY_MS = 8000;
 let pending = 0; // aynı anda bekleyen silme çubuklarını alt alta dizmek için
@@ -19,6 +20,8 @@ export default function AdminDeleteButton({
   confirmText,
   className = "",
   disabled = false,
+  expectedCount,
+  typeToConfirm = false,
 }: {
   endpoint: string;
   ids?: string[];
@@ -27,13 +30,17 @@ export default function AdminDeleteButton({
   confirmText: string;
   className?: string;
   disabled?: boolean;
+  /** Çoklu silme: onaylanan sipariş sayısı sunucuya gider; eşleşmezse sunucu reddeder */
+  expectedCount?: number;
+  /** Onay penceresinde "SİL" yazdırır (toplu silme) */
+  typeToConfirm?: boolean;
 }) {
   const router = useRouter();
   const btn = useRef<HTMLButtonElement>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [waiting, setWaiting] = useState(false);
   const [slot, setSlot] = useState(0);
-  const body = payload ?? { ids };
+  const body = payload ?? (expectedCount === undefined ? { ids } : { ids, expectedCount });
   const empty = !payload && ids.length === 0;
 
   const row = () => (ids.length === 1 || payload ? (btn.current?.closest("[data-undo-row], tr, li") as HTMLElement | null) : null);
@@ -43,7 +50,17 @@ export default function AdminDeleteButton({
   };
 
   const start = () => {
-    if (empty || !confirm(`Emin misiniz? ${confirmText}\n\nSilme ${DELAY_MS / 1000} saniye sonra uygulanır; o süre içinde "Geri Al" diyebilirsiniz.`)) return;
+    if (empty) return;
+    const note = `Silme ${DELAY_MS / 1000} saniye sonra uygulanır; o süre içinde "Geri Al" diyebilirsiniz.`;
+    if (typeToConfirm) {
+      // Toplu silme: yazılı onay (sayı ve süzgeçler metinde); yanlış/boş yazı hiçbir şey silmez
+      const typed = prompt(`${confirmText}\n\n${note}\n\nOnaylamak için ${DELETE_CONFIRM_WORD} yazın:`);
+      if (typed === null) return;
+      if (!isDeleteConfirmed(typed)) {
+        alert(`Onay metni eşleşmedi; hiçbir sipariş silinmedi. Silmek için ${DELETE_CONFIRM_WORD} yazın.`);
+        return;
+      }
+    } else if (!confirm(`Emin misiniz? ${confirmText}\n\n${note}`)) return;
     setSlot(pending++);
     setWaiting(true);
     const el = row();

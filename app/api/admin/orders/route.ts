@@ -7,6 +7,7 @@ import { planStatusChange } from "@/lib/order-undo";
 import { restoreStockInTx, type RestoreTx } from "@/lib/stock-restore";
 import { DELETE_GUARD_HOURS, isPaymentInFlight } from "@/lib/stock-rules";
 import { orderNotificationLink } from "@/lib/order-display";
+import { checkDeleteCount } from "@/lib/bulk-delete";
 
 // Seçili siparişleri (ve bağlı kalem, fatura, dekont kayıtlarını, onay sayfasına giden müşteri bildirimlerini) kalıcı siler. Silmeden ÖNCE, aynı işlem içinde: stoğu düşülmüş (stockDeducted)
 // siparişlerin ayrılmış stoğu iade edilir (bayrak koşullu, idempotent) ve henüz iade edilmemiş kupon hakkı geri verilir (iptal akışıyla aynı karar: planStatusChange).
@@ -14,7 +15,8 @@ async function DELETEHandler(req: Request) {
   const denied = await adminGuard();
   if (denied) return denied;
   const body = await req.json().catch(() => ({}));
-  const ids: string[] = Array.isArray(body.ids) ? [...new Set<string>(body.ids.filter((i: unknown): i is string => typeof i === "string"))].slice(0, 500) : [];
+  const distinct: string[] = Array.isArray(body.ids) ? [...new Set<string>(body.ids.filter((i: unknown): i is string => typeof i === "string"))] : [];
+  const ids = distinct.slice(0, 500);
   if (ids.length === 0) return NextResponse.json({ error: "Sipariş seçilmedi." }, { status: 400 });
 
   // OrderInvoice tablosu veritabanında yoksa (P2021) başarısız SQL ifadesi tüm işlemi bozar; bu yüzden varlığı önce denetlenir
@@ -25,6 +27,9 @@ async function DELETEHandler(req: Request) {
 
   try {
     const existing = await prisma.order.findMany({ where: { id: { in: ids } }, select: { id: true, status: true, stockDeducted: true, couponCode: true, createdAt: true } });
+    // Çoklu silmede istemcinin onayladığı sayı, istekteki ve veritabanındaki sayıyla eşleşmeli (liste bu arada değiştiyse hiçbir şey silinmez; 500'ü aşan liste de reddedilir)
+    const countError = checkDeleteCount({ requested: distinct.length, expected: body.expectedCount, found: existing.length });
+    if (countError) return NextResponse.json({ error: countError }, { status: 409 });
     // Ödeme sayfası açık olabilecek sipariş silinmez: müşteri öderse PayTR bildirimi kayıtsız kalır (para alınır, sipariş yok)
     const inFlight = existing.filter((o) => isPaymentInFlight(o, Date.now()));
     if (inFlight.length > 0) {
