@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import { prisma } from "@/lib/db";
 import OrderTracker from "@/components/OrderTracker";
 import { maskName } from "@/lib/mask-name";
+import { recipientOf } from "@/lib/recipient";
 import Link from "next/link";
 import { rateLimit } from "@/lib/rate-limit";
 
@@ -43,6 +44,7 @@ async function OrderResult({ code }: { code: string }) {
       shippingProviderName: true,
       shippingTrackingCode: true,
       shippingBarcode: true,
+      recipientName: true,
       user: { select: { name: true } },
     },
   });
@@ -69,7 +71,7 @@ async function OrderResult({ code }: { code: string }) {
       )}
       <div>
         <span className="text-neutral-400">Alıcı</span>
-        <p className="font-semibold text-neutral-800">{maskName(order.user.name)}</p>
+        <p className="font-semibold text-neutral-800">{maskName(recipientOf(order))}</p>
       </div>
       <div className="pt-3 border-t border-neutral-100">
         <span className="text-neutral-400 block mb-2">Sipariş Durumu</span>

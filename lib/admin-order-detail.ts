@@ -1,5 +1,6 @@
 // Yönetim paneli sipariş detay sayfası (/admin/siparis/[id]) için saf kurallar: bağlantı, ödeme etiketi, hazırlık fişi verisi.
 import { orderCode } from "./order-display.ts";
+import { recipientOf } from "./recipient.ts";
 
 const ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
 
@@ -24,6 +25,8 @@ export interface FisInput {
   buyerStateName?: string | null;
   orderNote?: string | null;
   paymentMethod?: string | null;
+  recipientName?: string | null; // teslimat alıcı adı (eski siparişlerde null)
+  user?: { name: string }; // verilirse fişe alıcı adı eklenir (alıcı yoksa hesap adı)
   items: { quantity: number; variationValue?: string | null; title?: string | null }[];
 }
 
@@ -34,6 +37,7 @@ export interface FisData {
   address: string;
   note: string | null;
   payment: string;
+  recipient?: string; // yalnızca sipariş sahibi bilgisi verildiyse
   items: { title: string; variation: string; quantity: number }[];
 }
 
@@ -48,6 +52,7 @@ export function buildFis(o: FisInput, storeAddress: string): FisData {
     address: isPickup ? `Mağazadan teslim: ${storeAddress}` : [o.address?.trim(), region].filter(Boolean).join(", ") || "-",
     note: o.orderNote?.trim() || null,
     payment: paymentMethodLabel(o.paymentMethod),
+    ...(o.user ? { recipient: recipientOf({ recipientName: o.recipientName, user: o.user }) } : {}),
     items: o.items.map((i) => ({ title: i.title?.trim() || "Ürün", variation: i.variationValue?.trim() || "-", quantity: i.quantity })),
   };
 }

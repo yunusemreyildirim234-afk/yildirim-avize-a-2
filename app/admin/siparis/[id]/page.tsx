@@ -8,6 +8,7 @@ import { istanbulDateTimeParts } from "@/lib/format-date";
 import { orderItemProductView } from "@/lib/order-item-product";
 import { bankPaymentDeadline, breakdownOf, breakdownRows, deliveryAddressText, formatIstanbul, formatTl, orderCode } from "@/lib/order-display";
 import { buildFis, paymentMethodLabel } from "@/lib/admin-order-detail";
+import { recipientDiffers, recipientLabel } from "@/lib/recipient";
 import AdminPrintButton from "@/components/AdminPrintButton";
 import OrderStatusSelector from "@/components/OrderStatusSelector";
 import AdminKargonomiOrderActions from "@/components/AdminKargonomiOrderActions";
@@ -47,6 +48,7 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
       <section data-testid="hazirlik-fisi" aria-label="Hazırlık fişi" className="hidden print:block text-black">
         <h1 className="text-xl font-bold">Hazırlık Fişi — {fis.code}</h1>
         <p className="text-sm">Tarih: {fisTime}</p>
+        {fis.recipient && <p className="mt-3 text-sm"><strong>Alıcı:</strong> {fis.recipient}</p>}
         <p className="mt-3 text-sm"><strong>{fis.isPickup ? "Mağazadan teslim" : "Teslimat adresi"}:</strong> {fis.address}</p>
         <p className="text-sm"><strong>Telefon:</strong> {fis.phone}</p>
         <p className="text-sm"><strong>Ödeme yöntemi:</strong> {fis.payment}</p>
@@ -85,6 +87,9 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
           <section className={card} aria-labelledby="musteri">
             <h2 id="musteri" className={h}>Müşteri</h2>
             <p className="font-bold text-neutral-900">{order.user.name}</p>
+            {recipientDiffers(order) && (
+              <p data-testid="alici-adi" className="mt-1 rounded-md border border-amber-300 bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-950">{recipientLabel(order)}</p>
+            )}
             <p className="break-all text-xs text-neutral-600">{cleanGuestEmail(order.user.email)}</p>
             {order.phone && (
               <p className="mt-1 flex items-center gap-1 font-mono text-xs text-neutral-700">

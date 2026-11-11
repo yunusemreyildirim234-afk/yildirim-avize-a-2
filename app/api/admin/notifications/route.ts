@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { adminGuard } from "@/lib/admin-guard";
 import { prisma } from "@/lib/db";
+import { recipientLabel } from "@/lib/recipient";
 
 // Yönetim paneli canlı uyarıları: son 24 saatteki yeni siparişler ve bekleyen sorular (proxy yalnızca yöneticiye açar)
 export async function GET() {
@@ -10,7 +11,7 @@ export async function GET() {
   const [orders, messages] = await Promise.all([
     prisma.order.findMany({
       where: { createdAt: { gte: since }, status: { in: ["PENDING", "PENDING_NEW"] } },
-      select: { id: true, totalAmount: true, user: { select: { name: true } } },
+      select: { id: true, totalAmount: true, recipientName: true, user: { select: { name: true } } },
       orderBy: { createdAt: "desc" },
       take: 50,
     }),
@@ -22,7 +23,7 @@ export async function GET() {
     }),
   ]);
   return NextResponse.json({
-    orders: orders.map((o) => ({ id: o.id, total: o.totalAmount, customer: o.user.name })),
+    orders: orders.map((o) => ({ id: o.id, total: o.totalAmount, customer: recipientLabel(o) })),
     messages: messages.map((m) => ({ id: m.id, name: m.name, topic: m.product?.title || m.subject || "Genel" })),
   });
 }

@@ -6,6 +6,7 @@ import ClearCart from "@/components/ClearCart";
 import BankTransferCard from "@/components/BankTransferCard";
 import ReceiptUpload from "@/components/ReceiptUpload";
 import { maskName } from "@/lib/mask-name";
+import { recipientDiffers, recipientOf } from "@/lib/recipient";
 import { GtmAwaitPayment, GtmEvent } from "@/components/GtmEvent";
 import { gaItem, isPurchasable, purchaseEvent, purchaseOnceKey } from "@/lib/gtm-events";
 import { feedBrand } from "@/lib/feed";
@@ -175,6 +176,9 @@ export default async function OrderConfirmationPage({ params }: { params: Promis
                 ? "📍 Mağazadan Teslim – Şişhane merkezimizden teslim alınacak"
                 : "📦 Adrese Teslim – korumalı koli ile adresinize gönderilecek"}
             </p>
+            {recipientDiffers(order) && (
+              <p data-testid="alici-adi" className="text-neutral-600 mt-1">Alıcı: <strong>{maskName(recipientOf(order))}</strong></p>
+            )}
             {!isPickup && order.address && (
               <p className="text-neutral-600 mt-1">{order.address}{order.buyerCityName || order.buyerStateName ? `, ${[order.buyerCityName, order.buyerStateName].filter(Boolean).join(" / ")}` : ""}</p>
             )}

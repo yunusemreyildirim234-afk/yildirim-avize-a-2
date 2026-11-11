@@ -46,6 +46,7 @@ import { ORDER_GROUPS, isCountedOrder, matchesGroups, parseGroupParam, type Orde
 import { getInvoiceMeta } from "@/lib/invoice";
 import { orderItemProductView } from "@/lib/order-item-product";
 import { adminOrderHref } from "@/lib/admin-order-detail";
+import { recipientDiffers, recipientLabel } from "@/lib/recipient";
 import { deleteButtonLabel, deleteConfirmText } from "@/lib/bulk-delete";
 import { inDateRange, matchesOrderSearch, resolveDateRange } from "@/lib/admin-order-search";
 import { countUncopiedImages, smallImage } from "@/lib/img";
@@ -424,6 +425,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                       </td>
                       <td data-label="Müşteri & Adres" className="max-sm:flex max-sm:flex-col max-sm:before:content-[attr(data-label)] max-sm:before:text-[10px] max-sm:before:uppercase max-sm:before:tracking-wider max-sm:before:text-neutral-400 max-sm:before:mb-1 p-4">
                         <span className="font-bold text-neutral-900 block">{order.user.name}</span>
+                        {recipientDiffers(order) && <span data-testid="alici-adi" className="text-amber-900 text-[11px] font-semibold block">{recipientLabel(order)}</span>}
                         <span className="text-neutral-500 text-[11px] block">{cleanGuestEmail(order.user.email)}</span>
                         {order.phone && (
                           <span className="text-neutral-500 text-[11px] font-mono mt-0.5 flex items-center gap-1">

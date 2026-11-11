@@ -7,6 +7,7 @@ export const MAX_ORDER_QUERY = 100;
 export interface SearchableOrder {
   id: string;
   phone?: string | null;
+  recipientName?: string | null;
   user: { name: string; email: string };
 }
 
@@ -15,7 +16,7 @@ const digits = (s: string) => s.replace(/\D/g, "");
 const national = (d: string) => (d.startsWith("90") && d.length >= 12 ? d.slice(2) : d.replace(/^0+/, ""));
 
 /**
- * Sipariş kodu (8 hane) ya da tam kimlik, müşteri adı, e-posta (misafir etiketi temizlenmiş) ve telefon. Türkçe büyük/küçük harf ve aksan duyarsızdır
+ * Sipariş kodu (8 hane) ya da tam kimlik, müşteri adı ve alıcı adı, e-posta (misafir etiketi temizlenmiş) ve telefon. Türkçe büyük/küçük harf ve aksan duyarsızdır
  * (normalizeSearch); ad/e-postada sorgunun tüm sözcükleri bulunmalı. Boş sorgu her siparişle eşleşir.
  */
 export function matchesOrderSearch(o: SearchableOrder, query: string): boolean {
@@ -25,7 +26,7 @@ export function matchesOrderSearch(o: SearchableOrder, query: string): boolean {
   if (/^[0-9a-f-]{3,}$/.test(lower) && o.id.toLowerCase().includes(lower)) return true;
   const tokens = normalizeSearch(raw).split(" ").filter(Boolean);
   if (tokens.length > 0) {
-    const text = normalizeSearch(`${o.user.name} ${cleanGuestEmail(o.user.email)}`);
+    const text = normalizeSearch(`${o.user.name} ${o.recipientName ?? ""} ${cleanGuestEmail(o.user.email)}`);
     if (tokens.every((t) => text.includes(t))) return true;
   }
   const q = national(digits(raw));
