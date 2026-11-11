@@ -18,7 +18,8 @@ import AdminTrendyolSync from "@/components/AdminTrendyolSync";
 import { resolveSyncModes } from "@/lib/trendyol-modes";
 import AdminKargonomiOrderActions from "@/components/AdminKargonomiOrderActions";
 import { FEATURED } from "@/lib/products";
-import { getHomepageConfig, getHomepageRaw, getSectionPools } from "@/lib/homepage";
+import { getHomepageConfig, getHomepageRaw } from "@/lib/homepage";
+import { getAdminSectionPools } from "@/lib/homepage-admin";
 import { resolvePromoCards } from "@/lib/promo-cards";
 import { resolveCollectionKeys } from "@/lib/collections";
 import { resolveHiddenBestSellers } from "@/lib/homepage-compose";
@@ -128,7 +129,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const flaggedFeatured = await prisma.product.findMany({ where: { active: true, isFeatured: true }, select: { id: true } });
   const featuredIds = flaggedFeatured.length > 0 ? flaggedFeatured : await prisma.product.findMany({ where: { active: true, ...FEATURED }, select: { id: true } });
   // Ana Sayfayı Düzenle: bölüm havuzları (yalnızca ilgili kümeden seçilebilir) ve kayıtlı ayar
-  const [homeConfig, homePools, homeRaw] = await Promise.all([getHomepageConfig(), getSectionPools(), getHomepageRaw()]);
+  const [homeConfig, homePools, homeRaw] = await Promise.all([getHomepageConfig(), getAdminSectionPools(), getHomepageRaw()]);
   const categoryList = await getCategoryList().catch(() => []);
   const categorySettings = await getCategorySettings();
   // Kategori satırı: "yayında" = vitrin sayısı (c.count), "toplam" = pasifler dahil o kategorideki tüm ürünler (Tüm Ürünler filtresindeki sayı)
