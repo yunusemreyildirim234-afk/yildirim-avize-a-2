@@ -28,7 +28,7 @@ export default async function Page() {
           title: "İşlenen Kişisel Veri Kategorileri",
           body: [
             "Kimlik ve iletişim bilgileri: ad-soyad, e-posta adresi, telefon numarası.",
-            "Teslimat ve fatura bilgileri: teslimat adresi, il/ilçe; kurumsal faturada unvan, vergi dairesi ve vergi kimlik numarası (bireysel faturada girilmişse T.C. kimlik numarası).",
+            "Teslimat ve fatura bilgileri: teslimat adresi, il/ilçe; kurumsal faturada unvan, vergi dairesi ve vergi kimlik numarası (bireysel faturada girilmişse T.C. kimlik numarası). Hesabınızdaki \"Adreslerim\" bölümüne kendiniz kaydettiğiniz adres kayıtları (adres başlığı, alıcı ad-soyad, telefon, il, ilçe, açık adres).",
             "Müşteri işlemi bilgileri: sipariş içeriği, tutarı, ödeme yöntemi, kargo ve takip bilgileri, iptal/iade talepleri, sipariş notları, uygulanan kupon.",
             "Ödeme bilgileri: kartlı ödemelerde kart bilgileriniz doğrudan ödeme kuruluşu PayTR'nin güvenli ödeme sayfasında girilir ve tarafımızca saklanmaz. Havale/EFT'de gönderici adı ve yüklenen dekont tarafımızca işlenir.",
             "İçerik bilgileri: iletişim formu mesajları, ürün soruları, ürün yorumları ve yüklediğiniz fotoğraflar, dekont dosyaları.",
@@ -39,6 +39,7 @@ export default async function Page() {
           title: "Kişisel Verilerin İşlenme Amaçları",
           body: [
             "Siparişinizin alınması, ödemenin tahsili, ürünün hazırlanması ve teslimi (mağazadan teslim veya kargo).",
+            "Sipariş verirken teslimat formunun kayıtlı adreslerinizle hızlıca doldurulması.",
             "Sipariş, kargo, iptal/iade ve cayma süreçlerinin yürütülmesi ve bu konularda sizinle e-posta yoluyla iletişim kurulması.",
             "Fatura düzenlenmesi; muhasebe, vergi ve ticaret mevzuatından doğan yükümlülüklerin yerine getirilmesi.",
             "Müşteri taleplerinin, sorularının ve şikâyetlerinin yanıtlanması; ürün yorumlarının yayın öncesi incelenmesi.",
@@ -91,6 +92,7 @@ export default async function Page() {
           title: "Saklama Süresi",
           body: [
             "Kişisel verileriniz, işlendikleri amaç için gerekli olan süre boyunca ve ilgili mevzuatta (Türk Ticaret Kanunu, Vergi Usul Kanunu, Tüketicinin Korunması Hakkında Kanun vb.) öngörülen yasal saklama süreleri boyunca saklanır; sürenin sonunda silinir, yok edilir veya anonim hale getirilir.",
+            "Hesabınızdaki kayıtlı adresler, hesabınız aktif olduğu sürece saklanır; adres defterinizden istediğiniz adresi kendiniz silebilirsiniz. Hesabınızın ve kayıtlı adreslerinizin silinmesi için yukarıdaki başvuru yollarıyla bize ulaşabilirsiniz. Sipariş kayıtlarındaki teslimat adresi ve fatura kayıtları yasal saklama süreleri boyunca tutulur.",
           ],
         },
         {
