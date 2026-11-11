@@ -63,7 +63,8 @@ test("liste katmanı: tek paylaşılan katalog girdisi, açıklama veritabanınd
   const s = src("lib/listing.ts");
   const select = s.slice(s.indexOf("const ROW_SELECT"), s.indexOf("satisfies Prisma.ProductSelect"));
   assert.ok(!/description/.test(select), "tam açıklama satır sorgusunda çekilmez");
-  assert.match(s, /left\("description", \$\{SEARCH_DESCRIPTION_CHARS\}\)/);
+  assert.match(s, /left\("description", \$\{SEARCH_DESCRIPTION_CHARS\}::int\)/);
+  assert.match(s, /ANY\(\$\{ids\}::text\[\]\)/);
   assert.match(s, /export const SEARCH_DESCRIPTION_CHARS = 300;/);
   assert.match(s, /const catalogRows = \(\) => loadRowsCached\(\{\}, LISTING_ROW_CAP\);/);
   // arama, kategori ve Çok Satanlar aynı girdiden beslenir

@@ -17,7 +17,7 @@ export const prismaCopyStore: CopyStore = {
           UNION ALL SELECT unnest(v."images") FROM "ProductVariation" v WHERE v."productId" = p."id"
         ) s WHERE s.u ~* ${TRENDYOL_SQL_RE} AND NOT (s.u = ANY(${opts.atla}::text[]))
       )
-      ORDER BY p."id" LIMIT ${opts.limit}`;
+      ORDER BY p."id" LIMIT ${opts.limit}::int`;
     if (ids.length === 0) return [];
     return prisma.product.findMany({
       where: { id: { in: ids.map((r) => r.id) } },

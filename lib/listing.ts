@@ -48,7 +48,7 @@ export const SEARCH_DESCRIPTION_CHARS = 300;
 /** Arama metni için kırpılmış açıklamalar (ürün kimliği → ilk SEARCH_DESCRIPTION_CHARS karakter). */
 async function loadDescriptionHeads(ids: string[]): Promise<Map<string, string>> {
   if (ids.length === 0) return new Map();
-  const rows = await prisma.$queryRaw<{ id: string; d: string | null }[]>`SELECT "id", left("description", ${SEARCH_DESCRIPTION_CHARS}) AS d FROM "Product" WHERE "id" = ANY(${ids}) AND "description" IS NOT NULL`;
+  const rows = await prisma.$queryRaw<{ id: string; d: string | null }[]>`SELECT "id", left("description", ${SEARCH_DESCRIPTION_CHARS}::int) AS d FROM "Product" WHERE "id" = ANY(${ids}::text[]) AND "description" IS NOT NULL`;
   return new Map(rows.flatMap((r) => (r.d ? [[r.id, r.d] as const] : [])));
 }
 
