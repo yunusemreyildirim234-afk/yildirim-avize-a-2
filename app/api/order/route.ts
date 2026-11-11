@@ -3,8 +3,8 @@ import { serverError, badRequest } from "@/lib/api-error";
 import { prisma } from "@/lib/db";
 import { rateLimit, requestIp, tooMany } from "@/lib/rate-limit";
 import { isValidPhone, PHONE_ERROR } from "@/lib/phone";
-import { bankPendingLimitReached, finalizeOrder, planPendingSwap, releaseStaleReservations, restoreOrderStock, type PendingSwap } from "@/lib/orders";
-import { swapAndCreate, type SwapTx } from "@/lib/order-swap";
+import { bankPendingLimitReached, finalizeOrder, planPendingSwap, releaseStaleReservations, type PendingSwap } from "@/lib/orders";
+import { closeAwaitingCardInTx, swapAndCreate, type SwapTx } from "@/lib/order-swap";
 import { getPaytrToken } from "@/lib/paytr";
 import { SHIPPING_LABELS } from "@/lib/pricing";
 import { getSessionUserId } from "@/lib/account";
@@ -318,9 +318,10 @@ export async function POST(req: Request) {
       });
       return NextResponse.json({ success: true, orderId: order.id, paytrToken: token });
     } catch (err) {
-      await prisma.order.update({ where: { id: order.id }, data: { status: "PAYMENT_FAILED" } });
-      await restoreOrderStock(order.id).catch((e) => console.error("[siparis] stok iadesi başarısız (cron süpürür):", (e as Error).message));
-      await releaseCoupon(appliedCouponCode).catch(() => {});
+      // Durum + stok + kupon tek transaction'da; hata olursa sipariş ödeme bekler kalır, süresi dolunca temizlenir
+      await prisma
+        .$transaction((tx) => closeAwaitingCardInTx(tx as unknown as SwapTx, order.id, (code) => releaseCoupon(code, tx)), { maxWait: 5000, timeout: 10000 })
+        .catch((e) => console.error("[siparis] başarısız ödeme kapatılamadı (süre dolunca temizlenir):", (e as Error).message));
       return serverError("order/paytr", err, "Ödeme başlatılamadı. Lütfen tekrar deneyin.", 502);
     }
   } catch (error) {

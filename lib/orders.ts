@@ -11,6 +11,7 @@ import { cleanGuestEmail } from "@/lib/guest-email";
 import { recipientLabel, recipientOf } from "@/lib/recipient";
 import { restoreStockInTx, type RestoreTx } from "@/lib/stock-restore";
 import { finalizePaidOrder } from "@/lib/order-finalize";
+import { closeAwaitingCardInTx, type SwapTx } from "@/lib/order-swap";
 import { revalidateStorefrontSafe } from "@/lib/revalidate";
 
 // Havuz küçük (max 3): interaktif işlemler kısa sürede bitmeli veya hata vermeli
@@ -74,12 +75,10 @@ export async function restoreOrderStock(orderId: string) {
  * ardından ayrılmış stok (bayrak koşullu) ve kupon hakkı iade edilir. Aynı olay tekrar gelirse etkisizdir. Kapatıldıysa true.
  */
 export async function failAwaitingCardOrder(orderId: string): Promise<boolean> {
-  const o = await prisma.order.findUnique({ where: { id: orderId }, select: { couponCode: true } });
-  const failed = await prisma.order.updateMany({ where: { id: orderId, status: "AWAITING_PAYMENT", paymentMethod: "CREDIT_CARD" }, data: { status: "PAYMENT_FAILED" } });
-  if (failed.count === 0) return false;
-  await restoreOrderStock(orderId);
-  await releaseCoupon(o?.couponCode).catch((err) => console.error("[siparis] kupon serbest bırakılamadı:", (err as Error).message));
-  return true;
+  // Durum + stok + kupon TEK transaction'da (cron ile aynı desen): herhangi bir adım hata verirse üçü de geri alınır, sipariş ödeme bekler kalır ve yeniden denenebilir
+  const closed = await prisma.$transaction((tx) => closeAwaitingCardInTx(tx as unknown as SwapTx, orderId, (code) => releaseCoupon(code, tx)), TX_OPTIONS);
+  if (closed) revalidateStorefrontSafe(); // transaction bittikten sonra, en iyi çaba
+  return closed;
 }
 
 /**
