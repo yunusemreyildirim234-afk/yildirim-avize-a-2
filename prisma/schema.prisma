@@ -21,6 +21,7 @@ model User {
   cartItems        CartItem[]
   favorites        Favorite[]
   messages         ContactMessage[]
+  addresses        Address[]
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 }
@@ -229,6 +230,26 @@ model CartItem {
   updatedAt   DateTime         @updatedAt
 
   @@unique([userId, variationId])
+  @@index([userId])
+}
+
+// Müşterinin kayıtlı teslimat adresleri (adres defteri); yalnızca sahibi görür/değiştirir, hesap silinirse birlikte silinir
+model Address {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String // "Ev", "İş" gibi başlık
+  fullName  String // Alıcı ad soyad (siparişte Order.recipientName olur)
+  phone     String
+  stateId   Int // Kargonomi il ID
+  stateName String
+  cityId    Int // Kargonomi ilçe ID
+  cityName  String
+  address   String // Açık adres
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([userId])
 }
 

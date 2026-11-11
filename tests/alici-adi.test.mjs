@@ -24,8 +24,8 @@ test("recipientDiffers / recipientLabel: yalnızca gerçekten farklıysa etiket"
 
 test("şema ve SQL: yalnızca Order.recipientName String? ve IF NOT EXISTS'li nullable kolon", () => {
   const schema = readFileSync(new URL("../prisma/schema.prisma", import.meta.url), "utf8");
-  assert.equal((schema.match(/recipientName/g) ?? []).length, 1);
   const order = schema.slice(schema.indexOf("model Order {"), schema.indexOf("model OrderItem"));
+  assert.equal((order.match(/recipientName/g) ?? []).length, 1);
   assert.match(order, /recipientName\s+String\?/);
   const sql = readFileSync(new URL("../prisma/sql/alici-adi-ekle.sql", import.meta.url), "utf8");
   const stmts = sql.split("\n").filter((l) => l.trim() && !l.startsWith("--"));
