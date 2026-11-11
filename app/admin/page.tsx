@@ -81,7 +81,8 @@ async function getAdminData() {
       orderBy: { createdAt: "desc" },
     }),
     prisma.product.findMany({
-      omit: { syncSnapshot: true, lastSyncedAt: true },
+      // Açıklama listede kullanılmaz: düzenleyici açılınca tek ürün için okunur (GET /api/admin/product). Kataloğun en ağır alanı her yenilemede çekilmez.
+      omit: { syncSnapshot: true, lastSyncedAt: true, description: true },
       include: {
         variations: {
           omit: { syncSnapshot: true, syncStock: true },
