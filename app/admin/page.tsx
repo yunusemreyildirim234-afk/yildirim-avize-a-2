@@ -1,3 +1,4 @@
+import { requireAdminPage } from "@/lib/admin-guard";
 import { reservationExpiresAt } from "@/lib/stock-rules";
 import { istanbulDateTimeParts } from "@/lib/format-date";
 import { getExtraCategoryNames } from "@/lib/category-list";
@@ -115,6 +116,7 @@ async function getAdminData() {
 }
 
 export default async function AdminPage({ searchParams }: { searchParams: Promise<{ durum?: string; q?: string; tarih?: string; bas?: string; bit?: string }> }) {
+  await requireAdminPage();
   const sp = await searchParams;
   const durumParam = sp.durum;
   const orderFilters = { q: sp.q, tarih: sp.tarih, bas: sp.bas, bit: sp.bit };

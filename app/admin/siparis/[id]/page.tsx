@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, MapPin, Package, Phone, Receipt, StickyNote } from "lucide-react";
 import { prisma } from "@/lib/db";
+import { requireAdminPage } from "@/lib/admin-guard";
 import { cleanGuestEmail } from "@/lib/guest-email";
 import { ADDRESS_LINE } from "@/lib/site";
 import { istanbulDateTimeParts } from "@/lib/format-date";
@@ -22,8 +23,9 @@ const ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
 const card = "rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm";
 const h = "text-xs font-bold uppercase tracking-wider text-neutral-500 mb-3";
 
-// Yönetici oturumu proxy.ts'te (/admin/:path*) denetlenir; oturum yoksa yönetici girişine yönlendirilir.
+// Yönetici oturumu proxy.ts'te (/admin/:path*) denetlenir; ayrıca sayfa başında ikinci kez doğrulanır (requireAdminPage).
 export default async function AdminOrderPage({ params }: { params: Promise<{ id: string }> }) {
+  await requireAdminPage();
   const { id } = await params;
   if (!ID_RE.test(id)) notFound();
   const order = await prisma.order.findUnique({
