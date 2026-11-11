@@ -150,10 +150,14 @@ export async function POST(req: Request) {
     // Kupon: kişiye/ürüne özel şartlar ve kullanım limiti sunucuda doğrulanır
     let appliedCouponCode: string | null = null;
     if (typeof couponCode === "string" && couponCode.trim()) {
+      // Oturum varsa kupon HESABIN e-postasıyla doğrulanır (form e-postasıyla değil); teklif ucuyla aynı kural
+      const couponUserId = await getSessionUserId();
+      const accountEmail = couponUserId ? (await prisma.user.findUnique({ where: { id: couponUserId }, select: { email: true } }))?.email ?? null : null;
       const check = await validateCoupon({
         code: couponCode,
-        email: String(email).toLowerCase(),
-        userId: await getSessionUserId(),
+        email: accountEmail ?? String(email).toLowerCase(),
+        accountEmail,
+        userId: couponUserId,
         lines: priced.lines.map((l) => ({ productId: l.productId, lineTotal: l.lineTotal })),
         replacing: { orderIds: swap.swapIds, couponCodes: swap.heldCoupons },
       });

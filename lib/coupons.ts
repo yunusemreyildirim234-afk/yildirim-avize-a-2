@@ -2,6 +2,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { isExpired } from "@/lib/coupon-expiry";
 import { COUPON_GENERIC_ERROR } from "@/lib/coupon-code";
+import { COUPON_PERSONAL_ERROR, personalCouponError } from "@/lib/coupon-personal";
 import { DEFAULT_COUPON_CODE, type CouponRule, type PriceLine } from "@/lib/pricing";
 import { heldCouponUses } from "@/lib/order-swap";
 
@@ -10,6 +11,8 @@ export const COUPON_PRODUCT_ERROR = "Bu kupon yalnızca belirli bir üründe ge�
 /** Kupon denemesi sınırı: IP başına 10 dakikada en fazla 10 BAŞARISIZ doğrulama */
 export const COUPON_FAIL_LIMIT = { name: "coupon-fail", max: 10, windowMs: 10 * 60_000 };
 export const COUPON_LIMITED_ERROR = "Çok fazla deneme, lütfen sonra tekrar deneyin";
+
+export { COUPON_PERSONAL_ERROR };
 
 export type CouponResult = { ok: true; rule: CouponRule; couponId: string } | { ok: false; error: string };
 
@@ -50,6 +53,8 @@ export async function validateCoupon(opts: {
   email?: string | null;
   lines: PriceLine[];
   userId?: string | null; // giriş yapmış üye (kişi başı limit için)
+  /** Oturum açıksa HESABIN e-postası (form e-postası değil); kişiye özel kupon yalnızca bununla eşleşirse geçerlidir. */
+  accountEmail?: string | null;
   /** Yeni siparişin yerine geçeceği bekleyen siparişler: onların tuttuğu kupon hakkı limitlerde sayılmaz (aynı transaction içinde iade edilecek). */
   replacing?: { orderIds: string[]; couponCodes: (string | null)[] };
 }): Promise<CouponResult> {
@@ -64,9 +69,8 @@ export async function validateCoupon(opts: {
   if (coupon.usedCount - heldCouponUses(coupon.code, opts.replacing?.couponCodes) >= coupon.maxUses) return { ok: false, error: "Bu kuponun kullanım hakkı dolmuştur." };
 
   if (coupon.userEmail) {
-    const email = (opts.email ?? "").trim().toLowerCase();
-    if (!email) return { ok: false, error: "Bu kupon kişiye özeldir. Lütfen giriş yapın veya e-posta adresinizi girin." };
-    if (email !== coupon.userEmail.toLowerCase()) return { ok: false, error: "Bu kupon bu hesap için tanımlı değil." };
+    const personal = personalCouponError(coupon.userEmail, opts.accountEmail);
+    if (personal) return { ok: false, error: personal };
   }
 
   if (coupon.productId && !opts.lines.some((l) => l.productId === coupon.productId)) {

@@ -5,7 +5,7 @@ import { bulkTiersOf } from "@/lib/bulk-pricing";
 import { priceCart } from "@/lib/cart-pricing";
 import { isPurchasablePrice, priceUnavailableMessage } from "@/lib/purchasable";
 import { SHIPPING_LABELS, type CouponRule } from "@/lib/pricing";
-import { COUPON_FAIL_LIMIT, COUPON_LIMITED_ERROR, validateCoupon } from "@/lib/coupons";
+import { COUPON_FAIL_LIMIT, COUPON_LIMITED_ERROR, COUPON_PERSONAL_ERROR, validateCoupon } from "@/lib/coupons";
 import { getSessionUserId } from "@/lib/account";
 import { planPendingSwap, releaseStaleReservations, type PendingSwap } from "@/lib/orders";
 import { shouldPlanSwapForQuote, stockWithHeld } from "@/lib/order-swap";
@@ -89,6 +89,7 @@ export async function POST(req: Request) {
       code,
       email: sessionEmail ?? (typeof body.email === "string" ? body.email : null),
       userId,
+      accountEmail: sessionEmail,
       lines: priced.lines.map((l) => ({ productId: l.productId, lineTotal: l.lineTotal })),
       replacing: { orderIds: swap.swapIds, couponCodes: swap.heldCoupons },
     });
@@ -101,8 +102,9 @@ export async function POST(req: Request) {
       }
     } else {
       recordFailure(req, COUPON_FAIL_LIMIT.name, COUPON_FAIL_LIMIT.windowMs);
-      coupon = { ok: false, error: COUPON_GENERIC_ERROR };
-    } // var/yok, kişiye özel, limit ayrımı yapılmaz
+      // Kişiye özel kupon reddi sipariş ucuyla aynı metni taşır; var/yok ve limit ayrımı yapılmaz
+      coupon = { ok: false, error: check.error === COUPON_PERSONAL_ERROR ? COUPON_PERSONAL_ERROR : COUPON_GENERIC_ERROR };
+    }
   }
 
   // Sepet satırı fiyat merdiveni (yalnızca gösterim); vitrin kuponu + üst sınır istek başına bir kez okunur
