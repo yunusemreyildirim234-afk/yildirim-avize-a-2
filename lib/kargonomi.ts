@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { cleanGuestEmail } from "@/lib/guest-email";
+import { recipientOf } from "@/lib/recipient";
 
 const BASE_URL = (process.env.KARGONOMI_API_URL || process.env.KARGONOMI_BASE_URL || "https://app.kargonomi.com.tr/api/v1").replace(/\/$/, "");
 
@@ -139,7 +140,7 @@ export async function createShipmentForOrder(orderId: string, opts: { regenerate
   const desi = Math.max(2, totalQty * 2, order.packageDesi ?? 0);
 
   const created = await createKargonomiShipment({
-    buyer_name: order.user.name,
+    buyer_name: recipientOf(order), // teslimat alıcı adı; eski siparişlerde hesap adı
     buyer_email: cleanGuestEmail(order.user.email),
     buyer_phone: (order.phone || "").replace(/[^0-9]/g, "").replace(/^(90|0)/, "").slice(-10),
     buyer_address: order.address || "",

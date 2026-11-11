@@ -1,6 +1,7 @@
 interface EmailOrderData {
   orderId: string;
   customerName: string;
+  recipientName?: string | null; // teslimat alıcı adı; yalnızca yönetici e-postasında (hesap adından farklıysa) gösterilir
   customerEmail: string;
   customerPhone?: string | null;
   orderNote?: string | null;
@@ -28,6 +29,7 @@ import { ADDRESS_LINE, ADMIN_EMAILS, BANK_INFO, PHONE_DISPLAY, SITE_URL } from "
 import { orderCode, bankPaymentDeadline, breakdownOf, breakdownRows, deliveryAddressText, formatIstanbul, type BreakdownRow } from "@/lib/order-display";
 import { IADE_TALIMATI } from "@/lib/legal-texts";
 import { adminOrderHref } from "@/lib/admin-order-detail";
+import { recipientDiffers } from "@/lib/recipient";
 import { buildCampaignFooter, unsubscribeHeaders } from "@/lib/marketing";
 
 const DEFAULT_FROM = "Yıldırım Avize <siparis@yildirimavize.com.tr>";
@@ -226,6 +228,7 @@ export async function sendOrderNotificationEmails(data: EmailOrderData) {
       <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
         <tr><td style="padding: 4px 0; color: #737373;">Sipariş Kodu</td><td style="padding: 4px 0; text-align: right; font-family: monospace;">${shortId}</td></tr>
         <tr><td style="padding: 4px 0; color: #737373;">Müşteri</td><td style="padding: 4px 0; text-align: right; font-weight: bold;">${esc(data.customerName)}</td></tr>
+        ${recipientDiffers({ recipientName: data.recipientName, user: { name: data.customerName } }) ? `<tr><td style="padding: 4px 0; color: #737373;">Alıcı</td><td style="padding: 4px 0; text-align: right; font-weight: bold;">${esc(String(data.recipientName).trim())}</td></tr>` : ""}
         <tr><td style="padding: 4px 0; color: #737373;">E-posta</td><td style="padding: 4px 0; text-align: right;">${esc(data.customerEmail)}</td></tr>
         <tr><td style="padding: 4px 0; color: #737373;">Telefon</td><td style="padding: 4px 0; text-align: right;">${esc(data.customerPhone || "-")}</td></tr>
         <tr><td style="padding: 4px 0; color: #737373;">Teslimat</td><td style="padding: 4px 0; text-align: right;">${isBeyoglu ? "Mağazadan Teslim" : "Adrese Teslim"}</td></tr>

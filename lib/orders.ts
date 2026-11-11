@@ -8,6 +8,7 @@ import { createShipmentForOrder } from "@/lib/kargonomi";
 import { notifyAdmins, notifyCustomer } from "@/lib/notifications";
 import { adminOrderHref } from "@/lib/admin-order-detail";
 import { cleanGuestEmail } from "@/lib/guest-email";
+import { recipientLabel, recipientOf } from "@/lib/recipient";
 import { restoreStockInTx, type RestoreTx } from "@/lib/stock-restore";
 import { finalizePaidOrder } from "@/lib/order-finalize";
 import { revalidateStorefrontSafe } from "@/lib/revalidate";
@@ -192,14 +193,15 @@ async function announceNewOrder(order: FullOrder) {
   );
   await notifyAdmins({
     title: `Yeni Sipariş: #${order.id.slice(0, 8)}`,
-    message: `${order.user.name} • ${order.totalAmount.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺${order.paymentMethod === "BANK_TRANSFER" ? " • Havale (onay bekliyor)" : ""}`,
+    message: `${recipientLabel(order)} • ${order.totalAmount.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺${order.paymentMethod === "BANK_TRANSFER" ? " • Havale (onay bekliyor)" : ""}`,
     type: "ORDER",
     link: adminOrderHref(order.id),
   });
 
   await sendOrderNotificationEmails({
     orderId: order.id,
-    customerName: order.user.name,
+    customerName: order.user.name, // "Sayın ..." hitabı hesap adıyla kalır
+    recipientName: recipientOf(order), // yönetici e-postasında alıcı satırı
     customerEmail: cleanGuestEmail(order.user.email),
     customerPhone: order.phone,
     orderNote: order.orderNote,

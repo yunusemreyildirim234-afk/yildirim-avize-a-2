@@ -237,6 +237,7 @@ export async function POST(req: Request) {
         status: paymentMethod === "CREDIT_CARD" ? "AWAITING_PAYMENT" : "PENDING_NEW",
         phone,
         address,
+        recipientName: name,
         buyerStateId: buyerStateId ? Number(buyerStateId) : 34,
         buyerCityId: buyerCityId ? Number(buyerCityId) : 425,
         buyerStateName: buyerStateName || "İSTANBUL",
