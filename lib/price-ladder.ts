@@ -1,12 +1,12 @@
 import type { BulkRule } from "@/lib/bulk-pricing";
 import { priceCart } from "@/lib/cart-pricing";
-import { BANK_TRANSFER_DISCOUNT, PICKUP_DISCOUNT, SHIPPING_TYPES, type CouponRule } from "@/lib/pricing";
+import { PICKUP_DISCOUNT, SHIPPING_TYPES, type CouponRule } from "@/lib/pricing";
 import { ladderCouponLabel } from "@/lib/coupon-code";
 
 export interface LadderStep {
   key: "coupon" | "bank" | "pickup";
-  label: string; // "<vitrin kodu> kuponuyla" / "+ Havale/EFT ile (%5)"
-  short: string; // dar (mobil) kart etiketi: "<vitrin kodu>" / "Havale/EFT %5" / "Mağaza %3"
+  label: string; // "<vitrin kodu> kuponuyla" / "+ Havale/EFT indirimi"
+  short: string; // dar (mobil) kart etiketi: "<vitrin kodu>" / "Havale/EFT" / "Mağaza %3"
   hint: string;
   price: number;
 }
@@ -57,8 +57,8 @@ export function priceLadder(p: LadderProduct, ctx: LadderContext, price: number 
   }
   const b = net(SHIPPING_TYPES.HOME, "BANK_TRANSFER", coupon);
   if (b.price < prev) {
-    const t = pctText(line.transferPct ?? BANK_TRANSFER_DISCOUNT * 100);
-    steps.push({ key: "bank", label: `+ Havale/EFT ile (%${t})`, short: `Havale/EFT %${t}`, hint: "Havale/EFT ödemede", price: b.price });
+    // Yüzde yazılmaz: indirim kargo dahil toplamdan alındığı için ürün fiyatındaki düşüş tam %5 olmaz
+    steps.push({ key: "bank", label: "+ Havale/EFT indirimi", short: "Havale/EFT", hint: "Havale/EFT ödemede", price: b.price });
     prev = b.price;
   }
   const m = net(SHIPPING_TYPES.PICKUP, "BANK_TRANSFER", coupon);
