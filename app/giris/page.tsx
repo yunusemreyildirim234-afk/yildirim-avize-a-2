@@ -13,6 +13,7 @@ import AuthForms from "@/components/AuthForms";
 import AccountSecurity from "@/components/AccountSecurity";
 import CodeStep from "@/components/CodeStep";
 import ProfileName from "@/components/ProfileName";
+import AddressBook from "@/components/AddressBook";
 import ReceiptUpload from "@/components/ReceiptUpload";
 import { MarketingPermissions } from "@/components/MarketingPrefs";
 import { smallImage } from "@/lib/img";
@@ -305,6 +306,8 @@ export default function AuthPage() {
           </div>
 
           <ProfileName key={user.name} name={user.name} onChanged={refreshUser} />
+
+          <AddressBook defaultName={user.name} />
 
           <AccountSecurity email={user.email} twoFactorEnabled={Boolean(user.twoFactorEnabled)} onChanged={refreshUser} />
 
