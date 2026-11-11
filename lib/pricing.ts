@@ -66,7 +66,9 @@ export function computeTotals(opts: {
   const pickupDiscount = isPickup ? Math.round(opts.itemsTotal * PICKUP_DISCOUNT) : 0;
 
   const afterDiscounts = Math.max(0, opts.itemsTotal + shipping - couponDiscount - pickupDiscount);
-  const bankDiscount = opts.paymentMethod === "BANK_TRANSFER" ? Math.round(afterDiscounts * BANK_TRANSFER_DISCOUNT) : 0;
+  // Havale/EFT indirimi yalnızca ürün tutarından (kupon ve mağaza indirimi düşülmüş, kargo hariç) hesaplanır
+  const bankBase = Math.max(0, opts.itemsTotal - couponDiscount - pickupDiscount);
+  const bankDiscount = opts.paymentMethod === "BANK_TRANSFER" ? Math.round(bankBase * BANK_TRANSFER_DISCOUNT) : 0;
 
   return { shipping, couponDiscount, pickupDiscount, bankDiscount, total: Math.max(0, afterDiscounts - bankDiscount) };
 }

@@ -116,15 +116,16 @@ export function priceCart(opts: {
   const pickupByGroup = pickupGroups.map(([rate, ls]) => (isPickup ? Math.round(ls.reduce((s, l) => s + l.lineTotal, 0) * rate) : 0));
   const pickupDiscount = pickupGroups.length === 1 && isPickup ? Math.round(itemsTotal * pickupGroups[0][0]) : pickupByGroup.reduce((a, b) => a + b, 0);
 
-  // 4) Havale/EFT: kupon ve mağaza indirimi düşülmüş tutar (kargo dahil) üzerinden, ürünün oranına göre
-  const afterDiscounts = Math.max(0, itemsTotal + shipping - couponDiscount - pickupDiscount);
+  // 4) Havale/EFT: kupon ve mağaza indirimi düşülmüş ÜRÜN tutarı üzerinden (kargo HARİÇ), ürünün oranına göre
+  const afterDiscounts = Math.max(0, itemsTotal + shipping - couponDiscount - pickupDiscount); // kargo dahil ödenecek tutar (havale öncesi)
+  const bankBase = Math.max(0, itemsTotal - couponDiscount - pickupDiscount);
   let bankDiscount = 0;
   if (opts.paymentMethod === "BANK_TRANSFER") {
     const bankGroups = groupBy(lines, (l) => rateOf(l.transferPct, BANK_TRANSFER_DISCOUNT));
     if (bankGroups.length === 1) {
-      bankDiscount = Math.round(afterDiscounts * bankGroups[0][0]);
+      bankDiscount = Math.round(bankBase * bankGroups[0][0]);
     } else {
-      // Karışık oranlarda her satırın payı (ürün + kargo − kupon − mağaza indirimi payı) kendi oranıyla yuvarlanır
+      // Karışık oranlarda her satırın payı (ürün − kupon − mağaza indirimi payı; kargo hariç) kendi oranıyla yuvarlanır
       const eligibleTotal = eligible.reduce((s, l) => s + l.lineTotal, 0);
       const pickupShare = new Map<string, number>();
       pickupGroups.forEach(([, ls], i) => {
@@ -132,8 +133,7 @@ export function priceCart(opts: {
         for (const l of ls) pickupShare.set(l.variationId, gt > 0 ? (pickupByGroup[i] * l.lineTotal) / gt : 0);
       });
       const baseOf = (l: PricedLine) =>
-        l.lineTotal +
-        (itemsTotal > 0 ? (shipping * l.lineTotal) / itemsTotal : 0) -
+        l.lineTotal -
         (l.couponAllowed && eligibleTotal > 0 ? (couponDiscount * l.lineTotal) / eligibleTotal : 0) -
         (pickupShare.get(l.variationId) ?? 0);
       bankDiscount = bankGroups.reduce((sum, [rate, ls]) => sum + Math.round(Math.max(0, ls.reduce((s, l) => s + baseOf(l), 0)) * rate), 0);
@@ -158,7 +158,7 @@ export function priceCart(opts: {
     const bankPart = lines.map(() => 0);
     if (bankDiscount > 0) {
       const w = lines.map((l, i) => {
-        const base = l.lineTotal + (itemsTotal > 0 ? (shipping * l.lineTotal) / itemsTotal : 0) - couponPart[i] - pickupPart[i];
+        const base = l.lineTotal - couponPart[i] - pickupPart[i]; // kargo hariç
         return Math.max(0, base) * rateOf(l.transferPct, BANK_TRANSFER_DISCOUNT);
       });
       const wSum = w.reduce((a, b) => a + b, 0);
