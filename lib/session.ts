@@ -82,13 +82,17 @@ export function versionMatches(tokenVersion: unknown, dbVersion: number | null):
   return tv === dbVersion;
 }
 
-/** İmzası/süresi doğrulanmış oturumun sürümünü veritabanındakiyle karşılaştırır; okuma hatası loglanır, oturum geçerli kalır. */
+/** İmzası/süresi doğrulanmış oturumun sürümünü veritabanındakiyle karşılaştırır. Okuma hatası loglanır: müşteri ("sv") oturumu geçerli kalır (fail-open), yönetici ("av") oturumu reddedilir (fail-closed; çerez silinmez, DB dönünce yeniden geçerli olur). */
 export async function verifyVersioned<T extends Record<string, unknown>>(session: T | null, field: "sv" | "av", readVersion: () => Promise<number | null>): Promise<T | null> {
   if (!session) return null;
   let dbVersion: number | null = null;
   try {
     dbVersion = await readVersion();
   } catch (err) {
+    if (field === "av") {
+      console.error("[oturum] yönetici sürümü okunamadı, oturum reddedildi:", (err as Error).message);
+      return null;
+    }
     console.error("[oturum] sürüm okunamadı, mevcut davranış korunuyor:", (err as Error).message);
   }
   return versionMatches(session[field], dbVersion) ? session : null;
