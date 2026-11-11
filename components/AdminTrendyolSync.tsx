@@ -95,6 +95,7 @@ export default function AdminTrendyolSync({
   const [open, setOpen] = useState<string | null>(null);
   const [includeHidden, setIncludeHidden] = useState(false); // listelenmeyen ürünler de dahil (varsayılan KAPALI)
   const [busy, setBusy] = useState<"" | "preview" | "apply">("");
+  const [copying, setCopying] = useState(false); // görsel kopyalama sürüyor: eşitleme düğmeleri kilitli
   const [error, setError] = useState("");
   const [result, setResult] = useState<Result | null>(null);
 
@@ -177,7 +178,7 @@ export default function AdminTrendyolSync({
 
   return (
     <div className="p-6 space-y-4">
-      <AdminImageCopy pending={uncopiedImages} imagesMode={settings.IMAGES} />
+      <AdminImageCopy pending={uncopiedImages} imagesMode={settings.IMAGES} onRunningChange={setCopying} />
       <div className="space-y-1">
         <p className="text-xs text-neutral-600">Önce &quot;Önizle&quot; ile değişecekleri görün, sonra seçtiklerinizi uygulayın. Önizleme hiçbir şey yazmaz. Bu sürümde Geri Al yoktur.</p>
         <p className="text-xs text-amber-900 font-semibold">İlk &quot;Elle değiştirdiklerimi koru&quot; çalıştırması çoğunlukla yalnızca karşılaştırma kaydı kurar; stok/fiyatı ilk kez Trendyol&apos;a eşitlemek için o satırı &quot;Ezerek&quot; seçin.</p>
@@ -240,7 +241,7 @@ export default function AdminTrendyolSync({
         </div>
       </fieldset>
 
-      <button type="button" onClick={onPreview} disabled={busy !== ""} className="min-h-11 text-xs font-semibold bg-neutral-900 hover:bg-amber-600 text-white px-5 rounded-xl transition-colors disabled:opacity-50">
+      <button type="button" onClick={onPreview} disabled={busy !== "" || copying} className="min-h-11 text-xs font-semibold bg-neutral-900 hover:bg-amber-600 text-white px-5 rounded-xl transition-colors disabled:opacity-50">
         {busy === "preview" ? "Trendyol okunuyor..." : "Önizle"}
       </button>
 
@@ -312,7 +313,7 @@ export default function AdminTrendyolSync({
             </label>
           )}
 
-          <button type="button" onClick={onApply} disabled={busy !== "" || stale || (checked.size === 0 && !(includeHidden && preview.listelenmeyen > 0))} className="min-h-11 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white px-5 rounded-xl transition-colors disabled:opacity-50">
+          <button type="button" onClick={onApply} disabled={busy !== "" || copying || stale || (checked.size === 0 && !(includeHidden && preview.listelenmeyen > 0))} className="min-h-11 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white px-5 rounded-xl transition-colors disabled:opacity-50">
             {busy === "apply" ? "Uygulanıyor..." : "Seçilenleri uygula"}
           </button>
         </div>

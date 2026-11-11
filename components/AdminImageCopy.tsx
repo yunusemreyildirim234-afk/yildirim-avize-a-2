@@ -15,7 +15,7 @@ interface BatchReply {
 }
 
 /** Trendyol adresiyle kalan görselleri parti parti sunucuda Blob'a kopyalar (tarayıcı döngüsü). */
-export default function AdminImageCopy({ pending, imagesMode }: { pending: number; imagesMode: string }) {
+export default function AdminImageCopy({ pending, imagesMode, onRunningChange }: { pending: number; imagesMode: string; onRunningChange?: (running: boolean) => void }) {
   const router = useRouter();
   const [running, setRunning] = useState(false);
   const [remaining, setRemaining] = useState(pending);
@@ -31,6 +31,7 @@ export default function AdminImageCopy({ pending, imagesMode }: { pending: numbe
     if (!window.confirm(copyConfirmText(pending, imagesMode))) return;
     stop.current = false;
     setRunning(true);
+    onRunningChange?.(true); // kopyalama sürerken Trendyol eşitlemesi kilitlenir (A3)
     setErrors([]);
     setMsg("");
     const start = pending;
@@ -73,6 +74,7 @@ export default function AdminImageCopy({ pending, imagesMode }: { pending: numbe
       }
     } finally {
       setRunning(false);
+      onRunningChange?.(false);
       setMsg(note || (stop.current ? `Durduruldu: ${ok} görsel kopyalandı.` : `Bitti: ${ok} görsel kopyalandı, ${errs.length} hata.`));
       router.refresh();
     }
