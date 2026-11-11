@@ -72,7 +72,7 @@ export const countProductsCached = (where: Prisma.ProductWhereInput = {}) =>
 class EmptyCacheResult extends Error {}
 
 /** Boş sonucu önbelleğe YAZMAZ: anlık boş okuma (toplu işlem ortası vb.) sonraki ziyaretçilere sunulmaz; gerçekten boşsa her istekte taze okunur. */
-export async function cacheNonEmpty<T>(key: string[], tags: string[], load: () => Promise<T[]>): Promise<T[]> {
+export async function cacheNonEmpty<T>(key: string[], tags: string[], load: () => Promise<T[]>, revalidate: number = STOREFRONT_CACHE_SECONDS): Promise<T[]> {
   const cached = unstable_cache(
     async () => {
       const rows = await load();
@@ -80,7 +80,7 @@ export async function cacheNonEmpty<T>(key: string[], tags: string[], load: () =
       return rows;
     },
     key,
-    { revalidate: STOREFRONT_CACHE_SECONDS, tags }
+    { revalidate, tags }
   );
   try {
     return await cached();

@@ -1,7 +1,10 @@
 // Vitrin veri önbelleği için saf anahtar/etiket yardımcıları (kişiye özel girdi kabul etmez; test edilebilir).
 
 /** Menü, kategori ayarları, görünürlük ve liste girdilerinin ORTAK sürümü: satır şekli değişince artırılır, hepsi birlikte yeni anahtara geçer (biri bayat, biri taze kalmaz). */
-export const STOREFRONT_CACHE_VERSION = "v8"; // v5: satıra title; v6: inStock; v7: search ve mc; v8: menü/ayar/görünürlük de bu sürüme bağlandı
+export const STOREFRONT_CACHE_VERSION = "v9"; // v5: satıra title; v6: inStock; v7: search ve mc; v8: menü/ayar/görünürlük de bu sürüme bağlandı; v9: satıra rc/active/disc, açıklama 300 karakter
+
+/** Paylaşılan katalog satırları (lib/listing.ts) için süre: stok/fiyat/ürün değişiklikleri "storefront" etiketiyle zaten anında geçersiz kılar; süre yalnızca yedektir. */
+export const LISTING_ROWS_CACHE_SECONDS = 300;
 
 type Where = Record<string, unknown> | undefined;
 

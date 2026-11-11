@@ -36,6 +36,10 @@ export interface ListingRow {
   title?: string;
   /** categoryKey(ürün kategorisi) */
   cat: string;
+  /** Ham kategori yazımı, aktiflik ve "indirimli" bayrağı: taban koşulunun bellekte süzülmesi için (lib/listing-where.ts) */
+  rc?: string;
+  active?: boolean;
+  disc?: boolean;
   /** Arama metni (lib/search-rank.ts searchText): ad, kategori, açıklama, ebat, renk, barkod, stok kodu */
   search?: string;
   /** normalizeSearch(modelCode); yalnızca tam eşleşir */
