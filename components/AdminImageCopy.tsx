@@ -75,6 +75,8 @@ export default function AdminImageCopy({ pending, imagesMode, onRunningChange }:
     } finally {
       setRunning(false);
       onRunningChange?.(false);
+      // Vitrin önbelleği her partide değil, döngü sonunda bir kez yenilenir (kopyalanan olduysa)
+      if (ok > 0) await fetch("/api/admin/gorsel-kopyala", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ bitir: true }) }).catch(() => null);
       setMsg(note || (stop.current ? `Durduruldu: ${ok} görsel kopyalandı.` : `Bitti: ${ok} görsel kopyalandı, ${errs.length} hata.`));
       router.refresh();
     }

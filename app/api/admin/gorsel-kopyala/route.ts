@@ -13,6 +13,7 @@ export const maxDuration = 60;
 
 // Bekleyen Trendyol görsellerinden küçük bir parti Blob'a kopyalar ve ürüne koşullu yazar. İstemci, kalan 0 olana dek tekrar çağırır.
 // Gövde: { atla?: string[] } — istemcinin bu koşuda zaten hata aldığı adresler (aynı hatalı görselde takılmamak için).
+// Gövde: { bitir: true } — kopyalama yapmaz; döngü sonunda vitrini BİR kez yeniler (her partide tüm vitrin önbelleği boşaltılmaz).
 export async function POST(req: Request) {
   const denied = await adminGuard();
   if (denied) return denied;
@@ -21,6 +22,10 @@ export async function POST(req: Request) {
   const blob = realBlobWriter();
   if (!blob) return NextResponse.json({ error: "Görsel deposu (Blob) ayarlı değil; BLOB_READ_WRITE_TOKEN tanımlanmalı." }, { status: 503 });
   const body = await req.json().catch(() => ({}));
+  if (body?.bitir === true) {
+    revalidateStorefront();
+    return NextResponse.json({ success: true, yenilendi: true });
+  }
   const atla = new Set<string>(Array.isArray(body?.atla) ? body.atla.filter(isTrendyolUrl).slice(0, 2000) : []);
   try {
     const r = await copyBatch(
@@ -28,7 +33,6 @@ export async function POST(req: Request) {
       { fetchImage: (u) => fetchTrendyolImage(u), process: async (b) => { const o = await processProductImage(b); return { big: o.big, small: o.small }; }, blob, now: () => Date.now() },
       { atla },
     );
-    if (r.kopyalanan > 0) revalidateStorefront();
     return NextResponse.json({ success: true, ...r });
   } catch (error) {
     return serverError("admin/gorsel-kopyala", error, "Görseller kopyalanamadı. Lütfen tekrar deneyin.", 502);

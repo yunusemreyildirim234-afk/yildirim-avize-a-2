@@ -19,7 +19,8 @@ export interface CopyProduct {
   id: string;
   images: string[];
   imageUrl: string | null;
-  syncSnapshot: unknown;
+  /** Yalnızca eski/sahte depolar verir. Gerçek depo okumaz: imageMap yazarken veritabanındaki güncel kayıtla birleştirilir. */
+  syncSnapshot?: unknown;
   variations: { id: string; images: string[] }[];
 }
 
@@ -35,9 +36,20 @@ export interface WritePlan {
   imageMap: Record<string, string>;
 }
 
+/** Bekleyen (Trendyol adresinde duran) tekil görsel sayıları: kalan = tümü, sirada = atla listesi dışındakiler. */
+export interface PendingCount {
+  kalan: number;
+  sirada: number;
+}
+
 export interface CopyStore {
-  /** Tüm ürünler (kararlı sırayla). */
-  list(): Promise<CopyProduct[]>;
+  /**
+   * Kararlı sırayla ürünler. Dar depo (count tanımlıysa) yalnızca bu partinin ürünlerini döndürür: atla listesi dışında en az bir bekleyen görseli olan
+   * ilk `limit` ürün. count tanımlı değilse (eski/sahte depo) tüm ürünler beklenir ve sayım listeden yapılır.
+   */
+  list(opts?: { atla: string[]; limit: number }): Promise<CopyProduct[]>;
+  /** Parti ÖNCESİ bekleyen sayıları (veritabanında sayılır; tüm katalog okunmaz). */
+  count?(atla: string[]): Promise<PendingCount>;
   /** KOŞULLU yazma: ürün hâlâ plan.old* değerindeyse yazar ve true; arada değişmişse hiçbir şey yazmaz, false. */
   apply(plan: WritePlan): Promise<boolean>;
 }
@@ -100,7 +112,9 @@ export async function copyBatch(store: CopyStore, deps: CopyDeps, opts: { atla?:
   const budget = opts.budgetMs ?? COPY_BUDGET_MS;
   const max = opts.maxImages ?? COPY_MAX_IMAGES;
   const start = deps.now();
-  const products = await store.list();
+  // Dar depo: yalnızca bu partinin ürünleri okunur (parti en çok `max` görsel dener; her ürün en az bir işlenebilir görsel taşır), sayım veritabanında yapılır
+  const before = store.count ? await store.count([...atla]) : null;
+  const products = await store.list({ atla: [...atla], limit: max });
   const pendingBefore = distinct(products);
   const hatalar: CopyError[] = [];
   const atlananUrun: string[] = [];
@@ -145,6 +159,11 @@ export async function copyBatch(store: CopyStore, deps: CopyDeps, opts: { atla?:
     else atlananUrun.push(p.id);
   }
 
+  if (before) {
+    // Aynı hesap, sayılar veritabanından: kalan = önceki − yazılan; sirada = önceki (atla hariç) − yazılan − bu partide hata veren
+    const failedOnly = [...failed].filter((u) => !written.has(u)).length;
+    return { kopyalanan: written.size, hatalar, atlananUrun, yazma, kalan: Math.max(0, before.kalan - written.size), sirada: Math.max(0, before.sirada - written.size - failedOnly) };
+  }
   const kalanSet = [...pendingBefore].filter((u) => !written.has(u));
   const kalanFiltre = kalanSet.filter((u) => !atla.has(u) && !failed.has(u));
   return { kopyalanan: written.size, hatalar, atlananUrun, yazma, kalan: kalanSet.length, sirada: kalanFiltre.length };
