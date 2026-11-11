@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 import { adminGuard } from "@/lib/admin-guard";
 import { confirmBankPayment } from "@/lib/orders";
-import { withStorefrontRevalidate } from "@/lib/revalidate";
 
 // Yönetici havale ödemesini onaylar (proxy yalnızca yöneticiye açar)
-// Onayla stok düşer (çok satanlar/stok görünümü) → başarılı yanıtta vitrin yenilenir
+// Havale siparişinin stoğu sipariş anında ayrılmıştır: onay vitrini değiştirmez. Eski (rezervesiz) kayıtta stok burada düşerse deductOrderStock vitrini kendisi yeniler.
 async function POSTHandler(req: Request) {
   const denied = await adminGuard();
   if (denied) return denied;
@@ -15,4 +14,4 @@ async function POSTHandler(req: Request) {
   return NextResponse.json({ success: true });
 }
 
-export const POST = withStorefrontRevalidate(POSTHandler);
+export const POST = POSTHandler;

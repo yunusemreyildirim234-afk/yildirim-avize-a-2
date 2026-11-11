@@ -1,5 +1,6 @@
 import { revalidatePath, revalidateTag } from "next/cache";
 import { runQuietly } from "@/lib/stock-freshness";
+import { shouldRevalidate } from "@/lib/revalidate-rule";
 
 /**
  * Vitrin (ana sayfa, ürün, kategori, Çok Satanlar önbelleği) tek merkezî yenileme noktası.
@@ -21,11 +22,11 @@ export function revalidateStorefrontSafe(): boolean {
   return runQuietly(revalidateStorefront, (err) => console.error("[vitrin] önbellek yenilenemedi:", (err as Error)?.message));
 }
 
-/** Route handler sarmalayıcı: yanıt başarılıysa (2xx) vitrin yenilenir. Hata yanıtlarında yenileme yapılmaz. */
+/** Route handler sarmalayıcı: yanıt başarılıysa (2xx) vitrin yenilenir. Hata yanıtlarında ve işlemin vitrini değiştirmediğini bildirdiği yanıtlarda (lib/revalidate-rule.ts) yenileme yapılmaz. */
 export function withStorefrontRevalidate<A extends unknown[]>(handler: (...args: A) => Promise<Response>) {
   return async (...args: A): Promise<Response> => {
     const res = await handler(...args);
-    if (res.ok) revalidateStorefront();
+    if (shouldRevalidate(res)) revalidateStorefront();
     return res;
   };
 }

@@ -6,6 +6,7 @@ import { reserveCoupon } from "@/lib/coupons";
 import { verifySession } from "@/lib/session";
 import { UNDO_TTL_MS } from "@/lib/admin-undo";
 import { UndoRefusal, applyUndoInTx, type UndoTx } from "@/lib/order-undo";
+import { STOREFRONT_UNCHANGED } from "@/lib/revalidate-rule";
 
 interface OrderUndo extends Record<string, unknown> {
   kind: string;
@@ -38,7 +39,8 @@ async function POSTHandler(req: Request) {
         reserve: (code) => reserveCoupon(tx, code),
       })).warning;
     }, { maxWait: 5000, timeout: 10000 });
-    return NextResponse.json({ success: true, status: t.from, ...(couponWarning ? { couponWarning } : {}) });
+    // Geri alma stoğu yalnızca ilk işlem stok iade ettiyse yeniden düşer; aksi hâlde vitrin değişmez
+    return NextResponse.json({ success: true, status: t.from, ...(couponWarning ? { couponWarning } : {}) }, t.restoredStock === true ? undefined : STOREFRONT_UNCHANGED);
   } catch (e) {
     if (e instanceof UndoRefusal) return NextResponse.json({ error: e.message }, { status: 409 });
     console.error("[order-undo]", (e as Error).message);

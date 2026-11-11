@@ -7,6 +7,7 @@ import { sendRequestDecisionEmail } from "@/lib/email";
 import { releaseCoupon } from "@/lib/coupons";
 import { RequestRefusal, decideRequestInTx } from "@/lib/order-request";
 import type { StatusChangeTx } from "@/lib/order-undo";
+import { STOREFRONT_UNCHANGED } from "@/lib/revalidate-rule";
 
 // Yönetici iptal/iade talebini onaylar veya reddeder (proxy yalnızca yöneticiye açar)
 async function POSTHandler(req: Request) {
@@ -48,7 +49,8 @@ async function POSTHandler(req: Request) {
     note,
   }).catch(() => false);
 
-  return NextResponse.json({ success: true, emailed });
+  // Reddedilen talepte sipariş durumu ve stok değişmez: vitrin yenilenmez
+  return NextResponse.json({ success: true, emailed }, approve ? undefined : STOREFRONT_UNCHANGED);
 }
 
 export const POST = withStorefrontRevalidate(POSTHandler);

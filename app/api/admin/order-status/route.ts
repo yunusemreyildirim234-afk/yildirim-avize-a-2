@@ -7,6 +7,7 @@ import { notifyCustomer } from "@/lib/notifications";
 import { forceReserveCoupon, releaseCoupon } from "@/lib/coupons";
 import { signSession } from "@/lib/session";
 import { ORDER_STATUSES, StatusRefusal, applyStatusChangeInTx, type StatusChangeTx } from "@/lib/order-undo";
+import { STOREFRONT_UNCHANGED, statusChangeTouchesStorefront } from "@/lib/revalidate-rule";
 
 const STATUS_NOTICE: Record<string, string> = {
   PENDING: "Siparişiniz hazırlanıyor.",
@@ -68,7 +69,8 @@ async function POSTHandler(req: Request) {
       before.status !== status && !plan.ensureStock && !plan.reserveCoupon
         ? await signSession({ kind: "order-undo", iat: Date.now(), orderId, from: before.status, to: status, restoredStock, coupon: plan.releaseCoupon ? updatedOrder.couponCode : null })
         : null;
-    return NextResponse.json({ success: true, order: updatedOrder, undoToken, notified });
+    // Stok oynamadıysa (ör. hazırlanıyor → kargoda → teslim) vitrin önbelleği boşaltılmaz
+    return NextResponse.json({ success: true, order: updatedOrder, undoToken, notified }, statusChangeTouchesStorefront(plan) ? undefined : STOREFRONT_UNCHANGED);
   } catch (error) {
     return serverError("admin/order-status", error);
   }

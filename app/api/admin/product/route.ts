@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { withStorefrontRevalidate } from "@/lib/revalidate";
+import { STOREFRONT_UNCHANGED } from "@/lib/revalidate-rule";
 import { resolveCategoryForSave } from "@/lib/category-list";
 import { serverError } from "@/lib/api-error";
 import { adminGuard } from "@/lib/admin-guard";
@@ -154,7 +155,8 @@ async function PATCHHandler(req: Request) {
       if (!description.ok) return NextResponse.json({ error: description.error }, { status: 400 });
       const written = await prisma.product.updateMany({ where: { id: body.productId }, data: { description: description.value } });
       if (written.count === 0) return NextResponse.json({ error: "Ürün bulunamadı." }, { status: 404 });
-      return NextResponse.json({ success: true, description: description.value });
+      // Açıklama kartlarda, fiyatta ve stokta görünmez: tüm vitrin önbelleği boşaltılmaz; ürün sayfası kendi süresiyle (60 sn) yenilenir
+      return NextResponse.json({ success: true, description: description.value }, STOREFRONT_UNCHANGED);
     }
 
     // Tekil ürün düzenleme: başlık, fiyat, görseller (varsa model kodu ile birlikte)
