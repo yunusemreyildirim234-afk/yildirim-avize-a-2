@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { adminGuard } from "@/lib/admin-guard";
+import { prisma } from "@/lib/db";
 import { KargonomiError, createShipmentForOrder, refreshOrderShipment } from "@/lib/kargonomi";
 
 function fail(error: unknown) {
@@ -17,7 +18,20 @@ export async function POST(req: Request) {
   try {
     const { orderId } = await req.json();
     if (!orderId) return NextResponse.json({ error: "orderId zorunlu" }, { status: 400 });
-    return NextResponse.json({ success: true, order: await createShipmentForOrder(orderId) });
+    // Kargonomi çağrılmadan önce koşullu sahiplenme (A5): aynı anda ikinci istek (iki sekme / ödeme bildirimi) 409 alır, ikinci gönderi açılmaz.
+    const claim = await prisma.order.updateMany({ where: { id: orderId, kargonomiShipmentId: null, labelCreated: false }, data: { labelCreated: true } });
+    if (claim.count === 0) {
+      const existing = await prisma.order.findUnique({ where: { id: orderId }, select: { kargonomiShipmentId: true } });
+      if (!existing) return NextResponse.json({ error: "Sipariş bulunamadı." }, { status: 404 });
+      return NextResponse.json({ error: existing.kargonomiShipmentId ? "Bu sipariş için gönderi zaten oluşturulmuş." : "Bu sipariş için gönderi zaten oluşturuluyor." }, { status: 409 });
+    }
+    try {
+      return NextResponse.json({ success: true, order: await createShipmentForOrder(orderId) });
+    } catch (error) {
+      // Gönderi açılamadı: sahiplenme bırakılır (yeniden denenebilsin)
+      await prisma.order.updateMany({ where: { id: orderId, kargonomiShipmentId: null }, data: { labelCreated: false } }).catch(() => {});
+      throw error;
+    }
   } catch (error) {
     return fail(error);
   }
