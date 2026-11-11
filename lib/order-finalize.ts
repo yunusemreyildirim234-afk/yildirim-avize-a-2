@@ -5,7 +5,7 @@ import { bestEffort } from "./best-effort.ts";
 export interface FinalizeDeps {
   /** Koşullu durum geçişi (ör. AWAITING_PAYMENT → PENDING); yalnızca bir çağrı kazanır. */
   claim: () => Promise<boolean>;
-  /** Stok düşümü (bayrak koşullu, idempotent). Hata fırlatırsa çağırana iletilir. */
+  /** Stok düşümü (bayrak koşullu, idempotent). Hata fırlatırsa loglanır; yan etkiler yine çalışır. */
   deductStock: () => Promise<unknown>;
   /** Kargo gönderisi + bildirim + e-posta: sipariş kaydını ETKİLEMEYEN yan etkiler. */
   announce: () => Promise<unknown>;
@@ -13,13 +13,14 @@ export interface FinalizeDeps {
 }
 
 /**
- * Sahiplenme kaybedildiyse false (hiçbir şey yapılmaz). Kazanıldıysa stok düşülür, ardından yan etkiler EN İYİ ÇABA ile çalışır:
- * Kargonomi/e-posta/bildirim hatası fırlatılmaz. Aksi hâlde PayTR callback'i 500 döner, PayTR yeniden dener, sipariş artık PENDING olduğu için
+ * Sahiplenme kaybedildiyse false (hiçbir şey yapılmaz). Kazanıldıysa stok düşümü ve yan etkiler EN İYİ ÇABA ile çalışır:
+ * stok/Kargonomi/e-posta/bildirim hatası fırlatılmaz. Aksi hâlde PayTR callback'i 500 döner, PayTR yeniden dener, sipariş artık PENDING olduğu için
  * "zararsız yineleme" sayılır ve bu adımlar bir daha hiç çalışmaz; hata loglanır, sipariş panelde görünür.
  */
 export async function finalizePaidOrder(deps: FinalizeDeps): Promise<boolean> {
   if (!(await deps.claim())) return false;
-  await deps.deductStock();
+  // Stok düşümü de en iyi çaba: hata loglanır, bildirim/e-posta/gönderi yine çalışır (stockDeducted bayrağı idempotent; kartlı siparişte stok zaten ayrılmıştır)
+  await bestEffort("order/finalize-stock", deps.deductStock, deps.log);
   await bestEffort("order/finalize", deps.announce, deps.log);
   return true;
 }

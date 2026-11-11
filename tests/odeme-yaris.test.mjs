@@ -107,12 +107,24 @@ test("bulgu 6: gönderi/e-posta adımı hata verse de sipariş işlenmiş sayıl
   assert.ok(logs[0].includes("Resend yanıt vermedi"));
 });
 
-test("bulgu 6: sahiplenme kaybedilirse stok ve bildirim adımı hiç çalışmaz; stok hatası yutulmaz", async () => {
+test("bulgu 6: sahiplenme kaybedilirse stok ve bildirim adımı hiç çalışmaz", async () => {
   const calls = [];
   assert.equal(await finalizePaidOrder({ claim: async () => false, deductStock: async () => calls.push("stock"), announce: async () => calls.push("announce") }), false);
   assert.deepEqual(calls, []);
-  await assert.rejects(finalizePaidOrder({ claim: async () => true, deductStock: async () => { throw new Error("stok tx"); }, announce: async () => calls.push("announce") }), /stok tx/);
-  assert.deepEqual(calls, [], "stok düşümü başarısızsa bildirim gitmez");
+});
+
+test("A7: stok düşümü hata verirse loglanır ve bildirim/e-posta/gönderi yine çalışır; sonuç true", async () => {
+  const calls = [];
+  const logs = [];
+  const done = await finalizePaidOrder({
+    claim: async () => true,
+    deductStock: async () => { calls.push("stock"); throw new Error("stok tx"); },
+    announce: async () => { calls.push("announce"); },
+    log: (...a) => logs.push(a.join(" ")),
+  });
+  assert.equal(done, true);
+  assert.deepEqual(calls, ["stock", "announce"]);
+  assert.ok(logs.some((l) => l.includes("stok tx")));
 });
 
 test("bulgu 6: Kargonomi istekleri AbortSignal.timeout ile sınırlı ve tek fetch noktasından geçer", () => {
