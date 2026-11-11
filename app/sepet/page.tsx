@@ -1,8 +1,10 @@
 "use client";
 
 import { toast } from "sonner";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { sortByNameTr } from "@/lib/sort-tr";
+import { pickDefault } from "@/lib/address-book";
+import type { SavedAddress } from "@/components/AddressBook";
 import { ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -82,6 +84,12 @@ export default function CartPage() {
   const [cities, setCities] = useState<LocationItem[]>([]);
   const [buyerStateId, setBuyerStateId] = useState<number>(34);
   const [buyerCityId, setBuyerCityId] = useState<number>(0); // ilçe boş başlar; müşteri bilinçli seçer
+  // Kayıtlı adresler (yalnızca giriş yapmış üye): seçilen adres yalnızca formu doldurur; form elle değişince kayıtlı adres bozulmaz
+  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
+  const [selectedAddrId, setSelectedAddrId] = useState("");
+  const pendingCityId = useRef<number | null>(null); // il değişince ilçe listesi asenkron yüklenir; seçilecek ilçe liste gelince uygulanır
+  const citiesFor = useRef<number | null>(null); // ilçe listesi şu an hangi il için yüklü
+  const formTouched = useRef(false); // müşteri formu elle değiştirdiyse varsayılan adres otomatik doldurmayı ezmez
 
   const [loading, setLoading] = useState(false);
 
@@ -130,16 +138,58 @@ export default function CartPage() {
   // Seçilen Şehre Göre Kargonomi İlçelerini Yükle
   useEffect(() => {
     if (!buyerStateId) return;
+    let live = true;
     fetch(`/api/kargonomi/locations?stateId=${buyerStateId}`)
       .then((res) => res.json())
       .then((data) => {
+        if (!live) return;
         if (Array.isArray(data.cities) && data.cities.length > 0) {
+          citiesFor.current = buyerStateId;
           setCities(data.cities);
-          setBuyerCityId(0);
+          // Kayıtlı adresten gelen ilçe liste geldikten sonra uygulanır (listede yoksa sıfırlanır)
+          const want = pendingCityId.current;
+          pendingCityId.current = null;
+          setBuyerCityId(want && data.cities.some((c: LocationItem) => c.id === want) ? want : 0);
         }
       })
       .catch(() => {});
+    return () => {
+      live = false;
+    };
   }, [buyerStateId]);
+
+  // Kayıtlı adresi forma uygular (yalnızca form state'i; kayıtlı adres değişmez)
+  const applyAddress = useCallback((a: SavedAddress) => {
+    setName(a.fullName);
+    setPhone(a.phone);
+    setAddress(a.address);
+    setSelectedAddrId(a.id);
+    if (citiesFor.current === a.stateId) {
+      setBuyerStateId(a.stateId);
+      setBuyerCityId(a.cityId);
+    } else {
+      pendingCityId.current = a.cityId;
+      setBuyerStateId(a.stateId);
+    }
+  }, []);
+
+  // Giriş yapmış üyenin kayıtlı adresleri; varsayılan adres, müşteri forma dokunmadıysa otomatik doldurur
+  useEffect(() => {
+    let live = true;
+    fetch("/api/user/addresses", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : { addresses: [] }))
+      .then((data: { addresses?: SavedAddress[] }) => {
+        if (!live) return;
+        const list = Array.isArray(data.addresses) ? data.addresses : []; // sunucu varsayılan önce sıralar
+        setSavedAddresses(list);
+        const def = pickDefault(list);
+        if (def && !formTouched.current) applyAddress(def);
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [applyAddress]);
 
   // Mağazadan teslimde il/ilçe/adres istenmez; mağaza adresi varsayılan atanır
   const isPickup = shippingType === "BEYOGLU_MAGAZA_TESLIM";
@@ -823,6 +873,28 @@ export default function CartPage() {
                 Teslimat Bilgileri:
               </label>
 
+              {!isPickup && savedAddresses.length > 0 && (
+                <div>
+                  <label htmlFor="co-saved" className="text-[11px] font-semibold text-neutral-700 block mb-1">Kayıtlı adres seç</label>
+                  <select
+                    id="co-saved"
+                    value={selectedAddrId}
+                    onChange={(e) => {
+                      const a = savedAddresses.find((x) => x.id === e.target.value);
+                      if (a) applyAddress(a);
+                    }}
+                    className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 bg-white focus:outline-none focus:border-amber-600"
+                  >
+                    <option value="">Kayıtlı adres seçin</option>
+                    {savedAddresses.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.title} – {a.fullName}{a.isDefault ? " (varsayılan)" : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div>
               <label htmlFor="co-name" className="text-[11px] font-semibold text-neutral-700 block mb-1">Adınız Soyadınız</label>
               <input id="co-name"
@@ -831,7 +903,7 @@ export default function CartPage() {
                 type="text"
                 placeholder="Adınız Soyadınız (En az 2 kelime)"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => { formTouched.current = true; setName(e.target.value); }}
                 className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
               />
               </div>
@@ -876,6 +948,7 @@ export default function CartPage() {
                 value={phone}
                 onChange={(e) => {
                   e.target.setCustomValidity(isValidPhone(e.target.value) ? "" : PHONE_ERROR);
+                  formTouched.current = true;
                   setPhone(e.target.value);
                 }}
                 className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
@@ -900,7 +973,7 @@ export default function CartPage() {
                     id="co-state"
                     autoComplete="address-level1"
                     value={buyerStateId}
-                    onChange={(e) => { setBuyerStateId(Number(e.target.value)); setBuyerCityId(0); }}
+                    onChange={(e) => { formTouched.current = true; pendingCityId.current = null; setBuyerStateId(Number(e.target.value)); setBuyerCityId(0); }}
                     className="w-full text-base sm:text-xs p-2.5 rounded-xl border border-neutral-300 bg-white focus:outline-none focus:border-amber-600"
                   >
                     {sortedStates.map((st) => (
@@ -919,7 +992,7 @@ export default function CartPage() {
                     id="co-city"
                     autoComplete="address-level2"
                     value={buyerCityId}
-                    onChange={(e) => setBuyerCityId(Number(e.target.value))}
+                    onChange={(e) => { formTouched.current = true; setBuyerCityId(Number(e.target.value)); }}
                     className="w-full text-base sm:text-xs p-2.5 rounded-xl border border-neutral-300 bg-white focus:outline-none focus:border-amber-600"
                   >
                     <option value={0}>İlçe seçin</option>
@@ -940,7 +1013,7 @@ export default function CartPage() {
                 rows={2}
                 placeholder="Açık Teslimat Adresiniz (Mahalle, Sokak, Bina ve Daire No)"
                 value={address}
-                onChange={(e) => setAddress(e.target.value)}
+                onChange={(e) => { formTouched.current = true; setAddress(e.target.value); }}
                 className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
               />
               </div>
