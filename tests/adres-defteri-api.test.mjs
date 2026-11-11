@@ -105,7 +105,7 @@ test("uçlar: giriş, hız sınırı, doğrulama, sahiplik ve genel yanıt (user
   assert.match(list, /where: \{ userId \}/); // yalnızca kendi adresleri
   const db = readFileSync(new URL("../lib/address-db.ts", import.meta.url), "utf8");
   assert.match(db, /find: \(id, userId\) => tx\.address\.findFirst\(\{ where: \{ id, userId \} \}\)/);
-  assert.match(db, /FOR UPDATE/);
+  assert.match(db, /FOR NO KEY UPDATE/); // A15: yabancı anahtar (sipariş) eklemeleriyle çakışmaz
   assert.ok(!/userId: r\.userId/.test(db), "yanıtta kullanıcı kimliği yok");
   // admin tarafında adres listesi gösterilmez
   for (const f of ["app/admin/page.tsx", "app/admin/siparis/[id]/page.tsx", "lib/activity.ts"]) {

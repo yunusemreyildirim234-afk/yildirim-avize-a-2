@@ -6,7 +6,7 @@ export function addressDbFor(tx: Prisma.TransactionClient): AddressDb {
   return {
     // Aynı kullanıcının eşzamanlı adres yazmaları sıraya girer (adres sayısı sınırı ve tek varsayılan korunur)
     lockUser: async (userId) => {
-      await tx.$queryRaw`SELECT "id" FROM "User" WHERE "id" = ${userId} FOR UPDATE`;
+      await tx.$queryRaw`SELECT "id" FROM "User" WHERE "id" = ${userId} FOR NO KEY UPDATE`;
     },
     list: (userId) => tx.address.findMany({ where: { userId }, orderBy: { createdAt: "desc" } }),
     find: (id, userId) => tx.address.findFirst({ where: { id, userId } }),
