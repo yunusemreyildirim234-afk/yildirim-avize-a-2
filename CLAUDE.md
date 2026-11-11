@@ -100,6 +100,7 @@
 ## 7. Bağımlılık Kuralları
 - Prisma 7'de kal (^7.10.1); `npx prisma@latest` veya sürümsüz `npm install prisma` KULLANMA.
 - `lib/db.ts` sorgu uzantısı Prisma'nın dahili `__internalParams.transaction` alanına dayanır; Prisma güncellenirse `tests/db-retry.test.mjs` ve yeniden deneme davranışını yeniden doğrula.
+- `prisma migrate dev`, `migrate reset` ve `db push` kullanılmaz; şema değişikliği elle idempotent SQL ile (`prisma/sql`), önce SQL sonra kod.
 
 ## 8. e2e Testleri (Playwright)
 - `e2e/` kök projeden bağımsız alt projedir (kendi `package.json`); köke bağımlılık eklenmez. Ayrıntı: `e2e/README.md`.
