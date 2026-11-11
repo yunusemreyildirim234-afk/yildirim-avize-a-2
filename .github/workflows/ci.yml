@@ -1,0 +1,27 @@
+# Sürekli doğrulama: tip denetimi + birim testler. Derleme (next build) Vercel'de yapılır; e2e burada ÇALIŞMAZ (Neon dalı ve güvenlik kilidi gerektirir).
+# Gizli anahtar kullanılmaz: DATABASE_URL yalnızca `prisma generate` için sahte bir değerdir, hiçbir yere bağlanılmaz.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  dogrula:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24 # testler .ts dosyalarını doğrudan içe aktarır (Node tip soyma)
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npx tsc --noEmit
+      - run: npm test
