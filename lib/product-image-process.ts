@@ -123,9 +123,12 @@ export interface ProcessedImage {
   cropped: boolean;
 }
 
+/** Giriş piksel sınırı: 40 MP (≈6300×6300); 80 MP'de ham tampon + kopyalar ~1 GB belleğe çıkabiliyordu (A11). */
+export const MAX_INPUT_PIXELS = 40_000_000;
+
 /** Yüklenen görseli işler (EXIF yönü düzeltilir, kare tuval, iki WebP). Bozuk dosyada sharp hata fırlatır. */
 export async function processProductImage(input: Buffer): Promise<ProcessedImage> {
-  const { data, info } = await sharp(input, { failOn: "none", limitInputPixels: 80_000_000 })
+  const { data, info } = await sharp(input, { failOn: "none", limitInputPixels: MAX_INPUT_PIXELS })
     .rotate()
     .flatten({ background: WHITE })
     .toColourspace("srgb")
