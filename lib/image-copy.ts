@@ -150,16 +150,31 @@ export async function copyBatch(store: CopyStore, deps: CopyDeps, opts: { atla?:
   return { kopyalanan: written.size, hatalar, atlananUrun, yazma, kalan: kalanSet.length, sirada: kalanFiltre.length };
 }
 
-/** Yalnızca Trendyol (dsmcdn) adreslerinden, 12 sn zaman aşımı ve boyut sınırıyla indirir (SSRF'e karşı başka adres kabul edilmez). */
+/** Yalnızca Trendyol (dsmcdn) adreslerinden, 12 sn zaman aşımı ve boyut sınırıyla indirir (SSRF'e karşı başka adres kabul edilmez).
+ *  Yönlendirme izlenmez (`redirect: "error"`): varılan adres denetlenemeyeceği için dsmcdn dışına çıkış kapalıdır.
+ *  Gövde akışla okunur; başlık yoksa/yanlışsa bile sınır aşılınca kesilir (tamamı belleğe alınmaz). */
 export const MAX_SOURCE_BYTES = 25 * 1024 * 1024;
 export async function fetchTrendyolImage(url: string, fetcher: typeof fetch = fetch): Promise<Buffer> {
   if (!isTrendyolUrl(url)) throw new Error("Trendyol adresi değil.");
-  const res = await fetcher(url, { signal: AbortSignal.timeout(12_000) });
+  const res = await fetcher(url, { signal: AbortSignal.timeout(12_000), redirect: "error" });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   if (!(res.headers.get("content-type") ?? "").startsWith("image/")) throw new Error("görsel değil");
   const len = Number(res.headers.get("content-length") ?? 0);
   if (len > MAX_SOURCE_BYTES) throw new Error("dosya çok büyük");
-  const buf = Buffer.from(await res.arrayBuffer());
-  if (buf.length === 0 || buf.length > MAX_SOURCE_BYTES) throw new Error("dosya boyutu uygun değil");
-  return buf;
+  if (!res.body) throw new Error("dosya boyutu uygun değil");
+  const reader = res.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > MAX_SOURCE_BYTES) {
+      await reader.cancel().catch(() => {});
+      throw new Error("dosya çok büyük");
+    }
+    chunks.push(value);
+  }
+  if (total === 0) throw new Error("dosya boyutu uygun değil");
+  return Buffer.concat(chunks, total);
 }

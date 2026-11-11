@@ -164,6 +164,33 @@ test("Trendyol dışı adres indirilmez (SSRF); boyut ve tür denetimi", async (
   assert.equal((await fetchTrendyolImage(T(1), ok({ "content-type": "image/jpeg" }))).length, 2);
 });
 
+test("A9: yönlendirme izlenmez (redirect: error); başlıksız dev gövde akışta kesilir, belleğe tamamı alınmaz", async () => {
+  let init;
+  const spy = async (_u, i) => {
+    init = i;
+    return new Response("xx", { headers: { "content-type": "image/jpeg" } });
+  };
+  await fetchTrendyolImage(T(1), spy);
+  assert.equal(init.redirect, "error");
+  assert.ok(init.signal, "zaman aşımı sinyali duruyor");
+  // content-length yok, 40 MB akış: 1 MB'lık parçalarla; sınır (25 MB) aşılınca okuma durur
+  let pulled = 0;
+  let cancelled = false;
+  const body = new ReadableStream({
+    pull(c) {
+      pulled++;
+      c.enqueue(new Uint8Array(1024 * 1024));
+      if (pulled >= 40) c.close();
+    },
+    cancel() {
+      cancelled = true;
+    },
+  });
+  await assert.rejects(() => fetchTrendyolImage(T(1), async () => new Response(body, { headers: { "content-type": "image/jpeg" } })), /büyük/);
+  assert.ok(cancelled && pulled < 40, `akış erken kesildi (okunan parça: ${pulled})`);
+  await assert.rejects(() => fetchTrendyolImage(T(1), async () => new Response("", { headers: { "content-type": "image/jpeg" } })), /boyutu/);
+});
+
 test("uç ve arayüz kablolaması: admin oturumu, süre, Blob yok → 503, hata listesi", () => {
   const route = readFileSync(new URL("../app/api/admin/gorsel-kopyala/route.ts", import.meta.url), "utf8");
   assert.match(route, /adminGuard\(\)/);
