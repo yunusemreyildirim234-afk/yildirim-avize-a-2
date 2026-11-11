@@ -89,6 +89,8 @@ export default function CartPage() {
   const [selectedAddrId, setSelectedAddrId] = useState("");
   const pendingCityId = useRef<number | null>(null); // il değişince ilçe listesi asenkron yüklenir; seçilecek ilçe liste gelince uygulanır
   const citiesFor = useRef<number | null>(null); // ilçe listesi şu an hangi il için yüklü
+  const pickupRef = useRef(false); // mağazadan teslim seçili mi (varsayılan adres otomatik doldurması adı ezmesin)
+  const accountName = useRef(""); // hesap adı (/api/auth/me)
   const formTouched = useRef(false); // müşteri formu elle değiştirdiyse varsayılan adres otomatik doldurmayı ezmez
 
   const [loading, setLoading] = useState(false);
@@ -117,6 +119,7 @@ export default function CartPage() {
       .then((res) => res.json())
       .then((data) => {
         if (!data.user) return;
+        accountName.current = data.user.name || "";
         setName((v) => v || data.user.name || "");
         setEmail((v) => v || data.user.email || "");
       })
@@ -159,8 +162,9 @@ export default function CartPage() {
   }, [buyerStateId]);
 
   // Kayıtlı adresi forma uygular (yalnızca form state'i; kayıtlı adres değişmez)
-  const applyAddress = useCallback((a: SavedAddress) => {
-    setName(a.fullName);
+  const applyAddress = useCallback((a: SavedAddress, keepName = false) => {
+    if (!keepName) setName(a.fullName); // mağazadan teslimde kayıtlı adresin alıcı adı hesap adının yerine geçmez
+
     setPhone(a.phone);
     setAddress(a.address);
     setSelectedAddrId(a.id);
@@ -183,7 +187,7 @@ export default function CartPage() {
         const list = Array.isArray(data.addresses) ? data.addresses : []; // sunucu varsayılan önce sıralar
         setSavedAddresses(list);
         const def = pickDefault(list);
-        if (def && !formTouched.current) applyAddress(def);
+        if (def && !formTouched.current) applyAddress(def, pickupRef.current);
       })
       .catch(() => {});
     return () => {
@@ -193,6 +197,16 @@ export default function CartPage() {
 
   // Mağazadan teslimde il/ilçe/adres istenmez; mağaza adresi varsayılan atanır
   const isPickup = shippingType === "BEYOGLU_MAGAZA_TESLIM";
+  // Teslimat türü değişimi: mağazadan teslimde adres seçici gizlenir; kayıtlı adresten gelen alıcı adı hesap adına döner
+  const chooseShipping = (type: string) => {
+    pickupRef.current = type === "BEYOGLU_MAGAZA_TESLIM";
+    if (pickupRef.current && selectedAddrId) {
+      const picked = savedAddresses.find((x) => x.id === selectedAddrId);
+      if (picked && name === picked.fullName) setName(accountName.current);
+      setSelectedAddrId("");
+    }
+    setShippingType(type);
+  };
   const sortedStates = useMemo(() => sortByNameTr(states), [states]); // Kargonomi plaka sırasıyla verir; listede Türkçe alfabetik
   const effectiveAddress = isPickup ? ADDRESS_LINE : address;
 
@@ -769,7 +783,7 @@ export default function CartPage() {
                       : "border-neutral-200 hover:border-neutral-300"
                   }`}
                 >
-                  <input type="radio" name="teslimat-yontemi" value="BEYOGLU_MAGAZA_TESLIM" checked={shippingType === "BEYOGLU_MAGAZA_TESLIM"} onChange={() => setShippingType("BEYOGLU_MAGAZA_TESLIM")} className="sr-only" />
+                  <input type="radio" name="teslimat-yontemi" value="BEYOGLU_MAGAZA_TESLIM" checked={shippingType === "BEYOGLU_MAGAZA_TESLIM"} onChange={() => chooseShipping("BEYOGLU_MAGAZA_TESLIM")} className="sr-only" />
                   <div className="flex items-center justify-between text-xs font-semibold text-neutral-900">
                     <span>📍 Mağazadan Teslim</span>
                     <span className="text-emerald-600 font-bold">Ücretsiz • %3 İndirim{!applied.pickup && notApplied}</span>
@@ -786,7 +800,7 @@ export default function CartPage() {
                       : "border-neutral-200 hover:border-neutral-300"
                   }`}
                 >
-                  <input type="radio" name="teslimat-yontemi" value="STANDART_KARGO" checked={shippingType === "STANDART_KARGO"} onChange={() => setShippingType("STANDART_KARGO")} className="sr-only" />
+                  <input type="radio" name="teslimat-yontemi" value="STANDART_KARGO" checked={shippingType === "STANDART_KARGO"} onChange={() => chooseShipping("STANDART_KARGO")} className="sr-only" />
                   <div className="flex items-center justify-between text-xs font-semibold text-neutral-900">
                     <span>📦 Adrese Teslim</span>
                     <span className="text-neutral-700 font-bold">
@@ -903,7 +917,7 @@ export default function CartPage() {
                 type="text"
                 placeholder="Adınız Soyadınız (En az 2 kelime)"
                 value={name}
-                onChange={(e) => { formTouched.current = true; setName(e.target.value); }}
+                onChange={(e) => { formTouched.current = true; setSelectedAddrId(""); setName(e.target.value); }}
                 className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
               />
               </div>
@@ -948,7 +962,7 @@ export default function CartPage() {
                 value={phone}
                 onChange={(e) => {
                   e.target.setCustomValidity(isValidPhone(e.target.value) ? "" : PHONE_ERROR);
-                  formTouched.current = true;
+                  formTouched.current = true; setSelectedAddrId("");
                   setPhone(e.target.value);
                 }}
                 className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
@@ -973,7 +987,7 @@ export default function CartPage() {
                     id="co-state"
                     autoComplete="address-level1"
                     value={buyerStateId}
-                    onChange={(e) => { formTouched.current = true; pendingCityId.current = null; setBuyerStateId(Number(e.target.value)); setBuyerCityId(0); }}
+                    onChange={(e) => { formTouched.current = true; setSelectedAddrId(""); pendingCityId.current = null; setBuyerStateId(Number(e.target.value)); setBuyerCityId(0); }}
                     className="w-full text-base sm:text-xs p-2.5 rounded-xl border border-neutral-300 bg-white focus:outline-none focus:border-amber-600"
                   >
                     {sortedStates.map((st) => (
@@ -992,7 +1006,7 @@ export default function CartPage() {
                     id="co-city"
                     autoComplete="address-level2"
                     value={buyerCityId}
-                    onChange={(e) => { formTouched.current = true; setBuyerCityId(Number(e.target.value)); }}
+                    onChange={(e) => { formTouched.current = true; setSelectedAddrId(""); setBuyerCityId(Number(e.target.value)); }}
                     className="w-full text-base sm:text-xs p-2.5 rounded-xl border border-neutral-300 bg-white focus:outline-none focus:border-amber-600"
                   >
                     <option value={0}>İlçe seçin</option>
@@ -1013,7 +1027,7 @@ export default function CartPage() {
                 rows={2}
                 placeholder="Açık Teslimat Adresiniz (Mahalle, Sokak, Bina ve Daire No)"
                 value={address}
-                onChange={(e) => { formTouched.current = true; setAddress(e.target.value); }}
+                onChange={(e) => { formTouched.current = true; setSelectedAddrId(""); setAddress(e.target.value); }}
                 className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
               />
               </div>

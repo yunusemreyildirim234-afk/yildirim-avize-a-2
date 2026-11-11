@@ -8,7 +8,7 @@ const sepet = src("app/sepet/page.tsx");
 
 test("sepet kayıtlı adresleri /api/user/addresses'ten çeker ve varsayılanı otomatik uygular (form dokunulmadıysa)", () => {
   assert.match(sepet, /fetch\("\/api\/user\/addresses"/);
-  assert.match(sepet, /const def = pickDefault\(list\);\s*if \(def && !formTouched\.current\) applyAddress\(def\);/);
+  assert.match(sepet, /const def = pickDefault\(list\);\s*if \(def && !formTouched\.current\) applyAddress\(def, pickupRef\.current\);/);
   // giriş yoksa (401) boş liste: form eskisi gibi
   assert.match(sepet, /res\.ok \? res\.json\(\) : \{ addresses: \[\] \}/);
 });
@@ -36,7 +36,7 @@ test("'Kayıtlı adres seç' yalnızca adrese teslimde ve kayıtlı adres varsa;
   assert.match(sepet, /\{!isPickup && savedAddresses\.length > 0 && \(/);
   assert.match(sepet, /Kayıtlı adres seç/);
   const apply = sepet.slice(sepet.indexOf("const applyAddress"), sepet.indexOf("// Giriş yapmış üyenin kayıtlı adresleri"));
-  assert.match(apply, /setName\(a\.fullName\)/);
+  assert.match(apply, /if \(!keepName\) setName\(a\.fullName\)/);
   assert.match(apply, /setPhone\(a\.phone\)/);
   assert.match(apply, /setAddress\(a\.address\)/);
   assert.ok(!/api\/user\/addresses`?[^)]*method/.test(sepet), "sepet adres yazmaz");
@@ -48,4 +48,18 @@ test("sipariş gövdesi ve /api/order değişmedi: aynı alanlar gönderilir, ap
   for (const f of ["phone,", "address: effectiveAddress,", "buyerStateId: isPickup ? 34 : buyerStateId,", "buyerCityId: isPickup ? 425 : buyerCityId,"]) assert.ok(sepet.includes(f), f);
   const diff = execFileSync("git", ["diff", "--stat", "HEAD", "--", "app/api/order"], { cwd: new URL("../", import.meta.url) }).toString();
   assert.equal(diff.trim(), "");
+});
+
+test("A13: mağazadan teslimde varsayılan adres adı doldurmaz (yalnızca telefon); form elle değişince seçili adres boşalır", () => {
+  assert.match(sepet, /applyAddress = useCallback\(\(a: SavedAddress, keepName = false\)/);
+  assert.match(sepet, /applyAddress\(def, pickupRef\.current\)/);
+  // mağazadan teslime geçince kayıtlı adresin adı hesap adına döner, seçim boşalır
+  const ch = sepet.slice(sepet.indexOf("const chooseShipping"), sepet.indexOf("const sortedStates"));
+  assert.match(ch, /pickupRef\.current = type === "BEYOGLU_MAGAZA_TESLIM"/);
+  assert.match(ch, /name === picked\.fullName\) setName\(accountName\.current\)/);
+  assert.match(ch, /setSelectedAddrId\(""\)/);
+  assert.equal((sepet.match(/onChange=\{\(\) => chooseShipping\(/g) ?? []).length, 2);
+  assert.ok(!/onChange=\{\(\) => setShippingType/.test(sepet));
+  // her elle değişiklik seçili adresi boşaltır
+  assert.equal((sepet.match(/formTouched\.current = true; setSelectedAddrId\(""\);/g) ?? []).length, 5);
 });
