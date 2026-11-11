@@ -1,12 +1,12 @@
 import type { BulkRule } from "@/lib/bulk-pricing";
 import { priceCart } from "@/lib/cart-pricing";
-import { PICKUP_DISCOUNT, SHIPPING_TYPES, type CouponRule } from "@/lib/pricing";
+import { BANK_TRANSFER_DISCOUNT, PICKUP_DISCOUNT, SHIPPING_TYPES, type CouponRule } from "@/lib/pricing";
 import { ladderCouponLabel } from "@/lib/coupon-code";
 
 export interface LadderStep {
   key: "coupon" | "bank" | "pickup";
-  label: string; // "<vitrin kodu> kuponuyla" / "+ Havale/EFT indirimi"
-  short: string; // dar (mobil) kart etiketi: "<vitrin kodu>" / "Havale/EFT" / "Mağaza %3"
+  label: string; // "<vitrin kodu> kuponuyla" / "+ Havale/EFT ile (%5)"
+  short: string; // dar (mobil) kart etiketi: "<vitrin kodu>" / "Havale/EFT %5" / "Mağaza %3"
   hint: string;
   price: number;
 }
@@ -25,7 +25,7 @@ export interface LadderProduct {
 
 const pctText = (pct: number) => pct.toLocaleString("tr-TR", { maximumFractionDigits: 2 });
 
-/** Adet=1 için adım adım düşen fiyatlar (priceCart ile; her adım öncekini içerir, kargo hariç). Aynı kalan adımlar atlanır. */
+/** Adet=1 için adım adım düşen fiyatlar (priceCart ile; her adım öncekini içerir, kargo hariç). Kupon/havale adımı öncekinden ucuz değilse atlanır; mağaza adımı (indirimi kapalı değilse) her zaman gösterilir. */
 export function priceLadder(p: LadderProduct, ctx: LadderContext, price: number = p.basePrice, qty?: { quantity: number; tiers: BulkRule[] }): LadderStep[] {
   // qty verilirse (sepet satırı) kademe ve adet hesaba katılır; fiyatlar BİRİM başınadır. Verilmezse adet=1, kademesiz (eski davranış).
   const n = qty?.quantity ?? 1;
@@ -57,14 +57,16 @@ export function priceLadder(p: LadderProduct, ctx: LadderContext, price: number 
   }
   const b = net(SHIPPING_TYPES.HOME, "BANK_TRANSFER", coupon);
   if (b.price < prev) {
-    // Yüzde yazılmaz: indirim kargo dahil toplamdan alındığı için ürün fiyatındaki düşüş tam %5 olmaz
-    steps.push({ key: "bank", label: "+ Havale/EFT indirimi", short: "Havale/EFT", hint: "Havale/EFT ödemede", price: b.price });
+    const t = pctText(line.transferPct ?? BANK_TRANSFER_DISCOUNT * 100);
+    steps.push({ key: "bank", label: `+ Havale/EFT ile (%${t})`, short: `Havale/EFT %${t}`, hint: "Havale/EFT ödemede", price: b.price });
     prev = b.price;
   }
   const m = net(SHIPPING_TYPES.PICKUP, "BANK_TRANSFER", coupon);
-  if (m.price < prev) {
+  // Mağaza satırı (indirimi bu üründe kapalı değilse) HER ZAMAN gösterilir; indirim yuvarlanınca fark etmese bile kargo ücretinin olmadığı söylenir
+  if (line.pickupPct !== 0) {
     const t = pctText(line.pickupPct ?? PICKUP_DISCOUNT * 100);
-    steps.push({ key: "pickup", label: `+ Mağazadan teslimle (%${t})`, short: `Mağaza %${t}`, hint: "Beyoğlu mağazadan teslimde", price: m.price });
+    const cheaper = m.price < prev;
+    steps.push({ key: "pickup", label: `+ Mağazadan teslimle (%${t})`, short: `Mağaza %${t}`, hint: cheaper ? "Beyoğlu mağazadan teslimde" : "Kargo ücreti yok, Beyoğlu mağazadan teslimde", price: m.price });
   }
   return steps;
 }
