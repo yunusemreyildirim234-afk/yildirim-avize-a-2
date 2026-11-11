@@ -35,6 +35,7 @@ export async function GET(req: Request) {
         redirect_uri: redirectUri,
         grant_type: "authorization_code",
       }),
+      signal: AbortSignal.timeout(10_000), // zaman aşımı üstteki catch'e düşer (mevcut hata yönlendirmesi)
     });
 
     const tokenData = await tokenRes.json();

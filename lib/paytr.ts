@@ -2,6 +2,9 @@ import { createHmac } from "node:crypto";
 import { SITE_URL } from "@/lib/site";
 import { PAYTR_TIMEOUT_MINUTES } from "@/lib/stock-rules";
 
+/** PayTR token isteği bu süre (ms) sonunda kesilir; sipariş isteği ve bağlantı havuzu asılı kalmasın. */
+export const PAYTR_TOKEN_TIMEOUT_MS = 10_000;
+
 const merchantId = () => (process.env.PAYTR_MERCHANT_ID || process.env.MERCHANT_ID || "").trim();
 const merchantKey = () => (process.env.PAYTR_MERCHANT_KEY || process.env.MERCHANT_KEY || "").trim();
 const merchantSalt = () => (process.env.PAYTR_MERCHANT_SALT || process.env.MERCHANT_SALT || "").trim();
@@ -69,6 +72,7 @@ export async function getPaytrToken(input: PaytrTokenInput): Promise<string> {
       lang: "tr",
     }),
     cache: "no-store",
+    signal: AbortSignal.timeout(PAYTR_TOKEN_TIMEOUT_MS), // asılı kalırsa fetch reddedilir → sipariş ucu mevcut 502 yoluna düşer
   });
 
   const data = await res.json().catch(() => null);

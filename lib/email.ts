@@ -34,6 +34,8 @@ import { buildCampaignFooter, unsubscribeHeaders } from "@/lib/marketing";
 
 const DEFAULT_FROM = "Yıldırım Avize <siparis@yildirimavize.com.tr>";
 const ONBOARDING_FROM = "Yıldırım Avize <onboarding@resend.dev>";
+/** Resend isteği bu süre (ms) sonunda kesilir; asılı kalan çağrı sipariş yanıtını ve bağlantı havuzunu tutmasın. */
+const RESEND_TIMEOUT_MS = 8_000;
 // Müşteri e-postayı yanıtladığında mesaj bu kutuya düşer
 const REPLY_TO = "omeryildirim_3@hotmail.com";
 
@@ -53,9 +55,10 @@ async function sendViaResend(apiKey: string | undefined, payload: Record<string,
         method: "POST",
         headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
         body: JSON.stringify({ ...payload, from, reply_to: REPLY_TO }),
+        signal: AbortSignal.timeout(RESEND_TIMEOUT_MS), // zaman aşımı catch'e düşer: sıradaki gönderici denenir, en sonda false
       });
       if (res.ok) return true;
-      console.error("[email] Resend reddetti:", { from, to: maskTo(payload.to), subject: payload.subject, status: res.status, body: await res.json().catch(() => null) });
+      console.error("[email] Resend reddetti:", { from, to: maskTo(payload.to), subject: payload.subject, status: res.status, body: ((await res.json().catch(() => null)) as { message?: unknown } | null)?.message ?? null });
     } catch (err) {
       console.error("[email] Resend bağlantı hatası:", { from, to: maskTo(payload.to), subject: payload.subject, err: (err as Error)?.message });
     }
