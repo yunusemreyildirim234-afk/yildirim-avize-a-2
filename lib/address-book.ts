@@ -1,6 +1,6 @@
 // Adres defteri: saf kurallar (veritabanı yok). Doğrulama sepet formu ve /api/order ile AYNI fonksiyonları kullanır
 // (shippingFormError: ad en az iki kelime, il/ilçe seçili, adres en az 10 karakter; isValidPhone: telefon).
-import { shippingFormError } from "./validation.ts";
+import { cleanControlChars, shippingFormError } from "./validation.ts";
 import { isValidPhone, PHONE_ERROR } from "./phone.ts";
 
 export const MAX_ADDRESSES = 10;
@@ -22,7 +22,7 @@ export interface AddressInput {
 export type AddressResult = { ok: true; data: AddressInput } | { ok: false; error: string; field: string };
 
 const str = (v: unknown) => (typeof v === "string" ? v : "");
-const collapse = (s: string) => s.replace(/\s+/g, " ").trim();
+const collapse = (s: string) => cleanControlChars(s);
 
 /** İstek gövdesini doğrular ve temizler. Kısmi güncelleme yok: tüm alanlar her seferinde gönderilir. */
 export function cleanAddressInput(body: unknown): AddressResult {

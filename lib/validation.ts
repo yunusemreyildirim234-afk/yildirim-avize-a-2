@@ -24,6 +24,11 @@ export function invoiceError(i: { invoiceType?: string; taxNumber?: string; taxO
   return null;
 }
 
+/** Kontrol karakterlerini (NUL dahil) boşluğa çevirir, boşlukları sadeleştirir (sipariş/adres defteri adı; PostgreSQL NUL'u reddeder). */
+export function cleanControlChars(raw: string): string {
+  return raw.replace(/[\u0000-\u001F\u007F-\u009F]/g, " ").replace(/\s+/g, " ").trim();
+}
+
 /** Görünen ad doğrulaması (üye profili ve admin düzenlemesi ortak): kontrol karakterleri temizlenir, boşluklar sadeleşir, 2-60 karakter. */
 export function cleanDisplayName(raw: unknown): { ok: true; name: string } | { ok: false; error: string } {
   const name = typeof raw === "string" ? raw.replace(/[\u0000-\u001F\u007F-\u009F]/g, " ").replace(/\s+/g, " ").trim() : "";
