@@ -113,6 +113,7 @@ model Order {
   status               String       @default("PENDING") // PENDING, READY_FOR_PICKUP, SHIPPED, DELIVERED, CANCELLED
   phone                String? // Alıcı Telefon Numarası
   address              String? // Açık Teslimat Adresi
+  recipientName        String? // Teslimat alıcı adı (sepet formundaki ad); boşsa (eski siparişler) hesap adı kullanılır
   buyerStateId         Int? // Kargonomi İl (Şehir) ID (Örn: 34 = İstanbul)
   buyerCityId          Int? // Kargonomi İlçe ID (Örn: 425 = Beyoğlu)
   buyerStateName       String? // İl Adı
