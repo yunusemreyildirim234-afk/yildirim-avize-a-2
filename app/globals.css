@@ -139,6 +139,24 @@ body {
   --color-orange-950: oklch(98% 0.016 73.684);
 }
 
+.dark .keep-theme .bell-panel {
+  /* Yönetim üst çubuğu (keep-theme) içindeki bildirim paneli koyu temada koyu kalır */
+  --color-white: oklch(20.5% 0 none);
+  --color-zinc-100: oklch(21% 0.006 285.885);
+  --color-zinc-200: oklch(27.4% 0.006 286.033);
+  --color-zinc-400: oklch(44.2% 0.017 285.786);
+  --color-zinc-500: oklch(55.2% 0.016 285.938);
+  --color-zinc-600: oklch(70.5% 0.015 286.067);
+  --color-zinc-700: oklch(87.1% 0.006 286.286);
+  --color-zinc-800: oklch(92% 0.004 286.32);
+  --color-zinc-900: oklch(96.7% 0.001 286.375);
+  --color-amber-50: oklch(27.9% 0.077 45.635);
+  --color-amber-100: oklch(41.4% 0.112 45.904);
+  --color-amber-700: oklch(87.9% 0.169 91.605);
+  --color-red-700: oklch(80.8% 0.114 19.571);
+  --color-orange-600: oklch(75% 0.183 55.934);
+}
+
 .dark .keep-theme {
   --color-white: #fff;
   --color-neutral-50: oklch(98.5% 0 none);

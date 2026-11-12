@@ -31,6 +31,7 @@ export default function NotificationBell() {
   const [items, setItems] = useState<Item[]>([]);
   const [unread, setUnread] = useState(0);
   const [open, setOpen] = useState(false);
+  const [askClear, setAskClear] = useState(false); // "Tümünü Temizle" için panel içi onay
   const ref = useRef<HTMLDivElement>(null);
 
   const scopeQs = pathname?.startsWith("/admin") ? "?scope=admin" : "?scope=user";
@@ -108,6 +109,7 @@ export default function NotificationBell() {
 
   const clearAll = async () => {
     const previous = { items, unread };
+    setAskClear(false);
     setItems([]);
     setUnread(0);
     try {
@@ -149,7 +151,7 @@ export default function NotificationBell() {
         <div
           role="dialog"
           aria-label="Bildirimler"
-          className="fixed left-2 right-2 top-[4.25rem] md:absolute md:left-auto md:right-0 md:top-full md:mt-2 md:w-96 bg-white rounded-2xl border border-zinc-200 shadow-xl overflow-hidden z-[70]"
+          className="bell-panel fixed left-2 right-2 top-[4.25rem] md:absolute md:left-auto md:right-0 md:top-full md:mt-2 md:w-96 bg-white rounded-2xl border border-zinc-200 shadow-xl overflow-hidden z-[70]"
         >
           <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-100">
             <h2 className="text-sm font-bold text-zinc-900">Bildirimler</h2>
@@ -157,11 +159,6 @@ export default function NotificationBell() {
               {unread > 0 && (
                 <button type="button" onClick={readAll} className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 hover:underline">
                   <CheckCheck aria-hidden="true" className="w-3.5 h-3.5" /> Tümünü Okundu İşaretle
-                </button>
-              )}
-              {items.length > 0 && (
-                <button type="button" onClick={clearAll} className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-700 hover:underline">
-                  <Trash2 aria-hidden="true" className="w-3.5 h-3.5" /> Tümünü Temizle
                 </button>
               )}
             </div>
@@ -213,6 +210,23 @@ export default function NotificationBell() {
                 );
               })}
             </ul>
+          )}
+          {items.length > 0 && (
+            <div className="flex flex-wrap items-center justify-end gap-3 border-t border-zinc-100 px-4 py-2.5 text-[11px]">
+              {askClear ? (
+                <>
+                  <span className="font-semibold text-zinc-800">Tüm bildirimler silinsin mi?</span>
+                  <button type="button" onClick={() => setAskClear(false)} className="font-semibold text-zinc-600 hover:underline">Vazgeç</button>
+                  <button type="button" onClick={clearAll} className="inline-flex items-center gap-1 rounded-md bg-red-700 px-2.5 py-1 font-bold text-white hover:bg-red-800">
+                    <Trash2 aria-hidden="true" className="w-3.5 h-3.5" /> Evet, temizle
+                  </button>
+                </>
+              ) : (
+                <button type="button" onClick={() => setAskClear(true)} className="inline-flex items-center gap-1 font-semibold text-zinc-500 hover:text-red-700 hover:underline">
+                  <Trash2 aria-hidden="true" className="w-3.5 h-3.5" /> Tümünü Temizle
+                </button>
+              )}
+            </div>
           )}
         </div>
       )}

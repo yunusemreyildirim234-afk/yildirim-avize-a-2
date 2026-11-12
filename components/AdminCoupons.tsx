@@ -199,6 +199,7 @@ export default function AdminCoupons({ coupons, customers, products }: Props) {
               <div>
                 <label className="font-semibold text-neutral-700 block mb-1">Kullanım Limiti</label>
                 <input type="number" min={1} value={maxUses} onChange={(e) => setMaxUses(e.target.value)} placeholder="Boş = sınırsız" className={inputCls} />
+                <span className="mt-1 block text-[10px] text-neutral-500">Boş bırakırsanız kullanım sınırsız olur.</span>
               </div>
               <div>
                 <label className="font-semibold text-neutral-700 block mb-1">Minimum Sepet (₺)</label>
