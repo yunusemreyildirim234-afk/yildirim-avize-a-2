@@ -102,6 +102,11 @@ export default function AuthPage() {
     if (id) document.getElementById(id)?.scrollIntoView();
   }, [ordersLoaded]);
 
+  // Girişliyken sekme başlığı "Hesabım" (layout başlığı giriş formu içindir)
+  useEffect(() => {
+    if (hasUser) document.title = "Hesabım | Yıldırım Avize";
+  }, [hasUser]);
+
   const refreshUser = () => {
     fetch("/api/auth/me?orders=1", { cache: "no-store" })
       .then((res) => res.json())
