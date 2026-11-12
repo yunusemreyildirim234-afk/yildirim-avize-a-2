@@ -7,6 +7,7 @@ import { itemsFromUrls, newKey, uploadFile, type PickerItem } from "@/lib/client
 import { replaceAt, urlsToAppend } from "@/lib/image-list";
 import { MAX_EDIT_IMAGES, MAX_VARIATION_IMAGES } from "@/lib/variation-input";
 import { BulkColorChange, VariationNameEdit } from "@/components/VariationNameTools";
+import { editorStateOf, stockSaveBody } from "@/lib/editor-dirty";
 
 export interface EditorVariation {
   id: string;
@@ -46,6 +47,8 @@ const field = "p-2 rounded-lg border border-neutral-300 bg-white text-xs focus:o
 export default function AdminProductEditor({ product, onSaved, onSetActive, onSetStocklessHidden, busyActive }: { product: EditorProduct; onSaved?: (snapshot: unknown) => void; onSetActive?: (makeActive: boolean) => void; onSetStocklessHidden?: (hidden: boolean) => void; busyActive?: boolean }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
+  // Taban: formun açıldığı andaki değerler (router.refresh ile yenilenen prop'tan bağımsız)
+  const [base] = useState(() => editorStateOf(product));
 
   const [title, setTitle] = useState(product.title);
   const [basePrice, setBasePrice] = useState(String(product.basePrice));
@@ -98,12 +101,8 @@ export default function AdminProductEditor({ product, onSaved, onSetActive, onSe
 
   const saveVariation = (v: EditorVariation) =>
     run(async () => {
-      const data = await api("PATCH", "/api/admin/product", {
-        variationId: v.id,
-        stock: Number(varEdits[v.id].stock),
-        prevStock: v.stock, // formun açıldığı andaki stok: sunucu yalnızca bu değer hâlâ geçerliyse yazar
-        extraPrice: Number(varEdits[v.id].extraPrice),
-      });
+      // prevStock tabandan (formun açıldığı andaki stok) gider, canlı prop'tan değil: sunucu yalnızca bu değer hâlâ geçerliyse yazar
+      const data = await api("PATCH", "/api/admin/product", stockSaveBody(v.id, base.vars[v.id], varEdits[v.id]));
       onSaved?.(data.snapshot);
     }, "✓ Varyasyon kaydedildi. Alttaki çubuktan geri alabilirsiniz.");
 
