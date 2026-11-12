@@ -22,6 +22,7 @@ interface Props {
 export default function AdminKargonomiOrderActions({ order }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState<"create" | "regenerate" | "refresh" | null>(null);
+  const [askCreate, setAskCreate] = useState(false);
 
   if (order.shippingType === "BEYOGLU_MAGAZA_TESLIM") {
     return <span className="text-[11px] text-neutral-400">Mağaza teslimi – kargo gerekmiyor</span>;
@@ -29,6 +30,7 @@ export default function AdminKargonomiOrderActions({ order }: Props) {
 
   const run = async (kind: "create" | "regenerate" | "refresh") => {
     if (kind === "regenerate" && !window.confirm("Yeni bir Aras Kargo gönderisi açılacak. Eski gönderiyi Kargonomi panelinden iptal etmeniz gerekir. Devam edilsin mi?")) return;
+    setAskCreate(false);
     setLoading(kind);
     try {
       const res = await (kind === "refresh"
@@ -65,14 +67,26 @@ export default function AdminKargonomiOrderActions({ order }: Props) {
   if (!order.labelCreated) {
     return (
       <div className="space-y-1.5 min-w-[11rem]">
-        <button
-          type="button"
-          disabled={loading !== null || !payable}
-          onClick={() => run("create")}
-          className={`${btn} bg-orange-600 border-orange-600 text-white hover:bg-orange-700`}
-        >
-          {loading === "create" ? "Barkod oluşturuluyor..." : "Aras Kargo Barkodu Oluştur"}
-        </button>
+        {askCreate ? (
+          <div role="group" aria-label="Barkod oluşturma onayı" className="flex flex-wrap items-center gap-2 text-[11px] text-neutral-800">
+            <span className="font-semibold">Ücretli Aras Kargo gönderisi açılır. Oluşturulsun mu?</span>
+            <button type="button" onClick={() => run("create")} className={`${btn} bg-orange-600 border-orange-600 text-white hover:bg-orange-700`}>
+              Evet, oluştur
+            </button>
+            <button type="button" onClick={() => setAskCreate(false)} className={`${btn} bg-white border-neutral-300 text-neutral-700 hover:bg-neutral-50`}>
+              Vazgeç
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            disabled={loading !== null || !payable}
+            onClick={() => setAskCreate(true)}
+            className={`${btn} bg-orange-600 border-orange-600 text-white hover:bg-orange-700`}
+          >
+            {loading === "create" ? "Barkod oluşturuluyor..." : "Aras Kargo Barkodu Oluştur"}
+          </button>
+        )}
         {!payable && <p className="text-[10px] text-neutral-400 max-w-[11rem]">Ödeme onaylanınca barkod oluşturulabilir.</p>}
       </div>
     );

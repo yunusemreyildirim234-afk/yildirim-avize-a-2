@@ -107,7 +107,8 @@ export default function OrderStatusSelector({ orderId, initialStatus, shippingTy
         {(status === "AWAITING_PAYMENT" || status === "PAYMENT_FAILED" || status === "PENDING_NEW") && (
           <option value={status}>{status === "AWAITING_PAYMENT" ? "Ödeme Bekleniyor" : status === "PENDING_NEW" ? "Havale Onayı Bekleniyor" : "Ödeme Başarısız"}</option>
         )}
-        <option value="PENDING" disabled={!canTransition(status, "PENDING")}>⏳ Hazırlanıyor</option>
+        {/* Bekleyen havalede "Hazırlanıyor" yalnızca durumu yazar; "Ödemeyi Onayla" ise ayrıca stok güvencesi, kargo kaydı ve "Ödemeniz onaylandı" bildirimini yapar (lib/orders.ts confirmBankPayment). Bu yüzden orada pasif. */}
+        <option value="PENDING" disabled={!canTransition(status, "PENDING") || status === "PENDING_NEW"}>⏳ Hazırlanıyor{status === "PENDING_NEW" ? " (önce Ödemeyi Onayla)" : ""}</option>
 
         {isBeyoglu ? (
           <option value="READY_FOR_PICKUP" disabled={!canTransition(status, "READY_FOR_PICKUP")}>📍 Mağazada Teslime Hazır</option>
