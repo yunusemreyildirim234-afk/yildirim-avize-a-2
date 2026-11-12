@@ -43,19 +43,24 @@ export default function AdminSection({
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         aria-controls={`${id}-panel`}
-        className="w-full p-6 flex items-center justify-between gap-4 text-left hover:bg-neutral-50/60 transition-colors"
+        className="w-full p-6 flex items-center justify-between gap-4 max-sm:flex-wrap max-sm:items-start text-left hover:bg-neutral-50/60 transition-colors"
       >
-        <div>
+        <div className="max-sm:order-1 max-sm:flex-1 max-sm:min-w-0">
           <h2 className="text-lg font-serif font-bold text-neutral-900 flex items-center gap-2">{icon}{title}</h2>
           {description && <p className="text-xs text-neutral-500 mt-0.5">{description}</p>}
         </div>
-        <span className="flex items-center gap-2 shrink-0">
-          {badges.map((b) => (
-            <span key={b.label} className={`text-xs font-semibold border px-3 py-1.5 rounded-lg ${TONES[b.tone]}`}>
-              {b.label}
+        {/* Dar ekranda rozetler başlığın altına iner (sm altında kapsayıcı kalkar; sıra: başlık, ok, rozetler) */}
+        <span className="flex items-center gap-2 shrink-0 max-sm:contents">
+          {badges.length > 0 && (
+            <span className="flex flex-wrap items-center gap-2 max-sm:order-3 max-sm:basis-full">
+              {badges.map((b) => (
+                <span key={b.label} className={`text-xs font-semibold border px-3 py-1.5 rounded-lg ${TONES[b.tone]}`}>
+                  {b.label}
+                </span>
+              ))}
             </span>
-          ))}
-          <ChevronDown aria-hidden="true" className={`w-5 h-5 text-neutral-500 transition-transform duration-300 ${open ? "rotate-180" : ""}`} />
+          )}
+          <ChevronDown aria-hidden="true" className={`w-5 h-5 text-neutral-500 transition-transform duration-300 max-sm:order-2 max-sm:mt-1 ${open ? "rotate-180" : ""}`} />
         </span>
       </button>
       <div id={`${id}-panel`} className={`grid transition-[grid-template-rows] duration-300 ease-out ${open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
