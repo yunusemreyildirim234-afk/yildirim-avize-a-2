@@ -57,12 +57,21 @@ interface CartContextType {
   totalPrice: number;
 }
 
+export const CART_MERGE_NOTE_KEY = "ya_cart_merge_note";
+
 // Girişte misafir sepeti hesap sepetiyle birleşir; aynı üründe büyük olan adet korunur
 function mergeCarts(local: CartItem[], remote: CartItem[]): CartItem[] {
   // Bilgi notu: misafir sepetinde ürün varken hesap sepetinden gelen (misafirde olmayan) ürünler eklenirse kullanıcıya söylenir.
   // Birleştirme yalnızca girişteki ilk eşitlemede çalışır (useAccountSync). Sabit id: geliştirme modunda çift çağrı tek bildirim olur.
   const localIds = new Set(local.map((i) => i.variationId));
   const added = local.length > 0 ? remote.filter((i) => !localIds.has(i.variationId)).length : 0;
+  if (added > 0) {
+    // Geçici bildirim kaçırılabilir: /sepet sayfası aynı bilgiyi bir kez kalıcı not olarak gösterir (okununca silinir)
+    try {
+      sessionStorage.setItem(CART_MERGE_NOTE_KEY, String(added));
+      setTimeout(() => window.dispatchEvent(new Event("ya-cart-merged")), 0);
+    } catch {}
+  }
   if (added > 0) setTimeout(() => toast(`Önceki sepetinizdeki ${added} ürün eklendi`, { id: "sepet-birlesme", ...toastHref("/sepet") }), 0);
   const merged = new Map(remote.map((i) => [i.variationId, i]));
   for (const item of local) {

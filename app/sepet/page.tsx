@@ -9,7 +9,7 @@ import { ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
-import { cartPriceLines, useCart, type ItemRules } from "@/context/CartContext";
+import { CART_MERGE_NOTE_KEY, cartPriceLines, useCart, type ItemRules } from "@/context/CartContext";
 import { shippingProgress } from "@/lib/shipping-progress";
 import { FREE_SHIPPING_THRESHOLD, SHIPPING_COST, SHIPPING_LABELS, type CouponRule } from "@/lib/pricing";
 import { discountsApplied, priceCart, type CapInfo } from "@/lib/cart-pricing";
@@ -233,6 +233,22 @@ export default function CartPage() {
   const [priceNotice, setPriceNotice] = useState<{ from: number; to: number } | null>(null);
   const [priceAcked, setPriceAcked] = useState(true);
   const [issues, setIssues] = useState<string[]>([]);
+  // Girişte hesap sepetinden eklenen ürünler için tek seferlik kalıcı not
+  const [mergeNote, setMergeNote] = useState(0);
+  useEffect(() => {
+    const read = () => {
+      try {
+        const n = Number(sessionStorage.getItem(CART_MERGE_NOTE_KEY));
+        if (n > 0) {
+          sessionStorage.removeItem(CART_MERGE_NOTE_KEY);
+          setMergeNote(n);
+        }
+      } catch {}
+    };
+    read();
+    window.addEventListener("ya-cart-merged", read);
+    return () => window.removeEventListener("ya-cart-merged", read);
+  }, []);
   const [quoteFailed, setQuoteFailed] = useState(false);
   const [quoteRetry, setQuoteRetry] = useState(0);
 
@@ -593,6 +609,12 @@ export default function CartPage() {
                 Güncel tutarı gördüm
               </button>
             )}
+          </div>
+        )}
+        {mergeNote > 0 && (
+          <div role="status" className="mb-6 flex items-start justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 text-amber-900 text-xs p-4">
+            <p>Önceki sepetinizdeki {mergeNote} ürün eklendi.</p>
+            <button type="button" onClick={() => setMergeNote(0)} className="font-semibold underline underline-offset-2 shrink-0">Tamam</button>
           </div>
         )}
         {issues.length > 0 && (
