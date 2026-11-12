@@ -32,3 +32,18 @@ test("NavSearch: boş sonuçta öneri düğmesi sorguyu değiştirir; temizleme 
   assert.match(src, /onSuggest=\{onChange\}/);
   assert.ok((src.match(/setSuggestion\(null\)/g) ?? []).length >= 2);
 });
+
+test("/arama sekme başlığı sorguyu içerir; dizine alınmama ve canonical kuralı korunur", () => {
+  const src = read("app/arama/page.tsx");
+  assert.match(src, /export async function generateMetadata\(\{ searchParams \}: Props\): Promise<Metadata>/);
+  assert.match(src, /title: q \? `"\$\{q\}" araması` : "Arama Sonuçları"/);
+  assert.match(src, /alternates: \{ canonical: null \}/);
+  assert.match(src, /robots: \{ index: false, follow: true \}/);
+});
+
+test("Son aramalar paneli: klavyeyle dışarı odaklanınca kapanır; relatedTarget yoksa (tıklama) kapanmaz; Escape ve dışarı tıklama korunur", () => {
+  const src = read("components/NavSearch.tsx");
+  assert.match(src, /onBlur=\{\(e\) => \{[\s\S]*?next && !e\.currentTarget\.contains\(next\)\) setOpen\(false\);/);
+  assert.match(src, /e\.key === "Escape" && setOpen\(false\)/);
+  assert.match(src, /addEventListener\("mousedown", onDown\)/);
+});

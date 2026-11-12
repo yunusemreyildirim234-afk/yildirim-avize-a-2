@@ -139,4 +139,15 @@ test.describe("e) Arama yazım önerisi ve kelime sırası", () => {
     const b = (await (await request.get("/api/search?q=" + encodeURIComponent("avize kristal"))).json()) as { products: { id: string }[] };
     expect(b.products.length).toBeGreaterThan(0);
   });
+  test("sekme başlığı sorguyu içerir; Tab ile arama kutusundan çıkınca Son Aramalar paneli kapanır", async ({ page }, testInfo) => {
+    await openOk(page, "/arama?q=avize");
+    await expect(page).toHaveTitle(/"avize" araması/);
+    test.skip(testInfo.project.name === "mobile", "masaüstü paneli");
+    await page.evaluate(() => localStorage.setItem("ya_recent_searches", JSON.stringify(["avize"])));
+    await page.reload();
+    await topInput(page).focus();
+    await page.keyboard.press("Tab");
+    await page.keyboard.press("Tab");
+    await expect(page.getByText("Son Aramalarınız")).toBeHidden();
+  });
 });

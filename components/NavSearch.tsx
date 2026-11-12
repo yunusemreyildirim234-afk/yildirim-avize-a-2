@@ -241,7 +241,15 @@ export default function NavSearch() {
   return (
     <>
       {/* Masaüstü: genişleyen arama çubuğu */}
-      <div ref={desktopRef} className="relative hidden md:block">
+      <div
+        ref={desktopRef}
+        className="relative hidden md:block"
+        onBlur={(e) => {
+          // Klavyeyle (Tab) başka bir öğeye geçilince açılır paneller kapanır; relatedTarget yoksa (tıklama) dışarı tıklama işleyicisi karar verir
+          const next = e.relatedTarget as Node | null;
+          if (window.innerWidth >= 768 && next && !e.currentTarget.contains(next)) setOpen(false);
+        }}
+      >
         <form
           onSubmit={onSubmit}
           role="search"

@@ -21,12 +21,15 @@ interface Props {
 
 const qOf = (raw: string | string[] | undefined) => clipQuery(Array.isArray(raw) ? raw[0] : raw).trim();
 
-// Arama sonuçları dizine alınmaz, sitemap'te yoktur, canonical yazılmaz
-export const metadata: Metadata = {
-  title: "Arama Sonuçları",
-  alternates: { canonical: null }, // layout varsayılanı "/" bu sayfada yazılmaz
-  robots: { index: false, follow: true },
-};
+// Arama sonuçları dizine alınmaz, sitemap'te yoktur, canonical yazılmaz; sekme başlığı sorguyu içerir
+export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
+  const q = qOf((await searchParams).q);
+  return {
+    title: q ? `"${q}" araması` : "Arama Sonuçları",
+    alternates: { canonical: null }, // layout varsayılanı "/" bu sayfada yazılmaz
+    robots: { index: false, follow: true },
+  };
+}
 
 export default async function SearchPage({ searchParams }: Props) {
   const query = await searchParams;
