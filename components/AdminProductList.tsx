@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { isPurchasablePrice } from "@/lib/purchasable";
-import { AlertTriangle, Boxes, ChevronDown, ExternalLink, FileText, Lightbulb, Pencil, Search, Trash2, Undo2 } from "lucide-react";
+import { AlertTriangle, Boxes, ChevronDown, ExternalLink, FileText, Lightbulb, MoreHorizontal, Pencil, Search, Trash2, Undo2 } from "lucide-react";
 import { useOpenOnHash } from "@/components/useOpenOnHash";
 import { useRouter } from "next/navigation";
 import AdminBulkBar from "@/components/AdminBulkBar";
@@ -18,6 +18,7 @@ import { buildCategoryList, productInCategory } from "@/lib/categories";
 import { uncategorizedCount } from "@/lib/category-settings";
 import { isShownAsSoldOut, type StocklessRule } from "@/lib/stockless";
 import { smallImage } from "@/lib/img";
+import { QUICK_FILTER_LABELS, isQuickFilterKey, quickFilterTest, type QuickFilterKey } from "@/lib/admin-product-quick-filters";
 
 const NONE_KEY = "__kategorisiz__"; // "Kategorisiz (N)" çipi
 import { coverImageOf } from "@/lib/variation-input";
@@ -63,7 +64,7 @@ type ChipSets = { featured: Set<string>; bestseller: Set<string> };
 const totalStockOf = (p: Product) => p.variations.reduce((sum, v) => sum + Math.max(0, v.stock), 0);
 const stockedInactive = (p: Product) => p.active === false && totalStockOf(p) > 0;
 const chipTest = (key: string, p: Product, sets: ChipSets): boolean =>
-  key === "stockedinactive" ? stockedInactive(p) : key === "discount" ? hasDiscount(p) : key === "featured" ? sets.featured.has(p.id) : key === "bestseller" ? sets.bestseller.has(p.id) : false;
+  isQuickFilterKey(key) ? quickFilterTest(key, p) : key === "stockedinactive" ? stockedInactive(p) : key === "discount" ? hasDiscount(p) : key === "featured" ? sets.featured.has(p.id) : key === "bestseller" ? sets.bestseller.has(p.id) : false;
 
 function ModelCodeEditor({ initial, disabled, onSave }: { initial: string; disabled: boolean; onSave: (code: string) => void }) {
   const [value, setValue] = useState(initial);
@@ -394,7 +395,7 @@ Yine de geri alınsın mı?`)) await doUndo(true);
             <Boxes aria-hidden="true" className="w-4 h-4 text-amber-600" /> Tüm Ürünler • Avize Kataloğu & Stok Yönetimi
           </h2>
           <p className="text-xs text-neutral-500 mt-0.5">
-            Mevcut avizelerin varyasyon stoklarını canlı artırıp azaltabilir veya modeli silebilirsiniz.
+            Mevcut avizelerin varyasyon stoklarını canlı artırıp azaltabilir; silme işlemi satırdaki “⋯” menüsündedir.
           </p>
         </div>
         <span className="flex items-center gap-3 shrink-0">
@@ -430,6 +431,7 @@ Yine de geri alınsın mı?`)) await doUndo(true);
               { key: "featured", label: "Öne Çıkanlar", count: products.filter((p) => chipTest("featured", p, sets)).length },
               { key: "bestseller", label: "Çok Satanlar", count: products.filter((p) => chipTest("bestseller", p, sets)).length },
               ...(products.some(stockedInactive) ? [{ key: "stockedinactive", label: "Stoğu var ama pasif", count: products.filter(stockedInactive).length }] : []),
+              ...(Object.keys(QUICK_FILTER_LABELS) as QuickFilterKey[]).map((key) => ({ key, label: QUICK_FILTER_LABELS[key], count: products.filter((p) => quickFilterTest(key, p)).length })),
             ]}
           />
           <div className="mt-2">
@@ -489,7 +491,7 @@ Yine de geri alınsın mı?`)) await doUndo(true);
         )}
         {filtered.slice(0, shown).map((product) => (
           <div key={product.id} id={`ap-${product.id}`} className={`scroll-mt-40 transition-colors ${flash === product.id ? "bg-amber-100/70 ring-2 ring-inset ring-amber-500" : ""}`}>
-          <div className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-neutral-50/50 transition-colors">
+          <div className="px-5 py-3 flex flex-col md:flex-row md:items-center justify-between gap-3 hover:bg-neutral-50/50 transition-colors">
             {/* Sol: Seçim, Görsel ve Başlık */}
             <div className="flex items-center gap-4 md:w-96 md:shrink-0">
               <input
@@ -617,15 +619,26 @@ Yine de geri alınsın mı?`)) await doUndo(true);
             >
               <FileText aria-hidden="true" className="w-3.5 h-3.5" /> {descId === product.id ? "Açıklamayı kapat" : "Açıklamayı düzenle"}
             </button>
-            <button
-              type="button"
-              disabled={loadingId === product.id}
-              onClick={() => handleDeleteProduct(product.id, product.title)}
-              className="ml-4 inline-flex min-h-10 items-center gap-1.5 border border-red-200 text-red-700 hover:bg-red-50 text-xs font-semibold px-3 rounded-lg transition-colors disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-red-600"
-              title="Avizeyi Katalogdan Sil"
-            >
-              <Trash2 aria-hidden="true" className="w-3.5 h-3.5" /> Modeli Sil
-            </button>
+            <details className="relative">
+              <summary
+                aria-label="Diğer işlemler"
+                title="Diğer işlemler"
+                className="inline-flex min-h-10 md:min-h-9 cursor-pointer list-none items-center rounded-lg px-3 text-neutral-600 hover:bg-neutral-100 [&::-webkit-details-marker]:hidden focus-visible:outline-2 focus-visible:outline-amber-600"
+              >
+                <MoreHorizontal aria-hidden="true" className="w-4 h-4" />
+              </summary>
+              <div className="absolute right-0 z-20 mt-1 w-44 rounded-lg border border-neutral-200 bg-white p-1 shadow-lg">
+                <button
+                  type="button"
+                  disabled={loadingId === product.id}
+                  onClick={() => handleDeleteProduct(product.id, product.title)}
+                  className="flex min-h-10 w-full items-center gap-1.5 rounded-md text-red-700 hover:bg-red-50 text-xs font-semibold px-3 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-red-600"
+                  title="Avizeyi Katalogdan Sil"
+                >
+                  <Trash2 aria-hidden="true" className="w-3.5 h-3.5" /> Modeli Sil
+                </button>
+              </div>
+            </details>
             </div>
           </div>
           {descId === product.id && <AdminDescriptionEditor key={product.id} productId={product.id} title={product.title} />}
