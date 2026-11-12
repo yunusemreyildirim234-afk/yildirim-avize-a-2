@@ -113,3 +113,30 @@ test("sıralama ve dizinleme: varsayılan/geçersiz sıralama dizine alınabilir
     assert.equal(isDefaultState(parseListingParams({ siralama: s })), false, s);
   }
 });
+
+test("Önerilen: aksesuar her stok grubunda sona alınır; sayılar, süzgeçler ve diğer sıralamalar değişmez", () => {
+  const rows = [
+    { id: "a1", cat: "aksesuar", price: 150, created: 1, updated: 9, featured: false, vars: [], inStock: true },
+    { id: "k1", cat: "kristal", price: 900, created: 2, updated: 8, featured: false, vars: [], inStock: true },
+    { id: "a2", cat: "aksesuar", price: 50, created: 3, updated: 7, featured: false, vars: [], inStock: false },
+    { id: "k2", cat: "kristal", price: 700, created: 4, updated: 6, featured: false, vars: [], inStock: false },
+    { id: "m1", cat: "modern", price: 500, created: 5, updated: 5, featured: false, vars: [], inStock: true },
+  ];
+  const cats = [...CATS, { key: "aksesuar", slug: "aksesuar", title: "Aksesuar" }];
+  const run2 = (q = {}) => applyListing(rows, parseListingParams(q), { cats, accessoryLast: true });
+  const rec = run2();
+  assert.deepEqual(rec.ids, ["k1", "m1", "a1", "k2", "a2"]); // stoklu: aksesuarsız → aksesuar; stoksuz: aksesuarsız → aksesuar
+  assert.equal(rec.ids.length, rows.length);
+  assert.deepEqual([...rec.ids].sort(), rows.map((r) => r.id).sort());
+  assert.deepEqual(run2({ siralama: "fiyat-artan" }).ids, ["a1", "m1", "k1", "a2", "k2"]); // diğer sıralama aynı (yalnızca stok grubu)
+  assert.equal(run2({ stok: "var" }).ids.length, 3); // süzgeç sayısı aynı
+  assert.deepEqual(run2({ stok: "var" }).ids, ["k1", "m1", "a1"]);
+});
+
+test("accessoryLast verilmezse Önerilen sıra eskisi gibi kalır", () => {
+  const rows = [
+    { id: "a1", cat: "aksesuar", price: 1, created: 1, updated: 1, featured: false, vars: [], inStock: true },
+    { id: "k1", cat: "kristal", price: 2, created: 2, updated: 2, featured: false, vars: [], inStock: true },
+  ];
+  assert.deepEqual(applyListing(rows, parseListingParams({}), { cats: CATS }).ids, ["a1", "k1"]);
+});

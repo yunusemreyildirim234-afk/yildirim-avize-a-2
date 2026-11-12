@@ -18,6 +18,8 @@ export const SORT_LABELS: Record<Sort, string> = {
 export const MAX_FILTER_ITEMS = 12;
 const MAX_TOKEN_LEN = 48;
 const MAX_PRICE = 10_000_000;
+/** Aksesuar kategorisinin categoryKey değeri (lib/bulb-note.ts isAccessoryCategory ile aynı ad). */
+export const ACCESSORY_KEY = "aksesuar";
 
 export interface ListingState {
   siralama: Sort;
@@ -314,7 +316,7 @@ export interface ListingResult {
  * Filtre sayıları standart facet davranışıdır: her grup, KENDİSİ hariç diğer aktif filtrelere göre sayılır.
  * Her sıralamada eşitlik kararlı ikincil sırayla (varsayılan sıra / id) çözülür.
  */
-export function applyListing(allRows: readonly ListingRow[], raw: ListingState, ctx: { cats: readonly CatMeta[]; rankIds?: readonly string[] }): ListingResult {
+export function applyListing(allRows: readonly ListingRow[], raw: ListingState, ctx: { cats: readonly CatMeta[]; rankIds?: readonly string[]; accessoryLast?: boolean }): ListingResult {
   const hasSoldOut = allRows.some((r) => r.inStock === false);
   const rows = raw.stok ? allRows.filter((r) => r.inStock !== false) : allRows; // "stokta olanlar": sayılar da bu kümeye göredir
   const catByKey = new Map(ctx.cats.map((c) => [c.key, c]));
@@ -378,7 +380,10 @@ export function applyListing(allRows: readonly ListingRow[], raw: ListingState, 
     return Number.isNaN(d) || d === 0 ? byIdx(a, b) : d; // Infinity - Infinity = NaN → varsayılan sıra
   });
   // Stoklu ürünler HER sıralamada önde, stoksuzlar arkada; her grup kendi içinde seçili sıralamayı korur (kararlı bölme)
-  const ordered = [...sorted.filter((r) => r.inStock !== false), ...sorted.filter((r) => r.inStock === false)];
+  // "Önerilen" sırada ayrıca aksesuar kategorisi (categoryKey = "aksesuar") her stok grubunun sonuna alınır; diğer sıralamalar, süzgeçler ve sayılar değişmez.
+  const accLast = state.siralama === "onerilen" && ctx.accessoryLast === true;
+  const grp = (list: ListingRow[]) => (accLast ? [...list.filter((r) => r.cat !== ACCESSORY_KEY), ...list.filter((r) => r.cat === ACCESSORY_KEY)] : list);
+  const ordered = [...grp(sorted.filter((r) => r.inStock !== false)), ...grp(sorted.filter((r) => r.inStock === false))];
   const matched = ordered.filter((r) => okCat(r) && okColor(r) && okPrice(r));
 
   // Facetler

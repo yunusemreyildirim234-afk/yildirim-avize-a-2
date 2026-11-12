@@ -141,7 +141,7 @@ export async function getListing(base: ListingBase, query: Record<string, string
   if ("search" in base && raw.siralama === "onerilen") rows = rankSearchRows(rows, base.search);
 
   const rankIds = raw.siralama === "cok-satan" ? await getRankedSellerIds().catch(() => []) : undefined;
-  const result = applyListing(rows, raw, { cats, rankIds });
+  const result = applyListing(rows, raw, { cats, rankIds, accessoryLast: !("products" in base) }); // Çok Satanlar hazır listesinin sırası korunur
   const cachePage = "where" in base && base.cached && isDefaultState(result.state);
 
   const updatedOf = new Map(rows.map((r) => [r.id, r.updated]));
