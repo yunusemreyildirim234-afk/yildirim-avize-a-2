@@ -21,6 +21,7 @@ import { activeTier, bulkLabel, bulkTiersOf, unitPriceFor } from "@/lib/bulk-pri
 import { lowStockLabel, type LowStockSetting } from "@/lib/low-stock";
 import { bulbNoteFor, isAccessoryCategory } from "@/lib/bulb-note";
 import { smallImage } from "@/lib/img";
+import { pickDefaultOption } from "@/lib/default-variation";
 
 interface Variation {
   id: string;
@@ -60,7 +61,7 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
   const { isFavorite, toggleFavorite } = useWishlist();
 
   const [selectedVariation, setSelectedVariation] = useState<Variation | null>(
-    product.variations.find((v) => v.stock > 0) || product.variations[0] || null
+    pickDefaultOption(product.variations) // kart fiyatıyla aynı kural (lib/default-variation.ts); URL'de seçenek parametresi yok
   );
   // Sayfa genel fotoğraflarla açılır; kullanıcı bir renk seçince o rengin fotoğrafları (varsa) öne gelir (lib/variation-input.ts galleryOf)
   const [colorChosen, setColorChosen] = useState(false);
