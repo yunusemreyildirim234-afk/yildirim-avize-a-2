@@ -8,6 +8,8 @@ import { maskName } from "@/lib/mask-name";
 import { recipientOf } from "@/lib/recipient";
 import Link from "next/link";
 import { rateLimit } from "@/lib/rate-limit";
+import { isShortOrderCode } from "@/lib/order-lookup";
+import { trackOrder } from "./actions";
 
 export const metadata: Metadata = {
   title: "Kargo & Sipariş Takibi",
@@ -16,7 +18,7 @@ export const metadata: Metadata = {
 };
 
 // Sipariş sorgusu ayrı bir bileşendir: sayfa kabuğu (tek <main>, h1, form) hemen gelir; yalnızca sonuç alanı Suspense iskeletiyle bekler.
-async function OrderResult({ code }: { code: string }) {
+async function OrderResult({ code, verify }: { code: string; verify?: string }) {
   const rl = rateLimit(new Request("http://localhost/kargo-takip", { headers: await headers() }), "kargo-takip", 20, 10 * 60_000);
   if (rl.limited) {
     return (
@@ -50,9 +52,17 @@ async function OrderResult({ code }: { code: string }) {
   });
 
   if (!found) {
+    const msg =
+      verify === "sinir"
+        ? "Kısa sürede çok fazla deneme yaptınız. Lütfen birkaç dakika sonra tekrar deneyin."
+        : verify === "hata"
+        ? "Bu kod ve e-posta adresiyle eşleşen bir sipariş bulunamadı. Siparişte kullandığınız e-posta adresini yazdığınızdan emin olun."
+        : isShortOrderCode(code)
+        ? "Bu kodla eşleşen bir sipariş bulunamadı. 8 haneli sipariş koduyla sorgulamak için e-posta adresinizi de yazın."
+        : "Bu kodla eşleşen bir sipariş bulunamadı.";
     return (
       <p role="alert" className="text-sm text-center text-red-600 bg-red-50 border border-red-200 rounded-xl p-4">
-        Bu kodla eşleşen bir sipariş bulunamadı.
+        {msg}
       </p>
     );
   }
@@ -123,8 +133,10 @@ async function OrderResult({ code }: { code: string }) {
   );
 }
 
-export default async function TrackingPage({ searchParams }: { searchParams: Promise<{ code?: string }> }) {
-  const code = (await searchParams).code?.trim().slice(0, 100);
+export default async function TrackingPage({ searchParams }: { searchParams: Promise<{ code?: string; dogrulama?: string }> }) {
+  const sp = await searchParams;
+  const code = sp.code?.trim().slice(0, 100);
+  const verify = sp.dogrulama === "hata" || sp.dogrulama === "sinir" ? sp.dogrulama : undefined;
 
   return (
     <main className="min-h-screen bg-neutral-50 py-12 px-4 sm:px-6">
@@ -133,13 +145,13 @@ export default async function TrackingPage({ searchParams }: { searchParams: Pro
           <span className="text-xs uppercase tracking-widest text-amber-600 font-semibold">Takip</span>
           <h1 className="text-2xl sm:text-3xl font-serif font-bold text-neutral-900">Kargo & Sipariş Takibi</h1>
           <p className="text-sm text-neutral-600">
-            Siparişiniz kargoya verildiğinde e-postayla gelen takip kodunu yazın; üyeyseniz{" "}
+            Kargoya verildiğinde e-postayla gelen takip kodunu yazın ya da 8 haneli sipariş kodunuzla birlikte siparişteki e-posta adresini girin; üyeyseniz{" "}
             <Link href="/giris#siparisler" className="font-semibold text-amber-800 underline underline-offset-2">Siparişlerim</Link>
             &apos;den de takip edebilirsiniz.
           </p>
         </div>
 
-        <form method="get" className="flex flex-col sm:flex-row gap-2">
+        <form action={trackOrder} className="flex flex-col sm:flex-row gap-2">
           <label htmlFor="code" className="sr-only">
             Sipariş veya takip kodu
           </label>
@@ -150,6 +162,17 @@ export default async function TrackingPage({ searchParams }: { searchParams: Pro
             required
             placeholder="Sipariş veya takip kodunuz"
             className="flex-1 border border-neutral-300 rounded-xl px-4 py-3 text-sm bg-white outline-none focus:border-amber-500"
+          />
+          <label htmlFor="email" className="sr-only">
+            E-posta (8 haneli sipariş koduyla sorgularken)
+          </label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            placeholder="E-posta (sipariş koduyla sorgularken)"
+            className="sm:w-64 border border-neutral-300 rounded-xl px-4 py-3 text-sm bg-white outline-none focus:border-amber-500"
           />
           <button
             type="submit"
@@ -167,7 +190,7 @@ export default async function TrackingPage({ searchParams }: { searchParams: Pro
               </div>
             }
           >
-            <OrderResult code={code} />
+            <OrderResult code={code} verify={verify} />
           </Suspense>
         )}
       </div>
