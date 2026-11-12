@@ -223,31 +223,23 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         <AdminSectionNav
           items={[
             { id: "siparisler", label: "Siparişler" },
-            { id: "kargonomi", label: "Kargonomi" },
-            { id: "trendyol", label: "Trendyol" },
+            { id: "mesajlar", label: "Mesajlar" },
+            { id: "urunler", label: "Tüm Ürünler" },
+            { id: "yorumlar", label: "Yorumlar" },
+            { id: "kuponlar", label: "Promosyon Kodları" },
             { id: "yeni-avize", label: "Yeni Avize" },
+            { id: "kategoriler", label: "Kategoriler" },
+            { id: "ana-sayfa", label: "Ana Sayfa" },
+            { id: "kurumsal", label: "Kurumsal" },
+            { id: "musteri-hareketleri", label: "Müşteriler" },
             { id: "indirim", label: "İndirim Ayarları" },
             { id: "oturumlar", label: "Oturumlar" },
             { id: "guvenlik", label: "İki Aşamalı Doğrulama" },
             { id: "yonetici-sifre", label: "Şifre" },
-            { id: "kategoriler", label: "Kategoriler" },
-            { id: "ana-sayfa", label: "Ana Sayfa" },
-            { id: "kuponlar", label: "Promosyon Kodları" },
-            { id: "urunler", label: "Tüm Ürünler" },
-            { id: "mesajlar", label: "Mesajlar" },
-            { id: "yorumlar", label: "Yorumlar" },
-            { id: "kurumsal", label: "Kurumsal" },
-            { id: "musteri-hareketleri", label: "Müşteriler" },
+            { id: "kargonomi", label: "Kargonomi" },
+            { id: "trendyol", label: "Trendyol" },
           ]}
         />
-
-        {/* Kargonomi API v1 Canlı Kontrol & Bakiye Barı */}
-        <AdminKargonomiHeader />
-
-        {/* Trendyol ürün senkronizasyonu (varsayılan kapalı; bileşen state'i gövde gizliyken de korunur) */}
-        <AdminSection id="trendyol" icon={<ShoppingBag aria-hidden="true" className="w-4 h-4 text-amber-600" />} title="Trendyol Ürünleri" description="Mağazadaki ürünleri, fiyat ve stokları Trendyol'dan önizleyip seçerek güncelleyin.">
-          <AdminTrendyolSync initial={resolveSyncModes(homeRaw)} uncopiedImages={countUncopiedImages(products.flatMap((p) => [p.images, [p.imageUrl], ...p.variations.map((v) => v.images)]))} />
-        </AdminSection>
 
         {/* 1. Özet İstatistik Kartları */}
         <div className="grid grid-flow-dense grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -303,61 +295,6 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
             </span>
           </div>
         </div>
-
-        {/* 2. Hızlı Avize Ekleme Modülü */}
-        <AdminAddProduct extraCategories={extraCategories} categoryTitles={Object.fromEntries(Object.entries(categorySettings).flatMap(([k, s]) => (s.title ? [[k, s.title]] : [])))} />
-
-        <AdminDiscountSettings initial={discountCap} />
-        <AdminLowStock initial={resolveLowStock(homeRaw)} />
-        <AdminSessions />
-        <AdminSection id="guvenlik" icon={<ShieldCheck aria-hidden="true" className="w-4 h-4 text-amber-600" />} title="İki Aşamalı Doğrulama (Yönetici Hesapları)" description="Yönetici girişine e-posta kodu ekleyin veya kapatın.">
-          <AdminTwoFactor admins={adminRows} />
-        </AdminSection>
-        <AdminSection id="yonetici-sifre" icon={<KeyRound aria-hidden="true" className="w-4 h-4 text-amber-600" />} title="Yönetici Şifresini Değiştir" description="E-posta kodu ile yönetici hesabının şifresini yenileyin.">
-          <AdminPasswordChange />
-        </AdminSection>
-
-        <AdminCategories
-          entries={categoryEntries}
-          settings={categorySettings}
-          uncategorized={uncategorizedCount(products)}
-          showStockless={resolveStocklessRule(homeRaw).global}
-        />
-
-        <AdminHomepage
-          initial={homeConfig}
-          promoCards={resolvePromoCards(homeRaw)}
-          collectionOptions={collectionOptions}
-          savedCollections={resolveCollectionKeys(homeRaw)}
-          pools={{ featured: slim(homePools.featured), discounted: slim(homePools.discounted), bestsellers: slim(homePools.bestsellers) }}
-          hiddenBestSellers={slim(resolveHiddenBestSellers(homeRaw).flatMap((id) => products.filter((p) => p.id === id)))}
-        />
-
-        {/* Promosyon Kodları Yönetimi */}
-        <AdminCoupons
-          coupons={coupons.map((c) => ({
-            id: c.id,
-            code: c.code,
-            discountPercent: c.discountPercent,
-            expiresAt: c.expiresAt ? c.expiresAt.toISOString() : null,
-            discountType: c.discountType,
-            discountAmount: c.discountAmount,
-            minCartTotal: c.minCartTotal,
-            perUserLimit: c.perUserLimit,
-            maxUses: c.maxUses,
-            usedCount: c.usedCount,
-            userEmail: c.userEmail,
-            productTitle: c.product?.title ?? null,
-            productModelCode: c.product?.modelCode ?? null,
-            active: c.active,
-            createdAt: c.createdAt.toISOString(),
-          }))}
-          customers={customers}
-          products={products.map((p) => ({ id: p.id, title: p.title, modelCode: p.modelCode }))}
-        />
-
-        {/* 3. Canlı Avize Kataloğu & Stok Yönetimi */}
-        <AdminProductList products={products} maxTotalDiscountPct={discountCap} showcase={showcase} extraCategories={extraCategories} categoryTitles={Object.fromEntries(Object.entries(categorySettings).flatMap(([k, s]) => (s.title ? [[k, s.title]] : [])))} stocklessRule={resolveStocklessRule(homeRaw)} />
 
         {/* 4. Canlı Siparişler & Kargonomi Operasyon Tablosu */}
         <AdminSection
@@ -592,6 +529,9 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         />
         </AdminSection>
 
+        {/* 3. Canlı Avize Kataloğu & Stok Yönetimi */}
+        <AdminProductList products={products} maxTotalDiscountPct={discountCap} showcase={showcase} extraCategories={extraCategories} categoryTitles={Object.fromEntries(Object.entries(categorySettings).flatMap(([k, s]) => (s.title ? [[k, s.title]] : [])))} stocklessRule={resolveStocklessRule(homeRaw)} />
+
         {/* 6. Müşteri Yorumları & Fotoğraflar */}
         <AdminSection
           id="yorumlar"
@@ -614,6 +554,48 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
             }))}
           />
         </AdminSection>
+
+        {/* Promosyon Kodları Yönetimi */}
+        <AdminCoupons
+          coupons={coupons.map((c) => ({
+            id: c.id,
+            code: c.code,
+            discountPercent: c.discountPercent,
+            expiresAt: c.expiresAt ? c.expiresAt.toISOString() : null,
+            discountType: c.discountType,
+            discountAmount: c.discountAmount,
+            minCartTotal: c.minCartTotal,
+            perUserLimit: c.perUserLimit,
+            maxUses: c.maxUses,
+            usedCount: c.usedCount,
+            userEmail: c.userEmail,
+            productTitle: c.product?.title ?? null,
+            productModelCode: c.product?.modelCode ?? null,
+            active: c.active,
+            createdAt: c.createdAt.toISOString(),
+          }))}
+          customers={customers}
+          products={products.map((p) => ({ id: p.id, title: p.title, modelCode: p.modelCode }))}
+        />
+
+        {/* 2. Hızlı Avize Ekleme Modülü */}
+        <AdminAddProduct extraCategories={extraCategories} categoryTitles={Object.fromEntries(Object.entries(categorySettings).flatMap(([k, s]) => (s.title ? [[k, s.title]] : [])))} />
+
+        <AdminCategories
+          entries={categoryEntries}
+          settings={categorySettings}
+          uncategorized={uncategorizedCount(products)}
+          showStockless={resolveStocklessRule(homeRaw).global}
+        />
+
+        <AdminHomepage
+          initial={homeConfig}
+          promoCards={resolvePromoCards(homeRaw)}
+          collectionOptions={collectionOptions}
+          savedCollections={resolveCollectionKeys(homeRaw)}
+          pools={{ featured: slim(homePools.featured), discounted: slim(homePools.discounted), bestsellers: slim(homePools.bestsellers) }}
+          hiddenBestSellers={slim(resolveHiddenBestSellers(homeRaw).flatMap((id) => products.filter((p) => p.id === id)))}
+        />
 
         {/* 7. Kurumsal & Yasal Bilgiler */}
         <AdminSection
@@ -639,6 +621,24 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           ]}
         >
           <AdminActivity registered={activity.registered} guests={activity.guests} ok={activity.ok} />
+        </AdminSection>
+
+        <AdminDiscountSettings initial={discountCap} />
+        <AdminLowStock initial={resolveLowStock(homeRaw)} />
+        <AdminSessions />
+        <AdminSection id="guvenlik" icon={<ShieldCheck aria-hidden="true" className="w-4 h-4 text-amber-600" />} title="İki Aşamalı Doğrulama (Yönetici Hesapları)" description="Yönetici girişine e-posta kodu ekleyin veya kapatın.">
+          <AdminTwoFactor admins={adminRows} />
+        </AdminSection>
+        <AdminSection id="yonetici-sifre" icon={<KeyRound aria-hidden="true" className="w-4 h-4 text-amber-600" />} title="Yönetici Şifresini Değiştir" description="E-posta kodu ile yönetici hesabının şifresini yenileyin.">
+          <AdminPasswordChange />
+        </AdminSection>
+
+        {/* Kargonomi API v1 Canlı Kontrol & Bakiye Barı */}
+        <AdminKargonomiHeader />
+
+        {/* Trendyol ürün senkronizasyonu (varsayılan kapalı; bileşen state'i gövde gizliyken de korunur) */}
+        <AdminSection id="trendyol" icon={<ShoppingBag aria-hidden="true" className="w-4 h-4 text-amber-600" />} title="Trendyol Ürünleri" description="Mağazadaki ürünleri, fiyat ve stokları Trendyol'dan önizleyip seçerek güncelleyin.">
+          <AdminTrendyolSync initial={resolveSyncModes(homeRaw)} uncopiedImages={countUncopiedImages(products.flatMap((p) => [p.images, [p.imageUrl], ...p.variations.map((v) => v.images)]))} />
         </AdminSection>
       </div>
     </main>
