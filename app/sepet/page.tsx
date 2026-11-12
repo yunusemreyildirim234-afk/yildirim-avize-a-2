@@ -570,14 +570,14 @@ export default function CartPage() {
   }
 
   return (
-    <main className="min-h-screen bg-neutral-50 py-12 px-4 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-neutral-50 py-6 sm:py-12 px-4 sm:px-6 lg:px-8">
       {paymentFailed && (
         <div role="alert" className="max-w-6xl mx-auto mb-6 rounded-2xl border border-red-200 bg-red-50 text-red-700 text-xs p-4">
           Ödeme tamamlanamadı. Sepetiniz korunuyor; tekrar deneyebilir veya Havale/EFT seçebilirsiniz.
         </div>
       )}
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-serif font-bold text-neutral-900 mb-8">
+        <h1 className="text-2xl sm:text-3xl font-serif font-bold text-neutral-900 mb-5 sm:mb-8">
           Alışveriş Sepeti & Güvenli Ödeme
         </h1>
 
@@ -707,27 +707,8 @@ export default function CartPage() {
               ))}
             </div>
 
-            {/* SİPARİŞ NOTU */}
-            <div className="bg-amber-50/70 rounded-3xl border border-amber-200 p-6 shadow-sm space-y-2">
-              <label htmlFor="order-note" className="text-sm font-bold text-amber-950 block">
-                📝 Sipariş Notu / Özel İstekleriniz
-              </label>
-              <p className="text-xs text-amber-900/80">
-                Tavan yüksekliğinize göre zincir, kablo veya bakla uzunluğu taleplerinizi, ürünün nasıl birleştirilerek gönderileceğine dair isteklerinizi buraya yazabilirsiniz.
-              </p>
-              <textarea
-                id="order-note"
-                rows={3}
-                maxLength={1000}
-                value={orderNote}
-                onChange={(e) => setOrderNote(e.target.value)}
-                placeholder="Örn: Tavan yüksekliğim 280 cm, zincir boyu 60 cm olsun."
-                className="w-full text-base sm:text-xs p-3 rounded-xl border border-amber-300 bg-white focus:outline-none focus:border-amber-600"
-              />
-            </div>
-
             {/* KUPON KODU GİRİŞ KUTUSU */}
-            <div className="bg-white rounded-3xl border border-neutral-200 p-6 shadow-sm space-y-3">
+            <div className="bg-white rounded-3xl border border-neutral-200 p-4 sm:p-6 shadow-sm space-y-3">
               <label className="text-xs font-bold text-neutral-700 uppercase tracking-wider block">
                 İndirim / Kupon Kodu:
               </label>
@@ -784,7 +765,7 @@ export default function CartPage() {
             </div>
 
             {/* Teslimat Tercihi */}
-            <fieldset className="bg-white rounded-3xl border border-neutral-200 p-6 space-y-3 shadow-sm min-w-0">
+            <fieldset className="bg-white rounded-3xl border border-neutral-200 p-4 sm:p-6 space-y-3 shadow-sm min-w-0">
               <legend className="float-left w-full text-xs font-bold text-neutral-700 uppercase tracking-wider">
                 Teslimat Yöntemini Seçin:
               </legend>
@@ -828,79 +809,10 @@ export default function CartPage() {
               </div>
             </fieldset>
 
-            {/* Ödeme Bilgileri */}
-            <div className="bg-white rounded-3xl border border-neutral-200 p-6 sm:p-8 space-y-6 shadow-sm">
-              <div className="flex items-center justify-between border-b border-neutral-100 pb-4">
-                <div>
-                  <h2 className="text-lg font-serif font-bold text-neutral-900">
-                    Ödeme Bilgileri
-                  </h2>
-                  <p className="text-xs text-neutral-500">
-                    256-Bit SSL ve 3D Secure korumalı güvenli ödeme
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 text-xs font-bold text-neutral-400">
-                  <span className="bg-neutral-100 px-2 py-1 rounded text-[10px] text-neutral-600">troy</span>
-                  <span className="bg-neutral-100 px-2 py-1 rounded text-[10px] text-neutral-600">VISA</span>
-                  <span className="bg-neutral-100 px-2 py-1 rounded text-[10px] text-neutral-600">mastercard</span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod("CREDIT_CARD")}
-                  className={`p-3 rounded-xl border text-xs font-semibold transition-all ${
-                    paymentMethod === "CREDIT_CARD"
-                      ? "border-amber-600 bg-amber-50/60 text-amber-950 ring-2 ring-amber-600/20"
-                      : "border-neutral-200 text-neutral-600 hover:border-neutral-300"
-                  }`}
-                >
-                  💳 Kredi / Banka Kartı
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod("BANK_TRANSFER")}
-                  className={`p-3 rounded-xl border text-xs font-semibold transition-all ${
-                    paymentMethod === "BANK_TRANSFER"
-                      ? "border-amber-600 bg-amber-50/60 text-amber-950 ring-2 ring-amber-600/20"
-                      : "border-neutral-200 text-neutral-600 hover:border-neutral-300"
-                  }`}
-                >
-                  🏦 Havale / EFT (%5 İndirimli){!applied.transfer && notApplied}
-                </button>
-              </div>
-
-              {paymentMethod === "CREDIT_CARD" ? (
-                <div className="p-4 bg-neutral-50 border border-neutral-200 rounded-2xl text-xs text-neutral-700 space-y-1.5">
-                  <div className="font-bold">🔒 PayTR Güvenli Ödeme</div>
-                  <p className="text-neutral-600">
-                    &ldquo;Ödemeye Geç&rdquo; dediğinizde kart bilgilerinizi PayTR&apos;nin güvenli ödeme formuna girersiniz.
-                    Kart bilgileriniz sitemizde saklanmaz veya görüntülenmez. Taksit seçenekleri kartınıza göre formda listelenir.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <BankTransferCard />
-                  <div className="font-semibold text-emerald-700 text-xs">
-                    {applied.transfer ? "✓ Havale ödemelerinde %5 nakit indirimi otomatik uygulanmıştır." : "Havale indirimi bu sepette uygulanmaz."}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Sağ Kolon: Özet */}
-          <div className="bg-white rounded-3xl border border-neutral-200 p-6 sm:p-8 space-y-6 shadow-sm h-fit">
-            <h2 className="text-lg font-serif font-bold text-neutral-900 pb-3 border-b border-neutral-100">
-              Sipariş Özeti
-            </h2>
-
-            <form onSubmit={handleCheckout} className="space-y-3">
-              <label className="text-xs font-bold text-neutral-700 uppercase tracking-wider block">
-                Teslimat Bilgileri:
-              </label>
-
+            {/* Teslimat Bilgileri: adres + fatura (form, özet kutusundaki düğmeyle form="odeme-formu" üzerinden gönderilir) */}
+            <div className="bg-white rounded-3xl border border-neutral-200 p-4 sm:p-6 shadow-sm space-y-3">
+              <h2 className="text-lg font-serif font-bold text-neutral-900 pb-3 border-b border-neutral-100">Teslimat Bilgileri</h2>
+              <form id="odeme-formu" onSubmit={handleCheckout} className="space-y-3">
               {!isPickup && savedAddresses.length > 0 && (
                 <div>
                   <label htmlFor="co-saved" className="text-[11px] font-semibold text-neutral-700 block mb-1">Kayıtlı adres seç</label>
@@ -1082,7 +994,98 @@ export default function CartPage() {
                   </>
                 )}
               </fieldset>
+              </form>
+            </div>
 
+            {/* SİPARİŞ NOTU */}
+            <div className="bg-amber-50/70 rounded-3xl border border-amber-200 p-4 sm:p-6 shadow-sm space-y-2">
+              <label htmlFor="order-note" className="text-sm font-bold text-amber-950 block">
+                📝 Sipariş Notu / Özel İstekleriniz
+              </label>
+              <p className="text-xs text-amber-900/80">
+                Tavan yüksekliğinize göre zincir, kablo veya bakla uzunluğu taleplerinizi, ürünün nasıl birleştirilerek gönderileceğine dair isteklerinizi buraya yazabilirsiniz.
+              </p>
+              <textarea
+                id="order-note"
+                rows={3}
+                maxLength={1000}
+                value={orderNote}
+                onChange={(e) => setOrderNote(e.target.value)}
+                placeholder="Örn: Tavan yüksekliğim 280 cm, zincir boyu 60 cm olsun."
+                className="w-full text-base sm:text-xs p-3 rounded-xl border border-amber-300 bg-white focus:outline-none focus:border-amber-600"
+              />
+            </div>
+
+            {/* Ödeme Bilgileri */}
+            <div className="bg-white rounded-3xl border border-neutral-200 p-4 sm:p-8 space-y-6 shadow-sm">
+              <div className="flex items-center justify-between border-b border-neutral-100 pb-4">
+                <div>
+                  <h2 className="text-lg font-serif font-bold text-neutral-900">
+                    Ödeme Bilgileri
+                  </h2>
+                  <p className="text-xs text-neutral-500">
+                    256-Bit SSL ve 3D Secure korumalı güvenli ödeme
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 text-xs font-bold text-neutral-400">
+                  <span className="bg-neutral-100 px-2 py-1 rounded text-[10px] text-neutral-600">troy</span>
+                  <span className="bg-neutral-100 px-2 py-1 rounded text-[10px] text-neutral-600">VISA</span>
+                  <span className="bg-neutral-100 px-2 py-1 rounded text-[10px] text-neutral-600">mastercard</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod("CREDIT_CARD")}
+                  className={`p-3 rounded-xl border text-xs font-semibold transition-all ${
+                    paymentMethod === "CREDIT_CARD"
+                      ? "border-amber-600 bg-amber-50/60 text-amber-950 ring-2 ring-amber-600/20"
+                      : "border-neutral-200 text-neutral-600 hover:border-neutral-300"
+                  }`}
+                >
+                  💳 Kredi / Banka Kartı
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod("BANK_TRANSFER")}
+                  className={`p-3 rounded-xl border text-xs font-semibold transition-all ${
+                    paymentMethod === "BANK_TRANSFER"
+                      ? "border-amber-600 bg-amber-50/60 text-amber-950 ring-2 ring-amber-600/20"
+                      : "border-neutral-200 text-neutral-600 hover:border-neutral-300"
+                  }`}
+                >
+                  🏦 Havale / EFT (%5 İndirimli){!applied.transfer && notApplied}
+                </button>
+              </div>
+
+              {paymentMethod === "CREDIT_CARD" ? (
+                <div className="p-4 bg-neutral-50 border border-neutral-200 rounded-2xl text-xs text-neutral-700 space-y-1.5">
+                  <div className="font-bold">🔒 PayTR Güvenli Ödeme</div>
+                  <p className="text-neutral-600">
+                    &ldquo;Ödemeye Geç&rdquo; dediğinizde kart bilgilerinizi PayTR&apos;nin güvenli ödeme formuna girersiniz.
+                    Kart bilgileriniz sitemizde saklanmaz veya görüntülenmez. Taksit seçenekleri kartınıza göre formda listelenir.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <BankTransferCard />
+                  <div className="font-semibold text-emerald-700 text-xs">
+                    {applied.transfer ? "✓ Havale ödemelerinde %5 nakit indirimi otomatik uygulanmıştır." : "Havale indirimi bu sepette uygulanmaz."}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+
+          {/* Sağ Kolon: Özet (masaüstünde yapışkan) */}
+          <div id="siparis-ozeti" className="bg-white rounded-3xl border border-neutral-200 p-4 sm:p-8 space-y-6 shadow-sm h-fit lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
+            <h2 className="text-lg font-serif font-bold text-neutral-900 pb-3 border-b border-neutral-100">
+              Sipariş Özeti
+            </h2>
+
+            <div className="space-y-3">
               {/* Ücretsiz kargo ilerlemesi (yalnızca gösterim; adrese teslimde) */}
               {shippingType === "STANDART_KARGO" && !shipProgress.empty && (
                 <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-950 space-y-2">
@@ -1164,6 +1167,7 @@ export default function CartPage() {
 
               <button
                 type="submit"
+                form="odeme-formu"
                 disabled={loading || !fresh || !agreePre || !agreeSales || (priceNotice !== null && !priceAcked)}
                 aria-describedby={disabledReason ? "odeme-pasif-neden" : undefined}
                 className="w-full bg-neutral-900 hover:bg-amber-600 text-white py-3.5 px-4 rounded-xl transition-colors text-xs font-semibold shadow-sm mt-4 disabled:opacity-50"
@@ -1201,7 +1205,7 @@ export default function CartPage() {
               <div className="text-center pt-2 text-[10px] text-neutral-400">
                 🔒 256-Bit SSL{isPickup ? "" : " & Aras Kargo ile Gönderim"}
               </div>
-            </form>
+            </div>
           </div>
         </div>
       </div>

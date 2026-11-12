@@ -148,4 +148,46 @@ test.describe("d) Sepet", () => {
     expect(small).toEqual([]);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   });
+  test("mobil sepet sırası: ürün → kupon → teslimat yöntemi → Teslimat Bilgileri → not → ödeme → özet; düğme yüzen düğmeleri örtmez", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "mobile", "yalnızca mobil");
+    await addFirstProduct(page);
+    await openOk(page, "/sepet");
+    await expect(page.getByText("Ürünler Toplamı")).toBeVisible();
+    const y = async (loc: ReturnType<Page["locator"]>) => (await loc.first().boundingBox())?.y ?? -1;
+    const ys = [
+      await y(page.getByTitle("Kaldır")),
+      await y(page.getByLabel("Kupon kodu")),
+      await y(page.getByText("📍 Mağazadan Teslim")),
+      await y(page.getByRole("heading", { name: "Teslimat Bilgileri" })),
+      await y(page.getByLabel(/Sipariş Notu|Özel İstekleriniz/)),
+      await y(page.getByRole("heading", { name: "Ödeme Bilgileri" })),
+      await y(page.getByRole("heading", { name: "Sipariş Özeti" })),
+    ];
+    expect(ys.every((v) => v >= 0)).toBe(true);
+    expect(ys).toEqual([...ys].sort((a, b) => a - b));
+    // Sayfa sonunda gönder düğmesi sağ alttaki yüzen telefon/WhatsApp düğmeleriyle kesişmez
+    const submit = page.getByRole("button", { name: /Ödemeye Geç|Siparişi Tamamla/ });
+    await submit.scrollIntoViewIfNeeded();
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    const b = await submit.boundingBox();
+    const fabs = await page.locator("a[href^=\"tel:\"], a[href*=\"wa.me\"]").evaluateAll((els) => els.map((e) => e.getBoundingClientRect().toJSON()));
+    for (const f of fabs) {
+      const hit = b && b.x < f.right && b.x + b.width > f.left && b.y < f.bottom && b.y + b.height > f.top;
+      expect(hit).toBeFalsy();
+    }
+  });
+
+  test("onaysız durumda pasif nedeni görünür; boş formda tarayıcı doğrulaması (form özniteliği) gönderimi durdurur", async ({ page }) => {
+    await addFirstProduct(page);
+    await openOk(page, "/sepet");
+    await expect(page.getByText("Ürünler Toplamı")).toBeVisible();
+    await expect(page.getByTestId("odeme-pasif-neden")).toBeVisible();
+    await page.getByRole("checkbox", { name: /Ön Bilgilendirme/ }).check();
+    await page.getByRole("checkbox", { name: /Mesafeli Satış/ }).check();
+    const submit = page.getByRole("button", { name: /Ödemeye Geç|Siparişi Tamamla/ });
+    await expect(submit).toBeEnabled();
+    await submit.click();
+    await expect(page).toHaveURL(/\/sepet/);
+    expect(await page.getByLabel(/Adınız Soyadınız/).evaluate((e: HTMLInputElement) => e.validity.valueMissing)).toBe(true);
+  });
 });
