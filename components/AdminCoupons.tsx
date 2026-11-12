@@ -5,6 +5,7 @@ import { Fragment, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown, Search, Tag, Users } from "lucide-react";
 import { useOpenOnHash } from "@/components/useOpenOnHash";
+import { parseMaxUses, usesLabels } from "@/lib/coupon-limit";
 
 export interface CouponRow {
   id: string;
@@ -118,7 +119,7 @@ export default function AdminCoupons({ coupons, customers, products }: Props) {
       minCartTotal: minCart === "" ? 0 : Number(minCart),
       perUserOnce,
       expiresAt: expires,
-      maxUses: Number(maxUses),
+      maxUses: parseMaxUses(maxUses),
       userEmail: customerEmail,
       productId,
     });
@@ -162,7 +163,7 @@ export default function AdminCoupons({ coupons, customers, products }: Props) {
 
       {open && (
         <div className="border-t border-neutral-100 p-6 space-y-6">
-          <form onSubmit={handleCreate} className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+          <form onSubmit={handleCreate} className="grid grid-cols-1 sm:grid-cols-2 sm:items-start gap-4 text-xs">
             <div>
               <label className="font-semibold text-neutral-700 block mb-1">Promosyon Kodu</label>
               <input
@@ -197,7 +198,7 @@ export default function AdminCoupons({ coupons, customers, products }: Props) {
               </div>
               <div>
                 <label className="font-semibold text-neutral-700 block mb-1">Kullanım Limiti</label>
-                <input required type="number" min={1} value={maxUses} onChange={(e) => setMaxUses(e.target.value)} className={inputCls} />
+                <input type="number" min={1} value={maxUses} onChange={(e) => setMaxUses(e.target.value)} placeholder="Boş = sınırsız" className={inputCls} />
               </div>
               <div>
                 <label className="font-semibold text-neutral-700 block mb-1">Minimum Sepet (₺)</label>
@@ -341,7 +342,7 @@ export default function AdminCoupons({ coupons, customers, products }: Props) {
                   </tr>
                 )}
                 {coupons.map((c) => {
-                  const remaining = Math.max(0, c.maxUses - c.usedCount);
+                  const uses = usesLabels(c.usedCount, c.maxUses);
                   return (
                     <Fragment key={c.id}>
                     <tr className={c.active ? "" : "opacity-50"}>
@@ -355,9 +356,9 @@ export default function AdminCoupons({ coupons, customers, products }: Props) {
                         )}
                       </td>
                       <td className="p-3">
-                        {c.usedCount} / {c.maxUses >= 1_000_000 ? "∞" : c.maxUses}
+                        {uses.used}
                         <span className="block text-[10px] text-neutral-500">
-                          {c.maxUses >= 1_000_000 ? "Sınırsız" : `Kalan: ${remaining}`}
+                          {uses.rest}
                         </span>
                       </td>
                       <td className="p-3">
