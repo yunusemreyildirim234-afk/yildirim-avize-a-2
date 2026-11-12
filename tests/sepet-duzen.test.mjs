@@ -51,3 +51,26 @@ test("iş mantığı kilidi: pasif koşulu ve sipariş gövdesi alanları aynen 
 test("sıralama CSS order-* ile değil DOM sırasıyla (odak sırası görsel sıradan kopmaz)", () => {
   assert.ok(!/\b(?:max-lg:|lg:|sm:)?order-\d/.test(sepet));
 });
+
+test("satır toplamı priceCart çıktısından okunur (yeni hesap yok); merdiven sepette açıklamasız", () => {
+  assert.match(sepet, /item\.quantity > 1 && pricedOf\(item\.variationId\)/);
+  assert.ok(sepet.includes("pricedOf(item.variationId)!.lineTotal"));
+  assert.ok(sepet.includes('size="sm" hints={false}'));
+  assert.ok(!/lineTotal\s*[=:]\s*[^;\n]*\*/.test(sepet), "sepet satır toplamını kendisi çarpmaz");
+});
+
+test("PriceLadder: hints varsayılan açık (ürün sayfası/kart değişmez), false iken açıklama yok", () => {
+  const src = read("components/PriceLadder.tsx");
+  assert.match(src, /hints = true/);
+  assert.match(src, /\{hints && <span/);
+});
+
+test("kupon ipucu mobilde kesilmez: form mobilde dikey, giriş tam genişlik; ad ve etiket aynı", () => {
+  assert.match(sepet, /<form onSubmit=\{handleApplyCoupon\} className="flex flex-col sm:flex-row gap-2">/);
+  assert.match(sepet, /aria-label="Kupon kodu"/);
+  assert.match(sepet, />\s*Kuponu Uygula\s*</);
+});
+
+test("ampul notu mobilde kısa: parantezli kısım max-sm:hidden, 'Ampul Dahil Değildir' kalır", () => {
+  assert.match(sepet, /<strong>Ampul Dahil Değildir<\/strong>\s*<span className="max-sm:hidden"> \(Standart E14\/E27/);
+});

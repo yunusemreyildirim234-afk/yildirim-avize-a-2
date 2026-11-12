@@ -190,4 +190,17 @@ test.describe("d) Sepet", () => {
     await expect(page).toHaveURL(/\/sepet/);
     expect(await page.getByLabel(/Adınız Soyadınız/).evaluate((e: HTMLInputElement) => e.validity.valueMissing)).toBe(true);
   });
+  test("2 adette satır toplamı: \"2 × birim = toplam\"; mobilde kupon alanı tam genişlik (ipucu kesilmez)", async ({ page }, testInfo) => {
+    await addFirstProduct(page);
+    await openOk(page, "/sepet");
+    await expect(page.getByText("Ürünler Toplamı")).toBeVisible();
+    await expect(page.getByTestId("satir-toplami")).toHaveCount(0);
+    await page.getByRole("button", { name: "+", exact: true }).first().click();
+    await expect(page.getByTestId("satir-toplami").first()).toContainText(/^2 × .* ₺ = .* ₺$/);
+    if (testInfo.project.name === "mobile") {
+      const w = await page.getByLabel("Kupon kodu").evaluate((e) => e.getBoundingClientRect().width);
+      const card = await page.getByLabel("Kupon kodu").evaluate((e) => (e.closest("form")?.getBoundingClientRect().width ?? 0));
+      expect(w).toBeGreaterThanOrEqual(card - 2);
+    }
+  });
 });

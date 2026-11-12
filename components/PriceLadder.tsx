@@ -19,9 +19,10 @@ export const priceTone = (dark: boolean) => (dark ? PRICE_TONE.onDark : PRICE_TO
 
 /**
  * Ana fiyatın altında adım adım düşen fiyatlar. Sunucu ve istemci bileşenlerinden kullanılabilir (durumsuz).
+ * hints=false: açıklama satırları gösterilmez (sepet; etiket + tutar kalır).
  * size="card": ürün kartı; sm altında tek satır (kısa etiket solda, tutar sağda), açıklamalar gizli. "sm"/"md": her ekranda tam metin.
  */
-export default function PriceLadder({ steps, size = "md", dark = false, itemsTotal }: { steps: LadderStep[]; size?: "card" | "sm" | "md"; dark?: boolean; itemsTotal?: number }) {
+export default function PriceLadder({ steps, size = "md", dark = false, itemsTotal, hints = true }: { steps: LadderStep[]; size?: "card" | "sm" | "md"; dark?: boolean; itemsTotal?: number; hints?: boolean }) {
   if (steps.length === 0) return null;
   // Kargo ücretsiz kuralı sepet/siparişle aynı: ürünler toplamı (indirim öncesi) >= eşik. Ücretsizse not gösterilmez.
   const showNote = !(itemsTotal !== undefined && itemsTotal >= FREE_SHIPPING_THRESHOLD);
@@ -44,7 +45,7 @@ export default function PriceLadder({ steps, size = "md", dark = false, itemsTot
               )}
             </span>
             {/* Açıklama: yalnızca dar kartta gizli; sm ve üstünde, sepette ve ürün sayfasında görünür */}
-            <span className={`${card ? "hidden sm:block" : "block"} text-[10px] ${dark ? "text-zinc-500" : "text-neutral-500"}`}>{s.hint}</span>
+            {hints && <span className={`${card ? "hidden sm:block" : "block"} text-[10px] ${dark ? "text-zinc-500" : "text-neutral-500"}`}>{s.hint}</span>}
           </span>
           <span className={`shrink-0 whitespace-nowrap tabular-nums ${s.key === "pickup" ? "font-bold" : "font-semibold"} ${tone[s.key]} ${card ? "text-[11px] sm:text-sm" : small ? "text-sm" : "text-base"}`}>
             {card ? (

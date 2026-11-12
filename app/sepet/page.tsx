@@ -647,7 +647,8 @@ export default function CartPage() {
                       <span className="mt-1.5 flex items-start gap-1.5 text-[11px] leading-snug text-amber-900 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1 w-fit max-w-full">
                         <span aria-hidden="true">💡</span>
                         <span>
-                          <strong>Ampul Dahil Değildir</strong> (Standart E14/E27 LED ampullerle uyumludur)
+                          <strong>Ampul Dahil Değildir</strong>
+                          <span className="max-sm:hidden"> (Standart E14/E27 LED ampullerle uyumludur)</span>
                         </span>
                       </span>
                     )}
@@ -657,7 +658,13 @@ export default function CartPage() {
                         <span className="ml-2 text-xs font-medium text-neutral-400 line-through">{item.price.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
                       )}
                     </div>
-                    {fresh && <PriceLadder steps={quote.lines.find((l) => l.variationId === item.variationId)?.ladder ?? []} size="sm" itemsTotal={itemsShown} />}
+                    {item.quantity > 1 && pricedOf(item.variationId) && (
+                      <p data-testid="satir-toplami" className="text-xs text-neutral-700 mt-1 tabular-nums">
+                        {item.quantity} × {pricedOf(item.variationId)!.unitPrice.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺ ={" "}
+                        <strong className="text-neutral-900">{pricedOf(item.variationId)!.lineTotal.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</strong>
+                      </p>
+                    )}
+                    {fresh && <PriceLadder steps={quote.lines.find((l) => l.variationId === item.variationId)?.ladder ?? []} size="sm" hints={false} itemsTotal={itemsShown} />}
                     {item.bulk?.map((t) => (
                       <p key={t.minQty} className="text-[11px] text-emerald-800 mt-1">
                         {activeTier(item.bulk, pricedOf(item.variationId)?.tierQty ?? item.quantity)?.minQty === t.minQty ? "✓ " : ""}
@@ -733,18 +740,18 @@ export default function CartPage() {
                   </button>
                 </div>
               ) : (
-                <form onSubmit={handleApplyCoupon} className="flex gap-2">
+                <form onSubmit={handleApplyCoupon} className="flex flex-col sm:flex-row gap-2">
                   <input aria-label="Kupon kodu"
                     type="text"
                     placeholder={couponPlaceholder(quote?.showcaseCode)}
                     value={couponInput}
                     onChange={(e) => setCouponInput(e.target.value)}
-                    className="flex-1 min-w-0 text-base sm:text-xs p-3 rounded-xl border border-neutral-300 font-mono uppercase focus:outline-none focus:border-amber-600"
+                    className="w-full sm:flex-1 min-w-0 text-base sm:text-xs p-3 rounded-xl border border-neutral-300 font-mono uppercase placeholder:font-sans placeholder:normal-case focus:outline-none focus:border-amber-600"
                   />
                   <button
                     type="submit"
                     disabled={couponLoading}
-                    className="bg-neutral-900 hover:bg-amber-600 disabled:opacity-60 text-white text-xs font-semibold px-5 py-3 rounded-xl transition-colors shrink-0"
+                    className="w-full sm:w-auto bg-neutral-900 hover:bg-amber-600 disabled:opacity-60 text-white text-xs font-semibold px-5 py-3 rounded-xl transition-colors shrink-0"
                   >
                     Kuponu Uygula
                   </button>
