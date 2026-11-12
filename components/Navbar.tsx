@@ -142,12 +142,12 @@ export default function Navbar({ extraCategories = [], fixedOverrides = {}, show
           </button>
           <Link href="/" aria-label="Yıldırım Avize ana sayfa" className="shrink-0 flex items-center gap-2.5">
             <Image
-              src="/logo-header-4.png"
+              src="/logo-header-5.png"
               alt="Yıldırım Avize logosu"
-              width={172}
-              height={80}
+              width={86}
+              height={40}
               priority
-              className="h-9 sm:h-10 w-auto"
+              className="h-10 sm:h-11 w-auto"
             />
             <span className="hidden md:block font-serif font-bold text-lg tracking-wide text-zinc-900 leading-none">
               Yıldırım <span className="text-red-700">Avize</span>
