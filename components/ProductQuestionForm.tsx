@@ -110,6 +110,11 @@ export default function ProductQuestionForm({ productId, productTitle }: { produ
           >
             {loading ? "Gönderiliyor..." : "Soruyu Gönder"}
           </button>
+          <p className="text-[11px] text-neutral-500">
+            Kişisel verileriniz{" "}
+            <Link href="/aydinlatma-metni" className="font-semibold text-amber-800 underline underline-offset-2">aydınlatma metni</Link>{" "}
+            kapsamında işlenir.
+          </p>
         </form>
       )}
     </section>

@@ -132,6 +132,11 @@ export default async function TrackingPage({ searchParams }: { searchParams: Pro
         <div className="text-center space-y-2">
           <span className="text-xs uppercase tracking-widest text-amber-600 font-semibold">Takip</span>
           <h1 className="text-2xl sm:text-3xl font-serif font-bold text-neutral-900">Kargo & Sipariş Takibi</h1>
+          <p className="text-sm text-neutral-600">
+            Siparişiniz kargoya verildiğinde e-postayla gelen takip kodunu yazın; üyeyseniz{" "}
+            <Link href="/giris#siparisler" className="font-semibold text-amber-800 underline underline-offset-2">Siparişlerim</Link>
+            &apos;den de takip edebilirsiniz.
+          </p>
         </div>
 
         <form method="get" className="flex flex-col sm:flex-row gap-2">
