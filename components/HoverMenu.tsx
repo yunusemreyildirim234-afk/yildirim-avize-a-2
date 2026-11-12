@@ -11,7 +11,7 @@ interface Props {
   children: (close: () => void) => React.ReactNode;
 }
 
-// Masaüstünde hover, her cihazda tıklama ile açılan açılır menü
+// Masaüstünde hover, her cihazda tıklama ile açılan açılır menü; dış tıklama/dokunma ve Escape kapatır
 export default function HoverMenu({ trigger, label, align = "left", panelClassName = "", children }: Props) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -29,14 +29,14 @@ export default function HoverMenu({ trigger, label, align = "left", panelClassNa
 
   useEffect(() => {
     if (!open) return;
-    const onDown = (e: MouseEvent) => {
+    const onDown = (e: PointerEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
-    document.addEventListener("mousedown", onDown);
+    document.addEventListener("pointerdown", onDown);
     document.addEventListener("keydown", onKey);
     return () => {
-      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("pointerdown", onDown);
       document.removeEventListener("keydown", onKey);
     };
   }, [open]);
@@ -48,7 +48,11 @@ export default function HoverMenu({ trigger, label, align = "left", panelClassNa
         aria-label={label}
         aria-expanded={open}
         aria-haspopup="menu"
-        onClick={() => setOpen((o) => !o)}
+        onClick={(e) => {
+          // Fare ile gelen tıklama hover açılışını kapatmasın; klavye (detail 0) ve dokunmatik aç/kapat yapar
+          if (canHover() && e.detail > 0) setOpen(true);
+          else setOpen((o) => !o);
+        }}
         className="flex items-center gap-1.5 rounded-full px-2 py-1.5 hover:bg-zinc-100 transition-colors"
       >
         {trigger(open)}
