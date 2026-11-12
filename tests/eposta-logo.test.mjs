@@ -6,7 +6,7 @@ const email = readFileSync(new URL("../lib/email.ts", import.meta.url), "utf8");
 
 test("e-posta logosu mutlak https adresli, 200 px ve alt metinli", () => {
   const logo = email.match(/EMAIL_LOGO_HTML = `([^`]*)`/)?.[1] ?? "";
-  assert.match(logo, /src="https:\/\/www\.yildirimavize\.com\.tr\/email-logo-v2\.png"/);
+  assert.match(logo, /src="https:\/\/www\.yildirimavize\.com\.tr\/email-logo-v3.png"/);
   assert.match(logo, /width="200"/);
   assert.match(logo, /alt="Yıldırım Avize"/);
 });

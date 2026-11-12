@@ -43,7 +43,7 @@ const REPLY_TO = "omeryildirim_3@hotmail.com";
 const maskTo = (to: unknown) => (Array.isArray(to) ? to : [to]).map((t) => String(t).replace(/^(.).*@/, "$1***@"));
 
 /** Tüm e-postaların en üstüne marka logosu (opak beyaz PNG, mutlak https adres; görsel engellenirse alt metin okunur). */
-export const EMAIL_LOGO_HTML = `<img src="https://www.yildirimavize.com.tr/email-logo-v2.png" width="200" alt="Yıldırım Avize" style="display:block;margin:0 auto 16px;border:0">`;
+export const EMAIL_LOGO_HTML = `<img src="https://www.yildirimavize.com.tr/email-logo-v3.png" width="200" alt="Yıldırım Avize" style="display:block;margin:0 auto 16px;border:0">`;
 
 // RESEND_FROM (yoksa kurumsal varsayılan adres) ile dener; alan adı doğrulanmamışsa onboarding@resend.dev ile yeniden dener
 async function sendViaResend(apiKey: string | undefined, payload: Record<string, unknown>): Promise<boolean> {
