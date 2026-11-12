@@ -14,6 +14,7 @@ export default function Hero() {
       <div className="max-w-3xl mx-auto text-center">
         <LogoEmblem />
         <h1 className="mt-1 text-4xl sm:text-6xl font-serif font-black tracking-tight text-zinc-950">Yıldırım Avize</h1>
+        <Image src="/logo-ucgen.png" alt="" width={64} height={34} className="mx-auto mt-1 h-auto w-12 sm:w-14" />
 
         <div className="mt-5 sm:mt-6 max-w-2xl mx-auto">
           <SearchBar />
