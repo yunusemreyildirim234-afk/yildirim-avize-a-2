@@ -259,6 +259,9 @@ export default function Navbar({ extraCategories = [], fixedOverrides = {}, show
                 <Link href="/giris#siparisler" role="menuitem" onClick={close} className={itemClass}>
                   <Package aria-hidden="true" className="w-4 h-4 text-zinc-500" /> Siparişlerim
                 </Link>
+                <Link href="/giris#adresler" role="menuitem" onClick={close} className={itemClass}>
+                  <MapPin aria-hidden="true" className="w-4 h-4 text-zinc-500" /> Adreslerim
+                </Link>
                 <Link href="/favorilerim" role="menuitem" onClick={close} className={itemClass}>
                   <Heart aria-hidden="true" className="w-4 h-4 text-zinc-500" /> Favorilerim
                 </Link>

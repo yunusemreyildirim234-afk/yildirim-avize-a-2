@@ -156,7 +156,7 @@ export default function AddressBook({ defaultName }: { defaultName: string }) {
   const full = (list?.length ?? 0) >= MAX_ADDRESSES;
 
   return (
-    <section aria-labelledby="adreslerim" className="bg-white rounded-3xl border border-neutral-200 p-6 shadow-sm space-y-4">
+    <section id="adresler" aria-labelledby="adreslerim" className="scroll-mt-24 bg-white rounded-3xl border border-neutral-200 p-6 shadow-sm space-y-4">
       <div className="flex items-center justify-between gap-3">
         <h2 id="adreslerim" className="text-lg font-serif font-bold text-neutral-900">Adreslerim</h2>
         {!draft && (

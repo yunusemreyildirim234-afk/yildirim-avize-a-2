@@ -141,6 +141,20 @@ export default function AuthPage() {
             </div>
           </div>
 
+          <nav aria-label="Hesap bölümleri" className="-mt-4 flex flex-wrap gap-2">
+            {[
+              ["siparisler", "Siparişler"],
+              ["adresler", "Adresler"],
+              ["guvenlik", "Güvenlik"],
+              ["kuponlar", "Kuponlar"],
+              ["mesajlar", "Mesajlar"],
+            ].map(([id, label]) => (
+              <a key={id} href={`#${id}`} className="inline-flex min-h-10 items-center rounded-full border border-neutral-300 bg-white px-4 text-xs font-semibold text-neutral-700 hover:border-amber-600 hover:text-amber-800 focus-visible:outline-2 focus-visible:outline-amber-600">
+                {label}
+              </a>
+            ))}
+          </nav>
+
           <div id="siparisler" className="bg-white rounded-3xl border border-neutral-200 p-8 shadow-sm space-y-6 scroll-mt-24">
             <h2 className="text-lg font-serif font-bold text-neutral-900 border-b border-neutral-100 pb-3">
               Geçmiş Siparişleriniz & Kargo Durumu
@@ -299,7 +313,7 @@ export default function AuthPage() {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-10 text-neutral-400 text-xs">
+              <div className="text-center py-3 text-neutral-500 text-xs">
                 Henüz kayıtlı bir siparişiniz bulunmuyor.
               </div>
             )}
