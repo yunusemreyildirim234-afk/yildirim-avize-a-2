@@ -21,6 +21,7 @@ import { activeTier, bulkLabel, bulkTiersOf, unitPriceFor } from "@/lib/bulk-pri
 import { lowStockLabel, type LowStockSetting } from "@/lib/low-stock";
 import { bulbNoteFor, isAccessoryCategory } from "@/lib/bulb-note";
 import { smallImage } from "@/lib/img";
+import { displayTitle } from "@/lib/title-display";
 import { pickDefaultOption } from "@/lib/default-variation";
 
 interface Variation {
@@ -93,7 +94,8 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
     t?.scrollIntoView?.({ block: "nearest", inline: "nearest", behavior: reducedMotion() ? "auto" : "smooth" });
   }, [activeImage]);
 
-  const bulbNote = bulbNoteFor(product.title, product.category);
+  const shownTitle = displayTitle(product.title); // yalnızca başlık gösterimi; sepet, mesajlar ve alt metin tam başlığı kullanır
+  const bulbNote =bulbNoteFor(product.title, product.category);
   const currentPrice = product.basePrice + (selectedVariation?.extraPrice || 0);
   const listShown = product.listPrice && product.listPrice > product.basePrice ? product.listPrice + (selectedVariation?.extraPrice || 0) : null;
   const bulk = bulkTiersOf(product);
@@ -267,8 +269,11 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
             </span>
           )}
           <h1 className="text-2xl sm:text-3xl font-serif font-bold leading-tight tracking-tight text-neutral-900">
-            {product.title}
+            {shownTitle.title}
           </h1>
+          {shownTitle.assembled && (
+            <span className="inline-block text-[11px] font-semibold text-neutral-700 border border-neutral-300 rounded-md px-2 py-0.5">Montajlı</span>
+          )}
           <div className="pt-4">
             <span className="text-xs text-neutral-500 block mb-1">Toplam Tutar</span>
             {listShown && listShown > currentPrice && (

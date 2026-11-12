@@ -8,6 +8,7 @@ import { priceLadder } from "@/lib/price-ladder";
 import { coverImageOf, galleryOf } from "@/lib/variation-input";
 import { CartStepper, FavoriteButton } from "@/components/ProductQuickActions";
 import { isPurchasablePrice } from "@/lib/purchasable";
+import { displayTitle } from "@/lib/title-display";
 import { lowStockLabel } from "@/lib/low-stock";
 import { getLowStockSetting } from "@/lib/low-stock-setting";
 
@@ -21,6 +22,7 @@ export default async function ProductCard({
   /** Sayfa üstündeki (LCP) kartlar için görseli öncelikli yükler */
   priority?: boolean;
 }) {
+  const shownTitle = displayTitle(product.title); // yalnızca gösterim; alt metin, bağlantı ve veri tam başlığı korur
   const ladder = priceLadder(product, await getLadderContext());
   const totalStock = product.variations.reduce((sum, v) => sum + v.stock, 0);
   const lowStock = lowStockLabel(totalStock, await getLowStockSetting()); // ayar kapalıysa null
@@ -91,7 +93,10 @@ export default async function ProductCard({
                 {product.category}
               </span>
             )}
-            <h3 className="font-serif text-sm sm:text-[15px] font-semibold leading-snug tracking-tight line-clamp-2 mt-0.5 sm:mt-1 sm:min-h-[2.6em]">{product.title}</h3>
+            <h3 className="font-serif text-sm sm:text-[15px] font-semibold leading-snug tracking-tight line-clamp-2 mt-0.5 sm:mt-1 sm:min-h-[2.6em]">{shownTitle.title}</h3>
+            {shownTitle.assembled && (
+              <span className={`mt-1 inline-block text-[10px] font-semibold rounded px-1.5 py-0.5 border ${dark ? "border-zinc-600 text-zinc-300" : "border-zinc-300 text-zinc-700"}`}>Montajlı</span>
+            )}
           </div>
           <div className="flex items-baseline gap-2">
             {priceOnRequest ? (
