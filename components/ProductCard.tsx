@@ -95,7 +95,7 @@ export default async function ProductCard({
             )}
             <h3 className="font-serif text-sm sm:text-[15px] font-semibold leading-snug tracking-tight line-clamp-2 mt-0.5 sm:mt-1 sm:min-h-[2.6em]">{shownTitle.title}</h3>
             {shownTitle.assembled && (
-              <span className={`mt-1 inline-block text-[10px] font-semibold rounded px-1.5 py-0.5 border ${dark ? "border-zinc-600 text-zinc-300" : "border-zinc-300 text-zinc-700"}`}>Montajlı</span>
+              <span className={`mt-1 inline-block sm:hidden text-[10px] font-semibold rounded px-1.5 py-0.5 border ${dark ? "border-zinc-600 text-zinc-300" : "border-zinc-300 text-zinc-700"}`}>Montajlı</span>
             )}
           </div>
           <div className="flex items-baseline gap-2">
@@ -106,6 +106,10 @@ export default async function ProductCard({
             )}
             {!priceOnRequest && discount > 0 && product.listPrice && (
               <span className="text-xs line-through text-zinc-500">{product.listPrice.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
+            )}
+            {/* sm ve üstü: Montajlı rozeti fiyatın sağında (kart bir satır kısalır); mobilde başlığın altında kalır */}
+            {shownTitle.assembled && (
+              <span className={`hidden sm:inline-block ml-auto self-center shrink-0 text-[10px] font-semibold rounded px-1.5 py-0.5 border ${dark ? "border-zinc-600 text-zinc-300" : "border-zinc-300 text-zinc-700"}`}>Montajlı</span>
             )}
           </div>
           {!priceOnRequest && <PriceLadder steps={ladder} size="card" dark={dark} itemsTotal={product.basePrice} />}
