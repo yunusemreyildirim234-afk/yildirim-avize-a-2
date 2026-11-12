@@ -90,10 +90,11 @@ export default function OrderTracker({ order }: Props) {
               </span>
             </span>
 
-            <span className={`mt-2 px-0.5 text-[10px] sm:text-[11px] leading-tight font-semibold ${reached ? "text-neutral-900" : "text-neutral-400"}`}>
+            {/* Dar ekranda yalnızca etkin adımın etiketi görünür (beş etiket yan yana değiyordu); sr-only ile okuyucuya hepsi açık kalır */}
+            <span className={`mt-2 px-0.5 text-[10px] sm:text-[11px] leading-tight font-semibold ${reached ? "text-neutral-900" : "text-neutral-400"} ${active ? "w-24 sm:w-auto" : "sr-only sm:not-sr-only"}`}>
               {label}
             </span>
-            {date && <span className="mt-0.5 px-0.5 text-[9px] sm:text-[10px] text-neutral-500 leading-tight">{date}</span>}
+            {date && <span className={`mt-0.5 px-0.5 text-[9px] sm:text-[10px] text-neutral-500 leading-tight ${active ? "w-24 sm:w-auto" : "sr-only sm:not-sr-only"}`}>{date}</span>}
           </li>
         );
       })}
