@@ -309,6 +309,20 @@ export default function CartPage() {
     return lineNotices({ price: q.price, unitPrice: q.unitPrice, capInfo: q.capInfo ?? null, rules: q.rules }, fresh);
   };
   const { shipping: shippingCost, couponDiscount, pickupDiscount, bankDiscount, total: finalTotal } = fresh ? quote.totals : localTotals;
+  // "Ödemeye Geç" pasifse nedeni (düğmenin gerçek koşullarıyla aynı sıra); gönderim sürerken düğme metni zaten "Hazırlanıyor..."
+  const disabledReason = loading
+    ? null
+    : !agreePre && !agreeSales
+    ? "Devam etmek için iki sözleşmeyi onaylayın."
+    : !agreePre
+    ? "Devam etmek için Ön Bilgilendirme Koşulları'nı onaylayın."
+    : !agreeSales
+    ? "Devam etmek için Mesafeli Satış Sözleşmesi'ni onaylayın."
+    : priceNotice !== null && !priceAcked
+    ? "Fiyat değişti; devam etmek için yukarıdaki fiyat uyarısını onaylayın."
+    : !fresh && cart.length > 0 && !quoteFailed
+    ? "Fiyatlar doğrulanıyor, lütfen bekleyin."
+    : null;
   const couponUnverifiable = appliedCoupon !== null && ((fresh && quote.coupon?.limited === true) || quoteFailed);
   const itemsShown = fresh ? quote.totals.itemsTotal : totalPrice;
   const shipProgress = shippingProgress(itemsShown, FREE_SHIPPING_THRESHOLD);
@@ -1151,6 +1165,7 @@ export default function CartPage() {
               <button
                 type="submit"
                 disabled={loading || !fresh || !agreePre || !agreeSales || (priceNotice !== null && !priceAcked)}
+                aria-describedby={disabledReason ? "odeme-pasif-neden" : undefined}
                 className="w-full bg-neutral-900 hover:bg-amber-600 text-white py-3.5 px-4 rounded-xl transition-colors text-xs font-semibold shadow-sm mt-4 disabled:opacity-50"
               >
                 {loading
@@ -1159,6 +1174,20 @@ export default function CartPage() {
                   ? `🔒 Ödemeye Geç (${finalTotal.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺)`
                   : `Siparişi Tamamla (${finalTotal.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺)`}
               </button>
+
+              {disabledReason && (
+                <p id="odeme-pasif-neden" data-testid="odeme-pasif-neden" className="text-xs text-neutral-700 text-center mt-2">
+                  {disabledReason}
+                </p>
+              )}
+
+              <ul className="mt-3 space-y-1 text-[11px] text-neutral-600 text-center">
+                <li>Siparişler ödeme onayından sonra 1-3 iş günü içinde kargoya verilir.</li>
+                <li>
+                  14 gün içinde iade hakkı:{" "}
+                  <Link href="/iptal-iade-cayma" className="text-amber-700 underline font-semibold">İade Koşulları</Link>
+                </li>
+              </ul>
 
               {quoteFailed && (
                 <p role="alert" className="text-xs text-red-600 font-medium text-center mt-2">
