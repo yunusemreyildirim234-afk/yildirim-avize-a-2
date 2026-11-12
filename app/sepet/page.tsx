@@ -78,6 +78,7 @@ export default function CartPage() {
   // 6. Müşteri İletişim & Kargonomi Şehir/İlçe Bilgileri
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [accountEmail, setAccountEmail] = useState(""); // girişli müşteri: e-posta alanı salt okunur
   // Geçerli e-posta, olay kayıtlarını bu müşteriyle ilişkilendirmek için saklanır
   useEffect(() => rememberEmail(email), [email]);
   const [phone, setPhone] = useState("");
@@ -123,7 +124,10 @@ export default function CartPage() {
         if (!data.user) return;
         accountName.current = data.user.name || "";
         setName((v) => v || data.user.name || "");
-        setEmail((v) => v || data.user.email || "");
+        if (data.user.email) {
+          setAccountEmail(data.user.email);
+          setEmail(data.user.email);
+        }
       })
       .catch(() => {});
   }, []);
@@ -893,9 +897,11 @@ export default function CartPage() {
                 type="email"
                 placeholder="E-posta Adresiniz"
                 value={email}
+                readOnly={Boolean(accountEmail)}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
+                className={`w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600 ${accountEmail ? "bg-neutral-100 text-neutral-600" : ""}`}
               />
+              {accountEmail && <p className="mt-1 text-[11px] text-neutral-500">Hesap e-postanız. Farklı bir e-posta için önce çıkış yapın.</p>}
               </div>
               <div className="text-[11px] text-neutral-600">
                 <label className="flex items-start gap-2 cursor-pointer max-sm:py-2.5 max-sm:min-h-11">
