@@ -39,10 +39,11 @@ test.describe("Admin: Product.ebat alanı → ebat filtresi + sıralama (E2E ön
       const box = page.locator(`#ap-${ids[title]}`).getByLabel("Ebat", { exact: true });
       await expect(box).toBeVisible();
       await box.fill(value);
-      const before = dialogs.length;
-      await page.locator(`#ap-${ids[title]}`).getByRole("button", { name: "Bilgileri ve Fotoğrafları Kaydet" }).click();
-      await expect.poll(() => dialogs.length, { timeout: 30_000 }).toBeGreaterThan(before);
-      return dialogs[dialogs.length - 1];
+      // Kayıt sonucu pencereyle değil, düzenleyicinin altındaki yapışkan çubukta gösterilir
+      await page.locator(`#ap-${ids[title]}`).getByTestId("tumunu-kaydet").click();
+      const status = page.locator(`#ap-${ids[title]}`).getByTestId("kayit-durum");
+      await expect(status).toHaveText(/kaydedildi|Kaydedilemedi/, { timeout: 30_000 });
+      return (await status.textContent()) ?? "";
     };
 
     // Geçersiz ebat reddedilir, kayıt yapılmaz

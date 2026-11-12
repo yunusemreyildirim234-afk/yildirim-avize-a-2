@@ -200,5 +200,5 @@ export function reconcile(base: EditorState, form: EditorState, server: EditorSt
 export function resultSummary(ok: number, failed: { label: string; error: string }[]): string {
   if (failed.length === 0) return `✓ ${ok} kayıt kaydedildi.`;
   const list = failed.map((f) => `${f.label}: ${f.error}`).join(" • ");
-  return `${ok} kayıt kaydedildi, ${failed.length} başarısız. ${list}`;
+  return ok === 0 ? `Kaydedilemedi. ${list}` : `${ok} kayıt kaydedildi, ${failed.length} başarısız. ${list}`;
 }

@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import ImagePicker from "@/components/ImagePicker";
 import { itemsFromUrls, newKey, uploadFile, type PickerItem } from "@/lib/client-upload";
 import { replaceAt, urlsToAppend } from "@/lib/image-list";
 import { MAX_EDIT_IMAGES, MAX_VARIATION_IMAGES } from "@/lib/variation-input";
 import { BulkColorChange, VariationNameEdit } from "@/components/VariationNameTools";
-import { editorStateOf, stockSaveBody } from "@/lib/editor-dirty";
+import { commitStep, dirtyLabels, dirtyOf, editorStateOf, hasNoUndoParts, isDirty, reconcile, resultSummary, savePlan, validateDirty, type EditorState } from "@/lib/editor-dirty";
 
 export interface EditorVariation {
   id: string;
@@ -42,30 +42,34 @@ async function api(method: string, url: string, body: Record<string, unknown>) {
 }
 
 const field = "p-2 rounded-lg border border-neutral-300 bg-white text-xs focus:outline-none focus:border-amber-600";
+const srcsOf = (l: PickerItem[]) => l.map((i) => i.src);
+const sameSrcs = (l: PickerItem[] | undefined, urls: string[]) => l !== undefined && l.length === urls.length && l.every((i, n) => i.src === urls[n]);
+const unsaved = <span className="font-semibold text-amber-800">● Kaydedilmedi</span>;
 
-// Tekil ürün düzenleme: başlık, fiyat, model kodu, renk/stok ve görseller
-export default function AdminProductEditor({ product, onSaved, onSetActive, onSetStocklessHidden, busyActive }: { product: EditorProduct; onSaved?: (snapshot: unknown) => void; onSetActive?: (makeActive: boolean) => void; onSetStocklessHidden?: (hidden: boolean) => void; busyActive?: boolean }) {
+// Tekil ürün düzenleme: başlık, fiyat, model kodu, renk/stok ve görseller.
+// Bekleyen değişiklikler alttaki yapışkan çubuktan "Tümünü kaydet" ile, mevcut iki uca SIRAYLA gönderilir (lib/editor-dirty.ts).
+export default function AdminProductEditor({ product, onSaved, onDirtyChange, onSetActive, onSetStocklessHidden, busyActive }: { product: EditorProduct; onSaved?: (snapshots: unknown[]) => void; onDirtyChange?: (dirty: boolean) => void; onSetActive?: (makeActive: boolean) => void; onSetStocklessHidden?: (hidden: boolean) => void; busyActive?: boolean }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
-  // Taban: formun açıldığı andaki değerler (router.refresh ile yenilenen prop'tan bağımsız)
-  const [base] = useState(() => editorStateOf(product));
+  // Taban: formun açıldığı andaki / son başarılı kayıttaki değerler (router.refresh ile yenilenen prop'tan bağımsız)
+  const server = editorStateOf(product);
+  const serverSig = JSON.stringify(server);
+  const [base, setBase] = useState(server);
+  const [seenSig, setSeenSig] = useState(serverSig);
 
-  const [title, setTitle] = useState(product.title);
-  const [basePrice, setBasePrice] = useState(String(product.basePrice));
-  const [modelCode, setModelCode] = useState(product.modelCode ?? "");
-  const [ebat, setEbat] = useState(product.ebat ?? "");
-  const [images, setImages] = useState<PickerItem[]>(itemsFromUrls(product.images?.length ? product.images : product.imageUrl ? [product.imageUrl] : []));
+  const [title, setTitle] = useState(server.info.title);
+  const [basePrice, setBasePrice] = useState(server.info.basePrice);
+  const [modelCode, setModelCode] = useState(server.info.modelCode);
+  const [ebat, setEbat] = useState(server.info.ebat);
+  const [images, setImages] = useState<PickerItem[]>(() => itemsFromUrls(server.images));
   const [newImage, setNewImage] = useState("");
-  const [isFeatured, setIsFeatured] = useState(Boolean(product.isFeatured));
-  const [isBestSeller, setIsBestSeller] = useState(Boolean(product.isBestSeller));
+  const [isFeatured, setIsFeatured] = useState(server.info.isFeatured);
+  const [isBestSeller, setIsBestSeller] = useState(server.info.isBestSeller);
 
-  const [varEdits, setVarEdits] = useState<Record<string, { stock: string; extraPrice: string }>>(
-    Object.fromEntries(product.variations.map((v) => [v.id, { stock: String(v.stock), extraPrice: String(v.extraPrice) }]))
-  );
-  const [varImages, setVarImages] = useState<Record<string, PickerItem[]>>(Object.fromEntries(product.variations.map((v) => [v.id, itemsFromUrls(v.images ?? [])])));
-  const [colorOrder, setColorOrder] = useState<string[]>(product.variations.map((v) => v.id)); // renk sırası (ProductVariation.position)
+  const [varEdits, setVarEdits] = useState<Record<string, { stock: string; extraPrice: string }>>(server.vars);
+  const [varImages, setVarImages] = useState<Record<string, PickerItem[]>>(() => Object.fromEntries(product.variations.map((v) => [v.id, itemsFromUrls(v.images ?? [])])));
+  const [colorOrder, setColorOrder] = useState<string[]>(server.order); // renk sırası (ProductVariation.position)
   const orderedVariations = colorOrder.map((id) => product.variations.find((v) => v.id === id)).filter((v): v is EditorVariation => Boolean(v));
-  const orderDirty = colorOrder.some((id, i) => id !== product.variations[i]?.id);
   const moveColor = (i: number, d: -1 | 1) =>
     setColorOrder((o) => {
       const j = i + d;
@@ -74,12 +78,58 @@ export default function AdminProductEditor({ product, onSaved, onSetActive, onSe
       [next[i], next[j]] = [next[j], next[i]];
       return next;
     });
-  const saveColorOrder = () => run(() => api("PATCH", "/api/admin/product/variation", { productId: product.id, order: colorOrder }), "✓ Renk sırası kaydedildi.");
   const [newColorImages, setNewColorImages] = useState<PickerItem[]>([]);
   const [colorName, setColorName] = useState("");
   const [colorStock, setColorStock] = useState("10");
   const [colorExtra, setColorExtra] = useState("0");
 
+  const form: EditorState = {
+    info: { title, basePrice, modelCode, ebat, isFeatured, isBestSeller },
+    images: srcsOf(images),
+    vars: varEdits,
+    varImages: Object.fromEntries(Object.entries(varImages).map(([id, l]) => [id, srcsOf(l)])),
+    order: colorOrder,
+  };
+  const applyForm = (next: EditorState) => {
+    setTitle(next.info.title);
+    setBasePrice(next.info.basePrice);
+    setModelCode(next.info.modelCode);
+    setEbat(next.info.ebat);
+    setIsFeatured(next.info.isFeatured);
+    setIsBestSeller(next.info.isBestSeller);
+    setImages((l) => (sameSrcs(l, next.images) ? l : itemsFromUrls(next.images)));
+    setVarEdits(next.vars);
+    setVarImages((m) => Object.fromEntries(Object.entries(next.varImages).map(([id, urls]) => [id, sameSrcs(m[id], urls) ? m[id] : itemsFromUrls(urls)])));
+    setColorOrder(next.order);
+  };
+  // Sunucudan yeni ürün verisi geldi (kayıt, renk ekleme/silme, listedeki stok düğmeleri): kirli olmayan parçalar güncellenir, kirli olanlar korunur
+  if (serverSig !== seenSig) {
+    setSeenSig(serverSig);
+    const r = reconcile(base, form, server);
+    setBase(r.base);
+    applyForm(r.form);
+  }
+
+  const d = dirtyOf(base, form);
+  const dirty = isDirty(d);
+  const nameOf = (id: string) => product.variations.find((v) => v.id === id)?.variationValue ?? "Renk";
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+  const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
+  useEffect(() => () => onDirtyChange?.(false), [onDirtyChange]);
+  // Kaydedilmemiş değişiklik varken sekmeyi kapatma/yenileme uyarısı
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
+
+  // Hemen uygulanan işlemler (renk ekle/sil, ad düzenleme): sonuç pencereyle bildirilir
   const run = async (fn: () => Promise<unknown>, okMsg?: string) => {
     setBusy(true);
     try {
@@ -93,24 +143,64 @@ export default function AdminProductEditor({ product, onSaved, onSetActive, onSe
     }
   };
 
-  const saveInfo = () =>
-    run(async () => {
-      const data = await api("PATCH", "/api/admin/product", { productId: product.id, title, basePrice: Number(basePrice), modelCode, ebat, images: images.map((i) => i.src), isFeatured, isBestSeller });
-      onSaved?.(data.snapshot);
-    }, "✓ Ürün bilgileri kaydedildi. Alttaki çubuktan geri alabilirsiniz.");
+  // "Tümünü kaydet": kirli parçalar sırayla gönderilir. Atomik değildir: başarısız parça kirli kalır ve hatası gösterilir; başarılılar tabana işlenir.
+  const saveAll = async () => {
+    const invalid = validateDirty(form, d, nameOf);
+    if (invalid.length) return setResult({ ok: false, text: invalid.join(" ") });
+    const sent = form;
+    const steps = savePlan(product.id, base, sent, nameOf);
+    if (steps.length === 0) return;
+    setBusy(true);
+    setResult(null);
+    setErrors({});
+    let b = base;
+    let ok = 0;
+    const failed: { label: string; error: string }[] = [];
+    const errs: Record<string, string> = {};
+    const snapshots: unknown[] = [];
+    for (const [i, s] of steps.entries()) {
+      setProgress({ done: i, total: steps.length });
+      try {
+        const data = await api(s.method, s.url, s.body);
+        if (data.snapshot) snapshots.push(data.snapshot);
+        b = commitStep(b, sent, s);
+        setBase(b);
+        ok++;
+      } catch (err) {
+        const error = (err as Error).message;
+        failed.push({ label: s.label, error });
+        errs[s.key] = error;
+      }
+    }
+    setProgress(null);
+    setErrors(errs);
+    setResult({ ok: failed.length === 0, text: `${resultSummary(ok, failed)}${snapshots.length ? " Alttaki çubuktan geri alabilirsiniz." : ""}` });
+    if (snapshots.length) onSaved?.(snapshots); // kayıt sırasıyla; Geri Al ters sırayla uygular
+    router.refresh(); // başarısız olsa da: güncel stok satırda görünsün
+    setBusy(false);
+  };
 
-  const saveVariation = (v: EditorVariation) =>
-    run(async () => {
-      // prevStock tabandan (formun açıldığı andaki stok) gider, canlı prop'tan değil: sunucu yalnızca bu değer hâlâ geçerliyse yazar
-      const data = await api("PATCH", "/api/admin/product", stockSaveBody(v.id, base.vars[v.id], varEdits[v.id]));
-      onSaved?.(data.snapshot);
-    }, "✓ Varyasyon kaydedildi. Alttaki çubuktan geri alabilirsiniz.");
+  const discardAll = () => {
+    if (!confirm("Kaydedilmemiş değişiklikler atılsın mı? Form son kaydedilen duruma döner.")) return;
+    setBase(server);
+    applyForm(server);
+    setResult(null);
+    setErrors({});
+  };
+
+  // Arada stok değiştiyse (kayıt reddedildi): satır güncel stoğu alır, taban da güncellenir
+  const takeLiveStock = (v: EditorVariation) => {
+    const stock = String(v.stock);
+    setBase((b) => ({ ...b, vars: { ...b.vars, [v.id]: { ...b.vars[v.id], stock } } }));
+    setVarEdits((m) => ({ ...m, [v.id]: { ...m[v.id], stock } }));
+    setErrors((e) => Object.fromEntries(Object.entries(e).filter(([k]) => k !== `var:${v.id}`)));
+  };
 
   // Ad düzenleme / toplu renk: sunucu yanıtındaki Geri Al kaydı alttaki çubuğa iletilir
   const saveName = (body: Record<string, unknown>, okMsg: string) =>
     run(async () => {
       const data = await api("PATCH", "/api/admin/product/variation", body);
-      onSaved?.(data.snapshot);
+      if (data.snapshot) onSaved?.([data.snapshot]);
     }, okMsg);
 
   const deleteVariation = (v: EditorVariation) => {
@@ -184,8 +274,12 @@ export default function AdminProductEditor({ product, onSaved, onSetActive, onSe
     setPicked([]);
   };
 
-  const saveVariationImages = (v: EditorVariation) =>
-    run(() => api("PATCH", "/api/admin/product/variation", { variationId: v.id, images: (varImages[v.id] ?? []).map((i) => i.src) }), "✓ Renk fotoğrafları kaydedildi.");
+  const rowError = (key: string) =>
+    errors[key] ? (
+      <p role="alert" className="basis-full font-semibold text-red-800">
+        Kaydedilemedi: {errors[key]}
+      </p>
+    ) : null;
 
   return (
     <div className="bg-neutral-50 border-t border-neutral-100 p-5 space-y-6 text-xs">
@@ -210,7 +304,7 @@ export default function AdminProductEditor({ product, onSaved, onSetActive, onSe
         </label>
       </section>
 
-      {/* Vitrin durumu: aktif yap / pasife al (onaylı, Geri Al'lı; "Kaydet"ten bağımsız, hemen uygulanır) */}
+      {/* Vitrin durumu: aktif yap / pasife al (onaylı, Geri Al'lı; "Tümünü kaydet"ten bağımsız, hemen uygulanır) */}
       {onSetActive && (
         <section className="flex flex-wrap items-center gap-x-4 gap-y-2" data-testid="durum-bolumu">
           <span className="font-semibold text-neutral-700">
@@ -248,12 +342,12 @@ export default function AdminProductEditor({ product, onSaved, onSetActive, onSe
           <input type="checkbox" checked={isBestSeller} onChange={(e) => setIsBestSeller(e.target.checked)} className="w-4 h-4 accent-amber-600" />
           Çok Satanlar vitrininde göster
         </label>
-        <span className="text-neutral-400">Değişiklik &ldquo;Kaydet&rdquo; ile uygulanır.</span>
+        <span className="text-neutral-500">Değişiklikler &ldquo;Tümünü kaydet&rdquo; ile uygulanır.</span>
       </section>
 
       {/* Görseller */}
       <section className="space-y-2">
-        <h4 className="font-semibold text-neutral-700">Genel fotoğraflar (ilk görsel kapak olur; renk fotoğraflarından bağımsızdır)</h4>
+        <h4 className="font-semibold text-neutral-700">Genel fotoğraflar (ilk görsel kapak olur; renk fotoğraflarından bağımsızdır) {d.images && unsaved}</h4>
         <ImagePicker label="Ürün fotoğrafı" items={images} max={MAX_EDIT_IMAGES} disabled={busy} productTitle={title} onReplaceFile={replaceIn(setImages)} onAddFiles={uploadInto(setImages, MAX_EDIT_IMAGES)} onChange={setImages} />
         <div className="flex gap-2">
           <input
@@ -267,28 +361,18 @@ export default function AdminProductEditor({ product, onSaved, onSetActive, onSe
             Görsel Ekle
           </button>
         </div>
+        {rowError("info")}
       </section>
-
-      <button
-        type="button"
-        disabled={busy}
-        onClick={saveInfo}
-        className="bg-neutral-900 hover:bg-amber-600 disabled:opacity-60 text-white font-semibold px-4 py-2 rounded-lg transition-colors"
-      >
-        Bilgileri ve Fotoğrafları Kaydet
-      </button>
 
       {/* Renk / stok */}
       <section className="space-y-2 border-t border-neutral-200 pt-4">
         <h4 className="font-semibold text-neutral-700">Renk varyasyonları</h4>
-        {orderDirty && (
+        {d.order && (
           <p className="flex flex-wrap items-center gap-2 text-amber-900">
-            Renk sırası değişti (ilk stoklu renk sitede varsayılan seçilir).
-            <button type="button" disabled={busy} onClick={saveColorOrder} className="bg-neutral-900 hover:bg-amber-600 disabled:opacity-60 text-white font-semibold px-3 py-1.5 rounded-lg">
-              Renk Sırasını Kaydet
-            </button>
+            Renk sırası değişti (ilk stoklu renk sitede varsayılan seçilir). {unsaved}
           </p>
         )}
+        {rowError("order")}
         <ul className="space-y-2">
           {orderedVariations.map((v, i) => (
             <li key={v.id} className="flex flex-wrap items-center gap-2">
@@ -308,6 +392,7 @@ export default function AdminProductEditor({ product, onSaved, onSetActive, onSe
                 <input
                   type="number"
                   min={0}
+                  aria-label={`${v.variationValue} stok`}
                   value={varEdits[v.id]?.stock ?? ""}
                   onChange={(e) => setVarEdits((m) => ({ ...m, [v.id]: { ...m[v.id], stock: e.target.value } }))}
                   className={`${field} w-20`}
@@ -318,20 +403,28 @@ export default function AdminProductEditor({ product, onSaved, onSetActive, onSe
                 <input
                   type="number"
                   min={0}
+                  aria-label={`${v.variationValue} ek fiyat`}
                   value={varEdits[v.id]?.extraPrice ?? ""}
                   onChange={(e) => setVarEdits((m) => ({ ...m, [v.id]: { ...m[v.id], extraPrice: e.target.value } }))}
                   className={`${field} w-24`}
                 />
               </label>
-              <button type="button" disabled={busy} onClick={() => saveVariation(v)} className="font-semibold text-emerald-700 hover:underline">
-                Kaydet
-              </button>
+              {d.vars.includes(v.id) && unsaved}
               <button type="button" disabled={busy} onClick={() => deleteVariation(v)} className="font-semibold text-red-600 hover:underline">
                 Sil
               </button>
-              <VariationNameEdit variation={v} siblings={product.variations} productEbat={product.ebat} busy={busy} save={saveName} />
+              <VariationNameEdit key={v.variationValue} variation={v} siblings={product.variations} productEbat={product.ebat} busy={busy} save={saveName} />
+              {rowError(`var:${v.id}`)}
+              {d.vars.includes(v.id) && base.vars[v.id] && base.vars[v.id].stock !== String(v.stock) && (
+                <p className="basis-full flex flex-wrap items-center gap-2 text-amber-900" data-testid="stok-degisti">
+                  Bu rengin stoğu bu sırada değişti: şu an {v.stock}.
+                  <button type="button" disabled={busy} onClick={() => takeLiveStock(v)} className="inline-flex min-h-9 items-center rounded-lg border border-neutral-300 bg-white px-3 font-semibold text-neutral-800 hover:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600">
+                    Güncel stoğu al
+                  </button>
+                </p>
+              )}
               <div className="basis-full space-y-1.5 pl-1">
-                <span className="text-neutral-500">Bu renge özel fotoğraflar (en fazla {MAX_VARIATION_IMAGES})</span>
+                <span className="text-neutral-500">Bu renge özel fotoğraflar (en fazla {MAX_VARIATION_IMAGES}) {d.varImages.includes(v.id) && unsaved}</span>
                 <ImagePicker
                   label={`${v.variationValue} fotoğrafı`}
                   items={varImages[v.id] ?? []}
@@ -345,9 +438,7 @@ export default function AdminProductEditor({ product, onSaved, onSetActive, onSe
                 <button type="button" disabled={busy} onClick={() => openPick(v.id)} aria-expanded={pickFor === v.id} className="font-semibold text-neutral-700 hover:underline mr-3">
                   Genel galeriden seç
                 </button>
-                <button type="button" disabled={busy} onClick={() => saveVariationImages(v)} className="font-semibold text-emerald-700 hover:underline">
-                  Fotoğrafları Kaydet
-                </button>
+                {rowError(`varImages:${v.id}`)}
                 {pickFor === v.id && (
                   <div className="rounded-lg border border-neutral-200 bg-white p-2 space-y-2" data-testid="gallery-pick">
                     {galleryUrls.length === 0 ? (
@@ -382,7 +473,7 @@ export default function AdminProductEditor({ product, onSaved, onSetActive, onSe
                       <button type="button" onClick={() => setPickFor(null)} className="text-neutral-500 hover:underline">
                         Vazgeç
                       </button>
-                      <span className="text-neutral-500">Eklenenler listeye girer; kalıcı olması için &ldquo;Fotoğrafları Kaydet&rdquo;e basın (en fazla {MAX_VARIATION_IMAGES}).</span>
+                      <span className="text-neutral-500">Eklenenler listeye girer; kalıcı olması için alttaki &ldquo;Tümünü kaydet&rdquo;e basın (en fazla {MAX_VARIATION_IMAGES}).</span>
                     </div>
                   </div>
                 )}
@@ -398,13 +489,47 @@ export default function AdminProductEditor({ product, onSaved, onSetActive, onSe
           <button type="submit" disabled={busy} className="bg-white border border-neutral-300 hover:border-amber-600 font-semibold px-3 py-2 rounded-lg">
             Renk Ekle
           </button>
+          <span className="text-neutral-500">Renk ekleme ve silme hemen uygulanır.</span>
           <div className="basis-full">
             <ImagePicker label="Yeni renk fotoğrafı" items={newColorImages} max={MAX_VARIATION_IMAGES} disabled={busy} productTitle={title} onReplaceFile={replaceIn(setNewColorImages)} onAddFiles={uploadInto(setNewColorImages, MAX_VARIATION_IMAGES)} onChange={setNewColorImages} />
           </div>
         </form>
       </section>
 
-      <BulkColorChange productId={product.id} variations={product.variations} busy={busy} save={saveName} />
+      <BulkColorChange key={product.variations.map((v) => v.variationValue).join("|")} productId={product.id} variations={product.variations} busy={busy} save={saveName} />
+
+      {/* Yapışkan kayıt çubuğu: kaydedilmemiş parçalar + "Tümünü kaydet"; sonuç ve hatalar burada (pencere açılmaz) */}
+      {(dirty || progress || result) && (
+        <div data-testid="kayit-cubugu" className="sticky bottom-0 z-30 -mx-5 -mb-5 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-neutral-300 bg-white px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
+          <div className="min-w-0 flex-1 basis-60 space-y-0.5">
+            {dirty && (
+              <p className="font-semibold text-neutral-900" data-testid="kirli-liste">
+                Kaydedilmemiş değişiklikler: <span className="font-normal">{dirtyLabels(d).join(", ")}</span>
+              </p>
+            )}
+            {dirty && hasNoUndoParts(d) && <p className="text-neutral-600">Renk fotoğrafları ve renk sırası kaydedildikten sonra geri alınamaz.</p>}
+            <p role="status" aria-live="polite" data-testid="kayit-durum" className={`font-semibold break-words ${result && !result.ok ? "text-red-800" : "text-emerald-800"}`}>
+              {progress ? `${progress.done + 1}/${progress.total} kaydediliyor...` : (result?.text ?? "")}
+            </p>
+          </div>
+          {dirty ? (
+            <div className="flex flex-wrap gap-2">
+              <button type="button" disabled={busy} onClick={discardAll} className="inline-flex min-h-11 items-center rounded-lg border border-neutral-300 bg-white px-3 font-semibold text-neutral-800 hover:border-amber-600 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-amber-600">
+                Değişiklikleri at
+              </button>
+              <button type="button" data-testid="tumunu-kaydet" disabled={busy} onClick={saveAll} className="inline-flex min-h-11 items-center rounded-lg bg-neutral-900 px-4 font-semibold text-white hover:bg-amber-700 disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600">
+                Tümünü kaydet
+              </button>
+            </div>
+          ) : (
+            !progress && (
+              <button type="button" aria-label="Kayıt sonucunu kapat" onClick={() => setResult(null)} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-base text-neutral-600 hover:bg-neutral-100 focus-visible:outline-2 focus-visible:outline-amber-600">
+                ×
+              </button>
+            )
+          )}
+        </div>
+      )}
     </div>
   );
 }

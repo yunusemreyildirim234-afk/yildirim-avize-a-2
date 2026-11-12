@@ -185,4 +185,5 @@ test("uzlaştırma: silinen renk düşer, yeni renk eklenir; kirli sıra korunup
 test("sonuç özeti", () => {
   assert.equal(resultSummary(3, []), "✓ 3 kayıt kaydedildi.");
   assert.equal(resultSummary(2, [{ label: "Krom stok/ek fiyat", error: "Stok değişti." }]), "2 kayıt kaydedildi, 1 başarısız. Krom stok/ek fiyat: Stok değişti.");
+  assert.equal(resultSummary(0, [{ label: "Bilgiler", error: "Ebat geçersiz." }]), "Kaydedilemedi. Bilgiler: Ebat geçersiz.");
 });

@@ -69,9 +69,8 @@ test.describe("Admin: renkli ürün ve fotoğraf yönetimi", () => {
       const card = await openEditor();
       await card.locator('li:has(img[alt="Ürün fotoğrafı 2"])').getByRole("button", { name: "Kapak yap" }).click();
       await expect(card.locator('img[alt="Ürün fotoğrafı 1"]')).toHaveAttribute("src", before[1]);
-      dialogs.length = 0;
-      await card.getByRole("button", { name: "Bilgileri ve Fotoğrafları Kaydet" }).click();
-      await expect.poll(() => dialogs.join("|")).toContain("kaydedildi");
+      await card.getByTestId("tumunu-kaydet").click();
+      await expect(card.getByTestId("kayit-durum")).toContainText("kayıt kaydedildi", { timeout: 30_000 });
       expect(await dbImages(id)).toEqual([before[1], before[0]]);
       await page.goto("/kategori/kristal");
       const cardImg = realImageUrl(await page.locator(`a[href="/urun/${id}"] img`).first().getAttribute("src"));
@@ -83,9 +82,8 @@ test.describe("Admin: renkli ürün ve fotoğraf yönetimi", () => {
       const card = await openEditor();
       await card.getByRole("button", { name: "2. fotoğrafı öne al" }).first().click(); // genel fotoğraf şeridinin ilk eşleşmesi
       await expect(card.locator('img[alt="Ürün fotoğrafı 1"]')).toHaveAttribute("src", before[1]);
-      dialogs.length = 0;
-      await card.getByRole("button", { name: "Bilgileri ve Fotoğrafları Kaydet" }).click();
-      await expect.poll(() => dialogs.join("|")).toContain("kaydedildi");
+      await card.getByTestId("tumunu-kaydet").click();
+      await expect(card.getByTestId("kayit-durum")).toContainText("kayıt kaydedildi", { timeout: 30_000 });
       expect(await dbImages(id)).toEqual([before[1], before[0]]);
       await page.goto("/kategori/kristal");
       expect(realImageUrl(await page.locator(`a[href="/urun/${id}"] img`).first().getAttribute("src"))).toBe(before[1]);
@@ -96,9 +94,8 @@ test.describe("Admin: renkli ürün ve fotoğraf yönetimi", () => {
     await test.step("renk sırası kaydedilir ve ürün sayfasına yansır", async () => {
       const card = await openEditor();
       await card.getByRole("button", { name: "E2E Renk B rengini yukarı al" }).click();
-      dialogs.length = 0;
-      await card.getByRole("button", { name: "Renk Sırasını Kaydet" }).click();
-      await expect.poll(() => dialogs.join("|")).toContain("Renk sırası kaydedildi");
+      await card.getByTestId("tumunu-kaydet").click();
+      await expect(card.getByTestId("kayit-durum")).toContainText("kayıt kaydedildi", { timeout: 30_000 });
       expect((await dbColors(id)).map((c) => c.variationValue)).toEqual(["E2E Renk B", "E2E Renk A"]);
       await page.goto(`/urun/${id}`);
       const names = await page.getByRole("radio").evaluateAll((els) => els.map((e) => (e.textContent ?? "").trim()));

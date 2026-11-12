@@ -152,8 +152,15 @@ export default function AdminProductList({ products, maxTotalDiscountPct, showca
   const PAGE = 8;
   const [shown, setShown] = useState(PAGE); // listede gösterilen ürün sayısı (8'er artar)
   // Son işlem öncesi durum (Geri Al)
-  const [undo, setUndo] = useState<{ snapshot: unknown; label: string } | null>(null);
+  // earlier: aynı işlemin daha önce üretilen belirteçleri (düzenleyicide "Tümünü kaydet" birden çok kayıt yapar); geri alma ters sırayla gider
+  const [undo, setUndo] = useState<{ snapshot: unknown; label: string; earlier?: unknown[] } | null>(null);
   const [undoing, setUndoing] = useState(false);
+  // Açık düzenleyicide kaydedilmemiş değişiklik var mı (kapatırken onay; Geri Al çubuğu kayıt çubuğunun üstüne taşınır)
+  const [editorDirty, setEditorDirty] = useState(false);
+  const toggleEdit = (id: string) => {
+    if (editingId && editorDirty && !confirm("Düzenleyicide kaydedilmemiş değişiklikler var. Kapatılırsa kaybolur. Devam edilsin mi?")) return;
+    setEditingId((cur) => (cur === id ? null : id));
+  };
 
   // Tüm elle Öne Çıkan işaretlerini kaldırır (sunucu "zaten bu durumda" kontrolü ve Geri Al kaydı aynı yolu kullanır)
   const backToAuto = async () => {
@@ -173,26 +180,35 @@ export default function AdminProductList({ products, maxTotalDiscountPct, showca
     }
   };
 
-  const doUndo = async (force = false) => {
+  const doUndo = async () => {
     if (!undo) return;
     setUndoing(true);
+    // Kayıt sırasıyla dizilir; en son kaydedilen en sonda. Geri alma sondan başa gider, başarısız olan ve öncekiler çubukta kalır.
+    let queue = [...(undo.earlier ?? []), undo.snapshot];
+    const total = queue.length;
+    const post = async (snapshot: unknown, force: boolean) => {
+      const res = await fetch("/api/admin/undo", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ snapshot, force }) });
+      return { res, data: await res.json().catch(() => ({})) };
+    };
     try {
-      const res = await fetch("/api/admin/undo", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ snapshot: undo.snapshot, force }) });
-      const data = await res.json().catch(() => ({}));
-      // Ürün işlemden sonra başka yerde değiştiyse: kullanıcıya sorulur, onaylarsa zorla geri alınır
-      if (res.status === 409 && data.conflict && !force) {
-        setUndoing(false);
-        if (confirm(`${data.error}
+      while (queue.length > 0) {
+        const snapshot = queue[queue.length - 1];
+        let r = await post(snapshot, false);
+        // Ürün işlemden sonra başka yerde değiştiyse: kullanıcıya sorulur, onaylarsa zorla geri alınır
+        if (r.res.status === 409 && r.data.conflict) {
+          if (!confirm(`${r.data.error}
 
-Yine de geri alınsın mı?`)) await doUndo(true);
-        return;
+Yine de geri alınsın mı?`)) break;
+          r = await post(snapshot, true);
+        }
+        if (!r.res.ok) throw new Error(r.data.error || "Geri alınamadı.");
+        queue = queue.slice(0, -1);
       }
-      if (!res.ok) throw new Error(data.error || "Geri alınamadı.");
-      setUndo(null);
-      router.refresh();
     } catch (e) {
       alert((e as Error).message);
     } finally {
+      setUndo(queue.length > 0 ? { snapshot: queue[queue.length - 1], earlier: queue.slice(0, -1), label: undo.label } : null);
+      if (queue.length < total) router.refresh();
       setUndoing(false);
     }
   };
@@ -604,7 +620,7 @@ Yine de geri alınsın mı?`)) await doUndo(true);
             </a>
             <button
               type="button"
-              onClick={() => setEditingId((id) => (id === product.id ? null : product.id))}
+              onClick={() => toggleEdit(product.id)}
               aria-expanded={editingId === product.id}
               className="inline-flex min-h-10 items-center gap-1.5 text-neutral-600 hover:text-amber-700 text-xs font-medium px-3 rounded-lg hover:bg-amber-50 transition-colors"
             >
@@ -644,12 +660,13 @@ Yine de geri alınsın mı?`)) await doUndo(true);
           {descId === product.id && <AdminDescriptionEditor key={product.id} productId={product.id} title={product.title} />}
           {editingId === product.id && (
             <AdminProductEditor
-              key={`${product.id}:${product.variations.map((v) => `${v.id}${v.variationValue}${v.stock}${v.extraPrice}${(v.images ?? []).join(",")}`).join("|")}`}
+              key={product.id} // veri değişince yeniden bağlanmaz: düzenleyici sunucu verisiyle kendi uzlaşır (kaydedilmemiş değişiklik kaybolmaz)
               product={{ ...product, stocklessHidden: stocklessRule?.hiddenIds.includes(product.id) ?? false }}
+              onDirtyChange={setEditorDirty}
               busyActive={loadingId === product.id}
               onSetActive={(makeActive) => setActive(product, makeActive)}
               onSetStocklessHidden={stocklessRule ? (hidden) => setStocklessHidden(product, hidden) : undefined}
-              onSaved={(snapshot) => snapshot && setUndo({ snapshot, label: "Ürün düzenleme" })}
+              onSaved={(snapshots) => snapshots.length > 0 && setUndo({ snapshot: snapshots[snapshots.length - 1], earlier: snapshots.slice(0, -1), label: snapshots.length > 1 ? `Ürün düzenleme (${snapshots.length} kayıt)` : "Ürün düzenleme" })}
             />
           )}
           </div>
@@ -668,7 +685,7 @@ Yine de geri alınsın mı?`)) await doUndo(true);
       </div>
       )}
       {undo && (
-        <div role="status" className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-full bg-neutral-900 text-white text-xs pl-5 pr-2 py-2 shadow-2xl">
+        <div role="status" className={`fixed ${editingId && editorDirty ? "bottom-32 sm:bottom-24" : "bottom-4"} left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-full bg-neutral-900 text-white text-xs pl-5 pr-2 py-2 shadow-2xl`}>
           <span>{undo.label} uygulandı.</span>
           <button type="button" disabled={undoing} onClick={() => doUndo()} className="inline-flex items-center gap-1.5 rounded-full bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold px-3 py-1.5 disabled:opacity-60">
             {undoing ? "Geri alınıyor..." : <><Undo2 aria-hidden="true" className="w-3.5 h-3.5" /> Son İşlemi Geri Al</>}
