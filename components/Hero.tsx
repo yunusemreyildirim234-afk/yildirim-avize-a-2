@@ -1,21 +1,10 @@
 import Image from "next/image";
 import SearchBar from "@/components/SearchBar";
 
-// Kurumsal amblem: /anaekran.jpg içindeki piramit amblemi kırpılır; açık temada levha zemini beyaza karışır (multiply), koyu temada renkler ters çevrilip siyah zemin ekrana karışır (screen)
+// Kurumsal amblem: /logo-ikon.png (şeffaf arka planlı, orijinal renkler; CSS filtresi yok). Dekoratif: marka adı h1'de yazılıdır.
 function LogoEmblem() {
   return (
-    <div className="relative mx-auto w-44 sm:w-56 aspect-[430/280] overflow-hidden mix-blend-multiply dark:mix-blend-screen dark:invert dark:hue-rotate-180" role="img" aria-label="Yıldırım Avize amblemi">
-      <Image
-        src="/anaekran.jpg"
-        alt=""
-        aria-hidden="true"
-        width={1280}
-        height={720}
-        priority
-        className="absolute max-w-none brightness-[1.12] contrast-[1.05]"
-        style={{ width: "297.7%", left: "-127.9%", top: "-32.1%" }}
-      />
-    </div>
+    <Image src="/logo-ikon.png" alt="" width={512} height={328} priority className="mx-auto h-auto w-44 sm:w-56" />
   );
 }
 
