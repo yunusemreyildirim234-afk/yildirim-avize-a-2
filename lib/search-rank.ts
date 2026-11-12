@@ -41,6 +41,19 @@ export function matchesSearch(row: SearchableRow, q: string): boolean {
   return !!n && (row.mc === n || (row.search ?? "").includes(n));
 }
 
+/**
+ * İkinci geçiş (yalnızca öbek eşleşmesi hiç sonuç vermediğinde kullanılır, bkz. lib/listing.ts): en az iki farklı kelimenin HEPSİ aranabilir metinde
+ * sırasız geçiyorsa eşleşir ("kristal avize" ↔ "Kristal Taşlı Avize"). Tek kelimeli sorguda öbek eşleşmesiyle aynıdır, burada false döner.
+ */
+export function matchesAllWords(row: SearchableRow, q: string): boolean {
+  const words = [...new Set(normalizeSearch(q).split(" ").filter(Boolean))];
+  const text = row.search ?? "";
+  return words.length >= 2 && words.every((w) => text.includes(w));
+}
+
+/** Öbek eşleşmesi ya da sırasız tüm kelimeler (öneri doğrulaması için). */
+export const matchesSearchTolerant = (row: SearchableRow, q: string) => matchesSearch(row, q) || matchesAllWords(row, q);
+
 const ACC = ACCESSORY_WORDS.map(normalizeSearch);
 
 /** Sorgu aksesuar anlamlı bir sözcük içeriyor mu? (tek sözcük: kelime başı eşleşmesi; çok sözcük: öbek) */

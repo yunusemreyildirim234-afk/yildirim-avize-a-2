@@ -9,7 +9,7 @@ test("searchSuggestion: yalnızca önbellekli katalogdan (catalogRows), veritaba
   const fn = src.slice(src.indexOf("export async function searchSuggestion"), src.indexOf("/** Üst arama kutusu"));
   assert.match(fn, /await catalogRows\(\)/);
   assert.ok(!/prisma|\$queryRaw|findMany/.test(fn));
-  assert.match(fn, /rows\.some\(\(r\) => matchesSearch\(r, s\)\)/);
+  assert.match(fn, /rows\.some\(\(r\) => matchesSearchTolerant\(r, s\)\)/);
 });
 
 test("/api/search: öneri yalnızca sonuç boşken hesaplanır; hız sınırı ve serverError aynen", () => {

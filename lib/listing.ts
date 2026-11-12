@@ -8,7 +8,7 @@ import { LISTING_ROWS_CACHE_SECONDS, STOREFRONT_CACHE_VERSION as ROWS_CACHE_VERS
 import { rowFilter } from "@/lib/listing-where";
 import { getVisibleWhere, getVisibleWhereStrict } from "@/lib/visibility";
 import { MAX_SEARCH_RESULTS } from "@/lib/product-search";
-import { matchesSearch, normalizeSearch, rankSearchRows, searchText } from "@/lib/search-rank";
+import { matchesAllWords, matchesSearch, matchesSearchTolerant, normalizeSearch, rankSearchRows, searchText } from "@/lib/search-rank";
 import { buildVocabulary, suggestQuery } from "@/lib/search-fuzzy";
 import { applyListing, isDefaultState, parseSize, variationAttrs, parseListingParams, stateToParams, type CatMeta, type ListingResult, type ListingRow } from "@/lib/listing-core";
 
@@ -101,7 +101,12 @@ async function rowsForWhere(where: Prisma.ProductWhereInput, cap: number, cached
 }
 
 /** Normalize arama (/arama ve /api/search): tek önbellekli katalogdan bellekte süzülür. Alaka sırası için çağıran rankSearchRows uygular. */
-const searchRows = async (q: string) => (await catalogRows()).filter((r) => matchesSearch(r, q)).slice(0, MAX_SEARCH_RESULTS);
+const searchRows = async (q: string) => {
+  const all = await catalogRows();
+  // Önce öbek eşleşmesi (mevcut davranış, sonuç kümeleri ve sıra aynen); yalnızca hiç sonuç yoksa sırasız tüm kelimeler (bellekte, ek okuma yok)
+  const exact = all.filter((r) => matchesSearch(r, q));
+  return (exact.length > 0 ? exact : all.filter((r) => matchesAllWords(r, q))).slice(0, MAX_SEARCH_RESULTS);
+};
 
 /**
  * Sonuç vermeyen arama için "Bunu mu demek istediniz" önerisi (yazım hatası). Sözlük, önbellekli katalog satırlarından bellekte türetilir: veritabanına ek okuma yoktur.
@@ -110,7 +115,7 @@ const searchRows = async (q: string) => (await catalogRows()).filter((r) => matc
 export async function searchSuggestion(q: string): Promise<string | null> {
   const rows = await catalogRows();
   const s = suggestQuery(q, buildVocabulary(rows));
-  return s && rows.some((r) => matchesSearch(r, s)) ? s : null;
+  return s && rows.some((r) => matchesSearchTolerant(r, s)) ? s : null;
 }
 
 /** Üst arama kutusu: tam model kodu önde, sonra alaka sırası; yalnızca kimlikler. */

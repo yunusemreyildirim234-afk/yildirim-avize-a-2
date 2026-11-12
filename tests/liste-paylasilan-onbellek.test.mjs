@@ -68,7 +68,7 @@ test("liste katmanı: tek paylaşılan katalog girdisi, açıklama veritabanınd
   assert.match(s, /export const SEARCH_DESCRIPTION_CHARS = 300;/);
   assert.match(s, /const catalogRows = \(\) => loadRowsCached\(\{\}, LISTING_ROW_CAP\);/);
   // arama, kategori ve Çok Satanlar aynı girdiden beslenir
-  assert.match(s, /const searchRows = async \(q: string\) => \(await catalogRows\(\)\)/);
+  assert.match(s, /const searchRows = async \(q: string\) => \{\s*const all = await catalogRows\(\);/); // arama tek paylaşılan katalogdan (ikinci geçiş de aynı satırlar)
   assert.match(s, /if \(test\) return \(await catalogRows\(\)\)\.filter\(test\)\.slice\(0, cap\);/);
   assert.match(s, /rows = await rowsForWhere\(base\.where, cap, base\.cached\);/);
   assert.ok(!/loadRows\(\{ id: \{ in: ids \} \}/.test(s), "Çok Satanlar için ayrı satır okuması yok");

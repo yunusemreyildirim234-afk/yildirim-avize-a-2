@@ -79,3 +79,24 @@ test("matchesSearch: alanlar, model kodu ve boş sorgu", () => {
   assert.equal(matchesSearch(row, "a1"), false, "model kodu yalnızca tam eşleşir");
   assert.equal(matchesSearch(row, "!!!"), false, "normalize sonucu boş sorgu eşleşmez");
 });
+
+import { matchesAllWords, matchesSearchTolerant } from "../lib/search-rank.ts";
+import { readFileSync } from "node:fs";
+
+test("matchesAllWords: sırasız tüm kelimeler; tek kelime, eksik kelime ve boş sorgu false", () => {
+  const row = { search: searchText(["Kristal Taşlı Avize", "Modern", "Beyaz"]), mc: null };
+  assert.equal(matchesSearch(row, "kristal avize"), false, "öbek bitişik değil");
+  assert.equal(matchesAllWords(row, "kristal avize"), true);
+  assert.equal(matchesAllWords(row, "AVİZE KRİSTAL"), true, "sıra ve büyük/küçük harf farkı");
+  assert.equal(matchesAllWords(row, "avize kristal yeşil"), false, "bir kelime eksik");
+  assert.equal(matchesAllWords(row, "avize"), false, "tek kelime ikinci geçişe girmez");
+  assert.equal(matchesAllWords(row, "avize avize"), false, "tekrarlı kelime tek sayılır");
+  assert.equal(matchesAllWords(row, "!!!"), false);
+  assert.equal(matchesSearchTolerant(row, "kristal avize"), true);
+  assert.equal(matchesSearchTolerant(row, "kristal taşlı"), true, "öbek eşleşmesi korunur");
+});
+
+test("listing.searchRows: ikinci geçiş yalnızca öbek eşleşmesi 0 iken (mevcut sonuç kümeleri değişmez)", () => {
+  const src = readFileSync(new URL("../lib/listing.ts", import.meta.url), "utf8").replace(/\r\n/g, "\n");
+  assert.match(src, /const exact = all\.filter\(\(r\) => matchesSearch\(r, q\)\);\n\s*return \(exact\.length > 0 \? exact : all\.filter\(\(r\) => matchesAllWords\(r, q\)\)\)\.slice\(0, MAX_SEARCH_RESULTS\);/);
+});

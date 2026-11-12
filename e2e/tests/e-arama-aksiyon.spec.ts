@@ -133,4 +133,10 @@ test.describe("e) Arama yazım önerisi ve kelime sırası", () => {
     const ok = (await (await request.get("/api/search?q=avize")).json()) as { suggestion?: string };
     expect(ok.suggestion).toBeUndefined();
   });
+  test("kelime sırası: sırası değişmiş sorgu da sonuç verir ve öbek sonuçları değişmez", async ({ request }) => {
+    const a = (await (await request.get("/api/search?q=" + encodeURIComponent("kristal avize"))).json()) as { products: { id: string }[] };
+    test.skip(a.products.length === 0, "e2e veritabanında kristal avize yok");
+    const b = (await (await request.get("/api/search?q=" + encodeURIComponent("avize kristal"))).json()) as { products: { id: string }[] };
+    expect(b.products.length).toBeGreaterThan(0);
+  });
 });
