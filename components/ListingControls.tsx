@@ -119,6 +119,7 @@ export default function ListingFilters({
   const hydrated = useSyncExternalStore(() => () => {}, () => true, () => false);
   const [allSizes, setAllSizes] = useState(false);
   const SIZE_VISIBLE = 8;
+  const [allColors, setAllColors] = useState(false); // renk listesi de aynı kalıp: ilk 8 + "Tümünü göster" (iç kaydırma yok)
 
   // Yapışkan düğme üst menünün hemen altında dursun
   useEffect(() => {
@@ -276,11 +277,11 @@ export default function ListingFilters({
             {facets.colors.length > 0 && (
               <fieldset>
                 <legend className={legend}>Renk</legend>
-                <ul className="max-h-72 overflow-y-auto pr-1">
-                  {facets.colors.map((c) => {
+                <ul>
+                  {facets.colors.map((c, i) => {
                     const hex = colorSwatch(c.key);
                     return (
-                      <li key={c.key}>
+                      <li key={c.key} className={hydrated && !allColors && i >= SIZE_VISIBLE && !selectedColors.has(c.key) ? "hidden" : undefined}>
                         <label className={row}>
                           <input type="checkbox" name="renk" value={c.key} defaultChecked={selectedColors.has(c.key)} className={box} />
                           <span
@@ -295,6 +296,17 @@ export default function ListingFilters({
                     );
                   })}
                 </ul>
+                {hydrated && facets.colors.length > SIZE_VISIBLE && (
+                  <button
+                    type="button"
+                    onClick={() => setAllColors((v) => !v)}
+                    aria-expanded={allColors}
+                    data-testid="renk-tumu"
+                    className="mt-1 min-h-10 lg:min-h-8 text-sm font-medium text-amber-700 underline underline-offset-2 hover:text-amber-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-600"
+                  >
+                    {allColors ? "Daha az göster" : `Tümünü göster (${facets.colors.length})`}
+                  </button>
+                )}
               </fieldset>
             )}
 
