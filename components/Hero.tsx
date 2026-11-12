@@ -1,10 +1,10 @@
 import Image from "next/image";
 import SearchBar from "@/components/SearchBar";
 
-// Kurumsal amblem: /logo-hero-3.png (şeffaf arka planlı, orijinal renkler; CSS filtresi yok). Dekoratif: marka adı h1'de yazılıdır.
+// Kurumsal amblem: /logo-hero-4.png (şeffaf arka planlı, orijinal renkler; CSS filtresi yok). Dekoratif: marka adı h1'de yazılıdır.
 function LogoEmblem() {
   return (
-    <Image src="/logo-hero-3.png" alt="" width={640} height={298} priority className="mx-auto h-auto w-44 sm:w-56" />
+    <Image src="/logo-hero-4.png" alt="" width={640} height={298} priority className="mx-auto h-auto w-44 sm:w-56" />
   );
 }
 
