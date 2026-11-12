@@ -151,7 +151,7 @@ test.describe("Admin paket D: görsel düzen ve bölüme git çubuğu", () => {
       await page.setViewportSize({ width: 390, height: 844 });
     }
     await region.getByRole("button", { name: "Seçimi temizle" }).click();
-    await expect(region.getByText("Toplu işlem için ürünleri işaretleyin.")).toBeVisible();
+    await expect(region.getByText("Toplu işlem için ürünleri işaretleyin.")).toBeAttached(); // mobilde boşken şerit gizli (R-12)
   });
 
   // Elle görsel inceleme için: SHOTS=<klasör> verilirse çubuk ve satır görüntülerini alır (verilmezse atlanır)

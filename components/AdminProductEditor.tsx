@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import ImagePicker from "@/components/ImagePicker";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import { itemsFromUrls, newKey, uploadFile, type PickerItem } from "@/lib/client-upload";
 import { replaceAt, urlsToAppend } from "@/lib/image-list";
 import { MAX_EDIT_IMAGES, MAX_VARIATION_IMAGES } from "@/lib/variation-input";
@@ -180,8 +181,9 @@ export default function AdminProductEditor({ product, onSaved, onDirtyChange, on
     setBusy(false);
   };
 
+  const [askDiscard, setAskDiscard] = useState(false); // "Değişiklikleri at" sayfa içi onayı
   const discardAll = () => {
-    if (!confirm("Kaydedilmemiş değişiklikler atılsın mı? Form son kaydedilen duruma döner.")) return;
+    setAskDiscard(false);
     setBase(server);
     applyForm(server);
     setResult(null);
@@ -342,7 +344,7 @@ export default function AdminProductEditor({ product, onSaved, onDirtyChange, on
           <input type="checkbox" checked={isBestSeller} onChange={(e) => setIsBestSeller(e.target.checked)} className="w-4 h-4 accent-amber-600" />
           Çok Satanlar vitrininde göster
         </label>
-        <span className="text-neutral-500">Değişiklikler &ldquo;Tümünü kaydet&rdquo; ile uygulanır.</span>
+        <span className="text-neutral-500">{dirty ? "Değişiklikler alttaki “Tümünü kaydet” ile uygulanır." : "Değişiklik yapınca altta “Tümünü kaydet” çıkar."}</span>
       </section>
 
       {/* Görseller */}
@@ -498,9 +500,13 @@ export default function AdminProductEditor({ product, onSaved, onDirtyChange, on
 
       <BulkColorChange key={product.variations.map((v) => v.variationValue).join("|")} productId={product.id} variations={product.variations} busy={busy} save={saveName} />
 
+      <ConfirmDialog open={askDiscard} title="Değişiklikler atılsın mı?" confirmLabel="Evet, at" danger onConfirm={discardAll} onCancel={() => setAskDiscard(false)}>
+        <p>Kaydedilmemiş değişiklikler silinir; form son kaydedilen duruma döner.</p>
+      </ConfirmDialog>
+
       {/* Yapışkan kayıt çubuğu: kaydedilmemiş parçalar + "Tümünü kaydet"; sonuç ve hatalar burada (pencere açılmaz) */}
       {(dirty || progress || result) && (
-        <div data-testid="kayit-cubugu" className="sticky bottom-0 z-30 -mx-5 -mb-5 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-neutral-300 bg-white px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
+        <div data-testid="kayit-cubugu" role="status" aria-live="polite" className="sticky bottom-0 z-30 -mx-5 -mb-5 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-neutral-300 bg-white px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
           <div className="min-w-0 flex-1 basis-60 space-y-0.5">
             {dirty && (
               <p className="font-semibold text-neutral-900" data-testid="kirli-liste">
@@ -508,13 +514,13 @@ export default function AdminProductEditor({ product, onSaved, onDirtyChange, on
               </p>
             )}
             {dirty && hasNoUndoParts(d) && <p className="text-neutral-600">Renk fotoğrafları ve renk sırası kaydedildikten sonra geri alınamaz.</p>}
-            <p role="status" aria-live="polite" data-testid="kayit-durum" className={`font-semibold break-words ${result && !result.ok ? "text-red-800" : "text-emerald-800"}`}>
+            <p data-testid="kayit-durum" className={`font-semibold break-words ${result && !result.ok ? "text-red-800" : "text-emerald-800"}`}>
               {progress ? `${progress.done + 1}/${progress.total} kaydediliyor...` : (result?.text ?? "")}
             </p>
           </div>
           {dirty ? (
-            <div className="flex flex-wrap gap-2">
-              <button type="button" disabled={busy} onClick={discardAll} className="inline-flex min-h-11 items-center rounded-lg border border-neutral-300 bg-white px-3 font-semibold text-neutral-800 hover:border-amber-600 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-amber-600">
+            <div className="flex flex-wrap gap-3">
+              <button type="button" disabled={busy} onClick={() => setAskDiscard(true)} className="inline-flex min-h-11 items-center rounded-lg border border-neutral-300 bg-white px-3 font-semibold text-neutral-800 hover:border-amber-600 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-amber-600">
                 Değişiklikleri at
               </button>
               <button type="button" data-testid="tumunu-kaydet" disabled={busy} onClick={saveAll} className="inline-flex min-h-11 items-center rounded-lg bg-neutral-900 px-4 font-semibold text-white hover:bg-amber-700 disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600">

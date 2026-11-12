@@ -107,7 +107,7 @@ export default function AdminSelectionPanel({
   );
 
   return (
-    <div role="region" aria-label="Seçilen ürünler" style={{ top }} className="sticky z-40 bg-amber-50 border-y border-amber-200">
+    <div role="region" aria-label="Seçilen ürünler" style={{ top }} className={`sticky z-40 bg-amber-50 border-y border-amber-200${count === 0 ? " max-sm:hidden" : ""}`}>
       <div className="flex items-center gap-2 px-4 sm:px-6 h-12 text-xs">
         {count === 0 ? (
           <span role="status" aria-live="polite" className="text-neutral-500">Toplu işlem için ürünleri işaretleyin.</span>

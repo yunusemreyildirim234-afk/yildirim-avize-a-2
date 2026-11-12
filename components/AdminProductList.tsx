@@ -9,6 +9,7 @@ import AdminBulkBar from "@/components/AdminBulkBar";
 import AdminSelectionPanel, { scrollToRow } from "@/components/AdminSelectionPanel";
 import { addAll, chipLabel, nextLastId, removeAll, removeId, toggleId } from "@/lib/admin-selection";
 import AdminProductEditor from "@/components/AdminProductEditor";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import AdminDescriptionEditor from "@/components/AdminDescriptionEditor";
 import { activeConfirmMessage } from "@/lib/bulk-plan";
 import SmartFilterChips from "@/components/SmartFilterChips";
@@ -65,6 +66,46 @@ const totalStockOf = (p: Product) => p.variations.reduce((sum, v) => sum + Math.
 const stockedInactive = (p: Product) => p.active === false && totalStockOf(p) > 0;
 const chipTest = (key: string, p: Product, sets: ChipSets): boolean =>
   isQuickFilterKey(key) ? quickFilterTest(key, p) : key === "stockedinactive" ? stockedInactive(p) : key === "discount" ? hasDiscount(p) : key === "featured" ? sets.featured.has(p.id) : key === "bestseller" ? sets.bestseller.has(p.id) : false;
+
+/** Satırdaki "⋯" menüsü: Escape ve dış tıklama kapatır (Escape'te odak düğmeye döner); menü rolü. */
+function RowMenu({ children }: { children: React.ReactNode }) {
+  const ref = useRef<HTMLDetailsElement>(null);
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (!open) return;
+    const close = () => {
+      if (ref.current) ref.current.open = false;
+      setOpen(false);
+    };
+    const onDown = (e: MouseEvent) => ref.current && !ref.current.contains(e.target as Node) && close();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      close();
+      ref.current?.querySelector("summary")?.focus();
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+  return (
+    <details ref={ref} className="relative" onToggle={(e) => setOpen(e.currentTarget.open)}>
+      <summary
+        aria-label="Diğer işlemler"
+        aria-haspopup="menu"
+        title="Diğer işlemler"
+        className="inline-flex min-h-10 md:min-h-9 cursor-pointer list-none items-center rounded-lg px-3 text-neutral-600 hover:bg-neutral-100 [&::-webkit-details-marker]:hidden focus-visible:outline-2 focus-visible:outline-amber-600"
+      >
+        <MoreHorizontal aria-hidden="true" className="w-4 h-4" />
+      </summary>
+      <div role="menu" aria-label="Diğer işlemler" className="absolute right-0 z-20 mt-1 w-44 rounded-lg border border-neutral-200 bg-white p-1 shadow-lg">
+        {children}
+      </div>
+    </details>
+  );
+}
 
 function ModelCodeEditor({ initial, disabled, onSave }: { initial: string; disabled: boolean; onSave: (code: string) => void }) {
   const [value, setValue] = useState(initial);
@@ -157,6 +198,7 @@ export default function AdminProductList({ products, maxTotalDiscountPct, showca
   const [undoing, setUndoing] = useState(false);
   // Açık düzenleyicide kaydedilmemiş değişiklik var mı (kapatırken onay; Geri Al çubuğu kayıt çubuğunun üstüne taşınır)
   const [editorDirty, setEditorDirty] = useState(false);
+  const [deleteAsk, setDeleteAsk] = useState<{ id: string; title: string } | null>(null); // "Modeli Sil" sayfa içi onayı
   const toggleEdit = (id: string) => {
     if (editingId && editorDirty && !confirm("Düzenleyicide kaydedilmemiş değişiklikler var. Kapatılırsa kaybolur. Devam edilsin mi?")) return;
     setEditingId((cur) => (cur === id ? null : id));
@@ -371,10 +413,7 @@ Yine de geri alınsın mı?`)) break;
 
   // Ürünü Sil
   const handleDeleteProduct = async (productId: string, title: string) => {
-    if (!confirm(`"${title}" modelini katalogdan tamamen silmek istediğinize emin misiniz?`)) {
-      return;
-    }
-
+    setDeleteAsk(null);
     setLoadingId(productId);
     try {
       const res = await fetch("/api/admin/product", {
@@ -399,6 +438,17 @@ Yine de geri alınsın mı?`)) break;
 
   return (
     <div id="urunler" className="scroll-mt-[var(--admin-offset,6rem)] bg-white rounded-2xl border border-neutral-200 overflow-clip shadow-sm">
+      <ConfirmDialog
+        open={deleteAsk !== null}
+        title="Model silinsin mi?"
+        confirmLabel="Evet, sil"
+        danger
+        onConfirm={() => deleteAsk && handleDeleteProduct(deleteAsk.id, deleteAsk.title)}
+        onCancel={() => setDeleteAsk(null)}
+      >
+        <p className="font-semibold text-neutral-900">&quot;{deleteAsk?.title}&quot; modeli katalogdan silinecek (geçmiş siparişi varsa silinmez, yalnızca pasife alınır).</p>
+        <p>Silindikten sonra alttaki çubuktan geri alabilirsiniz.</p>
+      </ConfirmDialog>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -635,26 +685,18 @@ Yine de geri alınsın mı?`)) break;
             >
               <FileText aria-hidden="true" className="w-3.5 h-3.5" /> {descId === product.id ? "Açıklamayı kapat" : "Açıklamayı düzenle"}
             </button>
-            <details className="relative">
-              <summary
-                aria-label="Diğer işlemler"
-                title="Diğer işlemler"
-                className="inline-flex min-h-10 md:min-h-9 cursor-pointer list-none items-center rounded-lg px-3 text-neutral-600 hover:bg-neutral-100 [&::-webkit-details-marker]:hidden focus-visible:outline-2 focus-visible:outline-amber-600"
+            <RowMenu>
+              <button
+                type="button"
+                role="menuitem"
+                disabled={loadingId === product.id}
+                onClick={() => setDeleteAsk({ id: product.id, title: product.title })}
+                className="flex min-h-10 w-full items-center gap-1.5 rounded-md text-red-700 hover:bg-red-50 text-xs font-semibold px-3 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-red-600"
+                title="Avizeyi Katalogdan Sil"
               >
-                <MoreHorizontal aria-hidden="true" className="w-4 h-4" />
-              </summary>
-              <div className="absolute right-0 z-20 mt-1 w-44 rounded-lg border border-neutral-200 bg-white p-1 shadow-lg">
-                <button
-                  type="button"
-                  disabled={loadingId === product.id}
-                  onClick={() => handleDeleteProduct(product.id, product.title)}
-                  className="flex min-h-10 w-full items-center gap-1.5 rounded-md text-red-700 hover:bg-red-50 text-xs font-semibold px-3 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-red-600"
-                  title="Avizeyi Katalogdan Sil"
-                >
-                  <Trash2 aria-hidden="true" className="w-3.5 h-3.5" /> Modeli Sil
-                </button>
-              </div>
-            </details>
+                <Trash2 aria-hidden="true" className="w-3.5 h-3.5" /> Modeli Sil
+              </button>
+            </RowMenu>
             </div>
           </div>
           {descId === product.id && <AdminDescriptionEditor key={product.id} productId={product.id} title={product.title} />}

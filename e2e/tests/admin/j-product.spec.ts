@@ -58,7 +58,8 @@ test.describe("Admin ürün: oluştur → vitrinde görün → pasif → aktif �
       dialogs.length = 0;
       const imgs = await rows<{ id: string }>(`select id from "ProductImage" where "productId" = $1`, [id]);
       await page.locator(`#ap-${id} summary[aria-label="Diğer işlemler"]`).click(); // "Modeli Sil" satırdaki ⋯ menüsünde
-      await page.locator(`#ap-${id}`).getByRole("button", { name: /Modeli Sil/ }).click();
+      await page.locator(`#ap-${id}`).getByRole("menuitem", { name: /Modeli Sil/ }).click();
+      await page.getByRole("alertdialog", { name: "Model silinsin mi?" }).getByRole("button", { name: "Evet, sil" }).click(); // sayfa içi onay
       await expect.poll(() => dialogs.join("|")).toContain("katalogdan silindi");
       expect(await productIdByTitle(title)).toBeNull();
       // Silinen ürünün görselleri ürüne bağsız kalır (Geri Al içindir); test verisi olarak temizlenir.

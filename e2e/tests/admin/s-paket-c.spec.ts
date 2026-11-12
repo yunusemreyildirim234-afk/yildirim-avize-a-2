@@ -59,20 +59,19 @@ test.describe("Admin paket C: stok düğmeleri, silme düğmeleri, Trendyol vars
     await test.step("Modeli Sil: satırdaki ⋯ menüsünde, kırmızı ton; onay metni ürün adını içerir; vazgeçince silinmez", async () => {
       const edit = rowEl().getByRole("button", { name: /Düzenle/ });
       await rowEl().locator('summary[aria-label="Diğer işlemler"]').click(); // Modeli Sil artık ⋯ menüsünde
-      const del = rowEl().getByRole("button", { name: /Modeli Sil/ });
+      const del = rowEl().getByRole("menuitem", { name: /Modeli Sil/ });
       await expect(del).toBeVisible();
       // Renk değeri tarayıcıda lab/oklch döner; ton, tehlike (kırmızı) sınıflarıyla doğrulanır
       expect(await del.getAttribute("class")).toMatch(/text-red-700/);
       expect(await del.evaluate((el) => getComputedStyle(el).color)).not.toBe(await edit.evaluate((el) => getComputedStyle(el).color));
 
-      page.removeAllListeners("dialog");
-      let message = "";
-      page.once("dialog", (dlg) => {
-        message = dlg.message();
-        void dlg.dismiss();
-      });
+      // Onay artık sayfa içi pencere (alertdialog): metin ürün adını içerir; "Vazgeç" silmez
       await del.click();
-      await expect.poll(() => message).toContain(title);
+      const dlg = page.getByRole("alertdialog", { name: "Model silinsin mi?" });
+      await expect(dlg).toContainText(title);
+      await expect(dlg).toContainText("geri alabilirsiniz");
+      await dlg.getByRole("button", { name: "Vazgeç" }).click();
+      await expect(dlg).toBeHidden();
       expect(await productIdByTitle(title), "vazgeçince ürün durur").toBe(id);
     });
   });
