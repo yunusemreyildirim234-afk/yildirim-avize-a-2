@@ -33,7 +33,15 @@ test("başka içerikli parantezler ve ortadaki 'montajlı' olduğu gibi kalır",
     "Avize Taşı (metal halka hediye)",
     "Avize (TAM MONTAJLIDIR.) Gold",
     "Tam Montajlı Avize Gold",
-    "Avize Gold (TAM MONTAJLIDIR.) ( Led Ampuller Hediye)",
     "Avize (Tam montajlı ve ampullü)",
   ]) assert.deepEqual(displayTitle(t), { title: t, assembled: false }, t);
+});
+
+test("art arda parantez grupları: montajlı önce ya da sonra gelse de yalnızca o çıkar, diğerleri aynen kalır", () => {
+  assert.deepEqual(displayTitle("Kontes 12 Li Eskitme (TAM MONTAJLIDIR.) ( Led Ampuller Hediye)"), { title: "Kontes 12 Li Eskitme ( Led Ampuller Hediye)", assembled: true });
+  assert.deepEqual(displayTitle("Kontes 12 Li Eskitme ( Led Ampul Hediye ) (Tam montajlı)"), { title: "Kontes 12 Li Eskitme ( Led Ampul Hediye )", assembled: true });
+  assert.deepEqual(displayTitle("Avize ( 8+4 ) ( TAM MONTAJLIDIR ) (metal halka hediye)"), { title: "Avize ( 8+4 ) (metal halka hediye)", assembled: true });
+  // montajlı olmayan ardışık gruplar değişmez; ortadaki montajlı (sonrasında düz metin var) değişmez
+  assert.equal(displayTitle("Avize ( 8+4 ) (Led Ampul Hediye)").assembled, false);
+  assert.equal(displayTitle("Avize (TAM MONTAJLIDIR.) Gold ( 8+4 )").assembled, false);
 });
