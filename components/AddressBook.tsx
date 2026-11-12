@@ -6,6 +6,7 @@ import { MapPin, Pencil, Plus, Trash2 } from "lucide-react";
 import { sortByNameTr } from "@/lib/sort-tr";
 import { MAX_ADDRESSES } from "@/lib/address-book";
 import { isValidPhone, PHONE_ERROR } from "@/lib/phone";
+import { titleCaseTr } from "@/lib/display-case";
 
 export interface SavedAddress {
   id: string;
@@ -181,7 +182,7 @@ export default function AddressBook({ defaultName }: { defaultName: string }) {
                 {a.isDefault && <span className="rounded-full bg-amber-100 text-amber-900 text-[10px] font-bold px-2 py-0.5">Varsayılan</span>}
               </div>
               <p className="mt-1 text-neutral-800">{a.fullName} · <span className="font-mono text-xs">{a.phone}</span></p>
-              <p className="text-neutral-600 text-xs mt-0.5">{a.address}, {a.cityName} / {a.stateName}</p>
+              <p className="text-neutral-600 text-xs mt-0.5">{titleCaseTr(a.address)}, {a.cityName} / {a.stateName}</p>
               <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
                 {!a.isDefault && (
                   <button type="button" disabled={busy} onClick={() => makeDefault(a)} className="rounded-lg border border-neutral-300 px-3 py-2 hover:bg-neutral-50 disabled:opacity-50">Varsayılan yap</button>

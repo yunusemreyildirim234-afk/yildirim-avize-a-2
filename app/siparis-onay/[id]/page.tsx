@@ -18,6 +18,7 @@ import { WHATSAPP_NUMBER } from "@/lib/site";
 import CopyCodeButton from "@/components/CopyCodeButton";
 import { bankPaymentDeadline, breakdownOf, breakdownRows, formatIstanbul, orderCode } from "@/lib/order-display";
 import { smallImage } from "@/lib/img";
+import { titleCaseTr } from "@/lib/display-case";
 
 export const metadata: Metadata = {
   title: "Siparişiniz Alındı",
@@ -180,7 +181,7 @@ export default async function OrderConfirmationPage({ params }: { params: Promis
               <p data-testid="alici-adi" className="text-neutral-600 mt-1">Alıcı: <strong>{maskName(recipientOf(order))}</strong></p>
             )}
             {!isPickup && order.address && (
-              <p className="text-neutral-600 mt-1">{order.address}{order.buyerCityName || order.buyerStateName ? `, ${[order.buyerCityName, order.buyerStateName].filter(Boolean).join(" / ")}` : ""}</p>
+              <p className="text-neutral-600 mt-1">{titleCaseTr(order.address)}{order.buyerCityName || order.buyerStateName ? `, ${[order.buyerCityName, order.buyerStateName].filter(Boolean).join(" / ")}` : ""}</p>
             )}
             {order.kargonomiShipmentId && (
               <p className="text-neutral-600 mt-1">
