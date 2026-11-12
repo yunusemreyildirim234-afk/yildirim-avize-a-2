@@ -42,6 +42,9 @@ const REPLY_TO = "omeryildirim_3@hotmail.com";
 /** Loglarda alıcı e-postası tam yazılmaz (KVKK): a***@alan.com */
 const maskTo = (to: unknown) => (Array.isArray(to) ? to : [to]).map((t) => String(t).replace(/^(.).*@/, "$1***@"));
 
+/** Tüm e-postaların en üstüne marka logosu (opak beyaz PNG, mutlak https adres; görsel engellenirse alt metin okunur). */
+export const EMAIL_LOGO_HTML = `<img src="https://www.yildirimavize.com.tr/email-logo-v2.png" width="200" alt="Yıldırım Avize" style="display:block;margin:0 auto 16px;border:0">`;
+
 // RESEND_FROM (yoksa kurumsal varsayılan adres) ile dener; alan adı doğrulanmamışsa onboarding@resend.dev ile yeniden dener
 async function sendViaResend(apiKey: string | undefined, payload: Record<string, unknown>): Promise<boolean> {
   if (!apiKey) {
@@ -54,7 +57,7 @@ async function sendViaResend(apiKey: string | undefined, payload: Record<string,
       const res = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ ...payload, from, reply_to: REPLY_TO }),
+        body: JSON.stringify({ ...payload, ...(typeof payload.html === "string" ? { html: EMAIL_LOGO_HTML + payload.html } : {}), from, reply_to: REPLY_TO }),
         signal: AbortSignal.timeout(RESEND_TIMEOUT_MS), // zaman aşımı catch'e düşer: sıradaki gönderici denenir, en sonda false
       });
       if (res.ok) return true;
