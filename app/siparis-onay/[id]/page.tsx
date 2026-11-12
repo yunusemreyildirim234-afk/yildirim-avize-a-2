@@ -27,7 +27,9 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-const waLink = (id: string) => `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Merhaba, ${orderCode(id)} kodlu siparişim hakkında bilgi almak istiyorum.`)}`;
+const tl = (n: number) => `${n.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺`;
+
+const waLink =(id: string) => `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Merhaba, ${orderCode(id)} kodlu siparişim hakkında bilgi almak istiyorum.`)}`;
 
 function ClosedNote({ id, returned }: { id: string; returned: boolean }) {
   return (
@@ -155,6 +157,9 @@ export default async function OrderConfirmationPage({ params }: { params: Promis
                     <strong>{displayTitle(item.variation.product.title).title}</strong>
                   </Link>{" "}
                   – {item.variation.variationValue}
+                  <span className="block text-neutral-500 mt-0.5">
+                    {item.quantity} × {tl(item.unitPrice)} = <strong className="text-neutral-800">{tl(item.unitPrice * item.quantity)}</strong>
+                  </span>
                 </span>
               </li>
             ))}
