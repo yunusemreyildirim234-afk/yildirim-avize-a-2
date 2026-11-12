@@ -209,10 +209,12 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
         <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent pointer-events-none" />
 
         {/* Beyoğlu Mağaza Rozeti */}
+        {!soldOut && (
         <div className="absolute bottom-4 left-4 right-4 sm:right-auto sm:bottom-6 sm:left-6 pointer-events-none bg-neutral-900/90 border border-neutral-700 text-neutral-200 text-xs px-4 py-2 rounded-full flex items-center gap-2 shadow-lg">
           <span aria-hidden="true" className="w-2 h-2 rounded-full bg-emerald-400" />
           <span>Beyoğlu Mağazamızda Sergileniyor</span>
         </div>
+        )}
       </div>
       {gallery.length > 1 && (
         <div ref={thumbsRef} className="flex gap-2 overflow-x-auto p-3 border-t border-neutral-800" role="tablist" aria-label="Ürün fotoğrafları">
@@ -309,7 +311,7 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
                 ))}
               </ul>
             )}
-            {freeShipping && (
+            {freeShipping && !soldOut && (
               <p className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-emerald-600 rounded-full px-3 py-1">
                 <span aria-hidden="true">🚚</span> Ücretsiz Kargo &amp; Hızlı Teslimat
               </p>
