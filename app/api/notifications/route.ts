@@ -25,7 +25,13 @@ export async function GET(req: Request) {
     prisma.notification.findMany({ where, orderBy: { createdAt: "desc" }, take: 40 }),
     prisma.notification.count({ where: { AND: [where, { read: false }] } }),
   ]);
-  return NextResponse.json({ items, unread });
+  // Yalnızca gösterim: havale siparişi bildirimine ipucu eklenir (kayıt değişmez)
+  const orderIds = items.filter((n) => n.title === "Siparişiniz Alındı" && n.link?.startsWith("/siparis-onay/")).map((n) => n.link!.slice("/siparis-onay/".length));
+  const bankIds = orderIds.length
+    ? new Set((await prisma.order.findMany({ where: { id: { in: orderIds }, paymentMethod: "BANK_TRANSFER", status: "PENDING_NEW" }, select: { id: true } })).map((o) => o.id))
+    : new Set<string>();
+  const shown = items.map((n) => (n.link && bankIds.has(n.link.slice("/siparis-onay/".length)) && n.title === "Siparişiniz Alındı" ? { ...n, message: `${n.message} Havale bilgileri için tıklayın.` } : n));
+  return NextResponse.json({ items: shown, unread });
 }
 
 // scope=admin|user yalnızca o kümeyi siler; scope yoksa müşteri oturumu varsa yalnızca müşterinin, yoksa yöneticinin kümesi silinir (çift oturumda diğer taraf silinmez).
