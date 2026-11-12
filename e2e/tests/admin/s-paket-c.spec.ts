@@ -56,16 +56,14 @@ test.describe("Admin paket C: stok düğmeleri, silme düğmeleri, Trendyol vars
       await expect.poll(() => stockOf(id), { timeout: 30_000 }).toBe(7);
     });
 
-    await test.step("Modeli Sil: Düzenle ile aynı yükseklik, kırmızı ton, ≥12 px uzak; onay metni ürün adını içerir; vazgeçince silinmez", async () => {
+    await test.step("Modeli Sil: satırdaki ⋯ menüsünde, kırmızı ton; onay metni ürün adını içerir; vazgeçince silinmez", async () => {
       const edit = rowEl().getByRole("button", { name: /Düzenle/ });
+      await rowEl().locator('summary[aria-label="Diğer işlemler"]').click(); // Modeli Sil artık ⋯ menüsünde
       const del = rowEl().getByRole("button", { name: /Modeli Sil/ });
-      const [e, d] = [(await edit.boundingBox())!, (await del.boundingBox())!];
-      expect(d.height, "aynı yükseklik").toBeGreaterThanOrEqual(e.height - 1);
-      expect(d.x - (e.x + e.width), "Düzenle ile Sil arası").toBeGreaterThanOrEqual(12);
+      await expect(del).toBeVisible();
       // Renk değeri tarayıcıda lab/oklch döner; ton, tehlike (kırmızı) sınıflarıyla doğrulanır
       expect(await del.getAttribute("class")).toMatch(/text-red-700/);
       expect(await del.evaluate((el) => getComputedStyle(el).color)).not.toBe(await edit.evaluate((el) => getComputedStyle(el).color));
-      expect(await del.evaluate((el) => getComputedStyle(el).borderTopWidth)).not.toBe("0px");
 
       page.removeAllListeners("dialog");
       let message = "";

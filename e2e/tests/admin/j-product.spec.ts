@@ -57,6 +57,7 @@ test.describe("Admin ürün: oluştur → vitrinde görün → pasif → aktif �
       await expect(page.locator(`#ap-${id}`)).toBeVisible();
       dialogs.length = 0;
       const imgs = await rows<{ id: string }>(`select id from "ProductImage" where "productId" = $1`, [id]);
+      await page.locator(`#ap-${id} summary[aria-label="Diğer işlemler"]`).click(); // "Modeli Sil" satırdaki ⋯ menüsünde
       await page.locator(`#ap-${id}`).getByRole("button", { name: /Modeli Sil/ }).click();
       await expect.poll(() => dialogs.join("|")).toContain("katalogdan silindi");
       expect(await productIdByTitle(title)).toBeNull();
