@@ -18,6 +18,7 @@ import { reserveLines, StockShortError } from "@/lib/stock-reserve";
 import { BANK_PENDING_LIMIT_ERROR, PENDING_LIMIT_ERROR } from "@/lib/pending-orders";
 import { bestEffort, createOrFindGuest } from "@/lib/best-effort";
 import { recordConsent } from "@/lib/marketing";
+import { effectiveOrderEmail } from "@/lib/order-email";
 import { revalidateStorefrontSafe } from "@/lib/revalidate";
 
 interface CartLine {
@@ -63,6 +64,10 @@ export async function POST(req: Request) {
     if (typeof email !== "string" || email.length > 254 || !EMAIL_RE.test(email)) {
       return NextResponse.json({ error: "Geçerli bir e-posta adresi giriniz." }, { status: 400 });
     }
+    // Girişli müşteride kupon, bekleyen sipariş sınırı/değişimi ve pazarlama onayı HESABIN e-postasıyla çalışır (gövdedeki e-posta güvenilmez)
+    const sessionUid = await getSessionUserId();
+    const accountEmailOfSession = sessionUid ? (await prisma.user.findUnique({ where: { id: sessionUid }, select: { email: true } }))?.email ?? null : null;
+    const orderEmail = effectiveOrderEmail(accountEmailOfSession, email);
     // Ad: kontrol karakterleri (NUL dahil) boşluğa çevrilir; PostgreSQL NUL'u reddedip 500 verirdi. Temizlik sonrası boşsa aşağıdaki form denetimi 400 döner.
     const name = cleanControlChars(rawName);
     if (!isValidPhone(phone)) return NextResponse.json({ error: PHONE_ERROR }, { status: 400 });
@@ -101,7 +106,7 @@ export async function POST(req: Request) {
     // Aynı telefon/e-posta için bekleyen sınırı doluysa yeni sipariş açılmaz.
     let swap: PendingSwap = { blocked: false, swapIds: [], heldStock: new Map(), heldCoupons: [] };
     if (paymentMethod === "CREDIT_CARD") {
-      swap = await planPendingSwap({ email: String(email), phone, sessionUserId: await getSessionUserId(), previousOrderId: body.previousOrderId }).catch((e) => {
+      swap = await planPendingSwap({ email: orderEmail, phone, sessionUserId: await getSessionUserId(), previousOrderId: body.previousOrderId }).catch((e) => {
         console.error("[siparis] bekleyen sipariş denetimi başarısız:", (e as Error).message);
         return swap;
       });
@@ -175,7 +180,7 @@ export async function POST(req: Request) {
 
     // Havale: aynı e-posta/telefon için bekleyen sipariş sınırı (ürün ve kupon hataları önce gösterilir)
     if (paymentMethod === "BANK_TRANSFER") {
-      const blocked = await bankPendingLimitReached({ email: String(email), phone }).catch((e) => {
+      const blocked = await bankPendingLimitReached({ email: orderEmail, phone }).catch((e) => {
         console.error("[siparis] bekleyen havale denetimi başarısız:", (e as Error).message);
         return false;
       });
@@ -185,7 +190,7 @@ export async function POST(req: Request) {
     // 2. Müşteriyi bul veya oluştur
     // Sipariş yalnızca geçerli bir oturum varsa mevcut hesaba bağlanır; misafir, e-postayla başkasının hesabına bağlanamaz
     const sessionUserId = await getSessionUserId();
-    const normalizedEmail = String(email).trim().toLowerCase();
+    const normalizedEmail = orderEmail.trim().toLowerCase();
     let user = sessionUserId ? await prisma.user.findUnique({ where: { id: sessionUserId } }) : null;
     if (!user) {
       const existing = await prisma.user.findFirst({ where: { email: { equals: normalizedEmail, mode: "insensitive" } } });
