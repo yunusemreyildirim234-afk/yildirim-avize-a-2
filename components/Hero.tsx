@@ -1,10 +1,10 @@
 import Image from "next/image";
 import SearchBar from "@/components/SearchBar";
 
-// Kurumsal amblem: /logo-ikon.png (şeffaf arka planlı, orijinal renkler; CSS filtresi yok). Dekoratif: marka adı h1'de yazılıdır.
+// Kurumsal amblem: /logo-hero.png (şeffaf arka planlı, orijinal renkler; CSS filtresi yok). Dekoratif: marka adı h1'de yazılıdır.
 function LogoEmblem() {
   return (
-    <Image src="/logo-ikon.png" alt="" width={512} height={328} priority className="mx-auto h-auto w-44 sm:w-56" />
+    <Image src="/logo-hero.png" alt="" width={640} height={298} priority className="mx-auto h-auto w-44 sm:w-56" />
   );
 }
 
@@ -14,7 +14,7 @@ export default function Hero() {
       <div className="max-w-3xl mx-auto text-center">
         <LogoEmblem />
         <h1 className="mt-1 text-4xl sm:text-6xl font-serif font-black tracking-tight text-zinc-950">Yıldırım Avize</h1>
-        <Image src="/logo-ucgen.png" alt="" width={128} height={65} className="mx-auto mt-1 h-auto w-12 sm:w-14" />
+        <Image src="/logo-uc-gen.png" alt="" width={128} height={65} className="mx-auto mt-1 h-auto w-12 sm:w-14" />
 
         <div className="mt-5 sm:mt-6 max-w-2xl mx-auto">
           <SearchBar />
