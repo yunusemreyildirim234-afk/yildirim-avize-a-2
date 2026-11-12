@@ -318,6 +318,7 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
                 )}
               </ul>
             )}
+            {quantity > 1 && <p className="mt-3 text-[11px] font-semibold text-neutral-600">Aşağıdaki indirimli fiyatlar 1 adet (birim) içindir.</p>}
             <PriceLadder steps={priceLadder(product, ladderCtx, currentPrice)} itemsTotal={currentPrice} />
             {notes.length > 0 && (
               <ul className="mt-2 space-y-0.5">
