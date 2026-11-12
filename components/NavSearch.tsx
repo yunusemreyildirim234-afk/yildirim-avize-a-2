@@ -19,12 +19,16 @@ function Results({
   results,
   loading,
   searched,
+  suggestion,
+  onSuggest,
   onPick,
 }: {
   query: string;
   results: Result[];
   loading: boolean;
   searched: boolean;
+  suggestion: string | null;
+  onSuggest: (term: string) => void;
   onPick: () => void;
 }) {
   if (loading && results.length === 0) {
@@ -39,6 +43,15 @@ function Results({
     return (
       <div className="p-5 text-center text-xs text-zinc-600 space-y-2">
         <p>&ldquo;{query}&rdquo; ile eşleşen ürün bulunamadı.</p>
+        {suggestion && (
+          <p>
+            Bunu mu demek istediniz:{" "}
+            <button type="button" onClick={() => onSuggest(suggestion)} className="font-semibold text-amber-800 underline underline-offset-2">
+              {suggestion}
+            </button>
+            ?
+          </p>
+        )}
         <Link href="/kategori/tum" className="inline-block font-semibold text-amber-800 underline underline-offset-2">Tüm koleksiyona göz atın →</Link>
       </div>
     );
@@ -80,6 +93,7 @@ export default function NavSearch() {
   const [results, setResults] = useState<Result[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [suggestion, setSuggestion] = useState<string | null>(null);
   const [recent, setRecent] = useState<string[]>([]);
   const desktopRef = useRef<HTMLDivElement>(null);
   const desktopInput = useRef<HTMLInputElement>(null);
@@ -96,6 +110,7 @@ export default function NavSearch() {
     setQuery(value);
     if (!value.trim()) {
       setResults([]);
+      setSuggestion(null);
       setSearched(false);
       setLoading(false);
     }
@@ -133,6 +148,7 @@ export default function NavSearch() {
     setOpen(false);
     setQuery("");
     setResults([]);
+    setSuggestion(null);
     setSearched(false);
   };
 
@@ -153,6 +169,7 @@ export default function NavSearch() {
         const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`, { signal: ctrl.signal });
         const data = await res.json();
         setResults(data.products || []);
+        setSuggestion(typeof data.suggestion === "string" ? data.suggestion : null);
         setSearched(true);
       } catch {
         /* iptal veya ağ hatası */
@@ -253,7 +270,7 @@ export default function NavSearch() {
         </form>
         {showPanel && (
           <div className="absolute right-0 top-full mt-2 w-[26rem] bg-white rounded-2xl border border-zinc-200 shadow-xl overflow-hidden">
-            <Results query={query.trim()} results={results} loading={loading} searched={searched} onPick={pickResult} />
+            <Results query={query.trim()} results={results} loading={loading} searched={searched} suggestion={suggestion} onSuggest={onChange} onPick={pickResult} />
           </div>
         )}
         {showRecent && <div className="absolute right-0 top-full mt-2 w-[26rem] bg-white rounded-2xl border border-zinc-200 shadow-xl overflow-hidden">{recentList}</div>}
@@ -291,7 +308,7 @@ export default function NavSearch() {
           </form>
           <div className="flex-1 overflow-y-auto">
             {query.trim() ? (
-              <Results query={query.trim()} results={results} loading={loading} searched={searched} onPick={pickResult} />
+              <Results query={query.trim()} results={results} loading={loading} searched={searched} suggestion={suggestion} onSuggest={onChange} onPick={pickResult} />
             ) : recent.length > 0 ? (
               recentList
             ) : (

@@ -9,7 +9,7 @@ import { categoryDisplayTitle } from "@/lib/category-settings";
 import { withVisibleProducts } from "@/lib/categories";
 import { canonicalListing, pageHref, parseAdet, parsePage } from "@/lib/pagination";
 import { MAX_SEARCH_RESULTS, clipQuery } from "@/lib/product-search";
-import { getListing, type Listing } from "@/lib/listing";
+import { getListing, searchSuggestion, type Listing } from "@/lib/listing";
 import type { ProductWithVariations } from "@/lib/products";
 import { rateLimit } from "@/lib/rate-limit";
 
@@ -38,6 +38,7 @@ export default async function SearchPage({ searchParams }: Props) {
   let listing: Listing | null = null;
   let limited = false;
   let failed = false;
+  let suggestion: string | null = null;
 
   if (q) {
     // Sayfa bir Request almadığı için IP bazlı sınır istek başlıklarından kurulur (kimliksiz ve indeksiz arama)
@@ -59,6 +60,9 @@ export default async function SearchPage({ searchParams }: Props) {
     }
   }
 
+  // Yazım hatası önerisi yalnızca gerçek 0 sonuçta (önbellekli katalogdan bellekte; veritabanına ek okuma yok)
+  if (q && listing && total === 0 && !limited && !failed) suggestion = await searchSuggestion(q).catch(() => null);
+
   const { adet, size } = parseAdet(query.adet);
   const page = parsePage(query.sayfa);
   const categorySettings = products.length === 0 ? await getCategorySettings() : {};
@@ -79,6 +83,15 @@ export default async function SearchPage({ searchParams }: Props) {
                   ? "Lütfen biraz sonra tekrar deneyin."
                   : "Yazımı kontrol edin veya aşağıdaki kategorilere göz atın."}
           </p>
+          {suggestion && (
+            <p className="text-sm text-zinc-800">
+              Bunu mu demek istediniz:{" "}
+              <Link href={`/arama?q=${encodeURIComponent(suggestion)}`} className="font-semibold text-amber-800 underline underline-offset-2">
+                {suggestion}
+              </Link>
+              ?
+            </p>
+          )}
           <form action="/arama" role="search" className="flex gap-2">
             <input
               type="search"

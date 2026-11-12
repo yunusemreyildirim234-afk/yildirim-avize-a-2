@@ -9,6 +9,7 @@ import { rowFilter } from "@/lib/listing-where";
 import { getVisibleWhere, getVisibleWhereStrict } from "@/lib/visibility";
 import { MAX_SEARCH_RESULTS } from "@/lib/product-search";
 import { matchesSearch, normalizeSearch, rankSearchRows, searchText } from "@/lib/search-rank";
+import { buildVocabulary, suggestQuery } from "@/lib/search-fuzzy";
 import { applyListing, isDefaultState, parseSize, variationAttrs, parseListingParams, stateToParams, type CatMeta, type ListingResult, type ListingRow } from "@/lib/listing-core";
 
 /**
@@ -101,6 +102,16 @@ async function rowsForWhere(where: Prisma.ProductWhereInput, cap: number, cached
 
 /** Normalize arama (/arama ve /api/search): tek önbellekli katalogdan bellekte süzülür. Alaka sırası için çağıran rankSearchRows uygular. */
 const searchRows = async (q: string) => (await catalogRows()).filter((r) => matchesSearch(r, q)).slice(0, MAX_SEARCH_RESULTS);
+
+/**
+ * Sonuç vermeyen arama için "Bunu mu demek istediniz" önerisi (yazım hatası). Sözlük, önbellekli katalog satırlarından bellekte türetilir: veritabanına ek okuma yoktur.
+ * Yalnızca 0 sonuçta çağrılır; öneri kendisi de en az bir ürünle eşleşmiyorsa gösterilmez.
+ */
+export async function searchSuggestion(q: string): Promise<string | null> {
+  const rows = await catalogRows();
+  const s = suggestQuery(q, buildVocabulary(rows));
+  return s && rows.some((r) => matchesSearch(r, s)) ? s : null;
+}
 
 /** Üst arama kutusu: tam model kodu önde, sonra alaka sırası; yalnızca kimlikler. */
 export async function searchProductIds(q: string, take: number): Promise<string[]> {

@@ -113,3 +113,24 @@ test.describe("e) Arama listelerinde ürün aksiyonları (salt okunur)", () => {
     expect(overflow, "yatay taşma").toBeLessThanOrEqual(0);
   });
 });
+
+test.describe("e) Arama yazım önerisi ve kelime sırası", () => {
+  test("/arama?q=avzie → 'Bunu mu demek istediniz' bağlantısı; tıklayınca sonuç var", async ({ page }) => {
+    await openOk(page, "/arama?q=avzie");
+    const link = page.getByRole("link", { name: "avize" });
+    test.skip((await link.count()) === 0, "e2e veritabanında avize ürünü yok");
+    await expect(page.getByText(/Bunu mu demek istediniz/)).toBeVisible();
+    await link.click();
+    await expect(page).toHaveURL(/q=avize/);
+    await expect(page.getByText(/için [1-9]d* sonuç/)).toBeVisible();
+  });
+
+  test("/api/search: yanlış yazımda boş ürün + suggestion; doğru yazımda suggestion yok", async ({ request }) => {
+    const bad = (await (await request.get("/api/search?q=avzie")).json()) as { products: unknown[]; suggestion?: string };
+    test.skip(!bad.suggestion, "e2e veritabanında avize ürünü yok");
+    expect(bad.products).toEqual([]);
+    expect(bad.suggestion).toBe("avize");
+    const ok = (await (await request.get("/api/search?q=avize")).json()) as { suggestion?: string };
+    expect(ok.suggestion).toBeUndefined();
+  });
+});

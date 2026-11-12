@@ -3,7 +3,7 @@ import { serverError } from "@/lib/api-error";
 import { prisma } from "@/lib/db";
 import { CARD_SELECT } from "@/lib/products";
 import { clipQuery } from "@/lib/product-search";
-import { searchProductIds } from "@/lib/listing";
+import { searchProductIds, searchSuggestion } from "@/lib/listing";
 import { getLadderContext } from "@/lib/showcase";
 import { priceLadder } from "@/lib/price-ladder";
 import { rateLimit, tooMany } from "@/lib/rate-limit";
@@ -23,7 +23,7 @@ export async function GET(req: Request) {
   try {
     // Normalize eşleşme lib/listing.ts'de tek yerdedir (/arama ile aynı sonuçlar); tam model kodu en üstte
     const ids = await searchProductIds(q, 6);
-    if (ids.length === 0) return NextResponse.json({ products: [] });
+    if (ids.length === 0) return NextResponse.json({ products: [], suggestion: await searchSuggestion(q) });
     // Yalnızca arama listesinin ve fiyat merdiveninin kullandığı alanlar (açıklama, görsel dizisi, Trendyol alanları çekilmez)
     const found = await prisma.product.findMany({ where: { id: { in: ids } }, select: CARD_SELECT });
     const products = ids.flatMap((id) => found.filter((p) => p.id === id));
