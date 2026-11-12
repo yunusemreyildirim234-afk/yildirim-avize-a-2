@@ -6,7 +6,7 @@ const group = (key) => ORDER_GROUPS.find((g) => g.key === key);
 
 test("A6: havale onayı bekleyen sipariş 'Ödeme bekliyor' çipinde de sayılır; etiket bunu yazar", () => {
   const odeme = group("odeme");
-  assert.equal(odeme.label, "Ödeme bekliyor / başarısız (havale dahil)");
+  assert.equal(odeme.label, "Ödenmemiş (kart + havale)");
   for (const status of ["AWAITING_PAYMENT", "PAYMENT_FAILED", "PENDING_NEW"]) assert.equal(odeme.test({ status }), true, status);
   for (const status of ["PENDING", "READY_FOR_PICKUP", "SHIPPED", "DELIVERED", "CANCELLED", "RETURNED"]) assert.equal(odeme.test({ status }), false, status);
 });

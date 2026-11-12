@@ -62,8 +62,9 @@ test("uç ve arayüz: sayı denetimi silmeden önce; 2 saatlik ödeme bekleyen k
   const rules = read("../lib/stock-rules.ts");
   assert.match(rules, /DELETE_GUARD_HOURS\s*=\s*2/, "son 2 saat kuralı değişmedi");
   const btn = read("../components/AdminDeleteButton.tsx");
-  assert.match(btn, /prompt\(/);
-  assert.match(btn, /isDeleteConfirmed\(typed\)/);
+  assert.ok(!/prompt\(|confirm\(/.test(btn), "tarayıcı onay kutusu yok; sayfa içi pencere");
+  assert.match(btn, /<ConfirmDialog/);
+  assert.match(btn, /typeToConfirm && !isDeleteConfirmed\(typed\)/, "yanlış/boş yazı silmeyi başlatmaz");
   assert.match(btn, /expectedCount === undefined \? \{ ids \} : \{ ids, expectedCount \}/);
   const page = read("../app/admin/page.tsx");
   assert.match(page, /expectedCount=\{visibleOrders\.length\}\s+typeToConfirm/);

@@ -42,6 +42,7 @@ import AdminOrderFilters from "@/components/AdminOrderFilters";
 import AdminInvoice from "@/components/AdminInvoice";
 import AdminShipmentSync from "@/components/AdminShipmentSync";
 import AdminDeleteButton from "@/components/AdminDeleteButton";
+import { titleCaseTr } from "@/lib/display-case";
 import { getActivity } from "@/lib/activity";
 import { getCompanyInfo } from "@/lib/company";
 import { ORDER_GROUPS, isCountedOrder, matchesGroups, parseGroupParam, type OrderGroupKey } from "@/lib/orderStatus";
@@ -200,7 +201,8 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
               Yıldırım Avize Yönetim Merkezi
             </span>
             <h1 className="text-3xl font-serif font-bold text-neutral-900 mt-1">
-              Operasyon, Kargonomi & Envanter Paneli
+              <span className="sm:hidden">Sipariş &amp; Envanter</span>
+              <span className="max-sm:hidden">Operasyon, Kargonomi &amp; Envanter Paneli</span>
             </h1>
           </div>
           <div className="flex items-center gap-3">
@@ -224,8 +226,8 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           daily={[
             { id: "siparisler", label: "Siparişler", badge: allGroupCounts.yeni },
             { id: "mesajlar", label: "Mesajlar", badge: pendingMessages },
-            { id: "yorumlar", label: "Yorumlar", badge: pendingReviews },
             { id: "urunler", label: "Tüm Ürünler" },
+            { id: "yorumlar", label: "Yorumlar", badge: pendingReviews },
             { id: "musteri-hareketleri", label: "Müşteriler" },
           ]}
           groups={[
@@ -319,7 +321,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           id="siparisler"
           icon={<Package aria-hidden="true" className="w-4 h-4 text-amber-600" />}
           title="Gelen Siparişler, Durum & Kargonomi Yönetimi"
-          description="Kargonomi gönderisi oluşturabilir, fiyat tekliflerini onaylayabilir ve PDF barkod çıktısı alabilirsiniz."
+          description="Havale ödemesini onaylayabilir, sipariş durumunu yürütebilir, Aras Kargo barkodu oluşturup PDF çıktısı alabilirsiniz."
           badges={[
             { label: `${allGroupCounts.yeni} yeni gelen`, tone: allGroupCounts.yeni > 0 ? "amber" : "neutral" },
             ...(allGroupCounts.talep > 0 ? [{ label: `${allGroupCounts.talep} talep bekliyor`, tone: "red" as const }] : []),
@@ -328,16 +330,6 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         >
           <AdminOrderFilters param={durumParam} counts={groupCounts} total={scopedOrders.length} filters={orderFilters} />
           <div className="flex flex-wrap items-center justify-end gap-3 px-6 pt-4">
-            {visibleOrders.length > 0 && (
-              <AdminDeleteButton
-                endpoint="/api/admin/orders"
-                ids={visibleOrders.map((o) => o.id)}
-                label={deleteButtonLabel(visibleOrders.length, bulkFilters)}
-                confirmText={deleteConfirmText(visibleOrders.length, bulkFilters)}
-                expectedCount={visibleOrders.length}
-                typeToConfirm
-              />
-            )}
             <AdminShipmentSync />
           </div>
           {orders.length === 0 ? (
@@ -363,8 +355,8 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                 </thead>
                 <tbody className="max-sm:block divide-y divide-neutral-100 font-medium align-top">
                   {visibleOrders.map((order) => (
-                    <tr key={order.id} className="max-sm:flex max-sm:flex-col max-sm:border-b max-sm:border-neutral-200 hover:bg-neutral-50/80 transition-colors">
-                      <td data-label="Sipariş ID & Tarih" className="max-sm:flex max-sm:flex-col max-sm:before:content-[attr(data-label)] max-sm:before:text-[10px] max-sm:before:uppercase max-sm:before:tracking-wider max-sm:before:text-neutral-400 max-sm:before:mb-1 p-4 font-mono text-[11px] text-neutral-500">
+                    <tr key={order.id} className="max-sm:flex max-sm:flex-col max-sm:border-b-[6px] max-sm:border-neutral-300 hover:bg-neutral-50/80 transition-colors">
+                      <td data-label="Sipariş ID & Tarih" className="max-sm:order-1 max-sm:flex max-sm:flex-col max-sm:before:content-[attr(data-label)] max-sm:before:text-[10px] max-sm:before:uppercase max-sm:before:tracking-wider max-sm:before:text-neutral-400 max-sm:before:mb-1 p-4 font-mono text-[11px] text-neutral-500">
                         <Link href={adminOrderHref(order.id)} className="inline-flex min-h-8 items-center font-semibold text-amber-700 underline hover:text-amber-900" aria-label={`Sipariş ${order.id.slice(0, 8)} detayı`}>
                           {order.id.slice(0, 8)}
                         </Link>
@@ -382,7 +374,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                           })()}
                         </time>
                       </td>
-                      <td data-label="Müşteri & Adres" className="max-sm:flex max-sm:flex-col max-sm:before:content-[attr(data-label)] max-sm:before:text-[10px] max-sm:before:uppercase max-sm:before:tracking-wider max-sm:before:text-neutral-400 max-sm:before:mb-1 p-4">
+                      <td data-label="Müşteri & Adres" className="max-sm:order-2 max-sm:flex max-sm:flex-col max-sm:before:content-[attr(data-label)] max-sm:before:text-[10px] max-sm:before:uppercase max-sm:before:tracking-wider max-sm:before:text-neutral-400 max-sm:before:mb-1 p-4">
                         <span className="font-bold text-neutral-900 block">{order.user.name}</span>
                         {recipientDiffers(order) && <span data-testid="alici-adi" className="text-amber-900 text-[11px] font-semibold block">{recipientLabel(order)}</span>}
                         <span className="text-neutral-500 text-[11px] block">{cleanGuestEmail(order.user.email)}</span>
@@ -403,14 +395,14 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                         )}
                         {order.address && (
                           <span className="text-neutral-400 text-[10px] block mt-0.5 max-w-xs line-clamp-2">
-                            <MapPin aria-hidden="true" className="inline w-3 h-3 -mt-0.5" /> {order.address}{" "}
+                            <MapPin aria-hidden="true" className="inline w-3 h-3 -mt-0.5" /> {titleCaseTr(order.address)}{" "}
                             {order.buyerCityName || order.buyerStateName
                               ? `(${order.buyerCityName || ""} / ${order.buyerStateName || ""})`
                               : ""}
                           </span>
                         )}
                       </td>
-                      <td data-label="Alınan Avize" className="max-sm:flex max-sm:flex-col max-sm:before:content-[attr(data-label)] max-sm:before:text-[10px] max-sm:before:uppercase max-sm:before:tracking-wider max-sm:before:text-neutral-400 max-sm:before:mb-1 p-4">
+                      <td data-label="Alınan Avize" className="max-sm:order-4 max-sm:flex max-sm:flex-col max-sm:before:content-[attr(data-label)] max-sm:before:text-[10px] max-sm:before:uppercase max-sm:before:tracking-wider max-sm:before:text-neutral-400 max-sm:before:mb-1 p-4">
                         {order.items.map((item) => {
                           const p = orderItemProductView(item.variation?.product);
                           const thumb = p.image ? (
@@ -441,7 +433,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                           );
                         })}
                       </td>
-                      <td data-label="Teslimat & Tutar" className="max-sm:flex max-sm:flex-col max-sm:before:content-[attr(data-label)] max-sm:before:text-[10px] max-sm:before:uppercase max-sm:before:tracking-wider max-sm:before:text-neutral-400 max-sm:before:mb-1 p-4 space-y-1">
+                      <td data-label="Teslimat & Tutar" className="max-sm:order-5 max-sm:flex max-sm:flex-col max-sm:before:content-[attr(data-label)] max-sm:before:text-[10px] max-sm:before:uppercase max-sm:before:tracking-wider max-sm:before:text-neutral-400 max-sm:before:mb-1 p-4 space-y-1">
                         {order.shippingType === "BEYOGLU_MAGAZA_TESLIM" ? (
                           <span className="inline-flex items-center gap-1 bg-amber-100 text-amber-900 text-[11px] font-semibold px-2.5 py-1 rounded-full">
                             <MapPin aria-hidden="true" className="w-3.5 h-3.5 shrink-0" /> Mağazadan Teslim
@@ -451,7 +443,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                             <Package aria-hidden="true" className="w-3.5 h-3.5 shrink-0" /> Adrese Teslim
                           </span>
                         )}
-                        <div className="font-bold text-neutral-900 text-sm pt-1">
+                        <div className="font-bold text-neutral-900 text-sm pt-1 whitespace-nowrap">
                           {order.totalAmount.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺
                         </div>
                         <AdminOrderBreakdown
@@ -459,9 +451,10 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                           totalAmount={order.totalAmount}
                           couponCode={order.couponCode}
                           isPickup={order.shippingType === "BEYOGLU_MAGAZA_TESLIM"}
+                          isTransfer={order.paymentMethod === "BANK_TRANSFER"}
                         />
                       </td>
-                      <td data-label="Kargonomi API İşlemleri" className="max-sm:flex max-sm:flex-col max-sm:before:content-[attr(data-label)] max-sm:before:text-[10px] max-sm:before:uppercase max-sm:before:tracking-wider max-sm:before:text-neutral-400 max-sm:before:mb-1 p-4">
+                      <td data-label="Kargonomi API İşlemleri" className="max-sm:order-6 max-sm:flex max-sm:flex-col max-sm:before:content-[attr(data-label)] max-sm:before:text-[10px] max-sm:before:uppercase max-sm:before:tracking-wider max-sm:before:text-neutral-400 max-sm:before:mb-1 p-4">
                         {/* İstemciye yalnızca gereken alanlar gider (tam sipariş nesnesi müşteri kaydını, parola özetini de taşırdı) */}
                         <AdminKargonomiOrderActions
                           order={{
@@ -478,21 +471,11 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                           }}
                         />
                       </td>
-                      <td data-label="Sipariş Durumu" className="max-sm:order-first max-sm:bg-neutral-50 max-sm:flex max-sm:flex-col max-sm:before:content-[attr(data-label)] max-sm:before:text-[10px] max-sm:before:uppercase max-sm:before:tracking-wider max-sm:before:text-neutral-400 max-sm:before:mb-1 p-4">
-                        {order.status === "AWAITING_PAYMENT" && (
-                          <span className="inline-block mb-2 bg-yellow-100 text-yellow-900 border border-yellow-300 text-[11px] font-bold px-2.5 py-1 rounded-full">
-                            Sipariş Denemesi (Ödeme Tamamlanmadı)
-                          </span>
-                        )}
+                      <td data-label="Sipariş Durumu" className="max-sm:order-3 max-sm:bg-neutral-50 max-sm:flex max-sm:flex-col max-sm:before:content-[attr(data-label)] max-sm:before:text-[10px] max-sm:before:uppercase max-sm:before:tracking-wider max-sm:before:text-neutral-400 max-sm:before:mb-1 p-4">
                         {order.status === "AWAITING_PAYMENT" && order.paymentMethod === "CREDIT_CARD" && (
                           <p className="mb-2 text-[11px] text-neutral-600">
                             Stok tutma bitişi: {reservationExpiresAt(order.createdAt).toLocaleTimeString("tr-TR", { timeZone: "Europe/Istanbul", hour: "2-digit", minute: "2-digit" })}
                           </p>
-                        )}
-                        {order.status === "PAYMENT_FAILED" && (
-                          <span className="inline-block mb-2 bg-red-100 text-red-800 border border-red-200 text-[11px] font-bold px-2.5 py-1 rounded-full">
-                            Ödeme Başarısız
-                          </span>
                         )}
                         {order.status === "PENDING_NEW" && order.paymentMethod === "BANK_TRANSFER" && (
                           <AdminReceiptActions orderId={order.id} hasReceipt={Boolean(order.receiptUrl)} senderName={order.receiptSenderName} />
@@ -505,7 +488,10 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                         {order.status === "DELIVERED" && (
                           <AdminInvoice orderId={order.id} state={invoices.state} meta={invoices.byOrder[order.id] ?? null} />
                         )}
-                        <AdminDeleteButton endpoint="/api/admin/orders" ids={[order.id]} label="Siparişi Sil" confirmText="Bu sipariş ve bağlı fatura/dekont kayıtları silinecek; ayrılmış stok iade edilir." className="mt-2" />
+                        <details className="mt-2">
+                          <summary className="cursor-pointer text-[11px] font-semibold text-neutral-500 hover:text-red-700 focus-visible:outline-2 focus-visible:outline-red-600">Tehlikeli işlemler</summary>
+                          <AdminDeleteButton endpoint="/api/admin/orders" ids={[order.id]} label="Siparişi Sil" confirmText="Bu sipariş ve bağlı fatura/dekont kayıtları kalıcı olarak silinecek; ayrılmış stok iade edilir." className="mt-2" />
+                        </details>
                         <AdminOrderRequest
                           orderId={order.id}
                           type={order.cancelReturnType}
@@ -518,6 +504,22 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                 </tbody>
               </table>
             </div>
+          )}
+          {visibleOrders.length > 0 && (
+            <details className="border-t border-neutral-200 px-6 py-3 text-xs">
+              <summary className="cursor-pointer font-semibold text-neutral-600 hover:text-red-700 focus-visible:outline-2 focus-visible:outline-red-600">Tehlikeli işlemler</summary>
+              <div className="mt-3 space-y-2">
+                <p className="text-neutral-600">Aşağıdaki işlem, yukarıda listelenen tüm siparişleri (arama ve tarih süzgeçleri dahil) siler. Silmeden önce sayfa içi onay ve yazılı onay istenir.</p>
+                <AdminDeleteButton
+                  endpoint="/api/admin/orders"
+                  ids={visibleOrders.map((o) => o.id)}
+                  label={deleteButtonLabel(visibleOrders.length, bulkFilters)}
+                  confirmText={deleteConfirmText(visibleOrders.length, bulkFilters)}
+                  expectedCount={visibleOrders.length}
+                  typeToConfirm
+                />
+              </div>
+            </details>
           )}
         </AdminSection>
 

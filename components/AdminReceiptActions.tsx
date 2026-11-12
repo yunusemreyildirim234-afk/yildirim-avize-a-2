@@ -46,7 +46,7 @@ export default function AdminReceiptActions({
         </span>
       ) : (
         <span className="inline-block bg-amber-100 text-amber-900 border border-amber-300 text-[11px] font-bold px-2.5 py-1 rounded-full">
-          Havale Onayı Bekleniyor
+          Dekont henüz yüklenmedi
         </span>
       )}
       {senderName && <p className="text-[11px] text-neutral-500">Gönderici: {senderName}</p>}

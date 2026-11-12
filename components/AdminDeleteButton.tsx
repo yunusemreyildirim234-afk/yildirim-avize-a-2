@@ -1,15 +1,17 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Trash2, Undo2 } from "lucide-react";
 import { DELETE_CONFIRM_WORD, isDeleteConfirmed } from "@/lib/bulk-delete";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 const DELAY_MS = 8000;
 let pending = 0; // aynı anda bekleyen silme çubuklarını alt alta dizmek için
 
 /**
- * Onay penceresi ("Emin misiniz?") + gecikmeli kesin silme: onaydan sonra kayıt gizlenir, 8 saniye boyunca "↩ Geri Al" çubuğu görünür;
+ * Sayfa içi onay penceresi ("Emin misiniz?"; toplu silmede SİL yazdırır) + gecikmeli kesin silme: onaydan sonra kayıt gizlenir, 8 saniye boyunca "↩ Geri Al" çubuğu görünür;
  * süre dolunca DELETE gönderilir. Geri Al'a basılırsa (veya sayfadan ayrılırsanız) hiçbir şey silinmez.
  */
 export default function AdminDeleteButton({
@@ -40,6 +42,8 @@ export default function AdminDeleteButton({
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [waiting, setWaiting] = useState(false);
   const [slot, setSlot] = useState(0);
+  const [asking, setAsking] = useState(false);
+  const [typed, setTyped] = useState("");
   const body = payload ?? (expectedCount === undefined ? { ids } : { ids, expectedCount });
   const empty = !payload && ids.length === 0;
 
@@ -49,18 +53,17 @@ export default function AdminDeleteButton({
     setWaiting(false);
   };
 
+  const ask = () => {
+    if (empty) return;
+    setTyped("");
+    setAsking(true);
+  };
+
   const start = () => {
     if (empty) return;
-    const note = `Silme ${DELAY_MS / 1000} saniye sonra uygulanır; o süre içinde "Geri Al" diyebilirsiniz.`;
-    if (typeToConfirm) {
-      // Toplu silme: yazılı onay (sayı ve süzgeçler metinde); yanlış/boş yazı hiçbir şey silmez
-      const typed = prompt(`${confirmText}\n\n${note}\n\nOnaylamak için ${DELETE_CONFIRM_WORD} yazın:`);
-      if (typed === null) return;
-      if (!isDeleteConfirmed(typed)) {
-        alert(`Onay metni eşleşmedi; hiçbir sipariş silinmedi. Silmek için ${DELETE_CONFIRM_WORD} yazın.`);
-        return;
-      }
-    } else if (!confirm(`Emin misiniz? ${confirmText}\n\n${note}`)) return;
+    // Toplu silme: yazılı onay; yanlış/boş yazı hiçbir şey silmez
+    if (typeToConfirm && !isDeleteConfirmed(typed)) return;
+    setAsking(false);
     setSlot(pending++);
     setWaiting(true);
     const el = row();
@@ -96,20 +99,48 @@ export default function AdminDeleteButton({
       <button
         ref={btn}
         type="button"
-        onClick={start}
+        onClick={ask}
         disabled={waiting || disabled || empty}
         className={`inline-flex items-center gap-1 text-[11px] font-semibold text-red-700 hover:bg-red-50 border border-red-200 rounded-lg px-2.5 py-1.5 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-red-600 ${className}`}
       >
         <Trash2 aria-hidden="true" className="w-3.5 h-3.5" /> {waiting ? "Siliniyor..." : label}
       </button>
-      {waiting && (
+      <ConfirmDialog
+        open={asking}
+        title={typeToConfirm ? "Toplu silme onayı" : "Silinsin mi?"}
+        confirmLabel="Evet, sil"
+        danger
+        confirmDisabled={typeToConfirm && !isDeleteConfirmed(typed)}
+        onConfirm={start}
+        onCancel={() => setAsking(false)}
+      >
+        <p className="whitespace-pre-line font-semibold text-neutral-900">{confirmText}</p>
+        <p>
+          Silme {DELAY_MS / 1000} saniye sonra uygulanır; bu sürede alttaki çubuktan &quot;Geri Al&quot; diyebilirsiniz. Süre dolunca kayıt kalıcı olarak silinir ve geri alınamaz.
+        </p>
+        {typeToConfirm && (
+          <label className="block font-semibold text-neutral-900">
+            Onaylamak için {DELETE_CONFIRM_WORD} yazın
+            <input
+              value={typed}
+              onChange={(e) => setTyped(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && isDeleteConfirmed(typed) && start()}
+              autoComplete="off"
+              className="mt-1 block w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm font-normal focus-visible:outline-2 focus-visible:outline-red-600"
+            />
+          </label>
+        )}
+      </ConfirmDialog>
+      {waiting &&
+        createPortal(
         <div role="status" style={{ bottom: `${1 + slot * 3.25}rem` }} className="fixed left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-full bg-neutral-900 text-white text-xs pl-5 pr-2 py-2 shadow-2xl">
           <span>Kayıt {DELAY_MS / 1000} sn içinde silinecek.</span>
           <button type="button" onClick={cancel} className="inline-flex items-center gap-1.5 rounded-full bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold px-3 py-1.5">
             <Undo2 aria-hidden="true" className="w-3.5 h-3.5" /> Geri Al
           </button>
-        </div>
-      )}
+        </div>,
+          document.body
+        )}
     </>
   );
 }
