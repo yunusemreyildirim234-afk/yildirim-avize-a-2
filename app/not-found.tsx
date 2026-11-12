@@ -3,6 +3,7 @@ import Link from "next/link";
 import { CATEGORIES } from "@/lib/site";
 import { getExtraCategoryLinks, getFixedCategoryOverrides } from "@/lib/category-list";
 import SearchBar from "@/components/SearchBar";
+import ThemeSync from "@/components/ThemeSync";
 
 export const metadata: Metadata = {
   title: "Sayfa Bulunamadı",
@@ -16,6 +17,7 @@ export default async function NotFound() {
   const chipClass = "text-xs font-medium bg-white border border-neutral-300 text-neutral-700 px-4 py-2 rounded-xl hover:border-amber-500 hover:text-amber-700 transition-colors";
   return (
     <main className="min-h-[70vh] bg-neutral-50 flex items-center justify-center px-4 py-20">
+      <ThemeSync />
       <div className="max-w-md text-center space-y-6">
         <span className="text-xs uppercase tracking-widest text-amber-600 font-semibold">Hata 404</span>
         <h1 className="text-3xl sm:text-4xl font-serif font-bold text-neutral-900">Bu Işık Söndü</h1>

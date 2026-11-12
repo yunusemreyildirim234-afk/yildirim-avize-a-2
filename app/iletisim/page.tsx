@@ -65,7 +65,7 @@ export default function IletisimPage() {
   return (
     <main className="min-h-screen bg-neutral-50 pb-20">
       {/* Üst Hero Başlık */}
-      <section className="bg-neutral-950 text-white py-16 px-4 text-center border-b border-neutral-800">
+      <section className="keep-theme bg-neutral-950 text-white py-16 px-4 text-center border-b border-neutral-800">
         <div className="max-w-3xl mx-auto space-y-3">
           <span className="text-xs uppercase tracking-widest text-amber-400 font-semibold bg-amber-950/80 border border-amber-800/50 px-3 py-1 rounded-full">
             İletişim & Showroom

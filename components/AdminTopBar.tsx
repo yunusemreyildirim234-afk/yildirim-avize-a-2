@@ -27,7 +27,7 @@ export default function AdminTopBar() {
   };
 
   return (
-    <header className="print:hidden sticky top-0 z-50 w-full bg-neutral-900 text-white border-b border-neutral-800">
+    <header className="print:hidden sticky top-0 z-50 w-full bg-neutral-900 text-white border-b border-neutral-800 keep-theme">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 px-4 sm:px-6 lg:px-8 min-h-14">
         <span className="flex items-center gap-2 text-sm font-bold tracking-wide">
           <LayoutDashboard aria-hidden="true" className="w-4 h-4 text-amber-400 shrink-0" /> Yönetim Paneli

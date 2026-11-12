@@ -217,7 +217,7 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
         )}
       </div>
       {gallery.length > 1 && (
-        <div ref={thumbsRef} className="flex gap-2 overflow-x-auto p-3 border-t border-neutral-800" role="tablist" aria-label="Ürün fotoğrafları">
+        <div ref={thumbsRef} className="keep-theme bg-neutral-900 flex gap-2 overflow-x-auto p-3 border-t border-neutral-800" role="tablist" aria-label="Ürün fotoğrafları">
           {gallery.map((src, i) => (
             <button
               key={src}
