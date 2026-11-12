@@ -70,6 +70,8 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
   const [quantity, setQuantity] = useState(1);
   const [addedToCart, setAddedToCart] = useState(false);
   const [zoomed, setZoomed] = useState(false);
+  const [descOpen, setDescOpen] = useState(false);
+  const longDesc = (product.description?.length ?? 0) > 280 || (product.description?.split("\n").length ?? 0) > 5;
   const trackRef = useRef<HTMLDivElement>(null);
   const thumbsRef = useRef<HTMLDivElement>(null);
   const programmatic = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -264,38 +266,6 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
           <h1 className="text-2xl sm:text-3xl font-serif font-bold leading-tight tracking-tight text-neutral-900">
             {product.title}
           </h1>
-          <p className="text-sm text-neutral-700 leading-7 whitespace-pre-line">
-            {product.description}
-          </p>
-
-          <ul className="space-y-2 pt-1 text-xs">
-            {bulbNote === "gift" && (
-              <li className="flex items-start gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2.5 text-emerald-950">
-                <span aria-hidden="true">💡</span>
-                <span>
-                  <strong>LED Ampul Hediye</strong> – Ürünle birlikte LED ampuller hediye olarak gönderilir.
-                </span>
-              </li>
-            )}
-            {bulbNote === "not-included" && (
-              <li className="flex items-start gap-2.5 rounded-xl border border-amber-300 bg-amber-50 px-3.5 py-2.5 text-amber-950">
-                <span aria-hidden="true">💡</span>
-                <span>
-                  <strong>Ampul Dahil Değildir</strong> (Standart E14/E27 LED ampullerle uyumludur)
-                </span>
-              </li>
-            )}
-            {!isAccessoryCategory(product.category) && (
-            <li className="flex items-start gap-2.5 rounded-xl border border-neutral-200 bg-neutral-50 px-3.5 py-2.5 text-neutral-800">
-              <span aria-hidden="true">📏</span>
-              <span>
-                <strong>Ölçü &amp; Tavan Uyumu:</strong> Özel ölçü ve tavan yükseklik talepleriniz için{" "}
-                <a href="/iletisim" className="text-amber-700 underline font-semibold">İletişim</a> bölümünden bize ulaşabilir veya sipariş notunda zincir/bakla payını belirtebilirsiniz.
-              </span>
-            </li>
-            )}
-          </ul>
-
           <div className="pt-4">
             <span className="text-xs text-neutral-500 block mb-1">Toplam Tutar</span>
             {listShown && listShown > currentPrice && (
@@ -480,6 +450,56 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
               <p className="mt-1 text-amber-900/80">Mağazadan teslim seçeneğinde sepette %{Math.round(PICKUP_DISCOUNT * 100)} ek indirim uygulanır</p>
             </div>
           </div>
+        </div>
+
+        {/* Açıklama ve notlar: satın alma bloğunun altında; uzun metin kısaltılır */}
+        <div className="space-y-4 pt-6 border-t border-neutral-100">
+          {product.description && (
+            <div>
+              <p id="urun-aciklama" className={`text-sm text-neutral-700 leading-7 whitespace-pre-line ${longDesc && !descOpen ? "line-clamp-5" : ""}`}>
+                {product.description}
+              </p>
+              {longDesc && (
+                <button
+                  type="button"
+                  aria-expanded={descOpen}
+                  aria-controls="urun-aciklama"
+                  onClick={() => setDescOpen((o) => !o)}
+                  className="mt-1 min-h-11 text-sm font-semibold text-amber-800 underline underline-offset-2 hover:text-amber-900 rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600"
+                >
+                  {descOpen ? "Daha az göster" : "Devamını göster"}
+                </button>
+              )}
+            </div>
+          )}
+
+          <ul className="space-y-2 text-xs">
+            {bulbNote === "gift" && (
+              <li className="flex items-start gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2.5 text-emerald-950">
+                <span aria-hidden="true">💡</span>
+                <span>
+                  <strong>LED Ampul Hediye</strong> – Ürünle birlikte LED ampuller hediye olarak gönderilir.
+                </span>
+              </li>
+            )}
+            {bulbNote === "not-included" && (
+              <li className="flex items-start gap-2.5 rounded-xl border border-amber-300 bg-amber-50 px-3.5 py-2.5 text-amber-950">
+                <span aria-hidden="true">💡</span>
+                <span>
+                  <strong>Ampul Dahil Değildir</strong> (Standart E14/E27 LED ampullerle uyumludur)
+                </span>
+              </li>
+            )}
+            {!isAccessoryCategory(product.category) && (
+            <li className="flex items-start gap-2.5 rounded-xl border border-neutral-200 bg-neutral-50 px-3.5 py-2.5 text-neutral-800">
+              <span aria-hidden="true">📏</span>
+              <span>
+                <strong>Ölçü &amp; Tavan Uyumu:</strong> Özel ölçü ve tavan yükseklik talepleriniz için{" "}
+                <a href="/iletisim" className="text-amber-700 underline font-semibold">İletişim</a> bölümünden bize ulaşabilir veya sipariş notunda zincir/bakla payını belirtebilirsiniz.
+              </span>
+            </li>
+            )}
+          </ul>
         </div>
       </div>
 
