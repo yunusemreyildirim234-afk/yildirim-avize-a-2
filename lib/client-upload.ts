@@ -18,7 +18,7 @@ export const releaseItem = (i: PickerItem) => {
 };
 
 /** Yönetici uyarısı: her yükleme Blob'a iki dosya (-b ve -k) yazar. */
-export const UPLOAD_QUOTA_NOTE = "Bu yükleme 2 depolama yazması harcar (Blob Hobby: ayda 2000).";
+export const UPLOAD_QUOTA_NOTE = "Aylık yükleme hakkı: 2000.";
 
 /** Dosyayı (gerekirse ~2400 px WebP'ye küçültüp) Blob'a yükler; kare tuvali ve -b/-k üretimini sunucu yapar. Dönen: "...-b.webp" adresi. */
 export async function uploadFile(file: File, productId?: string): Promise<string> {

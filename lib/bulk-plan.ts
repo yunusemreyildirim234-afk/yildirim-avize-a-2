@@ -76,7 +76,7 @@ export function planActive(selected: string[], products: { id: string; active: b
   return done(selected, selected.filter((id) => cur.get(id) !== value));
 }
 
-export const TRENDYOL_ACTIVE_NOTE = "Trendyol eşitlemesinde \"Aktif/pasif\" satırı \"Ezerek\" ise bu durum eşitlemede değişebilir.";
+export const TRENDYOL_ACTIVE_NOTE = "Trendyol eşitlemesinde \"Aktif/pasif\" satırı \"Trendyol'daki değeri yaz\" ise bu durum eşitlemede değişebilir.";
 
 /**
  * Aktif yap / pasife al onay metni (tek ve toplu işlem için ortak).

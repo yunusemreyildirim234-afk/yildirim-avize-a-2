@@ -18,7 +18,7 @@ const ROWS: { group: Group; label: string }[] = [
 const MODES: { mode: Mode; label: string }[] = [
   { mode: "SKIP", label: "Dokunma" },
   { mode: "KEEP", label: "Elle değiştirdiklerimi koru" },
-  { mode: "OVERWRITE", label: "Ezerek" },
+  { mode: "OVERWRITE", label: "Trendyol'daki değeri yaz" },
 ];
 const allOf = (m: Mode): Settings => ({ STOCK: m, PRICE: m, TEXT: m, IMAGES: m, CATEGORY: m, VARIANT_INFO: m, ACTIVE: m });
 const STOCK_ONLY: Settings = { ...DEFAULT_SYNC_MODES };
@@ -180,8 +180,8 @@ export default function AdminTrendyolSync({
     <div className="p-6 space-y-4">
       <AdminImageCopy pending={uncopiedImages} imagesMode={settings.IMAGES} onRunningChange={setCopying} />
       <div className="space-y-1">
-        <p className="text-xs text-neutral-600">Önce &quot;Önizle&quot; ile değişecekleri görün, sonra seçtiklerinizi uygulayın. Önizleme hiçbir şey yazmaz. Bu sürümde Geri Al yoktur.</p>
-        <p className="text-xs text-amber-900 font-semibold">İlk &quot;Elle değiştirdiklerimi koru&quot; çalıştırması çoğunlukla yalnızca karşılaştırma kaydı kurar; stok/fiyatı ilk kez Trendyol&apos;a eşitlemek için o satırı &quot;Ezerek&quot; seçin.</p>
+        <p className="text-xs text-neutral-600">Önce &quot;Önizle&quot; ile değişecekleri görün, sonra seçtiklerinizi uygulayın. Önizleme hiçbir şey yazmaz.</p>
+        <p className="text-xs text-amber-900 font-semibold">İlk kez &quot;Elle değiştirdiklerimi koru&quot; ile çalıştırırsanız çoğunlukla yalnızca Trendyol&apos;daki mevcut değerler kaydedilir, stok ve fiyat eşitlenmez. Stok ve fiyatı ilk kez Trendyol&apos;a göre eşitlemek için o satırda &quot;Trendyol&apos;daki değeri yaz&quot; seçin.</p>
       </div>
 
       <fieldset className="space-y-2">
@@ -217,12 +217,12 @@ export default function AdminTrendyolSync({
         </div>
         {settings.VARIANT_INFO === "OVERWRITE" && (
           <p role="note" className="text-xs text-amber-900 font-semibold bg-amber-50 border border-amber-300 rounded-lg p-3">
-            Ezerek seçersen elle düzelttiğin renk ve ebat adları Trendyol&apos;daki hâline geri döner.
+            &quot;Trendyol&apos;daki değeri yaz&quot; seçersen elle düzelttiğin renk ve ebat adları Trendyol&apos;daki hâline geri döner.
           </p>
         )}
         {loadedFromSaved && overwriteGroups(settings).length > 0 && (
           <p role="alert" data-testid="ezerek-uyari" className="text-xs text-red-900 font-semibold bg-red-50 border border-red-300 rounded-lg p-3">
-            Kayıtlı ayarda &ldquo;Ezerek&rdquo; seçili: {overwriteGroups(settings).map((g) => ROWS.find((r) => r.group === g)?.label.split(" (")[0]).join(", ")}. Elle yaptığınız değişiklikler eşitlemede ezilir; uygulamadan önce önizlemeyi ve onay penceresini dikkatle okuyun.
+            Kayıtlı ayarda &ldquo;Trendyol&apos;daki değeri yaz&rdquo; seçili: {overwriteGroups(settings).map((g) => ROWS.find((r) => r.group === g)?.label.split(" (")[0]).join(", ")}. Elle yaptığınız değişiklikler eşitlemede ezilir; uygulamadan önce önizlemeyi ve onay penceresini dikkatle okuyun.
           </p>
         )}
         <div className="flex flex-wrap items-center gap-2">
@@ -233,7 +233,7 @@ export default function AdminTrendyolSync({
         </div>
         <div className="flex flex-wrap gap-2">
           <button type="button" onClick={() => setSettings(STOCK_ONLY)} className="min-h-11 text-xs font-semibold border border-neutral-300 bg-white hover:border-amber-600 px-4 rounded-xl">
-            Yalnızca stok, ezerek
+            Yalnızca stok, Trendyol&apos;daki değeri yaz
           </button>
           <button type="button" onClick={() => setSettings(allOf("KEEP"))} className="min-h-11 text-xs font-semibold border border-neutral-300 bg-white hover:border-amber-600 px-4 rounded-xl">
             Normal: hepsi, elle değiştirdiklerimi koru
@@ -313,9 +313,12 @@ export default function AdminTrendyolSync({
             </label>
           )}
 
-          <button type="button" onClick={onApply} disabled={busy !== "" || copying || stale || (checked.size === 0 && !(includeHidden && preview.listelenmeyen > 0))} className="min-h-11 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white px-5 rounded-xl transition-colors disabled:opacity-50">
-            {busy === "apply" ? "Uygulanıyor..." : "Seçilenleri uygula"}
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            <button type="button" onClick={onApply} disabled={busy !== "" || copying || stale || (checked.size === 0 && !(includeHidden && preview.listelenmeyen > 0))} className="min-h-11 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white px-5 rounded-xl transition-colors disabled:opacity-50">
+              {busy === "apply" ? "Uygulanıyor..." : "Seçilenleri uygula"}
+            </button>
+            <span className="text-xs font-semibold text-red-900">Uygulananlar geri alınamaz.</span>
+          </div>
         </div>
       )}
     </div>

@@ -83,7 +83,7 @@ test.describe("Admin paket C: stok düğmeleri, silme düğmeleri, Trendyol vars
     await openAdmin(page);
     await expandPanel(page, /Trendyol Ürünleri/);
     const radio = (field: string, mode: string) => page.getByRole("radio", { name: `${field}: ${mode}`, exact: true });
-    await expect(radio("Stok", "Ezerek")).toBeChecked();
+    await expect(radio("Stok", "Trendyol'daki değeri yaz")).toBeChecked();
     for (const f of ["Fiyat (satış, liste, varyasyon farkı)", "Başlık ve açıklama", "Görseller", "Kategori ve marka", "Varyasyon adı ve stok kodu (renk / ebat adı dahil)", "Aktif/pasif (Trendyol'dan kalkanlar)"]) {
       await expect(radio(f, "Dokunma")).toBeChecked();
     }

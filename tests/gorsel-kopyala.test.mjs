@@ -210,8 +210,8 @@ test("onay metni: N görsel = 2N yazma, kalan kota 2N'den azsa uyarı, Ezerek no
   assert.doesNotMatch(kucuk, /UYARI/);
   const buyuk = copyConfirmText(BLOB_HOBBY_LIMIT);
   assert.match(buyuk, /UYARI/);
-  assert.doesNotMatch(copyConfirmText(10, "KEEP"), /Ezerek/);
-  assert.match(copyConfirmText(10, "OVERWRITE"), /Ezerek/);
+  assert.doesNotMatch(copyConfirmText(10, "KEEP"), /Trendyol'daki değeri yaz/);
+  assert.match(copyConfirmText(10, "OVERWRITE"), /Trendyol'daki değeri yaz/);
 });
 
 test("arayüz: düğme, ilerleme çubuğu, durdur, hata listesi, Ezerek uyarısı eşitleme alanına bağlı", () => {

@@ -137,7 +137,7 @@ export default function AdminCategories({ entries, settings, uncategorized, show
           <h2 className="text-lg font-serif font-bold text-neutral-900 flex items-center gap-2">
             <FolderTree aria-hidden="true" className="w-4 h-4 text-amber-600" /> Kategoriler
           </h2>
-          <p className="text-xs text-neutral-500 mt-0.5">
+          <p className="text-xs text-neutral-600 mt-0.5">
             {entries.length} kategori{uncategorized > 0 ? `, ${uncategorized} kategorisiz ürün` : ""}. Sabit kategorilerin görünen adını değiştirin veya menüden gizleyin; eklediğiniz kategorileri yeniden adlandırın ya da silin.
           </p>
         </div>
@@ -169,7 +169,7 @@ export default function AdminCategories({ entries, settings, uncategorized, show
           </div>
 
           {entries.some((e) => e.fixed) && (
-            <p className="text-[11px] text-neutral-500">
+            <p className="text-xs text-neutral-600">
               <strong className="text-neutral-700">Sabit kategoriler:</strong> yalnızca sitede görünen ad değişir, sayfa adresi aynı kalır. Menüden gizlenen kategori menüde, alt bilgide, ana sayfada ve arama motorlarına bildirilen sayfa listesinde görünmez; adresi ve ürünleri çalışmaya devam eder.
             </p>
           )}
@@ -182,12 +182,12 @@ export default function AdminCategories({ entries, settings, uncategorized, show
                 <li key={e.key} className="rounded-xl border border-neutral-200 p-3 space-y-2">
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
                     <span className="font-bold text-neutral-900 text-sm">{e.fixed ? s?.title ?? e.title : e.title}</span>
-                    <span className="text-neutral-500">{categoryCountLabel(e.count, e.total)}</span>
+                    <span className="text-xs text-neutral-600">{categoryCountLabel(e.count, e.total)}</span>
                     {e.count === 0 && <span className="rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-semibold text-amber-800">vitrinde ürün yok</span>}
-                    <span className="font-mono text-neutral-400">/kategori/{e.slug}</span>
+                    <span className="font-mono text-xs text-neutral-600">/kategori/{e.slug}</span>
                     {e.fixed && <span className="rounded-full bg-neutral-100 border border-neutral-200 px-2 py-0.5 text-[10px] font-semibold text-neutral-600">Sabit</span>}
                     {s?.hidden && <span className="rounded-full bg-red-50 border border-red-200 px-2 py-0.5 text-[10px] font-semibold text-red-700">Menüden gizli</span>}
-                    {e.fixed && s?.title && <span className="text-[11px] text-neutral-400">Varsayılan: {e.title}</span>}
+                    {e.fixed && s?.title && <span className="text-xs text-neutral-600">Varsayılan: {e.title}</span>}
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <label className="sr-only" htmlFor={`cat-${e.key}`}>
@@ -239,7 +239,7 @@ export default function AdminCategories({ entries, settings, uncategorized, show
             })}
           </ul>
 
-          <p className="text-[11px] text-neutral-500">
+          <p className="text-xs text-neutral-600">
             Kategorisiz ürünler yalnızca &quot;Tüm Ürünler&quot; ve aramada görünür; Tüm Ürünler panelindeki &quot;Kategorisiz&quot; çipinden seçip toplu çubukla kategori atayabilirsiniz.
           </p>
         </div>

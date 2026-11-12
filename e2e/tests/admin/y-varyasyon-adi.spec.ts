@@ -240,10 +240,10 @@ test.describe("Admin: varyasyon adı düzenleme + rengi toplu değiştirme (E2E 
     await expandPanel(page, /Trendyol Ürünleri/);
     const label = "Varyasyon adı ve stok kodu (renk / ebat adı dahil)";
     const radio = (mode: string) => page.getByRole("radio", { name: `${label}: ${mode}`, exact: true });
-    const warn = page.getByText("Ezerek seçersen elle düzelttiğin renk ve ebat adları Trendyol'daki hâline geri döner.");
+    const warn = page.getByText("\"Trendyol'daki değeri yaz\" seçersen elle düzelttiğin renk ve ebat adları Trendyol'daki hâline geri döner.");
     await expect(radio("Dokunma")).toBeChecked();
     await expect(warn).toHaveCount(0);
-    await radio("Ezerek").check();
+    await radio("Trendyol'daki değeri yaz").check();
     await expect(warn).toBeVisible();
     if (SHOT) {
       for (const [n, w, h] of [["1280", 1280, 800], ["390", 390, 844]] as const) {
@@ -259,7 +259,7 @@ test.describe("Admin: varyasyon adı düzenleme + rengi toplu değiştirme (E2E 
     }
     await radio("Elle değiştirdiklerimi koru").check();
     await expect(warn).toHaveCount(0);
-    await radio("Ezerek").check();
+    await radio("Trendyol'daki değeri yaz").check();
     await page.setViewportSize({ width: 390, height: 844 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await page.setViewportSize({ width: 1280, height: 800 });

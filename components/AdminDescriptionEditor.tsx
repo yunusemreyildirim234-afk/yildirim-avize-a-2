@@ -87,7 +87,7 @@ export default function AdminDescriptionEditor({ productId, title }: { productId
         <p role="alert" data-testid="aciklama-ezme-uyarisi" className="mt-2 flex items-start gap-2 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-xs font-semibold text-red-900">
           <AlertTriangle aria-hidden="true" className="mt-px h-4 w-4 shrink-0 text-red-700" />
           <span>
-            {DESCRIPTION_OVERWRITE_WARNING} Trendyol Ürünleri bölümünde &ldquo;Başlık ve açıklama&rdquo; ayarı şu an &ldquo;Ezerek&rdquo;; açıklamanızın kalması için &ldquo;Dokunma&rdquo; ya da &ldquo;Koruyarak&rdquo; seçin.
+            {DESCRIPTION_OVERWRITE_WARNING} Trendyol Ürünleri bölümünde &ldquo;Başlık ve açıklama&rdquo; ayarı şu an &ldquo;Trendyol&apos;daki değeri yaz&rdquo;; açıklamanızın kalması için &ldquo;Dokunma&rdquo; ya da &ldquo;Koruyarak&rdquo; seçin.
           </span>
         </p>
       )}

@@ -27,11 +27,11 @@ test.describe("Trendyol ayarları kalıcı", () => {
   test("kayıt yokken varsayılan; değiştirip kaydet → yenileyince geri gelir; Ezerek uyarısı", async ({ page }) => {
     await openAdmin(page);
     await expandPanel(page, /Trendyol Ürünleri/);
-    await expect(radio(page, "Stok", "Ezerek")).toBeChecked();
+    await expect(radio(page, "Stok", "Trendyol'daki değeri yaz")).toBeChecked();
     await expect(page.getByTestId("ezerek-uyari")).toHaveCount(0);
     await expect(page.getByTestId("ayar-kaydet")).toBeDisabled();
 
-    await radio(page, FIYAT, "Ezerek").check();
+    await radio(page, FIYAT, "Trendyol'daki değeri yaz").check();
     await radio(page, "Görseller", "Elle değiştirdiklerimi koru").check();
     await expect(page.getByTestId("ayar-durum")).toContainText("Kaydedilmemiş");
     await page.getByTestId("ayar-kaydet").click();
@@ -40,7 +40,7 @@ test.describe("Trendyol ayarları kalıcı", () => {
 
     await page.reload();
     await expandPanel(page, /Trendyol Ürünleri/);
-    await expect(radio(page, FIYAT, "Ezerek")).toBeChecked();
+    await expect(radio(page, FIYAT, "Trendyol'daki değeri yaz")).toBeChecked();
     await expect(radio(page, "Görseller", "Elle değiştirdiklerimi koru")).toBeChecked();
     await expect(radio(page, "Başlık ve açıklama", "Dokunma")).toBeChecked();
     await expect(page.getByTestId("ezerek-uyari")).toBeVisible();
@@ -53,7 +53,7 @@ test.describe("Trendyol ayarları kalıcı", () => {
     await expandPanel(page, /Trendyol Ürünleri/);
     await expect(radio(page, "Stok", "Elle değiştirdiklerimi koru")).toBeChecked();
     await expect(page.getByTestId("ezerek-uyari")).toHaveCount(0);
-    await radio(page, "Stok", "Ezerek").check();
+    await radio(page, "Stok", "Trendyol'daki değeri yaz").check();
     await page.getByTestId("ayar-kaydet").click();
     await expect(page.getByTestId("ayar-durum")).toContainText("kaydedildi");
     expect(await saved()).toBeNull();
@@ -64,7 +64,7 @@ test.describe("Trendyol ayarları kalıcı", () => {
       await setRaw(bad);
       await openAdmin(page);
       await expandPanel(page, /Trendyol Ürünleri/);
-      await expect(radio(page, "Stok", "Ezerek")).toBeChecked();
+      await expect(radio(page, "Stok", "Trendyol'daki değeri yaz")).toBeChecked();
       await expect(radio(page, FIYAT, "Dokunma")).toBeChecked();
     }
   });
