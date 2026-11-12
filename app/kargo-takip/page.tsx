@@ -10,6 +10,7 @@ import Link from "next/link";
 import { rateLimit } from "@/lib/rate-limit";
 import { isShortOrderCode } from "@/lib/order-lookup";
 import { trackOrder } from "./actions";
+import TrackForm from "@/components/TrackForm";
 
 export const metadata: Metadata = {
   title: "Kargo & Sipariş Takibi",
@@ -151,36 +152,7 @@ export default async function TrackingPage({ searchParams }: { searchParams: Pro
           </p>
         </div>
 
-        <form action={trackOrder} className="flex flex-col sm:flex-row gap-2">
-          <label htmlFor="code" className="sr-only">
-            Sipariş veya takip kodu
-          </label>
-          <input
-            id="code"
-            name="code"
-            defaultValue={code}
-            required
-            placeholder="Sipariş veya takip kodunuz"
-            className="flex-1 border border-neutral-300 rounded-xl px-4 py-3 text-sm bg-white outline-none focus:border-amber-500"
-          />
-          <label htmlFor="email" className="sr-only">
-            E-posta (8 haneli sipariş koduyla sorgularken)
-          </label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            placeholder="E-posta (sipariş koduyla sorgularken)"
-            className="sm:w-64 border border-neutral-300 rounded-xl px-4 py-3 text-sm bg-white outline-none focus:border-amber-500"
-          />
-          <button
-            type="submit"
-            className="bg-neutral-900 hover:bg-amber-600 text-white text-xs font-semibold px-6 py-3 rounded-xl transition-colors"
-          >
-            Sorgula
-          </button>
-        </form>
+        <TrackForm action={trackOrder} defaultCode={code} />
 
         {code && (
           <Suspense

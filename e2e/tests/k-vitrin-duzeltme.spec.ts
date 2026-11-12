@@ -60,6 +60,16 @@ test.describe("k) Vitrin küçük düzeltmeleri (paket A)", () => {
     expect(await page.locator("main").count()).toBe(1);
   });
 
+  // Çalıştırılmadı (yalnızca yazıldı)
+  test("/kargo-takip: 8 haneli kod yazılınca e-posta zorunlu olur, ipucu görünür", async ({ page }) => {
+    await openOk(page, "/kargo-takip");
+    const email = page.locator("#email");
+    await expect(email).not.toHaveAttribute("required", "");
+    await page.locator("#code").fill("01595984");
+    await expect(email).toHaveAttribute("required", "");
+    await expect(page.locator("#email-ipucu")).toContainText("8 haneli sipariş kodu için");
+  });
+
   test("/sepet: sunucu çıktısında h1 var", async ({ request }) => {
     const html = await (await request.get("/sepet")).text();
     expect(html).toMatch(/<h1[^>]*>/);
