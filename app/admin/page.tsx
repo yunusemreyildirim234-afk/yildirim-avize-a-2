@@ -219,25 +219,43 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           </div>
         </div>
 
-        {/* Yapışkan "bölüme git" çubuğu (tüm bölümlere bağlantı; kapalı bölümü açar) */}
+        {/* Yapışkan "bölüme git" çubuğu: günlük işler şeritte, diğer bölümler "Tümü" panelinde (kapalı bölümü açar) */}
         <AdminSectionNav
-          items={[
-            { id: "siparisler", label: "Siparişler" },
-            { id: "mesajlar", label: "Mesajlar" },
+          daily={[
+            { id: "siparisler", label: "Siparişler", badge: allGroupCounts.yeni },
+            { id: "mesajlar", label: "Mesajlar", badge: pendingMessages },
+            { id: "yorumlar", label: "Yorumlar", badge: pendingReviews },
             { id: "urunler", label: "Tüm Ürünler" },
-            { id: "yorumlar", label: "Yorumlar" },
-            { id: "kuponlar", label: "Promosyon Kodları" },
-            { id: "yeni-avize", label: "Yeni Avize" },
-            { id: "kategoriler", label: "Kategoriler" },
-            { id: "ana-sayfa", label: "Ana Sayfa" },
-            { id: "kurumsal", label: "Kurumsal" },
             { id: "musteri-hareketleri", label: "Müşteriler" },
-            { id: "indirim", label: "İndirim Ayarları" },
-            { id: "oturumlar", label: "Oturumlar" },
-            { id: "guvenlik", label: "İki Aşamalı Doğrulama" },
-            { id: "yonetici-sifre", label: "Şifre" },
-            { id: "kargonomi", label: "Kargonomi" },
-            { id: "trendyol", label: "Trendyol" },
+          ]}
+          groups={[
+            {
+              title: "Katalog",
+              items: [
+                { id: "yeni-avize", label: "Yeni Avize" },
+                { id: "kategoriler", label: "Kategoriler" },
+                { id: "trendyol", label: "Trendyol" },
+              ],
+            },
+            {
+              title: "Vitrin ve kampanya",
+              items: [
+                { id: "ana-sayfa", label: "Ana Sayfa" },
+                { id: "kuponlar", label: "Promosyon Kodları" },
+                { id: "indirim", label: "İndirim Ayarları" },
+                { id: "stok-rozeti", label: "Stok Rozeti" },
+              ],
+            },
+            {
+              title: "Ayarlar ve güvenlik",
+              items: [
+                { id: "kurumsal", label: "Kurumsal" },
+                { id: "kargonomi", label: "Kargonomi" },
+                { id: "oturumlar", label: "Oturumlar" },
+                { id: "guvenlik", label: "İki Aşamalı Doğrulama" },
+                { id: "yonetici-sifre", label: "Şifre" },
+              ],
+            },
           ]}
         />
 

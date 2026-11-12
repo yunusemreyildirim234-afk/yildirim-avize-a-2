@@ -3,6 +3,9 @@ import { cleanupE2eProducts, createProductViaForm, findInProductList, openAdmin,
 import { productIdByTitle } from "../../db";
 
 const PREFIX = "E2E Paket D";
+// Çubuk: günlük işler şeritte, diğer bölümler "Tümü" panelinde üç başlık altında (panel bağlantıları kapalıyken de DOM'dadır)
+const DAILY_IDS = ["siparisler", "mesajlar", "yorumlar", "urunler", "musteri-hareketleri"];
+const PANEL_IDS = ["yeni-avize", "kategoriler", "trendyol", "ana-sayfa", "kuponlar", "indirim", "stok-rozeti", "kurumsal", "kargonomi", "oturumlar", "guvenlik", "yonetici-sifre"];
 const SECTION_IDS = ["kargonomi", "trendyol", "yeni-avize", "indirim", "oturumlar", "guvenlik", "yonetici-sifre", "kategoriler", "ana-sayfa", "kuponlar", "urunler", "siparisler", "mesajlar", "yorumlar", "kurumsal", "musteri-hareketleri"];
 
 test.describe("Admin paket D: görsel düzen ve bölüme git çubuğu", () => {
@@ -10,13 +13,21 @@ test.describe("Admin paket D: görsel düzen ve bölüme git çubuğu", () => {
     await cleanupE2eProducts(request, PREFIX);
   });
 
-  test("çubuk: 16 bölümün hepsine bağlantı var ve hedefler sayfada bulunur", async ({ page }) => {
+  test("çubuk: 17 bölümün hepsine bağlantı var (5 günlük iş şeritte, 12 bölüm Tümü panelinde) ve hedefler sayfada bulunur", async ({ page }) => {
     await openAdmin(page);
     const nav = page.getByRole("navigation", { name: "Yönetim bölümleri" });
     await expect(nav).toBeVisible();
-    const hrefs = await nav.locator("a").evaluateAll((els) => els.map((a) => a.getAttribute("href")));
-    expect(hrefs).toEqual(SECTION_IDS.map((id) => `#${id}`));
-    for (const id of SECTION_IDS) await expect(page.locator(`#${id}`), `#${id} bölümü`).toHaveCount(1);
+    const hrefsOf = (sel: string) => nav.locator(sel).evaluateAll((els) => els.map((a) => a.getAttribute("href")));
+    expect(await hrefsOf('[data-testid="gunluk-isler"] a')).toEqual(DAILY_IDS.map((id) => `#${id}`));
+    const panel = page.locator("#admin-nav-panel");
+    await expect(panel).toBeHidden();
+    await nav.getByRole("button", { name: "Tümü" }).click();
+    await expect(panel).toBeVisible();
+    expect(await hrefsOf("#admin-nav-panel a")).toEqual(PANEL_IDS.map((id) => `#${id}`));
+    expect(await panel.locator("h3").allTextContents()).toEqual(["Katalog", "Vitrin ve kampanya", "Ayarlar ve güvenlik"]);
+    await page.keyboard.press("Escape");
+    await expect(panel).toBeHidden();
+    for (const id of [...DAILY_IDS, ...PANEL_IDS]) await expect(page.locator(`#${id}`), `#${id} bölümü`).toHaveCount(1);
   });
 
   test("çubuk: kapalı bölüme gidince açılır ve başlık yapışkan çubuk + mağaza menüsünün altında kalmaz; çubuk kaydırınca da yerinde", async ({ page }) => {
@@ -25,7 +36,9 @@ test.describe("Admin paket D: görsel düzen ve bölüme git çubuğu", () => {
     for (const [id, label] of [["kuponlar", "Promosyon Kodları"], ["kurumsal", "Kurumsal"]] as const) {
       const header = page.locator(`#${id} button[aria-expanded]`).first();
       expect(await header.getAttribute("aria-expanded"), `${id} başta kapalı`).toBe("false");
+      await nav.getByRole("button", { name: "Tümü" }).click();
       await nav.getByRole("link", { name: label, exact: true }).click();
+      await expect(page.locator("#admin-nav-panel")).toBeHidden(); // bağlantıya basınca panel kapanır
       await expect(header).toHaveAttribute("aria-expanded", "true");
       await expect.poll(async () => (await page.locator(`#${id}`).boundingBox())!.y, { timeout: 5000 }).toBeLessThan(250);
       const navBox = (await nav.boundingBox())!;
@@ -78,6 +91,12 @@ test.describe("Admin paket D: görsel düzen ve bölüme git çubuğu", () => {
     const m = await page.evaluate(() => ({ doc: document.documentElement.scrollWidth, win: window.innerWidth, list: (() => { const u = document.querySelector('nav[aria-label="Yönetim bölümleri"] ul') as HTMLElement; return { sw: u.scrollWidth, cw: u.clientWidth }; })() }));
     expect(m.doc, "sayfa yatay taşması").toBeLessThanOrEqual(m.win);
     expect(m.list.sw, "çubuk içeriği dar ekrandan geniş (kaydırılır)").toBeGreaterThan(m.list.cw);
+    // Şerit tek satır: panel açılınca da yüksekliği değişmez; panel ekrandan taşmaz
+    const h0 = (await nav.boundingBox())!.height;
+    expect(h0, "şerit tek satır").toBeLessThanOrEqual(64);
+    await nav.getByRole("button", { name: "Tümü" }).click();
+    expect((await nav.boundingBox())!.height).toBe(h0);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await nav.getByRole("link", { name: "Kurumsal", exact: true }).click();
     await expect(page.locator("#kurumsal button[aria-expanded]").first()).toHaveAttribute("aria-expanded", "true");
   });
@@ -95,7 +114,7 @@ test.describe("Admin paket D: görsel düzen ve bölüme git çubuğu", () => {
     const region = page.getByRole("region", { name: "Seçilen ürünler" });
     await expect(region).toBeVisible();
     await region.locator('button[aria-controls="admin-selection-detail"]').click(); // toplu işlem katmanını aç
-    const chips = page.locator('nav[aria-label="Yönetim bölümleri"] a');
+    const chips = page.locator('nav[aria-label="Yönetim bölümleri"] [data-testid="gunluk-isler"] a');
     // Her çip, kendi merkezinde en üstteki öğedir (başka çubuk örtmez) ve çubuk ekranın içindedir
     const covered = await chips.evaluateAll((els) =>
       els.flatMap((a) => {
