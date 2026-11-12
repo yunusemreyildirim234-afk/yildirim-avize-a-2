@@ -55,7 +55,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   if (!current) return {};
   // Paylaşım görseli: kategorideki ilk ürünün kapağı, yoksa site görseli (sayfanın openGraph'ı layout'unkini tümüyle ezer)
   const first = current.where ? (await getProductsCached(current.where, 1).catch(() => []))[0] : undefined;
-  const images = [{ url: (first && coverImageOf(first)) || "/logo.png", alt: current.title }];
+  const images = [{ url: (first && coverImageOf(first)) || "/og-v2.png", alt: current.title }];
   // Her sayfanın kendi kanonik adresi vardır (sayfa=1 parametresiz)
   const sp = await searchParams;
   const page = parsePage(sp.sayfa);
