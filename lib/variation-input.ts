@@ -92,7 +92,7 @@ export function uploadedIdsOf(...lists: string[][]): string[] {
   return [...ids];
 }
 
-/** Varsayılan seçim: ilk stoklu varyasyon (yoksa ilki). Ürün sayfası, kart, feed ve JsonLd aynı kuralı kullanır. */
+/** İlk stoklu varyasyon (yoksa ilki); fiyatı dikkate almaz. Üretimde kullanılmaz; fiyatı belirleyen varsayılan seçenek için lib/default-variation.ts pickDefaultOption kullanılır. */
 export function pickDefaultVariation<V extends { stock: number }>(variations: V[]): V | null {
   return variations.find((v) => v.stock > 0) ?? variations[0] ?? null;
 }

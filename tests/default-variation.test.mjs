@@ -34,3 +34,24 @@ test("tümü stoksuz → ek fiyatı en düşük (eşitte ilki); boş liste → n
 test("negatif stok stoksuz sayılır", () => {
   assert.equal(pickDefaultOption([v("a", 0, -1), v("b", 300, 1)]).id, "b");
 });
+
+// Feed / JSON-LD (defaultOffer) sayfanın varsayılan seçeneğinin fiyatını verir
+import { defaultOffer } from "../lib/feed.ts";
+
+test("defaultOffer: fiyat = taban + pickDefaultOption ek fiyatı (ek fiyatlı seçenek ilk sırada olsa da)", () => {
+  const p = { basePrice: 8999, listPrice: 9999, variations: [v("a", 1000, 5), v("b", 0, 3)] };
+  const picked = pickDefaultOption(p.variations);
+  const offer = defaultOffer(p);
+  assert.equal(offer.variation.id, picked.id);
+  assert.equal(offer.price, p.basePrice + picked.extraPrice);
+  assert.equal(offer.price, 8999);
+  assert.equal(offer.list, 9999);
+  assert.equal(offer.inStock, true);
+});
+
+test("defaultOffer: ek fiyatsız seçenek stoksuzsa stoklu en ucuz; tümü stoksuzsa en ucuz ve inStock=false", () => {
+  assert.equal(defaultOffer({ basePrice: 100, listPrice: null, variations: [v("a", 0, 0), v("b", 50, 1), v("c", 20, 2)] }).price, 120);
+  const out = defaultOffer({ basePrice: 100, listPrice: null, variations: [v("a", 50, 0), v("b", 0, 0)] });
+  assert.equal(out.price, 100);
+  assert.equal(out.inStock, false);
+});

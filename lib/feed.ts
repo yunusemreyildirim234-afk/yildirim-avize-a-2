@@ -1,4 +1,5 @@
 import { SITE_NAME } from "./site.ts";
+import { pickDefaultOption } from "./default-variation.ts";
 import { imageListOf } from "./variation-input.ts"; // göreli + .ts: node --test bu dosyayı doğrudan yükler (@/ takma adı çözülmez)
 
 // Google Merchant Center ürün feed'i için SAF yardımcılar (veritabanı/ağ yok). Fiyat ve stok, ürün sayfasındaki
@@ -86,9 +87,9 @@ export function absoluteHttps(u: string | null | undefined, site: string): strin
   return full;
 }
 
-/** Ürün sayfasının varsayılan seçimiyle aynı: ilk stoklu varyasyon (yoksa ilki); görünen fiyat = taban + fark; üstü çizili liste fiyatı yalnız taban fiyattan yüksekse. */
+/** Ürün sayfasının varsayılan seçimiyle aynı (lib/default-variation.ts pickDefaultOption: stoklu en düşük ek fiyat); görünen fiyat = taban + fark; üstü çizili liste fiyatı yalnız taban fiyattan yüksekse. */
 export function defaultOffer<V extends FeedVariation>(p: { basePrice: number; listPrice: number | null; variations: V[] }) {
-  const v = p.variations.find((x) => x.stock > 0) ?? p.variations[0] ?? null;
+  const v = pickDefaultOption(p.variations);
   const extra = v?.extraPrice ?? 0;
   const price = p.basePrice + extra;
   const list = p.listPrice && p.listPrice > p.basePrice ? p.listPrice + extra : null;

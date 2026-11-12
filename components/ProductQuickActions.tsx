@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { Heart, Minus, Plus, X } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
+import { pickDefaultOption } from "@/lib/default-variation";
 import type { BulkRule } from "@/lib/bulk-pricing";
 import type { LadderStep } from "@/lib/price-ladder";
 
@@ -78,7 +79,7 @@ export function CartStepper({ product, inlineToast = false }: { product: QuickPr
   const [toast, setToast] = useState(false);
 
   const inCart = cart.find((i) => i.productId === product.id);
-  const variation = product.variations.find((v) => v.id === inCart?.variationId) ?? product.variations.find((v) => v.stock > 0);
+  const variation = product.variations.find((v) => v.id === inCart?.variationId) ?? pickDefaultOption(product.variations); // ürün sayfasıyla aynı varsayılan seçenek (lib/default-variation.ts)
 
   if (!variation || variation.stock <= 0) {
     return (
