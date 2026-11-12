@@ -501,7 +501,32 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
             )}
           </ul>
         </div>
+        {/* Mobil yapışkan çubuğun içeriği örtmemesi için alt boşluk */}
+        {!priceOnRequest && <div aria-hidden="true" className="md:hidden h-16" />}
       </div>
+
+      {/* Mobil yapışkan satın alma çubuğu (md altı): sağdaki yüzen telefon/WhatsApp düğmeleri için sağ boşluk bırakılır */}
+      {!priceOnRequest && (
+        <div
+          data-testid="mobil-satin-alma-cubugu"
+          className="md:hidden fixed inset-x-0 bottom-0 z-40 flex items-center gap-3 border-t border-neutral-200 bg-white pl-4 pr-28 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_16px_-8px_rgba(24,24,27,0.25)]"
+        >
+          <div className="min-w-0 shrink-0">
+            <span className="block text-[11px] text-neutral-600">{soldOut || outOfStock ? "Tükendi" : "Toplam Tutar"}</span>
+            <span className={`block text-lg font-bold tabular-nums leading-tight ${hasDiscount ? priceTone(false).sale : "text-neutral-900"}`}>
+              {lineNow.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={handleAddToCart}
+            disabled={soldOut || outOfStock}
+            className="flex-1 min-w-0 min-h-11 bg-neutral-900 hover:bg-amber-600 text-white font-medium py-2.5 px-3 rounded-xl transition-colors text-sm disabled:opacity-50 disabled:hover:bg-neutral-900 disabled:cursor-not-allowed focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600"
+          >
+            {soldOut || outOfStock ? "Tükendi" : addedToCart ? "✓ Eklendi" : "Sepete Ekle"}
+          </button>
+        </div>
+      )}
 
       {zoomed && mainImage && (
         <ImageLightbox src={mainImage} alt={product.title} onClose={() => setZoomed(false)} nav={{ count: gallery.length, index: activeImage, onChange: showImage }} />
