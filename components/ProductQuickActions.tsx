@@ -17,6 +17,7 @@ export interface QuickProduct {
   title: string;
   category: string;
   basePrice: number;
+  listPrice?: number | null; // varyasyon farkı eklenmemiş liste fiyatı
   imageUrl?: string | null;
   modelCode?: string | null;
   bulk?: BulkRule[] | null;
@@ -119,6 +120,7 @@ export function CartStepper({ product, inlineToast = false }: { product: QuickPr
         imageUrl: product.imageUrl, // kapak (ProductCard coverImageOf ile verir)
         variationName: variation.variationValue,
         price: product.basePrice + variation.extraPrice,
+        listPrice: product.listPrice && product.listPrice > product.basePrice ? product.listPrice + variation.extraPrice : null,
         bulk: product.bulk,
         quantity: 1,
       });

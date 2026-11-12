@@ -150,6 +150,7 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
       imageUrl: coverImageOf(product), // sepet küçük resmi = ürün kapağı (kart ile aynı kural)
       variationName: `${selectedVariation.variationType}: ${selectedVariation.variationValue}`,
       price: currentPrice,
+      listPrice: listShown,
       bulk,
       quantity: quantity,
     });

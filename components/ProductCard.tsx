@@ -44,6 +44,7 @@ export default async function ProductCard({
     title: product.title,
     category: product.category,
     basePrice: product.basePrice,
+    listPrice: product.listPrice,
     imageUrl: cover,
     bulk,
     variations: product.variations.map((v) => ({

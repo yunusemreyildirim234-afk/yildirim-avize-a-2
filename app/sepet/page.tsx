@@ -9,6 +9,7 @@ import { ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
+import { lineSavings, referenceUnit, totalSavings } from "@/lib/cart-savings";
 import { CART_MERGE_NOTE_KEY, cartPriceLines, useCart, type ItemRules } from "@/context/CartContext";
 import { shippingProgress } from "@/lib/shipping-progress";
 import { FREE_SHIPPING_THRESHOLD, SHIPPING_COST, SHIPPING_LABELS, type CouponRule } from "@/lib/pricing";
@@ -341,6 +342,7 @@ export default function CartPage() {
     ? "Fiyatlar doğrulanıyor, lütfen bekleyin."
     : null;
   const couponUnverifiable = appliedCoupon !== null && ((fresh && quote.coupon?.limited === true) || quoteFailed);
+  const savings = totalSavings(cart, finalTotal, shippingCost); // liste toplamı − (Toplam Tutar − kargo); yeni hesap kuralı değil
   const itemsShown = fresh ? quote.totals.itemsTotal : totalPrice;
   const shipProgress = shippingProgress(itemsShown, FREE_SHIPPING_THRESHOLD);
 
@@ -677,10 +679,15 @@ export default function CartPage() {
                     )}
                     <div className="text-sm font-bold text-neutral-900 mt-2">
                       {(pricedOf(item.variationId)?.unitPrice ?? item.price).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺
-                      {(pricedOf(item.variationId)?.unitPrice ?? item.price) < item.price && (
-                        <span className="ml-2 text-xs font-medium text-neutral-400 line-through">{item.price.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
+                      {(pricedOf(item.variationId)?.unitPrice ?? item.price) < referenceUnit(item) && (
+                        <span className="ml-2 text-xs font-medium text-neutral-400 line-through">{referenceUnit(item).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
                       )}
                     </div>
+                    {lineSavings(item, pricedOf(item.variationId)?.unitPrice ?? item.price) > 0 && (
+                      <p data-testid="satir-indirimi" className="text-[11px] text-neutral-500 mt-0.5 tabular-nums">
+                        {lineSavings(item, pricedOf(item.variationId)?.unitPrice ?? item.price).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺ indirim
+                      </p>
+                    )}
                     {item.quantity > 1 && pricedOf(item.variationId) && (
                       <p data-testid="satir-toplami" className="text-xs text-neutral-700 mt-1 tabular-nums">
                         {item.quantity} × {pricedOf(item.variationId)!.unitPrice.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺ ={" "}
@@ -1177,6 +1184,12 @@ export default function CartPage() {
                   <span>Toplam Tutar</span>
                   <span className="text-amber-600 text-base">{finalTotal.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
                 </div>
+                {savings > 0 && (
+                  <p data-testid="toplam-kazanc" className="flex justify-between text-emerald-700 font-semibold text-xs">
+                    <span>Toplam kazancınız:</span>
+                    <span>{savings.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
+                  </p>
+                )}
 
               </div>
 

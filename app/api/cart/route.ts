@@ -29,6 +29,7 @@ export async function GET() {
       imageUrl: coverImageOf(r.variation.product),
       variationName: r.variation.variationValue,
       price: r.variation.product.basePrice + r.variation.extraPrice,
+      listPrice: r.variation.product.listPrice && r.variation.product.listPrice > r.variation.product.basePrice ? r.variation.product.listPrice + r.variation.extraPrice : null,
       bulk: bulkTiersOf(r.variation.product),
       rules: { couponAllowed: r.variation.product.couponAllowed, pickupPct: r.variation.product.pickupDiscountPct, transferPct: r.variation.product.transferDiscountPct },
       quantity: Math.min(r.quantity, r.variation.stock),

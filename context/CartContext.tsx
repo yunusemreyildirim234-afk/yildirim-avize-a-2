@@ -18,6 +18,7 @@ export interface CartItem {
   imageUrl?: string | null;
   variationName: string;
   price: number;
+  listPrice?: number | null; // liste fiyatı (varyasyon farkı dahil); yalnızca üstü çizili gösterim için
   quantity: number;
   bulk?: BulkRule[] | null; // adet kademeleri
   rules?: ItemRules; // ürüne özel indirim kuralları (sunucu teklifinden gelir; yoksa varsayılan)
