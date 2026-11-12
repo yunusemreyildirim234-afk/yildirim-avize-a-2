@@ -15,6 +15,11 @@ import CodeStep from "@/components/CodeStep";
 import ProfileName from "@/components/ProfileName";
 import AddressBook from "@/components/AddressBook";
 import ReceiptUpload from "@/components/ReceiptUpload";
+import OrderBankBox from "@/components/OrderBankBox";
+import CopyCodeButton from "@/components/CopyCodeButton";
+import { breakdownOf, formatTl, orderCode } from "@/lib/order-display";
+import { discountLabel } from "@/lib/order-discount-label";
+import { titleCaseTr } from "@/lib/display-case";
 import { MarketingPermissions } from "@/components/MarketingPrefs";
 import { smallImage } from "@/lib/img";
 
@@ -44,6 +49,10 @@ interface Order {
   cancelReturnStatus?: string | null;
   cancelReturnReason?: string | null;
   cancelReturnNote?: string | null;
+  couponCode?: string | null;
+  address?: string | null;
+  buyerCityName?: string | null;
+  buyerStateName?: string | null;
   createdAt: string;
   items: OrderItem[];
 }
@@ -83,6 +92,14 @@ export default function AuthPage() {
       .then((data) => Array.isArray(data.orderIds) && setInvoiceIds(data.orderIds))
       .catch(() => {});
   }, [hasUser]);
+
+  // İçerik sonradan geldiği için #çapa tarayıcıca bulunamaz: sipariş verisi yüklenince bir kez kaydır
+  const ordersLoaded = Boolean(user?.orders);
+  useEffect(() => {
+    if (!ordersLoaded) return;
+    const id = window.location.hash.slice(1);
+    if (id) document.getElementById(id)?.scrollIntoView();
+  }, [ordersLoaded]);
 
   const refreshUser = () => {
     fetch("/api/auth/me?orders=1", { cache: "no-store" })
@@ -169,7 +186,7 @@ export default function AuthPage() {
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-neutral-200/80 pb-3 text-xs">
                       <div>
-                        <span className="text-neutral-400 font-mono">Sipariş ID: {order.id.slice(0, 8)}...</span>
+                        <span className="inline-flex items-center gap-2 text-neutral-500 font-mono">Sipariş Kodu: {orderCode(order.id)} <CopyCodeButton text={orderCode(order.id)} label="Sipariş kodu kopyalandı" /></span>
                         <span className="block text-[11px] text-neutral-500 mt-0.5">
                           Tarih: {new Date(order.createdAt).toLocaleDateString("tr-TR")}
                         </span>
@@ -258,11 +275,26 @@ export default function AuthPage() {
                       ))}
                     </div>
 
+                    {(() => {
+                      const b = breakdownOf(order.items, order.shippingType, order.totalAmount);
+                      return b.discount > 0 ? (
+                        <p className="flex justify-between text-xs font-semibold text-emerald-700 border-t border-neutral-200/80 pt-2">
+                          <span>{discountLabel(order, b.itemsSum, b.discount)}</span>
+                          <span className="whitespace-nowrap">-{formatTl(b.discount)}</span>
+                        </p>
+                      ) : null;
+                    })()}
+
                     {order.status === "PENDING_NEW" && order.paymentMethod === "BANK_TRANSFER" && (
-                      <ReceiptUpload orderId={order.id} uploaded={Boolean(order.receiptUrl)} defaultSender={order.receiptSenderName ?? user.name} onDone={refreshUser} />
+                      <>
+                        <OrderBankBox orderId={order.id} total={order.totalAmount} createdAt={order.createdAt} receiptUploaded={Boolean(order.receiptUrl)} />
+                        <ReceiptUpload orderId={order.id} uploaded={Boolean(order.receiptUrl)} amount={order.totalAmount} defaultSender={order.receiptSenderName ?? user.name} onDone={refreshUser} />
+                      </>
                     )}
 
-                    <OrderRequestBox order={order} onChanged={refreshUser} />
+                    <div className="flex flex-wrap items-start gap-x-3 gap-y-2 pt-1">
+                      <OrderRequestBox order={order} onChanged={refreshUser} />
+                    </div>
 
                     {order.status === "DELIVERED" && invoiceIds.includes(order.id) && (
                       <a
@@ -288,15 +320,23 @@ export default function AuthPage() {
                             Takip No: {order.shippingTrackingCode}
                           </span>
                         )}
+                        {order.shippingType !== "BEYOGLU_MAGAZA_TESLIM" && order.address && (
+                          <span className="block mt-1">Adres: {titleCaseTr(order.address)}{order.buyerCityName || order.buyerStateName ? `, ${[order.buyerCityName, order.buyerStateName].filter(Boolean).join(" / ")}` : ""}</span>
+                        )}
                       </div>
 
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                        <Link
-                          href={`/kargo-takip?code=${order.shippingTrackingCode || order.id}`}
-                          className="text-amber-700 hover:underline font-semibold"
-                        >
-                          🚚 Kargo Takip →
+                        <Link href={`/siparis-onay/${order.id}`} className="text-amber-700 hover:underline font-semibold">
+                          Sipariş detayı →
                         </Link>
+                        {order.shippingTrackingCode && (
+                          <Link
+                            href={`/kargo-takip?code=${encodeURIComponent(order.shippingTrackingCode)}`}
+                            className="text-amber-700 hover:underline font-semibold"
+                          >
+                            🚚 Kargo Takip →
+                          </Link>
+                        )}
                         {order.shippingTrackingCode && (
                           <a
                             href={`https://kargotakip.araskargo.com.tr/?kargotakipno=${encodeURIComponent(order.shippingTrackingCode)}`}
