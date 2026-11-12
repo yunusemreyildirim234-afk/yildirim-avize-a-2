@@ -275,7 +275,7 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
             <span className="inline-block text-[11px] font-semibold text-neutral-700 border border-neutral-300 rounded-md px-2 py-0.5">Montajlı</span>
           )}
           <div className="pt-4">
-            <span className="text-xs text-neutral-500 block mb-1">Toplam Tutar</span>
+            <span className="text-xs text-neutral-500 block mb-1">{quantity > 1 ? "Toplam Tutar" : "Fiyat"}</span>
             {listShown && listShown > currentPrice && (
               <span className="block text-xs text-neutral-500"><span>Liste fiyatı: </span><span className="line-through">{(listShown * quantity).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span></span>
             )}
@@ -522,7 +522,7 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
           className="md:hidden fixed inset-x-0 bottom-0 z-40 flex items-center gap-3 border-t border-neutral-200 bg-white pl-4 pr-28 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_16px_-8px_rgba(24,24,27,0.25)]"
         >
           <div className="min-w-0 shrink-0">
-            <span className="block text-[11px] text-neutral-600">{soldOut || outOfStock ? "Tükendi" : "Toplam Tutar"}</span>
+            <span className="block text-[11px] text-neutral-600">{soldOut || outOfStock ? "Tükendi" : quantity > 1 ? "Toplam Tutar" : "Fiyat"}</span>
             <span className={`block text-lg font-bold tabular-nums leading-tight ${hasDiscount ? priceTone(false).sale : "text-neutral-900"}`}>
               {lineNow.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺
             </span>
