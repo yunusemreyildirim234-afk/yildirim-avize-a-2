@@ -88,10 +88,22 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
     programmatic.current = setTimeout(() => (programmatic.current = null), 600);
     el.scrollTo({ left: n * el.clientWidth, behavior: reducedMotion() ? "auto" : "smooth" });
   };
-  // Seçili küçük resim görünür alana kayar
+  // Seçili küçük resim, KENDİ şeridinde görünür alana kayar. İlk yüklemede çalışmaz ve sayfayı kaydırmaz
+  // (scrollIntoView tüm üst kaydırma alanlarını, sayfa dahil, oynatıyordu: açılışta ~180 px kayma).
+  const thumbsMounted = useRef(false);
   useEffect(() => {
-    const t = thumbsRef.current?.children[activeImage] as HTMLElement | undefined;
-    t?.scrollIntoView?.({ block: "nearest", inline: "nearest", behavior: reducedMotion() ? "auto" : "smooth" });
+    if (!thumbsMounted.current) {
+      thumbsMounted.current = true;
+      return;
+    }
+    const box = thumbsRef.current;
+    const t = box?.children[activeImage] as HTMLElement | undefined;
+    if (!box || !t) return;
+    const b = box.getBoundingClientRect();
+    const r = t.getBoundingClientRect();
+    const behavior = reducedMotion() ? "auto" : "smooth";
+    if (r.left < b.left || r.right > b.right) box.scrollTo({ left: box.scrollLeft + (r.left < b.left ? r.left - b.left : r.right - b.right), behavior });
+    if (r.top < b.top || r.bottom > b.bottom) box.scrollTo({ top: box.scrollTop + (r.top < b.top ? r.top - b.top : r.bottom - b.bottom), behavior });
   }, [activeImage]);
 
   const shownTitle = displayTitle(product.title); // yalnızca başlık gösterimi; sepet, mesajlar ve alt metin tam başlığı kullanır
