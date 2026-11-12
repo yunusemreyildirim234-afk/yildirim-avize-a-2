@@ -30,6 +30,7 @@ import { bulbNoteFor } from "@/lib/bulb-note";
 import { clearCartChoices, loadCartChoices, saveCartChoices, tabStore } from "@/lib/cart-choices";
 import { forgetCardOrder, previousCardOrderId, rememberCardOrder } from "@/lib/pending-card-order";
 import { smallImage } from "@/lib/img";
+import { displayTitle } from "@/lib/title-display";
 
 interface LocationItem {
   id: number;
@@ -630,7 +631,7 @@ export default function CartPage() {
                     <div className="min-w-0">
                     <h3 className="font-serif font-bold text-neutral-900 text-base">
                       <Link href={`/urun/${item.productId}`} className="hover:text-amber-700 hover:underline">
-                        {item.title}
+                        {displayTitle(item.title).title}
                       </Link>
                     </h3>
                     <span className="inline-block text-xs bg-amber-50 text-amber-800 font-medium px-2.5 py-0.5 rounded-md mt-1">

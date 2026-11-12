@@ -23,6 +23,7 @@ import { defaultOffer, feedBrand } from "@/lib/feed";
 import { coverImageOf, imageListOf } from "@/lib/variation-input";
 import { GtmEvent } from "@/components/GtmEvent";
 import { gaItem, viewItemEvent } from "@/lib/gtm-events";
+import { displayTitle } from "@/lib/title-display";
 
 const totalStockOf = (p: { variations: { stock: number }[] }) => p.variations.reduce((sum, v) => sum + Math.max(0, v.stock), 0);
 
@@ -39,7 +40,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     (product.description ?? "").replace(/\s+/g, " ").trim().slice(0, 160) || `${product.title} – Yıldırım Avize Beyoğlu Şişhane`;
   const cover = coverImageOf(product);
   return {
-    title: product.title,
+    title: displayTitle(product.title).title,
     description,
     alternates: { canonical: `/urun/${id}` },
     // og:type "product" Next'in tip listesinde yok: sayfa gövdesindeki <meta property="og:type"> ile (React başlığa taşır) verilir
@@ -150,7 +151,7 @@ export default async function ProductDetailPage({ params }: Props) {
               : hasCategory
                 ? [{ name: `${product.category} Avizeler`, ...(categoryHref ? { href: categoryHref } : {}) }]
                 : []),
-            { name: product.title },
+            { name: displayTitle(product.title).title },
           ]}
         />
 

@@ -22,6 +22,7 @@ import { discountLabel } from "@/lib/order-discount-label";
 import { titleCaseTr } from "@/lib/display-case";
 import { MarketingPermissions } from "@/components/MarketingPrefs";
 import { smallImage } from "@/lib/img";
+import { displayTitle } from "@/lib/title-display";
 
 interface OrderItem {
   id: string;
@@ -252,7 +253,7 @@ export default function AuthPage() {
                               {item.quantity}x{" "}
                               {item.variation.product ? (
                                 <Link href={`/urun/${item.variation.product.id}`} className="font-semibold hover:text-amber-700 hover:underline">
-                                  {item.variation.product.title}
+                                  {displayTitle(item.variation.product.title).title}
                                 </Link>
                               ) : null}{" "}
                               <span className="text-neutral-500">{item.variation.variationValue}</span>

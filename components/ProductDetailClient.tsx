@@ -154,7 +154,7 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
       quantity: quantity,
     });
 
-    toast.success("Sepete eklendi", { ...toastHref("/sepet"), description: `${quantity}x ${product.title}`, action: { label: "Sepete Git", onClick: () => router.push("/sepet") } });
+    toast.success("Sepete eklendi", { ...toastHref("/sepet"), description: `${quantity}x ${displayTitle(product.title).title}`, action: { label: "Sepete Git", onClick: () => router.push("/sepet") } });
     setAddedToCart(true);
     setTimeout(() => setAddedToCart(false), 2500);
   };

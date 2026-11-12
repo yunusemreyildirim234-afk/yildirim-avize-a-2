@@ -1,6 +1,7 @@
 "use client";
 
 import { Clock, X } from "lucide-react";
+import { displayTitle } from "@/lib/title-display";
 
 export default function RecentSearches({
   items,
@@ -27,7 +28,7 @@ export default function RecentSearches({
           <li key={term} className="flex items-center hover:bg-amber-50/60">
             <button type="button" onClick={() => onPick(term)} className="flex-1 min-w-0 flex items-center gap-2 px-3 py-2 text-left text-xs text-zinc-800">
               <Clock aria-hidden="true" className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
-              <span className="truncate">{term}</span>
+              <span className="truncate">{displayTitle(term).title}</span>
             </button>
             <button type="button" aria-label={`${term} aramasını kaldır`} onClick={() => onRemove(term)} className="p-2 mr-1 text-zinc-400 hover:text-zinc-700">
               <X aria-hidden="true" className="w-3.5 h-3.5" />

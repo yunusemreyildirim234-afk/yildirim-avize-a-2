@@ -20,6 +20,7 @@ import { bankPaymentDeadline, breakdownOf, breakdownRows, formatIstanbul, orderC
 import { smallImage } from "@/lib/img";
 import { titleCaseTr } from "@/lib/display-case";
 import { discountLabel } from "@/lib/order-discount-label";
+import { displayTitle } from "@/lib/title-display";
 
 export const metadata: Metadata = {
   title: "Siparişiniz Alındı",
@@ -151,7 +152,7 @@ export default async function OrderConfirmationPage({ params }: { params: Promis
                 <span>
                   {item.quantity}x{" "}
                   <Link href={`/urun/${item.variation.product.id}`} className="hover:text-amber-700 hover:underline">
-                    <strong>{item.variation.product.title}</strong>
+                    <strong>{displayTitle(item.variation.product.title).title}</strong>
                   </Link>{" "}
                   – {item.variation.variationValue}
                 </span>

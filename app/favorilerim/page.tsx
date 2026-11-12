@@ -7,6 +7,7 @@ import PriceLadder from "@/components/PriceLadder";
 import { useWishlist } from "@/context/WishlistContext";
 import { FavoritesMarketingStrip } from "@/components/MarketingPrefs";
 import { smallImage } from "@/lib/img";
+import { displayTitle } from "@/lib/title-display";
 
 export default function FavorilerimPage() {
   const { favorites, removeFavoriteUndoable, clearFavorites } = useWishlist();
@@ -114,7 +115,7 @@ export default function FavorilerimPage() {
               <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
                 <h3 className="font-serif font-bold text-neutral-900 text-base">
                   <Link href={`/urun/${product.id}`} className="hover:text-amber-700 hover:underline">
-                    {product.title}
+                    {displayTitle(product.title).title}
                   </Link>
                 </h3>
 
