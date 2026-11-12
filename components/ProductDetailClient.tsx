@@ -451,6 +451,7 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
             </>
           )}
 
+          {!soldOut && (
           <div className="bg-amber-50/60 border border-amber-200/60 rounded-xl p-3.5 text-xs text-amber-950 flex items-start gap-2.5">
             <span aria-hidden="true" className="text-base">📍</span>
             <div>
@@ -458,6 +459,7 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
               <p className="mt-1 text-amber-900/80">Mağazadan teslim seçeneğinde sepette %{Math.round(PICKUP_DISCOUNT * 100)} ek indirim uygulanır</p>
             </div>
           </div>
+          )}
         </div>
 
         {/* Açıklama ve notlar: satın alma bloğunun altında; uzun metin kısaltılır */}
