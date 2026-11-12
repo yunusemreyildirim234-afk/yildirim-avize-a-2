@@ -356,7 +356,7 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
                       {v.variationValue}
                     </div>
                     <div className="text-[11px] text-neutral-500 mt-0.5">
-                      {v.extraPrice > 0 ? `+${v.extraPrice.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺` : "Fark Yok"}
+                      {v.extraPrice > 0 ? `+${v.extraPrice.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺` : "Ek ücret yok"}
                     </div>
                     <div className={`text-[11px] mt-1 font-medium ${v.stock > 0 ? "text-emerald-700" : "text-red-700"}`}>
                       {v.stock > 0 ? `Stok: ${v.stock} adet` : "Tükendi"}
