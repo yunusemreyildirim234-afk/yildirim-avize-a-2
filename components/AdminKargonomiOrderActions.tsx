@@ -25,7 +25,7 @@ export default function AdminKargonomiOrderActions({ order }: Props) {
   const [askCreate, setAskCreate] = useState(false);
 
   if (order.shippingType === "BEYOGLU_MAGAZA_TESLIM") {
-    return <span className="text-[11px] text-neutral-400">Mağaza teslimi – kargo gerekmiyor</span>;
+    return <span className="text-[11px] text-neutral-500">Mağaza teslimi – kargo gerekmiyor</span>;
   }
 
   const run = async (kind: "create" | "regenerate" | "refresh") => {
@@ -61,7 +61,7 @@ export default function AdminKargonomiOrderActions({ order }: Props) {
 
   // İptal/iade edilmiş siparişte barkod oluşturulamaz: düğme ve "ödeme onaylanınca" notu gösterilmez
   if (!order.labelCreated && ["CANCELLED", "RETURNED"].includes(order.status)) {
-    return <span className="text-[11px] text-neutral-400">—</span>;
+    return <span className="text-[11px] text-neutral-500">—</span>;
   }
 
   if (!order.labelCreated) {
@@ -87,7 +87,7 @@ export default function AdminKargonomiOrderActions({ order }: Props) {
             {loading === "create" ? "Barkod oluşturuluyor..." : "Aras Kargo Barkodu Oluştur"}
           </button>
         )}
-        {!payable && <p className="text-[10px] text-neutral-400 max-w-[11rem]">Ödeme onaylanınca barkod oluşturulabilir.</p>}
+        {!payable && <p className="text-[10px] text-neutral-500 max-w-[11rem]">Ödeme onaylanınca barkod oluşturulabilir.</p>}
       </div>
     );
   }
