@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { CartStepper, type QuickProduct } from "@/components/ProductQuickActions";
+import { CartStepper, InCartBadge, type QuickProduct } from "@/components/ProductQuickActions";
 import PriceLadder from "@/components/PriceLadder";
 import { useWishlist } from "@/context/WishlistContext";
 import { FavoritesMarketingStrip } from "@/components/MarketingPrefs";
@@ -118,6 +118,7 @@ export default function FavorilerimPage() {
                   </Link>
                 </h3>
 
+                <InCartBadge productId={product.id} />
                 {quick[product.id] && <CartStepper product={quick[product.id]} />}
 
                 <div className="pt-3 border-t border-neutral-100 flex items-center justify-between">

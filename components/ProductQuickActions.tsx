@@ -73,6 +73,18 @@ export function FavoriteButton({ product, className = "" }: { product: QuickProd
 }
 
 /** Hızlı sepete ekle ve adet artır/azalt. "+" sonrası yeşil "Sepete Git" mini bildirimi açılır. */
+/** Ürün sepetteyse "Sepetinizde" etiketi (favoriler gibi listelerde; yalnızca istemci sepet durumu, sorgu yok). */
+export function InCartBadge({ productId }: { productId: string }) {
+  const { cart } = useCart();
+  const qty = cart.filter((i) => i.productId === productId).reduce((n, i) => n + i.quantity, 0);
+  if (qty === 0) return null;
+  return (
+    <Link href="/sepet" data-testid="sepetinizde-etiket" className="inline-flex w-fit items-center rounded-full bg-emerald-50 border border-emerald-300 px-2.5 py-1 text-[11px] font-semibold text-emerald-900 hover:underline">
+      Sepetinizde ({qty})
+    </Link>
+  );
+}
+
 export function CartStepper({ product, inlineToast = false }: { product: QuickProduct; inlineToast?: boolean }) {
   const { cart, addToCart, updateQuantity } = useCart();
   const router = useRouter();
