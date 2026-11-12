@@ -28,6 +28,7 @@ const localBusiness = {
   "@type": "LightingStore",
   name: "Yıldırım Avize",
   url: SITE_URL,
+  logo: `${SITE_URL}/logo-kare-v2.png`,
   telephone: PHONE_TEL,
   priceRange: "₺₺",
   geo: { "@type": "GeoCoordinates", latitude: LAT, longitude: LNG },
