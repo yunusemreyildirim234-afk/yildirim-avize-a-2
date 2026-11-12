@@ -1,20 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { CheckCircle2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { compressImageToWebP, MAX_RAW_BYTES, MAX_UPLOAD_BYTES } from "@/lib/client-image";
+import { BANK_INFO } from "@/lib/site";
+import { formatTl, orderCode } from "@/lib/order-display";
 
 /** Havale siparişi için "Havale Bildirimi Yap / Dekont Yükle" butonu ve formu. */
 export default function ReceiptUpload({
   orderId,
   uploaded,
   defaultSender = "",
+  amount,
   onDone,
 }: {
   orderId: string;
   uploaded: boolean;
   defaultSender?: string;
+  /** Gönderilecek tutar (verilirse formda tutar, IBAN ve sipariş kodu gösterilir). */
+  amount?: number;
   onDone?: () => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -23,6 +28,7 @@ export default function ReceiptUpload({
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [optimizing, setOptimizing] = useState(false);
+  const uid = useId();
 
   if (done && !open) {
     return (
@@ -75,9 +81,15 @@ export default function ReceiptUpload({
   return (
     <form onSubmit={submit} className="space-y-3 rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4 text-left text-xs">
       <p className="font-bold text-emerald-950">Havale Bildirimi</p>
+      {amount !== undefined && (
+        <p className="rounded-xl bg-white/70 border border-emerald-200 px-3 py-2 text-neutral-800 leading-relaxed">
+          <strong>{formatTl(amount)}</strong> tutarını <span className="font-mono font-bold break-all">{BANK_INFO.iban}</span> IBAN&apos;ına gönderin; açıklamaya <span className="font-mono font-bold">{orderCode(orderId)}</span> yazın.
+        </p>
+      )}
       <div>
-        <label className="font-semibold text-neutral-700 block mb-1">Gönderici Ad-Soyadı</label>
+        <label htmlFor={`${uid}-sender`} className="font-semibold text-neutral-700 block mb-1">Gönderici Ad-Soyadı</label>
         <input
+          id={`${uid}-sender`}
           required
           minLength={3}
           maxLength={120}
@@ -88,8 +100,9 @@ export default function ReceiptUpload({
         />
       </div>
       <div>
-        <label className="font-semibold text-neutral-700 block mb-1">Dekont Dosyası (Görsel veya PDF, en çok 20 MB, otomatik küçültülür)</label>
+        <label htmlFor={`${uid}-file`} className="font-semibold text-neutral-700 block mb-1">Dekont Dosyası (Görsel veya PDF, en çok 20 MB, otomatik küçültülür)</label>
         <input
+          id={`${uid}-file`}
           required
           type="file"
           accept="image/jpeg,image/png,image/webp,application/pdf"
@@ -117,11 +130,12 @@ export default function ReceiptUpload({
         />
         {optimizing && <p className="mt-1 text-[11px] text-amber-700">Görsel optimize ediliyor...</p>}
       </div>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <button type="submit" disabled={busy || optimizing || !file} className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-bold px-5 py-2.5 rounded-xl">
           {optimizing ? "Görsel optimize ediliyor..." : busy ? "Yükleniyor..." : "Gönder"}
         </button>
-        <button type="button" onClick={() => setOpen(false)} className="text-neutral-500 font-semibold px-3 py-2.5">
+        {!file && !optimizing && <span className="text-[11px] text-neutral-500">Dosya seçince etkinleşir</span>}
+        <button type="button" onClick={() => setOpen(false)} className="text-neutral-600 font-semibold px-3 py-2.5">
           Vazgeç
         </button>
       </div>

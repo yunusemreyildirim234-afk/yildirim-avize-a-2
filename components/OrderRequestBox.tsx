@@ -48,7 +48,11 @@ export default function OrderRequestBox({ order, onChanged }: Props) {
 
   const type = requestTypeFor(order.status);
   if (!type) return null;
-  const actionLabel = type === "CANCEL" ? "İptal Talebi Gönder" : "İade Talebi Gönder";
+  const openLabel = type === "CANCEL" ? "İptal Talebi Oluştur" : "İade Talebi Oluştur";
+  const intro =
+    type === "CANCEL"
+      ? "Talebiniz mağazaya iletilir; onaylanınca sipariş iptal edilir, ödeme yapıldıysa iade edilir."
+      : "Talebiniz mağazaya iletilir ve incelenir.";
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,13 +85,14 @@ export default function OrderRequestBox({ order, onChanged }: Props) {
         onClick={() => setOpen(true)}
         className="text-[11px] font-semibold border border-red-300 text-red-700 hover:bg-red-50 rounded-xl px-3 py-2 transition-colors"
       >
-        {actionLabel}
+        {openLabel}
       </button>
     );
   }
 
   return (
-    <form onSubmit={submit} className="space-y-2 text-[11px]">
+    <form onSubmit={submit} className="space-y-2 text-xs w-full">
+      <p className="text-neutral-700">{intro}</p>
       <textarea
         aria-label="Talep nedeni"
         value={reason}
@@ -104,9 +109,9 @@ export default function OrderRequestBox({ order, onChanged }: Props) {
           disabled={loading}
           className="bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white font-semibold px-4 py-2 rounded-xl"
         >
-          {loading ? "Gönderiliyor..." : actionLabel}
+          {loading ? "Gönderiliyor..." : "Talebi Gönder"}
         </button>
-        <button type="button" onClick={() => setOpen(false)} className="text-neutral-500 font-semibold px-3 py-2">
+        <button type="button" onClick={() => setOpen(false)} className="text-neutral-600 font-semibold px-3 py-2">
           Vazgeç
         </button>
       </div>
