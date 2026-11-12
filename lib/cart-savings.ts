@@ -21,3 +21,13 @@ export function totalSavings(items: { price: number; listPrice?: number | null; 
   const listTotal = items.reduce((s, i) => s + referenceUnit(i) * i.quantity, 0);
   return Math.max(0, r2(listTotal - (total - shipping)));
 }
+
+/** Liste fiyatı toplamı (karşılaştırma birimi × adet). */
+export function listTotalOf(items: { price: number; listPrice?: number | null; quantity: number }[]): number {
+  return r2(items.reduce((s, i) => s + referenceUnit(i) * i.quantity, 0));
+}
+
+/** Ürün indirimleri = liste toplamı − ürünler toplamı (liste fiyatı ve adet kademesi farkı). Yoksa 0. */
+export function productDiscountOf(items: { price: number; listPrice?: number | null; quantity: number }[], itemsTotal: number): number {
+  return Math.max(0, r2(listTotalOf(items) - itemsTotal));
+}

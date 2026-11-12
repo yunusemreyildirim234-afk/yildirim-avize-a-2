@@ -9,7 +9,7 @@ import { ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
-import { lineSavings, referenceUnit, totalSavings } from "@/lib/cart-savings";
+import { lineSavings, listTotalOf, productDiscountOf, referenceUnit, totalSavings } from "@/lib/cart-savings";
 import { CART_MERGE_NOTE_KEY, cartPriceLines, useCart, type ItemRules } from "@/context/CartContext";
 import { shippingProgress } from "@/lib/shipping-progress";
 import { FREE_SHIPPING_THRESHOLD, SHIPPING_COST, SHIPPING_LABELS, type CouponRule } from "@/lib/pricing";
@@ -344,6 +344,7 @@ export default function CartPage() {
   const couponUnverifiable = appliedCoupon !== null && ((fresh && quote.coupon?.limited === true) || quoteFailed);
   const savings = totalSavings(cart, finalTotal, shippingCost); // liste toplamı − (Toplam Tutar − kargo); yeni hesap kuralı değil
   const itemsShown = fresh ? quote.totals.itemsTotal : totalPrice;
+  const productDiscount = productDiscountOf(cart, itemsShown); // liste fiyatı/adet kademesi indirimi; özet satırları bundan türer
   const shipProgress = shippingProgress(itemsShown, FREE_SHIPPING_THRESHOLD);
 
   // Yenilemede kupon kodu ve ödeme yöntemi bu sekmede korunur (sessionStorage); kupon sunucuda yeniden doğrulanır, geçersizse sessizce silinir
@@ -1147,10 +1148,23 @@ export default function CartPage() {
 
               {/* Fiyat Dökümü */}
               <div className="space-y-2 pt-4 border-t border-neutral-100 text-xs">
-                <div className="flex justify-between text-neutral-600">
-                  <span>Ürünler Toplamı</span>
-                  <span>{itemsShown.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
-                </div>
+                {productDiscount > 0 ? (
+                  <>
+                    <div className="flex justify-between text-neutral-600">
+                      <span>Liste Fiyatı Toplamı</span>
+                      <span>{listTotalOf(cart).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
+                    </div>
+                    <div data-testid="urun-indirimleri" className="flex justify-between text-emerald-600 font-semibold">
+                      <span>Ürün İndirimleri</span>
+                      <span>-{productDiscount.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex justify-between text-neutral-600">
+                    <span>Ürünler Toplamı</span>
+                    <span>{itemsShown.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-neutral-600">
                   <span>Kargo / Teslimat</span>
                   <span>{shippingCost === 0 ? "Ücretsiz" : `${shippingCost.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺`}</span>
