@@ -13,7 +13,7 @@ export default function CollectionsRow({ count, children }: { count: number; chi
     const el = ref.current;
     if (el) el.scrollBy({ left: d * el.clientWidth * 0.75, behavior: "smooth" });
   };
-  const arrow = "hidden lg:flex absolute top-1/2 -translate-y-1/2 z-10 w-10 h-10 items-center justify-center rounded-full bg-white/95 border border-zinc-300 text-zinc-800 shadow-sm hover:border-amber-600 hover:text-amber-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-600";
+  const arrow = "hidden lg:flex absolute top-1/3 -translate-y-1/2 z-10 w-10 h-10 items-center justify-center rounded-full bg-white/95 border border-zinc-300 text-zinc-800 shadow-sm hover:border-amber-600 hover:text-amber-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-600";
   return (
     <div className="relative">
       <div ref={ref} role="list" className="flex gap-4 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -21,10 +21,10 @@ export default function CollectionsRow({ count, children }: { count: number; chi
       </div>
       {count > 4 && (
         <>
-          <button type="button" onClick={() => scroll(-1)} aria-label="Önceki koleksiyonlar" className={`${arrow} -left-5`}>
+          <button type="button" onClick={() => scroll(-1)} aria-label="Önceki koleksiyonlar" className={`${arrow} left-2`}>
             <ChevronLeft aria-hidden="true" className="w-5 h-5" />
           </button>
-          <button type="button" onClick={() => scroll(1)} aria-label="Sonraki koleksiyonlar" className={`${arrow} -right-5`}>
+          <button type="button" onClick={() => scroll(1)} aria-label="Sonraki koleksiyonlar" className={`${arrow} right-2`}>
             <ChevronRight aria-hidden="true" className="w-5 h-5" />
           </button>
         </>
