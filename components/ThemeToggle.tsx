@@ -13,7 +13,7 @@ function subscribe(onChange: () => void) {
 }
 const getSnapshot = () => document.documentElement.classList.contains("dark");
 
-export default function ThemeToggle() {
+export default function ThemeToggle({ className = "text-zinc-700 hover:bg-zinc-100" }: { className?: string }) {
   const dark = useSyncExternalStore(subscribe, getSnapshot, () => false);
 
   const toggle = () => {
@@ -30,9 +30,9 @@ export default function ThemeToggle() {
     <button
       type="button"
       onClick={toggle}
-      aria-label={dark ? "Aydınlık moda geç" : "Koyu moda geç"}
-      title={dark ? "Aydınlık mod" : "Koyu mod"}
-      className="w-9 h-9 rounded-full flex items-center justify-center text-zinc-700 hover:bg-zinc-100 transition-colors"
+      aria-label={dark ? "Açık temaya geç" : "Koyu temaya geç"}
+      title={dark ? "Açık tema" : "Koyu tema"}
+      className={`w-9 h-9 shrink-0 rounded-full flex items-center justify-center transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400 ${className}`}
     >
       {dark ? <Sun aria-hidden="true" className="w-5 h-5" /> : <Moon aria-hidden="true" className="w-5 h-5" />}
     </button>

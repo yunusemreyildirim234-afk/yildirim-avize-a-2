@@ -5,6 +5,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { ExternalLink, LayoutDashboard, LogOut } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
+import ThemeToggle from "@/components/ThemeToggle";
 
 /**
  * Yönetim paneli üst çubuğu: /admin altında mağaza menüsünün yerine gösterilir (app/layout.tsx → HideOnAdmin).
@@ -32,24 +33,27 @@ export default function AdminTopBar() {
         <span className="flex items-center gap-2 text-sm font-bold tracking-wide">
           <LayoutDashboard aria-hidden="true" className="w-4 h-4 text-amber-400 shrink-0" /> Yönetim Paneli
         </span>
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3">
           {/* Zil açık zemine göre tasarlandığı için açık renkli bir yuvada durur */}
           <span className="rounded-full bg-white text-neutral-900">
             <NotificationBell />
           </span>
+          {/* Sitedeki tema düğmesinin aynısı (aynı depolama anahtarı ve <html class="dark">); çubuk her iki temada koyu kalır */}
+          <ThemeToggle className="border border-neutral-600 text-white hover:border-amber-400 hover:text-amber-300" />
           <Link
             href="/"
-            className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-neutral-600 px-3 text-xs font-semibold text-white hover:border-amber-400 hover:text-amber-300 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
+            className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-neutral-600 px-3 max-sm:px-2.5 text-xs font-semibold text-white hover:border-amber-400 hover:text-amber-300 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
           >
-            <ExternalLink aria-hidden="true" className="w-3.5 h-3.5 shrink-0" /> Siteyi gör
+            <ExternalLink aria-hidden="true" className="w-3.5 h-3.5 shrink-0" /> <span className="max-sm:sr-only">Siteyi gör</span>
           </Link>
           <button
             type="button"
             onClick={logout}
             disabled={busy}
-            className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-white px-3 text-xs font-semibold text-neutral-900 hover:bg-amber-400 disabled:opacity-60 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
+            aria-label="Yönetici çıkışı"
+            className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-white px-3 max-sm:px-2.5 text-xs font-semibold text-neutral-900 hover:bg-amber-400 disabled:opacity-60 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
           >
-            <LogOut aria-hidden="true" className="w-3.5 h-3.5 shrink-0" /> {busy ? "Çıkılıyor..." : "Yönetici çıkışı"}
+            <LogOut aria-hidden="true" className="w-3.5 h-3.5 shrink-0" /> {busy ? "Çıkılıyor..." : <><span className="max-sm:hidden">Yönetici çıkışı</span><span className="sm:hidden">Çıkış</span></>}
           </button>
         </div>
       </div>
