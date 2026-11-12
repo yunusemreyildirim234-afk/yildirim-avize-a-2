@@ -9,7 +9,7 @@ import { categoryDisplayTitle } from "@/lib/category-settings";
 import { withVisibleProducts } from "@/lib/categories";
 import { canonicalListing, pageHref, parseAdet, parsePage } from "@/lib/pagination";
 import { MAX_SEARCH_RESULTS, clipQuery } from "@/lib/product-search";
-import { getListing, searchSuggestion, type Listing } from "@/lib/listing";
+import { getListing, searchCorrection, type Listing } from "@/lib/listing";
 import type { ProductWithVariations } from "@/lib/products";
 import { rateLimit } from "@/lib/rate-limit";
 
@@ -21,7 +21,7 @@ interface Props {
 
 const qOf = (raw: string | string[] | undefined) => clipQuery(Array.isArray(raw) ? raw[0] : raw).trim();
 
-// Arama sonuçları dizine alınmaz, sitemap'te yoktur, canonical yazılmaz; sekme başlığı sorguyu içerir
+// Arama sonuçları (düzeltilmiş sonuç sayfaları ve "tam=1" dahil) dizine alınmaz, sitemap'te yoktur, canonical yazılmaz; sekme başlığı kullanıcının yazdığı sorguyu içerir
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
   const q = qOf((await searchParams).q);
   return {
@@ -42,6 +42,9 @@ export default async function SearchPage({ searchParams }: Props) {
   let limited = false;
   let failed = false;
   let suggestion: string | null = null;
+  /** Otomatik düzeltme uygulandıysa gösterilen (düzeltilmiş) sorgu; sonuçlar, sayfalama ve sayılar buna aittir, adres ve bağlantılar özgün q'yu taşır */
+  let corrected: string | null = null;
+  const exact = (Array.isArray(query.tam) ? query.tam[0] : query.tam) === "1"; // "Yine de ara": düzeltmesiz
 
   if (q) {
     // Sayfa bir Request almadığı için IP bazlı sınır istek başlıklarından kurulur (kimliksiz ve indeksiz arama)
@@ -51,6 +54,15 @@ export default async function SearchPage({ searchParams }: Props) {
       try {
         // Ortak liste katmanı: önbellekli katalog normalize metinle bellekte süzülür; sorgu başına önbellek anahtarı üretilmez
         listing = await getListing({ search: q }, query);
+        // Gerçek 0 sonuçta (filtreden kaynaklanmayan) düzeltme: güvenliyse sonuçlar doğrudan düzeltilmiş sorguyla, değilse yalnızca "Bunu mu demek istediniz".
+        // Önbellekli katalogdan bellekte; veritabanına ek okuma yok.
+        if (listing.total === 0 && !exact && Object.keys(listing.params).every((k) => k === "siralama")) {
+          const fix = await searchCorrection(q).catch(() => null);
+          if (fix?.auto) {
+            listing = await getListing({ search: fix.text }, query);
+            corrected = fix.text;
+          } else if (fix) suggestion = fix.text;
+        }
         total = listing.total;
         const fix = canonicalListing(query, total);
         if (fix) redirect(pageHref(path, fix.page, { q, ...listing.params }, fix.adet));
@@ -62,9 +74,6 @@ export default async function SearchPage({ searchParams }: Props) {
       }
     }
   }
-
-  // Yazım hatası önerisi yalnızca gerçek 0 sonuçta (önbellekli katalogdan bellekte; veritabanına ek okuma yok)
-  if (q && listing && total === 0 && !limited && !failed) suggestion = await searchSuggestion(q).catch(() => null);
 
   const { adet, size } = parseAdet(query.adet);
   const page = parsePage(query.sayfa);
@@ -136,7 +145,7 @@ export default async function SearchPage({ searchParams }: Props) {
           <h1 className="text-3xl sm:text-4xl font-serif font-bold text-zinc-900">Arama Sonuçları</h1>
           {q && (
             <p className="text-sm text-zinc-600 break-words">
-              <span className="font-semibold text-zinc-900">&ldquo;{q}&rdquo;</span> için {total} sonuç
+              <span className="font-semibold text-zinc-900">&ldquo;{corrected ?? q}&rdquo;</span> için {total} sonuç
               {total >= MAX_SEARCH_RESULTS ? " (ilk " + MAX_SEARCH_RESULTS + " ürün gösterilir)" : ""}
             </p>
           )}
@@ -144,6 +153,14 @@ export default async function SearchPage({ searchParams }: Props) {
       </section>
 
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-10">
+        {corrected && (
+          <p role="status" data-testid="arama-duzeltme" className="mb-6 text-sm text-zinc-700 text-center break-words">
+            &ldquo;{q}&rdquo; için sonuç bulunamadı. <strong className="text-zinc-900">&ldquo;{corrected}&rdquo;</strong> sonuçları gösteriliyor.{" "}
+            <Link href={`/arama?q=${encodeURIComponent(q)}&tam=1`} className="font-semibold text-amber-800 underline underline-offset-2">
+              Yine de &ldquo;{q}&rdquo; ara
+            </Link>
+          </p>
+        )}
         {listing ? (
           <ProductListing path={path} fixed={{ q }} listing={listing} products={products} page={page} adet={adet} size={size} empty={emptyBlock} />
         ) : (

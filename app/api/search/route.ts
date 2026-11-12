@@ -3,7 +3,7 @@ import { serverError } from "@/lib/api-error";
 import { prisma } from "@/lib/db";
 import { CARD_SELECT } from "@/lib/products";
 import { clipQuery } from "@/lib/product-search";
-import { searchProductIds, searchSuggestion } from "@/lib/listing";
+import { searchCorrection, searchProductIds } from "@/lib/listing";
 import { getLadderContext } from "@/lib/showcase";
 import { priceLadder } from "@/lib/price-ladder";
 import { rateLimit, tooMany } from "@/lib/rate-limit";
@@ -22,14 +22,21 @@ export async function GET(req: Request) {
 
   try {
     // Normalize eşleşme lib/listing.ts'de tek yerdedir (/arama ile aynı sonuçlar); tam model kodu en üstte
-    const ids = await searchProductIds(q, 6);
-    if (ids.length === 0) return NextResponse.json({ products: [], suggestion: await searchSuggestion(q) });
+    let ids = await searchProductIds(q, 6);
+    let corrected: string | undefined;
+    if (ids.length === 0) {
+      // 0 sonuçta: güvenli düzeltme varsa onun ürünleri doğrudan gösterilir (corrected = gösterilen sorgu); değilse yalnızca öneri
+      const fix = await searchCorrection(q);
+      if (!fix?.auto) return NextResponse.json({ products: [], suggestion: fix?.text ?? null });
+      ids = await searchProductIds(fix.text, 6);
+      corrected = fix.text;
+    }
     // Yalnızca arama listesinin ve fiyat merdiveninin kullandığı alanlar (açıklama, görsel dizisi, Trendyol alanları çekilmez)
     const found = await prisma.product.findMany({ where: { id: { in: ids } }, select: CARD_SELECT });
     const products = ids.flatMap((id) => found.filter((p) => p.id === id));
 
     const ctx = await getLadderContext();
-    return NextResponse.json({ products: products.map((p) => ({ ...p, imageUrl: coverImageOf(p), ladder: priceLadder(p, ctx) })) });
+    return NextResponse.json({ products: products.map((p) => ({ ...p, imageUrl: coverImageOf(p), ladder: priceLadder(p, ctx) })), ...(corrected ? { corrected } : {}) });
   } catch (error) {
     return serverError("search", error, "Arama şu an yapılamadı. Lütfen tekrar deneyin.");
   }

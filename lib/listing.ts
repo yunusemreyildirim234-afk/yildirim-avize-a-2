@@ -9,7 +9,8 @@ import { rowFilter } from "@/lib/listing-where";
 import { getVisibleWhere, getVisibleWhereStrict } from "@/lib/visibility";
 import { MAX_SEARCH_RESULTS } from "@/lib/product-search";
 import { matchesAllWords, matchesSearch, matchesSearchTolerant, normalizeSearch, rankSearchRows, searchText } from "@/lib/search-rank";
-import { buildVocabulary, suggestQuery } from "@/lib/search-fuzzy";
+import { buildVocabulary, correctQuery } from "@/lib/search-fuzzy";
+import { applySynonyms } from "@/lib/search-synonyms";
 import { applyListing, isDefaultState, parseSize, variationAttrs, parseListingParams, stateToParams, type CatMeta, type ListingResult, type ListingRow } from "@/lib/listing-core";
 
 /**
@@ -108,14 +109,30 @@ const searchRows = async (q: string) => {
   return (exact.length > 0 ? exact : all.filter((r) => matchesAllWords(r, q))).slice(0, MAX_SEARCH_RESULTS);
 };
 
+/** Otomatik düzeltme için düzeltilmiş sorgunun en az vermesi gereken ürün sayısı (altında yalnızca "Bunu mu demek istediniz" bağlantısı). */
+export const MIN_AUTO_RESULTS = 2;
+
+export interface SearchCorrection {
+  /** Düzeltilmiş sorgu */
+  text: string;
+  /** true: sonuçlar doğrudan düzeltilmiş sorguyla gösterilir; false: yalnızca "Bunu mu demek istediniz" bağlantısı */
+  auto: boolean;
+}
+
 /**
- * Sonuç vermeyen arama için "Bunu mu demek istediniz" önerisi (yazım hatası). Sözlük, önbellekli katalog satırlarından bellekte türetilir: veritabanına ek okuma yoktur.
- * Yalnızca 0 sonuçta çağrılır; öneri kendisi de en az bir ürünle eşleşmiyorsa gösterilmez.
+ * Sonuç vermeyen arama için düzeltme (yazım hatası, eş anlamlı). Sözlük ve doğrulama önbellekli katalog satırlarından bellekte yapılır: veritabanına ek okuma yoktur.
+ * Yalnızca 0 sonuçta çağrılır; düzeltme kendisi de en az bir ürünle eşleşmiyorsa döndürülmez.
+ * Güven eşiği: auto = (her kelime düzeltmesi güçlü [lib/search-fuzzy.ts] VE düzeltilmiş sorgu >= MIN_AUTO_RESULTS ürün veriyor); eş anlamlılar elle seçildiği için 1 ürün yeter.
  */
-export async function searchSuggestion(q: string): Promise<string | null> {
+export async function searchCorrection(q: string): Promise<SearchCorrection | null> {
   const rows = await catalogRows();
-  const s = suggestQuery(q, buildVocabulary(rows));
-  return s && rows.some((r) => matchesSearchTolerant(r, s)) ? s : null;
+  const count = (s: string) => rows.reduce((n, r) => n + (matchesSearchTolerant(r, s) ? 1 : 0), 0);
+  const syn = applySynonyms(q);
+  if (syn && count(syn) > 0) return { text: syn, auto: true };
+  const c = correctQuery(q, buildVocabulary(rows));
+  if (!c) return null;
+  const n = count(c.text);
+  return n === 0 ? null : { text: c.text, auto: c.confident && n >= MIN_AUTO_RESULTS };
 }
 
 /** Üst arama kutusu: tam model kodu önde, sonra alaka sırası; yalnızca kimlikler. */

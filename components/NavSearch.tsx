@@ -20,6 +20,7 @@ function Results({
   loading,
   searched,
   suggestion,
+  corrected,
   onSuggest,
   onPick,
 }: {
@@ -28,6 +29,7 @@ function Results({
   loading: boolean;
   searched: boolean;
   suggestion: string | null;
+  corrected: string | null;
   onSuggest: (term: string) => void;
   onPick: () => void;
 }) {
@@ -57,6 +59,12 @@ function Results({
     );
   }
   return (
+    <>
+      {corrected && (
+        <p role="status" className="px-3 py-2 text-xs text-zinc-600 bg-amber-50/60 border-b border-zinc-100">
+          <strong className="text-zinc-900">&ldquo;{corrected}&rdquo;</strong> için gösteriliyor
+        </p>
+      )}
     <ul role="listbox" aria-label="Arama sonuçları" className="divide-y divide-zinc-100 max-h-[70vh] overflow-y-auto">
       {results.map((p) => (
         <li key={p.id} className="flex items-start gap-2 px-3 py-2.5 hover:bg-amber-50/60 transition-colors">
@@ -82,6 +90,7 @@ function Results({
         </li>
       ))}
     </ul>
+    </>
   );
 }
 
@@ -94,6 +103,7 @@ export default function NavSearch() {
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const [suggestion, setSuggestion] = useState<string | null>(null);
+  const [corrected, setCorrected] = useState<string | null>(null);
   const [recent, setRecent] = useState<string[]>([]);
   const desktopRef = useRef<HTMLDivElement>(null);
   const desktopInput = useRef<HTMLInputElement>(null);
@@ -111,6 +121,7 @@ export default function NavSearch() {
     if (!value.trim()) {
       setResults([]);
       setSuggestion(null);
+      setCorrected(null);
       setSearched(false);
       setLoading(false);
     }
@@ -149,6 +160,7 @@ export default function NavSearch() {
     setQuery("");
     setResults([]);
     setSuggestion(null);
+    setCorrected(null);
     setSearched(false);
   };
 
@@ -170,6 +182,7 @@ export default function NavSearch() {
         const data = await res.json();
         setResults(data.products || []);
         setSuggestion(typeof data.suggestion === "string" ? data.suggestion : null);
+        setCorrected(typeof data.corrected === "string" ? data.corrected : null);
         setSearched(true);
       } catch {
         /* iptal veya ağ hatası */
@@ -278,7 +291,7 @@ export default function NavSearch() {
         </form>
         {showPanel && (
           <div className="absolute right-0 top-full mt-2 w-[26rem] bg-white rounded-2xl border border-zinc-200 shadow-xl overflow-hidden">
-            <Results query={query.trim()} results={results} loading={loading} searched={searched} suggestion={suggestion} onSuggest={onChange} onPick={pickResult} />
+            <Results query={query.trim()} results={results} loading={loading} searched={searched} suggestion={suggestion} corrected={corrected} onSuggest={onChange} onPick={pickResult} />
           </div>
         )}
         {showRecent && <div className="absolute right-0 top-full mt-2 w-[26rem] bg-white rounded-2xl border border-zinc-200 shadow-xl overflow-hidden">{recentList}</div>}
@@ -316,7 +329,7 @@ export default function NavSearch() {
           </form>
           <div className="flex-1 overflow-y-auto">
             {query.trim() ? (
-              <Results query={query.trim()} results={results} loading={loading} searched={searched} suggestion={suggestion} onSuggest={onChange} onPick={pickResult} />
+              <Results query={query.trim()} results={results} loading={loading} searched={searched} suggestion={suggestion} corrected={corrected} onSuggest={onChange} onPick={pickResult} />
             ) : recent.length > 0 ? (
               recentList
             ) : (

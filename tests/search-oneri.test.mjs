@@ -4,24 +4,25 @@ import { readFileSync } from "node:fs";
 
 const read = (p) => readFileSync(new URL(`../${p}`, import.meta.url), "utf8").replace(/\r\n/g, "\n");
 
-test("searchSuggestion: yalnızca önbellekli katalogdan (catalogRows), veritabanına ek sorgu yok; öneri kendisi eşleşmeli", () => {
+test("searchCorrection: yalnızca önbellekli katalogdan (catalogRows), veritabanına ek sorgu yok; öneri kendisi eşleşmeli", () => {
   const src = read("lib/listing.ts");
-  const fn = src.slice(src.indexOf("export async function searchSuggestion"), src.indexOf("/** Üst arama kutusu"));
+  const fn = src.slice(src.indexOf("export async function searchCorrection"), src.indexOf("/** Üst arama kutusu"));
   assert.match(fn, /await catalogRows\(\)/);
   assert.ok(!/prisma|\$queryRaw|findMany/.test(fn));
-  assert.match(fn, /rows\.some\(\(r\) => matchesSearchTolerant\(r, s\)\)/);
+  assert.match(fn, /matchesSearchTolerant\(r, s\)/);
 });
 
 test("/api/search: öneri yalnızca sonuç boşken hesaplanır; hız sınırı ve serverError aynen", () => {
   const src = read("app/api/search/route.ts");
-  assert.match(src, /if \(ids\.length === 0\) return NextResponse\.json\(\{ products: \[\], suggestion: await searchSuggestion\(q\) \}\);/);
-  assert.equal((src.match(/searchSuggestion\(/g) ?? []).length, 1);
+  assert.match(src, /if \(!fix\?\.auto\) return NextResponse\.json\(\{ products: \[\], suggestion: fix\?\.text \?\? null \}\);/);
+  assert.equal((src.match(/searchCorrection\(/g) ?? []).length, 1);
   assert.match(src, /rateLimit\(req, "search", 120, 60_000\)/);
 });
 
 test("/arama: öneri yalnızca gerçek 0 sonuçta ve limit/hata değilken; bağlantı /arama?q=", () => {
   const src = read("app/arama/page.tsx");
-  assert.match(src, /if \(q && listing && total === 0 && !limited && !failed\) suggestion = await searchSuggestion\(q\)/);
+  assert.match(src, /listing\.total === 0 && !exact/);
+  assert.match(src, /searchCorrection\(q\)/);
   assert.match(src, /Bunu mu demek istediniz/);
   assert.match(src, /href=\{`\/arama\?q=\$\{encodeURIComponent\(suggestion\)\}`\}/);
 });
