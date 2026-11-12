@@ -145,7 +145,7 @@ export default function Navbar({ extraCategories = [], fixedOverrides = {}, show
               src="/logo-mark.png"
               alt="Yıldırım Avize logosu"
               width={480}
-              height={327}
+              height={325}
               priority
               className="h-9 sm:h-10 w-auto"
             />
