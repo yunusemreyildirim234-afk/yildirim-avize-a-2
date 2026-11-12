@@ -72,36 +72,85 @@ export function buildVocabulary(rows: readonly VocabRow[]): Vocabulary {
   return { counts, display };
 }
 
-const maxDistanceFor = (len: number) => (len >= 8 ? 2 : len >= MIN_WORD_LEN ? 1 : 0);
+/** Mesafe eşiği: kelime uzadıkça güvenle artar (4-7 harf: 1, 8-11: 2, 12+: 3). 4 harften kısa kelime düzeltilmez. */
+export const maxDistanceFor = (len: number) => (len >= 12 ? 3 : len >= 8 ? 2 : len >= MIN_WORD_LEN ? 1 : 0);
+
+export type FixKind = "typo" | "anagram" | "prefix";
+export interface Correction {
+  /** Düzeltilmiş sorgu (özgün Türkçe yazımlarla) */
+  text: string;
+  /** Her düzeltme güçlü mü: tek en yakın aday, yeterince uzun kelime (bkz. fixWord). Son karar ürün sayısıyla verilir (lib/listing.ts). */
+  confident: boolean;
+  kinds: FixKind[];
+}
+
+const letters = (w: string) => [...w].sort().join("");
+
+interface WordFix {
+  word: string;
+  kind: FixKind;
+  confident: boolean;
+}
+
+function fixWord(w: string, vocab: Vocabulary, vocabWords: readonly string[], anagrams: ReadonlyMap<string, string[]>): WordFix | null {
+  const max = maxDistanceFor(w.length);
+  if (max === 0 || /\d/.test(w) || vocab.counts.has(w)) return null; // kısa, rakamlı/kod benzeri ya da zaten bilinen
+  const top = (list: string[]) => list.sort((a, b) => (vocab.counts.get(b) ?? 0) - (vocab.counts.get(a) ?? 0) || (a < b ? -1 : 1))[0];
+
+  // Yarım yazılmış kelime ("krist" → "kristal"): en çok ürünlü tamamlama
+  const completions = vocabWords.filter((v) => v.startsWith(w));
+  if (completions.length > 0) return { word: top(completions), kind: "prefix", confident: true };
+  if (vocabWords.some((v) => v.includes(w))) return null; // kelimenin ortasından parça ("ronz") bilinen sayılır
+
+  let best: { v: string; d: number; same: boolean; n: number } | null = null;
+  let atBest = 0;
+  for (const v of vocabWords) {
+    const d = editDistance(w, v, max);
+    if (d > max) continue;
+    const cand = { v, d, same: v[0] === w[0], n: vocab.counts.get(v) ?? 0 };
+    if (!best || cand.d < best.d) {
+      best = cand;
+      atBest = 1;
+      continue;
+    }
+    if (cand.d === best.d) {
+      atBest++;
+      if (cand.same !== best.same ? cand.same : cand.n !== best.n ? cand.n > best.n : cand.v < best.v) best = cand;
+    }
+  }
+  // Karışık harf ("zivae" → "avize"): aynı harf çoklu kümesine sahip TEK aday
+  const same = w.length >= 5 ? (anagrams.get(letters(w)) ?? []).filter((v) => v !== w) : [];
+  if (same.length === 1 && (!best || best.d > 1)) return { word: same[0], kind: "anagram", confident: true };
+  if (!best) return null;
+  // Güven: tek en yakın aday; 1 hata yalnızca 5+ harfli kelimede (4 harfte yanlış düzeltme riski yüksek)
+  return { word: best.v, kind: "typo", confident: atBest === 1 && (best.d >= 2 || w.length >= 5) };
+}
 
 /**
- * Sorgudaki bilinmeyen kelimeleri sözlükteki en yakın kelimeyle değiştirir ve özgün Türkçe yazımla döner; değişiklik yoksa null.
- * Bilinen sayılır: sözlükte olan ya da bir sözlük kelimesinin içinde geçen kelime (yarım yazılmış "kris"), 4 harften kısa, rakamlı kelime.
+ * Sorgudaki bilinmeyen kelimeleri tek tek düzeltir (çok kelimeli sorguda her kelime ayrı): yarım yazılmış → tamamlama, karışık harf → tek anagram, aksi hâlde
+ * en yakın sözlük kelimesi. Değişiklik yoksa null. Bilinen sayılır: sözlükte olan ya da bir sözlük kelimesinin içinde geçen kelime, 4 harften kısa, rakamlı/kod benzeri kelime.
  * Eşitlikte sıra: küçük mesafe, aynı ilk harf, çok ürün, alfabetik (kararlı).
  */
-export function suggestQuery(q: string, vocab: Vocabulary): string | null {
+export function correctQuery(q: string, vocab: Vocabulary): Correction | null {
   const words = normalizeSearch(q).split(" ").filter(Boolean).slice(0, MAX_QUERY_WORDS);
   if (words.length === 0 || vocab.counts.size === 0) return null;
   const vocabWords = [...vocab.counts.keys()];
-  let changed = false;
+  const anagrams = new Map<string, string[]>();
+  for (const v of vocabWords) {
+    const k = letters(v);
+    anagrams.set(k, [...(anagrams.get(k) ?? []), v]);
+  }
+  const kinds: FixKind[] = [];
+  let confident = true;
   const out = words.map((w) => {
-    const max = maxDistanceFor(w.length);
-    if (max === 0 || /\d/.test(w) || vocab.counts.has(w) || vocabWords.some((v) => v.includes(w))) return vocab.display.get(w) ?? w;
-    let best: { v: string; d: number; same: boolean; n: number } | null = null;
-    for (const v of vocabWords) {
-      const d = editDistance(w, v, max);
-      if (d > max) continue;
-      const cand = { v, d, same: v[0] === w[0], n: vocab.counts.get(v) ?? 0 };
-      if (
-        !best ||
-        cand.d < best.d ||
-        (cand.d === best.d && (cand.same !== best.same ? cand.same : cand.n !== best.n ? cand.n > best.n : cand.v < best.v))
-      )
-        best = cand;
-    }
-    if (!best) return w;
-    changed = true;
-    return vocab.display.get(best.v) ?? best.v;
+    const fix = fixWord(w, vocab, vocabWords, anagrams);
+    if (!fix) return vocab.display.get(w) ?? w;
+    kinds.push(fix.kind);
+    if (!fix.confident) confident = false;
+    return vocab.display.get(fix.word) ?? fix.word;
   });
-  return changed ? out.join(" ") : null;
+  return kinds.length > 0 ? { text: out.join(" "), confident, kinds } : null;
 }
+
+/** Yalnızca düzeltilmiş metin (geriye dönük kısa yol). */
+export const suggestQuery = (q: string, vocab: Vocabulary): string | null => correctQuery(q, vocab)?.text ?? null;

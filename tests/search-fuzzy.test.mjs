@@ -37,9 +37,9 @@ test("suggestQuery: yer değişimi ve eksik harf düzelir", () => {
   assert.equal(suggestQuery("KRİTAL", vocab), "kristal");
 });
 
-test("suggestQuery: doğru yazılmış, yarım yazılmış, kısa, rakamlı ve bilinmeyen uzak kelime önerilmez", () => {
+test("suggestQuery: doğru yazılmış, parça, kısa, rakamlı ve bilinmeyen uzak kelime önerilmez", () => {
   assert.equal(suggestQuery("avize", vocab), null);
-  assert.equal(suggestQuery("kris", vocab), null);
+  assert.equal(suggestQuery("ristal", vocab), null); // kelimenin ortasından parça bilinen sayılır
   assert.equal(suggestQuery("abc", vocab), null);
   assert.equal(suggestQuery("e28", vocab), null);
   assert.equal(suggestQuery("45x25", vocab), null);
