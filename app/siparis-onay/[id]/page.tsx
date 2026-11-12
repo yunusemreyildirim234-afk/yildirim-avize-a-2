@@ -6,7 +6,7 @@ import ClearCart from "@/components/ClearCart";
 import BankTransferCard from "@/components/BankTransferCard";
 import ReceiptUpload from "@/components/ReceiptUpload";
 import { maskName } from "@/lib/mask-name";
-import { recipientDiffers, recipientOf } from "@/lib/recipient";
+import { recipientOf } from "@/lib/recipient";
 import { GtmAwaitPayment, GtmEvent } from "@/components/GtmEvent";
 import { gaItem, isPurchasable, purchaseEvent, purchaseOnceKey } from "@/lib/gtm-events";
 import { feedBrand } from "@/lib/feed";
@@ -19,6 +19,7 @@ import CopyCodeButton from "@/components/CopyCodeButton";
 import { bankPaymentDeadline, breakdownOf, breakdownRows, formatIstanbul, orderCode } from "@/lib/order-display";
 import { smallImage } from "@/lib/img";
 import { titleCaseTr } from "@/lib/display-case";
+import { discountLabel } from "@/lib/order-discount-label";
 
 export const metadata: Metadata = {
   title: "Siparişiniz Alındı",
@@ -72,8 +73,8 @@ export default async function OrderConfirmationPage({ params }: { params: Promis
           {closed && <ClosedNote id={order.id} returned={returned} />}
           {awaitsBankReceipt && !closed && (
             <div className="space-y-4">
-              <BankTransferCard orderId={order.id} />
-              <ReceiptUpload orderId={order.id} uploaded={Boolean(order.receiptUrl)} />
+              <BankTransferCard orderId={order.id} amount={order.totalAmount} />
+              <ReceiptUpload orderId={order.id} uploaded={Boolean(order.receiptUrl)} amount={order.totalAmount} />
             </div>
           )}
           {!closed && <p className="text-sm text-neutral-600 text-center">
@@ -166,7 +167,7 @@ export default async function OrderConfirmationPage({ params }: { params: Promis
           <div className="pt-3 border-t border-neutral-200 space-y-1">
             {/* E-postalarla aynı satır listesi (lib/order-display.ts) */}
             {breakdownRows(breakdown).map((r) => (
-              <p key={r.label} className={`flex justify-between ${r.kind === "total" ? "font-bold text-neutral-900 text-sm pt-1" : r.kind === "discount" ? "text-emerald-700" : "text-neutral-600"}`}><span>{r.label}</span><span>{r.value}</span></p>
+              <p key={r.label} className={`flex justify-between ${r.kind === "total" ? "font-bold text-neutral-900 text-sm pt-1" : r.kind === "discount" ? "text-emerald-700" : "text-neutral-600"}`}><span>{r.kind === "discount" ? discountLabel(order, breakdown.itemsSum, breakdown.discount) : r.label}</span><span className="whitespace-nowrap">{r.value}</span></p>
             ))}
             {awaitsBankDeadline && <p className="text-amber-800 font-semibold pt-1">Son ödeme: {formatIstanbul(bankPaymentDeadline(order.createdAt))}</p>}
           </div>
@@ -177,9 +178,7 @@ export default async function OrderConfirmationPage({ params }: { params: Promis
                 ? "📍 Mağazadan Teslim – Şişhane merkezimizden teslim alınacak"
                 : "📦 Adrese Teslim – korumalı koli ile adresinize gönderilecek"}
             </p>
-            {recipientDiffers(order) && (
-              <p data-testid="alici-adi" className="text-neutral-600 mt-1">Alıcı: <strong>{maskName(recipientOf(order))}</strong></p>
-            )}
+            <p data-testid="alici-adi" className="text-neutral-600 mt-1">Alıcı: <strong>{maskName(recipientOf(order))}</strong>{order.phone ? <> • Tel: <strong>{order.phone}</strong></> : null}</p>
             {!isPickup && order.address && (
               <p className="text-neutral-600 mt-1">{titleCaseTr(order.address)}{order.buyerCityName || order.buyerStateName ? `, ${[order.buyerCityName, order.buyerStateName].filter(Boolean).join(" / ")}` : ""}</p>
             )}
@@ -198,19 +197,25 @@ export default async function OrderConfirmationPage({ params }: { params: Promis
 
         {closed && <ClosedNote id={order.id} returned={returned} />}
 
-        {order.paymentMethod === "BANK_TRANSFER" && !paymentFailed && !closed && <BankTransferCard orderId={order.id} />}
+        {order.paymentMethod === "BANK_TRANSFER" && !paymentFailed && !closed && <BankTransferCard orderId={order.id} amount={awaitsBankReceipt ? order.totalAmount : undefined} />}
 
         {awaitsBankReceipt && !closed && (
           <div className="text-left space-y-2">
             <p className="text-xs text-neutral-600">Havaleyi yaptıktan sonra dekontunuzu yükleyerek ödemenizin hızla onaylanmasını sağlayabilirsiniz.</p>
-            <ReceiptUpload orderId={order.id} uploaded={Boolean(order.receiptUrl)} />
+            <ReceiptUpload orderId={order.id} uploaded={Boolean(order.receiptUrl)} amount={order.totalAmount} />
           </div>
         )}
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
           <Link
-            href={`/kargo-takip?code=${order.id}`}
+            href="/giris#siparisler"
             className="w-full sm:w-auto bg-amber-500 hover:bg-amber-400 text-neutral-950 text-xs font-bold px-6 py-3 rounded-xl transition-colors"
+          >
+            Siparişlerime git
+          </Link>
+          <Link
+            href={`/kargo-takip?code=${order.id}`}
+            className="w-full sm:w-auto bg-neutral-100 hover:bg-neutral-200 text-neutral-900 text-xs font-semibold px-6 py-3 rounded-xl transition-colors"
           >
             🚚 Kargo & Sipariş Takibi
           </Link>

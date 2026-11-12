@@ -4,12 +4,12 @@ import { toast } from "sonner";
 import { useState } from "react";
 import { Check, Copy, Landmark } from "lucide-react";
 import { BANK_INFO } from "@/lib/site";
-import { orderCode } from "@/lib/order-display";
+import { formatTl, orderCode } from "@/lib/order-display";
 import CopyCodeButton from "@/components/CopyCodeButton";
 
 const IBAN_GROUPED = BANK_INFO.iban.replace(/(.{4})/g, "$1 ").trim();
 
-export default function BankTransferCard({ orderId }: { orderId?: string }) {
+export default function BankTransferCard({ orderId, amount }: { orderId?: string; amount?: number }) {
   const [copied, setCopied] = useState<"iban" | "holder" | null>(null);
 
   const copy = async (kind: "iban" | "holder") => {
@@ -29,6 +29,16 @@ export default function BankTransferCard({ orderId }: { orderId?: string }) {
       <div className="flex items-center gap-2 font-bold text-amber-950 text-sm">
         <Landmark aria-hidden="true" className="w-4 h-4" /> Havale / EFT Bilgileri
       </div>
+
+      {amount !== undefined && (
+        <div className="flex items-center justify-between gap-3 rounded-xl bg-white border border-amber-200 px-3 py-2.5">
+          <span>
+            <span className="text-neutral-500">Gönderilecek tutar</span>
+            <span className="block font-bold text-neutral-900 text-sm">{formatTl(amount)}</span>
+          </span>
+          <CopyCodeButton text={amount.toFixed(2).replace(".", ",")} label="Tutar kopyalandı" />
+        </div>
+      )}
 
       <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5">
         <dt className="text-neutral-500">Banka</dt>
@@ -68,7 +78,7 @@ export default function BankTransferCard({ orderId }: { orderId?: string }) {
         </div>
       )}
 
-      <p role="note" className="rounded-xl bg-red-50 border border-red-200 text-red-800 font-semibold px-3 py-2.5">
+      <p role="note" className="rounded-xl bg-amber-100 border border-amber-300 text-amber-950 font-semibold px-3 py-2.5">
         Lütfen havale/EFT açıklama kısmına Sipariş Kodunuzu yazmayı unutmayınız.
       </p>
     </div>
