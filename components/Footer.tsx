@@ -118,7 +118,7 @@ export default function Footer({ extraCategories = [], fixedOverrides = {}, show
 
       <CompanyInfo variant="dark" />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 flex flex-col md:flex-row items-center justify-between text-[11px] text-neutral-400 gap-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-20 sm:pb-6 md:pr-24 flex flex-col md:flex-row items-center justify-between text-[11px] text-neutral-400 gap-4">
         <p>© 2026 Yıldırım Avize. Tüm hakları saklıdır.</p>
         <nav aria-label="Yasal bağlantılar" className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
           <Link href="/gizlilik-politikasi" className="inline-block py-1 hover:text-neutral-200">

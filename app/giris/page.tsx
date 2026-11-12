@@ -136,7 +136,7 @@ export default function AuthPage() {
   if (user) {
     return (
       <main className="min-h-screen bg-neutral-50 py-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto space-y-8">
+        <div className="max-w-4xl mx-auto space-y-8 pb-24">
           <div className="bg-white rounded-3xl border border-neutral-200 p-8 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <span className="text-xs uppercase tracking-wider text-amber-600 font-bold">

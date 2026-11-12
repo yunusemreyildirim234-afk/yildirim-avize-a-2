@@ -121,7 +121,7 @@ export default function ProductListing({
           <>
             <Pagination path={path} page={page} pages={pages} params={base} label="Sayfalama (üst)" className="mb-8" />
             <h2 className="sr-only">Ürünler</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 pb-24 sm:pr-14 2xl:pr-0">
               {products.map((product, i) => (
                 <ProductCard key={product.id} product={product} priority={i < 3} />
               ))}

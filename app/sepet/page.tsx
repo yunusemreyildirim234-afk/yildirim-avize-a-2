@@ -587,7 +587,7 @@ export default function CartPage() {
   }
 
   return (
-    <main className="min-h-screen bg-neutral-50 py-6 sm:py-12 px-4 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-neutral-50 pt-6 sm:pt-12 pb-24 sm:pb-12 px-4 sm:px-6 lg:px-8 sm:pr-16 2xl:pr-8">
       {paymentFailed && (
         <div role="alert" className="max-w-6xl mx-auto mb-6 rounded-2xl border border-red-200 bg-red-50 text-red-700 text-xs p-4">
           Ödeme tamamlanamadı. Sepetiniz korunuyor; tekrar deneyebilir veya Havale/EFT seçebilirsiniz.
@@ -1195,12 +1195,18 @@ export default function CartPage() {
                 </label>
               </div>
 
+              {disabledReason && (
+                <p id="odeme-pasif-neden" data-testid="odeme-pasif-neden" className="text-xs text-neutral-700 text-center mt-4">
+                  {disabledReason}
+                </p>
+              )}
+
               <button
                 type="submit"
                 form="odeme-formu"
                 disabled={loading || !fresh || !agreePre || !agreeSales || (priceNotice !== null && !priceAcked)}
                 aria-describedby={disabledReason ? "odeme-pasif-neden" : undefined}
-                className="w-full bg-neutral-900 hover:bg-amber-600 text-white py-3.5 px-4 rounded-xl transition-colors text-xs font-semibold shadow-sm mt-4 disabled:opacity-50"
+                className="w-full bg-neutral-900 hover:bg-amber-600 text-white py-3.5 px-4 rounded-xl transition-colors text-xs font-semibold shadow-sm mt-3 disabled:opacity-50"
               >
                 {loading
                   ? "Hazırlanıyor..."
@@ -1209,11 +1215,6 @@ export default function CartPage() {
                   : `Siparişi Tamamla (${finalTotal.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺)`}
               </button>
 
-              {disabledReason && (
-                <p id="odeme-pasif-neden" data-testid="odeme-pasif-neden" className="text-xs text-neutral-700 text-center mt-2">
-                  {disabledReason}
-                </p>
-              )}
 
               <ul className="mt-3 space-y-1 text-[11px] text-neutral-600 text-center">
                 <li>Siparişler ödeme onayından sonra 1-3 iş günü içinde kargoya verilir.</li>
