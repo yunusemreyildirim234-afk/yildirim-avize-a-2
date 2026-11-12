@@ -164,7 +164,7 @@ export default function AdminCoupons({ coupons, customers, products }: Props) {
       {open && (
         <div className="border-t border-neutral-100 p-6 space-y-6">
           <form onSubmit={handleCreate} className="grid grid-cols-1 sm:grid-cols-2 sm:items-start gap-4 text-xs">
-            <div>
+            <div className="sm:col-start-1">
               <label className="font-semibold text-neutral-700 block mb-1">Promosyon Kodu</label>
               <input
                 required
@@ -175,7 +175,7 @@ export default function AdminCoupons({ coupons, customers, products }: Props) {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3 sm:col-start-2 sm:row-start-1 sm:row-span-3">
               <div>
                 <label className="font-semibold text-neutral-700 block mb-1">İndirim Türü</label>
                 <select value={dType} onChange={(e) => setDType(e.target.value as "PERCENT" | "FIXED")} className={inputCls}>
@@ -217,7 +217,7 @@ export default function AdminCoupons({ coupons, customers, products }: Props) {
             </div>
 
             {/* Müşteri */}
-            <div>
+            <div className="sm:col-start-1">
               <label className="font-semibold text-neutral-700 block mb-1">Geçerli Müşteri</label>
               {customerEmail ? (
                 <div className="flex items-center justify-between rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5">
@@ -265,7 +265,7 @@ export default function AdminCoupons({ coupons, customers, products }: Props) {
             </div>
 
             {/* Ürün */}
-            <div>
+            <div className="sm:col-start-1">
               <label className="font-semibold text-neutral-700 block mb-1">Geçerli Ürün</label>
               {selectedProduct ? (
                 <div className="flex items-center justify-between rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5">
