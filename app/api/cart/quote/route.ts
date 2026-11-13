@@ -11,6 +11,7 @@ import { planPendingSwap, releaseStaleReservations, type PendingSwap } from "@/l
 import { shouldPlanSwapForQuote, stockWithHeld } from "@/lib/order-swap";
 import { priceLadder } from "@/lib/price-ladder";
 import { getLadderContext } from "@/lib/showcase";
+import { couponDiscountLabel } from "@/lib/coupon-label";
 
 const COUPON_GENERIC_ERROR = "Geçersiz veya süresi dolmuş kupon kodu.";
 
@@ -134,7 +135,7 @@ export async function POST(req: Request) {
   ];
   const { itemsTotal, shipping, couponDiscount, pickupDiscount, bankDiscount, total } = priced;
   return NextResponse.json(
-    { lines, showcaseCode: ladderCtx?.coupon?.code ?? null, maxTotalDiscountPct: cap, itemsTotal, totals: { itemsTotal, shipping, couponDiscount, pickupDiscount, bankDiscount, total }, coupon },
+    { lines, showcaseCode: ladderCtx?.coupon?.code ?? null, showcaseLabel: ladderCtx?.coupon ? couponDiscountLabel(ladderCtx.coupon) : null, maxTotalDiscountPct: cap, itemsTotal, totals: { itemsTotal, shipping, couponDiscount, pickupDiscount, bankDiscount, total }, coupon },
     { headers: { "Cache-Control": "no-store" } }
   );
 }
