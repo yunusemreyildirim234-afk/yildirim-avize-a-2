@@ -149,8 +149,8 @@ export default function Navbar({ extraCategories = [], fixedOverrides = {}, show
               priority
               className="h-10 sm:h-11 w-auto"
             />
-            <span className="hidden md:block font-serif font-bold text-lg tracking-wide text-zinc-900 leading-none">
-              Yıldırım <span className="text-red-700">Avize</span>
+            <span className="hidden md:block whitespace-nowrap font-serif font-black text-2xl tracking-tight text-zinc-950 leading-none">
+              Yıldırım Avize
             </span>
           </Link>
 
@@ -321,8 +321,8 @@ export default function Navbar({ extraCategories = [], fixedOverrides = {}, show
           <button type="button" aria-label="Menüyü kapat" onClick={() => setDrawerOpen(false)} className="absolute inset-0 bg-zinc-950/50" />
           <div className="absolute left-0 top-0 bottom-0 w-[85vw] max-w-sm bg-white shadow-2xl flex flex-col">
             <div className="flex items-center justify-between h-16 px-4 border-b border-zinc-100 shrink-0">
-              <span className="font-serif font-bold text-lg text-zinc-900">
-                Yıldırım <span className="text-red-700">Avize</span>
+              <span className="font-serif font-black text-xl tracking-tight text-zinc-950">
+                Yıldırım Avize
               </span>
               <button type="button" aria-label="Menüyü kapat" onClick={() => setDrawerOpen(false)} className="rounded-full p-2 hover:bg-zinc-100">
                 <X aria-hidden="true" className="w-5 h-5 text-zinc-700" />
