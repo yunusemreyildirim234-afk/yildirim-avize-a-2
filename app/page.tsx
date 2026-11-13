@@ -76,10 +76,10 @@ export default async function Home() {
       <PromoStrip />
 
       {/* 2. Beyaz -> açık gri: koleksiyonlar ve öne çıkanlar */}
-      <section className="home-coll bg-gradient-to-b from-white via-zinc-50 to-zinc-100 px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
+      <section className="bg-gradient-to-b from-white via-zinc-50 to-zinc-100 px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
         <div className="max-w-7xl mx-auto space-y-16">
           <div>
-            <div className="home-coll-head text-center mb-8 space-y-2">
+            <div className="text-center mb-8 space-y-2">
               <span className="text-xs uppercase tracking-widest text-amber-700 font-semibold">Koleksiyonlar</span>
               <h2 className="text-2xl sm:text-3xl font-serif font-bold text-zinc-900">Aydınlatma Koleksiyonları</h2>
             </div>

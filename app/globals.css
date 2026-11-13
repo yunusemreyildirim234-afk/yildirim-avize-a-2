@@ -298,15 +298,3 @@ body {
 /* Bağlantı taşıyan toast (lib/toast-link.ts): tıklanabilir imleç; odak halkası sonner'ın kendi :focus-visible stilinde */
 [data-sonner-toast][data-testid^="href:"] { cursor: pointer; }
 [data-sonner-toast][data-testid^="href:"] button { cursor: pointer; }
-
-/* Kısa ekran (≤700px yükseklik): hero küçülür, "Koleksiyonlar" başlığı ilk ekrana girer. Yüksek ekranda etkisiz. */
-@media (max-height: 700px) {
-  .hero-sec { padding-top: 0.75rem; padding-bottom: 0.75rem; }
-  .hero-emblem { width: 7rem; }
-  .hero-h1 { font-size: 2.25rem; line-height: 1; }
-  .hero-tri { width: 2rem; }
-  .hero-search { margin-top: 0.75rem; }
-  .hero-tag { display: none; }
-  .home-coll { padding-top: 1.5rem; padding-bottom: 2rem; }
-  .home-coll-head { margin-bottom: 1rem; }
-}
