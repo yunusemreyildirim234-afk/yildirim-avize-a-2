@@ -92,7 +92,7 @@ export default async function Page() {
           title: "Saklama Süresi",
           body: [
             "Kişisel verileriniz, işlendikleri amaç için gerekli olan süre boyunca ve ilgili mevzuatta (Türk Ticaret Kanunu, Vergi Usul Kanunu, Tüketicinin Korunması Hakkında Kanun vb.) öngörülen yasal saklama süreleri boyunca saklanır; sürenin sonunda silinir, yok edilir veya anonim hale getirilir.",
-            "Hesabınızdaki kayıtlı adresler, hesabınız aktif olduğu sürece saklanır; adres defterinizden istediğiniz adresi kendiniz silebilirsiniz. Hesabınızın ve kayıtlı adreslerinizin silinmesi için yukarıdaki başvuru yollarıyla bize ulaşabilirsiniz. Sipariş kayıtlarındaki teslimat adresi ve fatura kayıtları yasal saklama süreleri boyunca tutulur.",
+            "Hesabınızdaki kayıtlı adresler, hesabınız aktif olduğu sürece saklanır; adres defterinizden istediğiniz adresi kendiniz silebilirsiniz. Hesabınızın ve kayıtlı adreslerinizin silinmesi için yukarıdaki başvuru yollarıyla bize ulaşabilirsiniz. Hesabınızı Hesabım sayfasından silme talebiyle de kapatabilirsiniz; siparişleriniz ve faturalarınız yasal saklama süresince anonimleştirilmiş hesapla tutulur. Sipariş kayıtlarındaki teslimat adresi ve fatura kayıtları yasal saklama süreleri boyunca tutulur.",
           ],
         },
         {

@@ -11,6 +11,7 @@ import OrderRequestBox from "@/components/OrderRequestBox";
 import OrderTracker from "@/components/OrderTracker";
 import AuthForms from "@/components/AuthForms";
 import AccountSecurity from "@/components/AccountSecurity";
+import AccountDeletion from "@/components/AccountDeletion";
 import CodeStep from "@/components/CodeStep";
 import ProfileName from "@/components/ProfileName";
 import AddressBook from "@/components/AddressBook";
@@ -376,6 +377,8 @@ export default function AuthPage() {
           <MarketingPermissions />
 
           <MyMessages />
+
+          <AccountDeletion />
         </div>
       </main>
     );
