@@ -384,8 +384,13 @@ export default function CartPage() {
     saveCartChoices(tabStore(), { coupon: appliedCoupon?.code ?? pendingCoupon, paymentMethod });
   }, [choicesReady, appliedCoupon, pendingCoupon, paymentMethod]);
 
-  const handleApplyCoupon = async (e: React.FormEvent) => {
+  const handleApplyCoupon = (e: React.FormEvent) => {
     e.preventDefault();
+    return applyCouponCode(couponInput);
+  };
+
+  // Elle yazıp "Kuponu Uygula"ya basmakla "Kullanabileceğiniz kodlar"daki "Uygula" aynı yolu kullanır
+  const applyCouponCode = async (code: string) => {
     setCouponError("");
     setCouponLoading(true);
     try {
@@ -393,7 +398,7 @@ export default function CartPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          code: couponInput,
+          code,
           email,
           lines: localTotals.lines.map((l) => ({ productId: l.productId, lineTotal: l.lineTotal })),
         }),
@@ -803,6 +808,34 @@ export default function CartPage() {
               )}
               {couponSkipped && !appliedCoupon && (
                 <p className="text-xs text-neutral-600">Kupon olmadan devam ediyorsunuz; tutar kuponsuz hesaplanır.</p>
+              )}
+
+              {quote?.showcaseCode && (
+                <section aria-label="Kullanabileceğiniz kodlar" className="border-t border-neutral-200 pt-3 space-y-2">
+                  <h2 className="text-xs font-bold text-neutral-700 uppercase tracking-wider">Kullanabileceğiniz kodlar</h2>
+                  <div className="flex items-center justify-between gap-3 rounded-2xl border border-neutral-200 p-3">
+                    <div className="min-w-0">
+                      <p className="font-mono font-bold text-sm text-neutral-900 break-all">{quote.showcaseCode}</p>
+                      <p className="text-xs text-neutral-600">Vitrin kuponu</p>
+                    </div>
+                    {appliedCoupon?.code === quote.showcaseCode ? (
+                      <span className="shrink-0 inline-flex items-center min-h-11 px-3 text-xs font-semibold text-emerald-800">Uygulandı</span>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled={couponLoading}
+                        onClick={() => {
+                          setCouponInput(quote.showcaseCode ?? "");
+                          void applyCouponCode(quote.showcaseCode ?? "");
+                        }}
+                        aria-label={`${quote.showcaseCode} kodunu uygula`}
+                        className="shrink-0 min-h-11 min-w-11 bg-neutral-900 hover:bg-amber-600 disabled:opacity-60 text-white text-xs font-semibold px-4 rounded-xl transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600"
+                      >
+                        Uygula
+                      </button>
+                    )}
+                  </div>
+                </section>
               )}
             </div>
 
