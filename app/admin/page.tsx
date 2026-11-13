@@ -63,6 +63,7 @@ const AdminCoupons = nextDynamic(() => import("@/components/AdminCoupons"));
 const AdminActivity = nextDynamic(() => import("@/components/AdminActivity"));
 const AdminMessages = nextDynamic(() => import("@/components/AdminMessages"));
 const AdminReviews = nextDynamic(() => import("@/components/AdminReviews"));
+const AdminAccountDeletions = nextDynamic(() => import("@/components/AdminAccountDeletions"));
 
 export const dynamic = "force-dynamic";
 
@@ -253,6 +254,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
               items: [
                 { id: "kurumsal", label: "Kurumsal" },
                 { id: "kargonomi", label: "Kargonomi" },
+                { id: "hesap-silme", label: "Hesap Silme" },
                 { id: "oturumlar", label: "Oturumlar" },
                 { id: "guvenlik", label: "İki Aşamalı Doğrulama" },
                 { id: "yonetici-sifre", label: "Şifre" },
@@ -645,6 +647,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
 
         <AdminDiscountSettings initial={discountCap} />
         <AdminLowStock initial={resolveLowStock(homeRaw)} />
+        <AdminAccountDeletions />
         <AdminSessions />
         <AdminSection id="guvenlik" icon={<ShieldCheck aria-hidden="true" className="w-4 h-4 text-amber-600" />} title="İki Aşamalı Doğrulama (Yönetici Hesapları)" description="Yönetici girişine e-posta kodu ekleyin veya kapatın.">
           <AdminTwoFactor admins={adminRows} />
