@@ -5,6 +5,7 @@ import { rateLimit, tooMany } from "@/lib/rate-limit";
 import { bumpUserSessionVersion, getSessionUserId, getUserSession, issueUserToken } from "@/lib/account";
 import { getCustomerWithOrders } from "@/lib/customer";
 import { hashPassword, verifyPasswordOrDummy } from "@/lib/password";
+import { touchLastLogin } from "@/lib/last-login";
 import { sendVerificationCodeEmail } from "@/lib/email";
 import { USER_COOKIE, cookieOptions } from "@/lib/session";
 import { EMAIL_RE, isStrongPassword } from "@/lib/validation";
@@ -14,6 +15,7 @@ const GUEST_PASSWORD = "guest_checkout";
 const WEAK = "Şifre en az 8 karakter olmalı; büyük harf, küçük harf, rakam ve özel karakter içermelidir.";
 
 async function respond(userId: string) {
+  await touchLastLogin(prisma.user, userId);
   const res = NextResponse.json({ success: true, user: await getCustomerWithOrders(userId) });
   res.cookies.set(USER_COOKIE, await issueUserToken(userId), cookieOptions);
   return res;

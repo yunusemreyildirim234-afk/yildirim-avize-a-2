@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { SITE_URL } from "@/lib/site";
 import { USER_COOKIE, cookieOptions } from "@/lib/session";
 import { issueUserToken } from "@/lib/account";
+import { touchLastLogin } from "@/lib/last-login";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -72,6 +73,8 @@ export async function GET(req: Request) {
         },
       });
     }
+
+    await touchLastLogin(prisma.user, user.id);
 
     // 4. Giriş başarılı -> imzalı oturum çerezi ile hesap sayfasına yönlendir
     const res = NextResponse.redirect(new URL("/giris", SITE_URL));

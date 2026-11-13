@@ -47,6 +47,10 @@ export const EMAIL_LOGO_HTML = `<img src="https://www.yildirimavize.com.tr/email
 
 // RESEND_FROM (yoksa kurumsal varsayılan adres) ile dener; alan adı doğrulanmamışsa onboarding@resend.dev ile yeniden dener
 async function sendViaResend(apiKey: string | undefined, payload: Record<string, unknown>): Promise<boolean> {
+  // Silinmiş hesabın anonim adresi (silinmis-<id>@silinmis.invalid) gerçek bir posta kutusu değildir: hiç gönderilmez
+  const recipients = (Array.isArray(payload.to) ? payload.to : [payload.to]).filter((t) => !String(t).trim().toLowerCase().endsWith(".invalid"));
+  if (recipients.length === 0) return false;
+  payload = { ...payload, to: recipients };
   if (!apiKey) {
     console.error("[email] RESEND_API_KEY tanımlı değil; e-posta gönderilmedi:", payload.subject);
     return false;
@@ -336,6 +340,32 @@ export async function sendQuestionReceivedEmail(data: { to: string; name: string
       </div>
       <p style="font-size: 12px; color: #737373; margin-top: 24px;">Yıldırım Avize | Tel: ${PHONE_DISPLAY}</p>
     </div>`,
+  });
+}
+
+const DELETION_WRAP = (body: string) => `<div style="font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #171717;">${body}
+      <p style="font-size: 12px; color: #737373; margin-top: 24px;">Yıldırım Avize | Tel: ${PHONE_DISPLAY}</p>
+    </div>`;
+
+/** Hesap silme talebi alındı teyidi (talep yönetici onayına gider). */
+export async function sendAccountDeletionRequestedEmail(data: { to: string; name: string }) {
+  return sendViaResend(process.env.RESEND_API_KEY, {
+    to: [data.to],
+    subject: "Hesap Silme Talebiniz Alındı - Yıldırım Avize",
+    html: DELETION_WRAP(`<h2 style="margin: 0 0 12px;">Sayın ${esc(data.name)},</h2>
+      <p style="font-size: 14px; line-height: 1.6;">Hesabınızın silinmesi talebiniz bize ulaştı ve incelemeye alındı. Tamamlanmamış siparişiniz varsa bunlar kapanana kadar silme işlemi yapılamaz.</p>
+      <p style="font-size: 14px; line-height: 1.6;">Talebinizden vazgeçerseniz Hesabım sayfasından geri çekebilirsiniz. İşlem tamamlandığında size ayrıca bilgi vereceğiz.</p>`),
+  });
+}
+
+/** Hesap silindi bildirimi: anonimleştirmeden ÖNCE okunan gerçek adrese gönderilir. */
+export async function sendAccountDeletedEmail(data: { to: string; name: string }) {
+  return sendViaResend(process.env.RESEND_API_KEY, {
+    to: [data.to],
+    subject: "Hesabınız Silindi - Yıldırım Avize",
+    html: DELETION_WRAP(`<h2 style="margin: 0 0 12px;">Sayın ${esc(data.name)},</h2>
+      <p style="font-size: 14px; line-height: 1.6;">Talebiniz üzerine hesabınız silindi. Adres, favori, sepet, yorum ve mesaj kayıtlarınız kaldırıldı; e-posta bildirimleri kapatıldı.</p>
+      <p style="font-size: 14px; line-height: 1.6;">Geçmiş siparişleriniz ve faturalarınız, yasal saklama yükümlülükleri gereği anonimleştirilmiş hesapla süresi boyunca saklanır.</p>`),
   });
 }
 

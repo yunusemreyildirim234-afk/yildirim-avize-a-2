@@ -16,14 +16,30 @@ model User {
   role             String           @default("USER") // "USER" veya "ADMIN"
   twoFactorEnabled Boolean          @default(false) // E-posta ile iki aşamalı doğrulama
   sessionVersion   Int              @default(0) // Artınca bu kullanıcının eski oturum çerezleri geçersiz olur
+  lastLoginAt      DateTime? // Son giriş (günde en çok bir kez yazılır)
   orders           Order[]
   reviews          Review[]
   cartItems        CartItem[]
   favorites        Favorite[]
   messages         ContactMessage[]
   addresses        Address[]
+  deletionRequests AccountDeletionRequest[]
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
+}
+
+// Hesap silme talebi (müşteri başlatır, yönetici onaylar/reddeder). Kullanıcı başına tek PENDING kısmi unique indeksi yalnızca veritabanındadır (prisma/sql/account-deletion.sql).
+model AccountDeletionRequest {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status      String    @default("PENDING") // PENDING | APPROVED | REJECTED | CANCELLED
+  adminNote   String?
+  createdAt   DateTime  @default(now())
+  processedAt DateTime?
+
+  @@index([status, createdAt])
+  @@index([userId])
 }
 
 // Avizeler (Ana Ürün Bilgileri)

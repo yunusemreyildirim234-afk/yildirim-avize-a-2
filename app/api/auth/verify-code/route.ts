@@ -4,6 +4,7 @@ import { getSessionUserId, issueUserToken } from "@/lib/account";
 import { getCustomerWithOrders } from "@/lib/customer";
 import { USER_COOKIE, cookieOptions } from "@/lib/session";
 import { rateLimit, tooMany } from "@/lib/rate-limit";
+import { touchLastLogin } from "@/lib/last-login";
 import { consumeCode, issueProof, readProof, type CodeType } from "@/lib/verification";
 
 const BAD = () => NextResponse.json({ error: "Doğrulama kodu hatalı veya süresi dolmuş." }, { status: 400 });
@@ -44,6 +45,7 @@ export async function POST(req: Request) {
       const pending = await readProof(body.pendingToken, email, "2fa-login");
       if (!pending?.uid) return NextResponse.json({ error: "Oturum süresi doldu. Lütfen tekrar giriş yapın." }, { status: 401 });
       if (!(await consumeCode(email, type, code))) return BAD();
+      await touchLastLogin(prisma.user, pending.uid);
       const res = NextResponse.json({ success: true, user: await getCustomerWithOrders(pending.uid) });
       res.cookies.set(USER_COOKIE, await issueUserToken(pending.uid), cookieOptions);
       return res;
