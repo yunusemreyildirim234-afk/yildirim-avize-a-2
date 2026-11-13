@@ -230,6 +230,7 @@ export default function CartPage() {
     coupon: { ok: boolean; error?: string; limited?: boolean } | null;
     maxTotalDiscountPct?: number | null;
     showcaseCode?: string | null; // vitrin kuponunun güncel adı
+    showcaseLabel?: string | null; // "%5 indirim" / "50 ₺ indirim"
   }
   // Açık kalmış kartlı ödeme denemesi (bu sekmede): teklif, o siparişin tuttuğu stok/kuponu müşterinin lehine sayabilsin diye kimliği ve e-posta gider
   const prevOrderId = previousCardOrderId();
@@ -416,6 +417,23 @@ export default function CartPage() {
       setCouponLoading(false);
     }
   };
+
+  // Kişiye özel kuponlar: yalnız girişliyse ve sepette ürün varsa, sayfa açılışında BİR KEZ (misafirde istek atılmaz)
+  const [personalCoupons, setPersonalCoupons] = useState<{ code: string; label: string; expiresAt: string | null }[]>([]);
+  const personalFetched = useRef(false);
+  const hasItems = cart.length > 0;
+  useEffect(() => {
+    if (!accountEmail || !hasItems || personalFetched.current) return;
+    personalFetched.current = true;
+    fetch("/api/user/coupons")
+      .then((res) => (res.ok ? res.json() : { coupons: [] }))
+      .then((data: { coupons?: { code: string; label: string; expiresAt: string | null }[] }) => setPersonalCoupons(Array.isArray(data.coupons) ? data.coupons : []))
+      .catch(() => {});
+  }, [accountEmail, hasItems]);
+  const codeRows = [
+    ...(quote?.showcaseCode ? [{ code: quote.showcaseCode, note: quote.showcaseLabel || "Vitrin kuponu" }] : []),
+    ...personalCoupons.filter((c) => c.code !== quote?.showcaseCode).map((c) => ({ code: c.code, note: `Size özel · ${c.label}${c.expiresAt ? ` · ${new Date(c.expiresAt).toLocaleDateString("tr-TR")} tarihine kadar` : ""}` })),
+  ];
 
   const handleSkipCoupon = () => {
     handleRemoveCoupon();
@@ -810,31 +828,33 @@ export default function CartPage() {
                 <p className="text-xs text-neutral-600">Kupon olmadan devam ediyorsunuz; tutar kuponsuz hesaplanır.</p>
               )}
 
-              {quote?.showcaseCode && (
+              {codeRows.length > 0 && (
                 <section aria-label="Kullanabileceğiniz kodlar" className="border-t border-neutral-200 pt-3 space-y-2">
                   <h2 className="text-xs font-bold text-neutral-700 uppercase tracking-wider">Kullanabileceğiniz kodlar</h2>
-                  <div className="flex items-center justify-between gap-3 rounded-2xl border border-neutral-200 p-3">
-                    <div className="min-w-0">
-                      <p className="font-mono font-bold text-sm text-neutral-900 break-all">{quote.showcaseCode}</p>
-                      <p className="text-xs text-neutral-600">Vitrin kuponu</p>
+                  {codeRows.map((row) => (
+                    <div key={row.code} className="flex items-center justify-between gap-3 rounded-2xl border border-neutral-200 p-3">
+                      <div className="min-w-0">
+                        <p className="font-mono font-bold text-sm text-neutral-900 break-all">{row.code}</p>
+                        <p className="text-xs text-neutral-600">{row.note}</p>
+                      </div>
+                      {appliedCoupon?.code === row.code ? (
+                        <span className="shrink-0 inline-flex items-center min-h-11 px-3 text-xs font-semibold text-emerald-800">Uygulandı</span>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={couponLoading}
+                          onClick={() => {
+                            setCouponInput(row.code);
+                            void applyCouponCode(row.code);
+                          }}
+                          aria-label={`${row.code} kodunu uygula`}
+                          className="shrink-0 min-h-11 min-w-11 bg-neutral-900 hover:bg-amber-600 disabled:opacity-60 text-white text-xs font-semibold px-4 rounded-xl transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600"
+                        >
+                          Uygula
+                        </button>
+                      )}
                     </div>
-                    {appliedCoupon?.code === quote.showcaseCode ? (
-                      <span className="shrink-0 inline-flex items-center min-h-11 px-3 text-xs font-semibold text-emerald-800">Uygulandı</span>
-                    ) : (
-                      <button
-                        type="button"
-                        disabled={couponLoading}
-                        onClick={() => {
-                          setCouponInput(quote.showcaseCode ?? "");
-                          void applyCouponCode(quote.showcaseCode ?? "");
-                        }}
-                        aria-label={`${quote.showcaseCode} kodunu uygula`}
-                        className="shrink-0 min-h-11 min-w-11 bg-neutral-900 hover:bg-amber-600 disabled:opacity-60 text-white text-xs font-semibold px-4 rounded-xl transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600"
-                      >
-                        Uygula
-                      </button>
-                    )}
-                  </div>
+                  ))}
                 </section>
               )}
             </div>
