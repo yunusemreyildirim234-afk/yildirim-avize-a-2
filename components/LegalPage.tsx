@@ -11,11 +11,13 @@ export default function LegalPage({
   intro,
   path,
   sections,
+  updated = LEGAL_UPDATED,
 }: {
   title: string;
   intro: string;
   path: string;
   sections: LegalSection[];
+  updated?: string;
 }) {
   return (
     <main className="min-h-screen bg-neutral-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -41,7 +43,7 @@ export default function LegalPage({
           ))}
         </div>
         <p className="text-[11px] text-neutral-400 mt-10 pt-4 border-t border-neutral-100">
-          Son güncelleme: {LEGAL_UPDATED}
+          Son güncelleme: {updated}
         </p>
       </article>
     </main>

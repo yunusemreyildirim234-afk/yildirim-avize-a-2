@@ -14,6 +14,7 @@ export default async function Page() {
   return (
     <LegalPage
       path="/aydinlatma-metni"
+      updated="13 Kasım 2026"
       title="Kişisel Verilerin İşlenmesine İlişkin Aydınlatma Metni"
       intro="Bu metin, 6698 sayılı Kişisel Verilerin Korunması Kanunu'nun (KVKK) 10. maddesi ve Aydınlatma Yükümlülüğünün Yerine Getirilmesinde Uyulacak Usul ve Esaslar Hakkında Tebliğ kapsamında, müşterilerimizi ve site ziyaretçilerimizi bilgilendirmek amacıyla hazırlanmıştır. Bir onay metni değildir; bilgilendirme amaçlıdır."
       sections={[
@@ -28,7 +29,7 @@ export default async function Page() {
           title: "İşlenen Kişisel Veri Kategorileri",
           body: [
             "Kimlik ve iletişim bilgileri: ad-soyad, e-posta adresi, telefon numarası.",
-            "Teslimat ve fatura bilgileri: teslimat adresi, il/ilçe; kurumsal faturada unvan, vergi dairesi ve vergi kimlik numarası (bireysel faturada girilmişse T.C. kimlik numarası). Hesabınızdaki \"Adreslerim\" bölümüne kendiniz kaydettiğiniz adres kayıtları (adres başlığı, alıcı ad-soyad, telefon, il, ilçe, açık adres).",
+            "Teslimat ve fatura bilgileri: teslimat adresi, il/ilçe; kurumsal faturada unvan, vergi dairesi ve vergi kimlik numarası (bireysel faturada girilmişse T.C. kimlik numarası). Hesabınızdaki \"Adreslerim\" bölümüne kendiniz kaydettiğiniz adres kayıtları (adres başlığı, alıcı ad-soyad, telefon, il, ilçe, açık adres). Başkası adına adres kaydediyorsanız, ilgili kişiyi bilgilendirmek sizin sorumluluğunuzdadır.",
             "Müşteri işlemi bilgileri: sipariş içeriği, tutarı, ödeme yöntemi, kargo ve takip bilgileri, iptal/iade talepleri, sipariş notları, uygulanan kupon.",
             "Ödeme bilgileri: kartlı ödemelerde kart bilgileriniz doğrudan ödeme kuruluşu PayTR'nin güvenli ödeme sayfasında girilir ve tarafımızca saklanmaz. Havale/EFT'de gönderici adı ve yüklenen dekont tarafımızca işlenir.",
             "İçerik bilgileri: iletişim formu mesajları, ürün soruları, ürün yorumları ve yüklediğiniz fotoğraflar, dekont dosyaları.",
@@ -54,7 +55,7 @@ export default async function Page() {
             "Hukuki yükümlülüğün yerine getirilmesi (m.5/2-ç): fatura, vergi, muhasebe ve tüketici mevzuatından doğan saklama ve bildirim yükümlülükleri.",
             "Kanunlarda açıkça öngörülmesi (m.5/2-a): mevzuatın veri işlemeyi açıkça gerektirdiği haller.",
             "Bir hakkın tesisi, kullanılması veya korunması için zorunlu olması (m.5/2-e): olası uyuşmazlıklarda delil olarak saklama.",
-            "Veri sorumlusunun meşru menfaati (m.5/2-f), temel hak ve özgürlüklerinize zarar vermemek kaydıyla: site güvenliği, kötüye kullanımın önlenmesi, hizmet kalitesinin sağlanması.",
+            "Veri sorumlusunun meşru menfaati (m.5/2-f), temel hak ve özgürlüklerinize zarar vermemek kaydıyla: site güvenliği, kötüye kullanımın önlenmesi, hizmet kalitesinin sağlanması; ayrıca isteğe bağlı olarak kaydettiğiniz adres defterinin, sipariş formunun kolayca doldurulması için tutulması. Adres kaydetmeden de sipariş verebilirsiniz.",
           ],
         },
         {
@@ -92,7 +93,7 @@ export default async function Page() {
           title: "Saklama Süresi",
           body: [
             "Kişisel verileriniz, işlendikleri amaç için gerekli olan süre boyunca ve ilgili mevzuatta (Türk Ticaret Kanunu, Vergi Usul Kanunu, Tüketicinin Korunması Hakkında Kanun vb.) öngörülen yasal saklama süreleri boyunca saklanır; sürenin sonunda silinir, yok edilir veya anonim hale getirilir.",
-            "Hesabınızdaki kayıtlı adresler, hesabınız aktif olduğu sürece saklanır; adres defterinizden istediğiniz adresi kendiniz silebilirsiniz. Hesabınızın ve kayıtlı adreslerinizin silinmesi için yukarıdaki başvuru yollarıyla bize ulaşabilirsiniz. Hesabınızı Hesabım sayfasından silme talebiyle de kapatabilirsiniz; siparişleriniz ve faturalarınız yasal saklama süresince anonimleştirilmiş hesapla tutulur. Sipariş kayıtlarındaki teslimat adresi ve fatura kayıtları yasal saklama süreleri boyunca tutulur.",
+            "Hesabınızdaki kayıtlı adresler, hesabınız aktif olduğu sürece ve son giriş ya da son sipariş tarihinizden itibaren 3 yıl boyunca saklanır; bu sürenin sonunda silinir veya anonim hale getirilir; adres defterinizden istediğiniz adresi kendiniz silebilirsiniz. Hesabınızın ve kayıtlı adreslerinizin silinmesi için yukarıdaki başvuru yollarıyla bize ulaşabilirsiniz. Hesabınızı Hesabım sayfasından silme talebiyle de kapatabilirsiniz; siparişleriniz ve faturalarınız yasal saklama süresince anonimleştirilmiş hesapla tutulur. Sipariş kayıtlarındaki teslimat adresi ve fatura kayıtları yasal saklama süreleri boyunca tutulur.",
           ],
         },
         {
