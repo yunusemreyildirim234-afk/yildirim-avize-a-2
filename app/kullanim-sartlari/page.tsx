@@ -29,7 +29,7 @@ export default function Page() {
         {
           title: "Hesap Güvenliği",
           body: [
-            "Hesabınıza giriş bilgilerinizin (e-posta doğrulama kodu veya Google hesabı) güvenliğinden siz sorumlusunuz. Hesabınızın yetkisiz kullanıldığını fark ederseniz bizimle gecikmeden iletişime geçmelisiniz. Başkası adına hesap açmak veya sistemin güvenliğini bozmaya yönelik girişimlerde bulunmak yasaktır; bu durumda hesabınız kapatılabilir.",
+            "Hesabınıza giriş bilgilerinizin (şifre, e-posta doğrulama kodu veya Google hesabı) güvenliğinden siz sorumlusunuz. Hesabınızın yetkisiz kullanıldığını fark ederseniz bizimle gecikmeden iletişime geçmelisiniz. Başkası adına hesap açmak veya sistemin güvenliğini bozmaya yönelik girişimlerde bulunmak yasaktır; bu durumda hesabınız kapatılabilir.",
           ],
         },
         {
