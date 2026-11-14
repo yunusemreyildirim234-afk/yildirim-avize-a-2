@@ -802,7 +802,7 @@ export default function CartPage() {
                 </div>
               ) : (
                 <form onSubmit={handleApplyCoupon} className="flex flex-col sm:flex-row gap-2">
-                  <input id="kupon-kodu"
+                  <input id="kupon-kodu" aria-label="Kupon kodu"
                     type="text"
                     placeholder={couponPlaceholder(quote?.showcaseCode)}
                     value={couponInput}

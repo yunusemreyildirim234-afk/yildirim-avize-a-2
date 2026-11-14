@@ -12,7 +12,7 @@ test("sepet: adet ve kaldır düğmeleri ürün adını içeren erişilebilir ad
 
 test("sepet: kupon etiketi input'a bağlı; ödeme yöntemi radiogroup", () => {
   assert.match(s, /<label htmlFor="kupon-kodu"/);
-  assert.match(s, /<input id="kupon-kodu"/);
+  assert.match(s, /<input id="kupon-kodu" aria-label="Kupon kodu"/);
   assert.match(s, /role="radiogroup" aria-label="Ödeme yöntemi"/);
   assert.equal((s.match(/role="radio"/g) ?? []).length, 2);
   assert.match(s, /aria-checked=\{paymentMethod === "CREDIT_CARD"\}/);
