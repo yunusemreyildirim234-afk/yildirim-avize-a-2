@@ -30,6 +30,7 @@ import { activeTier, bulkLabel, type BulkRule } from "@/lib/bulk-pricing";
 import { isValidPhone, PHONE_ERROR } from "@/lib/phone";
 import { bulbNoteFor } from "@/lib/bulb-note";
 import { clearCartChoices, loadCartChoices, saveCartChoices, tabStore } from "@/lib/cart-choices";
+import { EMAIL_COMMIT_DELAY_MS, isCommittableEmail, quoteSignature } from "@/lib/quote-signature";
 import { forgetCardOrder, previousCardOrderId, rememberCardOrder } from "@/lib/pending-card-order";
 import { smallImage } from "@/lib/img";
 import { displayTitle } from "@/lib/title-display";
@@ -232,7 +233,30 @@ export default function CartPage() {
   }
   // Açık kalmış kartlı ödeme denemesi (bu sekmede): teklif, o siparişin tuttuğu stok/kuponu müşterinin lehine sayabilsin diye kimliği ve e-posta gider
   const prevOrderId = previousCardOrderId();
-  const quoteSig = JSON.stringify([cart.map((i) => [i.variationId, i.quantity]), appliedCoupon?.code ?? "", shippingType, paymentMethod, appliedCoupon || prevOrderId ? email : "", prevOrderId ?? ""]);
+  // E-posta teklif imzasına yalnız alan odağı bırakılınca ya da geçerli biçimdeyken 1 sn yazma durunca katılır (hesap e-postası hemen)
+  const [committedEmail, setCommittedEmail] = useState("");
+  useEffect(() => {
+    if (!isCommittableEmail(email)) return;
+    const t = setTimeout(() => setCommittedEmail(email), EMAIL_COMMIT_DELAY_MS);
+    return () => clearTimeout(t);
+  }, [email]);
+  // Kupon uygulanır uygulanmaz yazılı e-posta kesinleşir (kişiye özel kupon denetimi e-postasız teklifle yanlışlıkla düşmesin)
+  const couponCodeNow = appliedCoupon?.code ?? "";
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- kupon değişince e-posta teklif imzasına katılır
+    if (couponCodeNow) setCommittedEmail(email);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- yalnızca kupon kodu değişince
+  }, [couponCodeNow]);
+  const quoteEmail = accountEmail && email === accountEmail ? email : committedEmail;
+  const quoteSig = quoteSignature({
+    lines: cart.map((i) => [i.variationId, i.quantity]),
+    couponCode: appliedCoupon?.code ?? "",
+    shippingType,
+    paymentMethod,
+    emailRelevant: Boolean(appliedCoupon || prevOrderId),
+    committedEmail: quoteEmail,
+    prevOrderId,
+  });
   const [quote, setQuote] = useState<(Quote & { sig: string }) | null>(null);
   const [priceNotice, setPriceNotice] = useState<{ from: number; to: number } | null>(null);
   const [priceAcked, setPriceAcked] = useState(true);
@@ -265,7 +289,7 @@ export default function CartPage() {
         body: JSON.stringify({
           items: cart.map((i) => ({ productId: i.productId, variationId: i.variationId, qty: i.quantity })),
           coupon: appliedCoupon?.code,
-          email: appliedCoupon || prevOrderId ? email : undefined,
+          email: appliedCoupon || prevOrderId ? quoteEmail : undefined,
           deliveryMethod: shippingType,
           paymentMethod,
           ...(prevOrderId ? { previousOrderId: prevOrderId } : {}),
@@ -953,6 +977,7 @@ export default function CartPage() {
                 value={email}
                 readOnly={Boolean(accountEmail)}
                 onChange={(e) => setEmail(e.target.value)}
+                onBlur={() => setCommittedEmail(email)}
                 className={`w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600 ${accountEmail ? "bg-neutral-100 text-neutral-600" : ""}`}
               />
               {accountEmail && <p className="mt-1 text-[11px] text-neutral-500">Hesap e-postanız. Farklı bir e-posta için önce çıkış yapın.</p>}
