@@ -13,10 +13,20 @@ export function sunucuAdi(url) {
   }
 }
 
-/** GORSEL_DATABASE_URL varsa o, yoksa DATABASE_URL. Neon uykudaysa bağlantı birkaç kez denenir. */
-export async function baglan() {
-  const url = process.env.GORSEL_DATABASE_URL || process.env.DATABASE_URL;
-  if (!url) throw new Error("DATABASE_URL tanımlı değil (kök .env / .env.local ya da tools/gorsel/.env).");
+/**
+ * Güvenli varsayılan: yalnızca GORSEL_DATABASE_URL (ör. deneme dalı) kullanılır.
+ * Canlı veritabanı (DATABASE_URL) ancak --canli bayrağı açıkça verilirse seçilir.
+ */
+export function hedefUrl(env, canli) {
+  if (env.GORSEL_DATABASE_URL) return env.GORSEL_DATABASE_URL;
+  if (!canli) throw new Error("GORSEL_DATABASE_URL tanımlı değil. Canlı veritabanına bağlanmak için komuta --canli ekleyin (varsayılan güvenli: canlıya gidilmez).");
+  if (!env.DATABASE_URL) throw new Error("DATABASE_URL tanımlı değil (kök .env / .env.local ya da tools/gorsel/.env).");
+  return env.DATABASE_URL;
+}
+
+/** Hedef: hedefUrl kuralı. Neon uykudaysa bağlantı birkaç kez denenir. */
+export async function baglan({ canli = false } = {}) {
+  const url = hedefUrl(process.env, canli);
   let kod = "bağlantı hatası";
   for (let i = 1; i <= DENEME; i++) {
     const c = new pg.Client({ connectionString: url, connectionTimeoutMillis: 15000 });

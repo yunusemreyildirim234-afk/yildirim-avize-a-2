@@ -9,8 +9,8 @@ import { evetSor, KOK } from "./ortam.mjs";
  * planla(urunler) → { planlar, notlar: string[] }. islem: "yaz" | "geri-al". dogrula: partiden sonra ek denetim (isteğe bağlı).
  * Onay sorusundan ÖNCE hiçbir şey yazılmaz. EVET gelmezse çıkılır.
  */
-export async function planlaVeUygula({ islem, kuru, planla, dogrula = null }) {
-  const { client, sunucu, dal, e2e } = await baglan();
+export async function planlaVeUygula({ islem, kuru, planla, dogrula = null, canli = false }) {
+  const { client, sunucu, dal, e2e } = await baglan({ canli });
   try {
     console.log(`Veritabanı: sunucu ${sunucu} · dal: ${dal}`);
     const db = pgDb(client);

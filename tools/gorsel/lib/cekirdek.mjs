@@ -19,7 +19,7 @@ const ayni = (a, b) => a.length === b.length && a.every((x, i) => x === b[i]);
 
 /** Komut satırı: --ornek N | --urun 5,17 | --dry-run | --tuval kare|oran | --siniri-as. Bilinmeyen bayrak hatadır. */
 export function argumanlar(argv) {
-  const a = { ornek: null, urun: null, dryRun: false, tuval: "kare", siniriAs: false };
+  const a = { ornek: null, urun: null, dryRun: false, tuval: "kare", siniriAs: false, canli: false };
   for (let i = 0; i < argv.length; i++) {
     const f = argv[i];
     const deger = () => {
@@ -29,6 +29,7 @@ export function argumanlar(argv) {
     };
     if (f === "--dry-run") a.dryRun = true;
     else if (f === "--siniri-as") a.siniriAs = true;
+    else if (f === "--canli") a.canli = true;
     else if (f === "--ornek") {
       const n = Number(deger());
       if (!Number.isInteger(n) || n < 1) throw new Error("--ornek pozitif bir tam sayı olmalı.");

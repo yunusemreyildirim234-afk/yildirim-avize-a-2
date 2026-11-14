@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   argumanlar, bekleyenler, blobYolu, bosManifest, geriAlPlani, GUVENLI_SINIR, kotaDurumu, manifesteYaz, partilerleUygula, sec, sirala, urunKaynaklari, yazmaSay, yazPlani, yedekIcerigi,
 } from "../lib/cekirdek.mjs";
+import { hedefUrl } from "../lib/db.mjs";
 import { sahteDb, T } from "./sahte.mjs";
 
 const B = (pid, ad) => `https://sahte.public.blob.vercel-storage.com/urun/${pid}/${ad}-kr-b.webp`;
@@ -14,8 +15,9 @@ function hazirla(m, u, tuval = "kare") {
 }
 
 test("argumanlar: varsayılanlar, bayraklar ve hatalar", () => {
-  assert.deepEqual(argumanlar([]), { ornek: null, urun: null, dryRun: false, tuval: "kare", siniriAs: false });
-  assert.deepEqual(argumanlar(["--ornek", "10", "--dry-run", "--tuval", "oran", "--urun", "5, 17", "--siniri-as"]), { ornek: 10, urun: ["5", "17"], dryRun: true, tuval: "oran", siniriAs: true });
+  assert.deepEqual(argumanlar([]), { ornek: null, urun: null, dryRun: false, tuval: "kare", siniriAs: false, canli: false });
+  assert.deepEqual(argumanlar(["--ornek", "10", "--dry-run", "--tuval", "oran", "--urun", "5, 17", "--siniri-as"]), { ornek: 10, urun: ["5", "17"], dryRun: true, tuval: "oran", siniriAs: true, canli: false });
+  assert.equal(argumanlar(["--canli"]).canli, true);
   for (const kotu of [["--ornek"], ["--ornek", "0"], ["--ornek", "x"], ["--tuval", "yuvarlak"], ["--evet"], ["--urun", "--dry-run"]]) assert.throws(() => argumanlar(kotu));
 });
 
@@ -175,4 +177,11 @@ test("v2: v1 manifest kayıtları görmezden gelinir ama silinmez; v1 taşınmı
   const yazildi = urun("p1", "1", [V2("a")], { imageMap: { [T("a")]: V2("a") }, variations: [{ id: "v1", images: [V2("a")] }] });
   assert.equal(yazPlani(yazildi, m, "kare").plan, null);
   assert.deepEqual(geriAlPlani(yazildi).yeni, { images: [T("a")], imageUrl: T("a") });
+});
+
+test("hedefUrl: varsayılan canlıya gitmez; canlı yalnızca --canli ile", () => {
+  assert.throws(() => hedefUrl({ DATABASE_URL: "postgres://canli" }, false), /--canli/);
+  assert.equal(hedefUrl({ DATABASE_URL: "postgres://canli" }, true), "postgres://canli");
+  assert.equal(hedefUrl({ GORSEL_DATABASE_URL: "postgres://deneme", DATABASE_URL: "postgres://canli" }, false), "postgres://deneme");
+  assert.throws(() => hedefUrl({}, true), /DATABASE_URL/);
 });

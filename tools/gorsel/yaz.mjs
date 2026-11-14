@@ -15,6 +15,7 @@ calistir(async () => {
   const manifest = manifestOku();
   await planlaVeUygula({
     islem: "yaz",
+    canli: a.canli,
     kuru: a.dryRun,
     dogrula: kapaklariDogrula,
     planla(urunler) {

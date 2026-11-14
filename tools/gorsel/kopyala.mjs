@@ -14,8 +14,8 @@ import { kopyala } from "./lib/kopya.mjs";
 import { onizlemeHtml } from "./lib/onizleme-html.mjs";
 import { calistir, CIKTI, evetSor, manifestOku, manifestYaz, ortamYukle } from "./lib/ortam.mjs";
 
-async function urunleriOku() {
-  const { client, sunucu, dal } = await baglan();
+async function urunleriOku(canli) {
+  const { client, sunucu, dal } = await baglan({ canli });
   console.log(`Veritabanı (YALNIZCA OKUMA): sunucu ${sunucu} · dal: ${dal}`);
   try {
     return await pgDb(client).urunleriOku();
@@ -64,7 +64,7 @@ async function onizle(secili, tuval) {
 export async function ana(argv) {
   const a = argumanlar(argv);
   ortamYukle();
-  const urunler = await urunleriOku();
+  const urunler = await urunleriOku(a.canli);
   const secili = sec(urunler, a, (u) => urunKaynaklari(u).length > 0);
   if (secili.length === 0) return console.log("Kopyalanacak Trendyol görseli olan ürün yok.");
   if (a.dryRun) return onizle(secili, a.tuval);

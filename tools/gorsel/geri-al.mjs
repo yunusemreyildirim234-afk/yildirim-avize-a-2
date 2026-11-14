@@ -13,6 +13,7 @@ calistir(async () => {
   ortamYukle();
   await planlaVeUygula({
     islem: "geri-al",
+    canli: a.canli,
     kuru: a.dryRun,
     planla(urunler) {
       const planlar = sec(urunler, a, (u) => geriAlPlani(u) !== null).map((u) => geriAlPlani(u));

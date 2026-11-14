@@ -12,7 +12,7 @@ Betikler şu dosyaları bu öncelikle okur (önce bulunan kazanır): `tools/gors
 |---|---|---|
 | `BLOB_READ_WRITE_TOKEN` | kök `.env.local` | `kopyala` (kuru çalıştırma istemez) |
 | `DATABASE_URL` | kökte zaten var | hepsi (`onizleme`/`kopyala` yalnızca okur) |
-| `GORSEL_DATABASE_URL` | isteğe bağlı, `tools/gorsel/.env` | varsa `DATABASE_URL` yerine kullanılır (ör. deneme dalı) |
+| `GORSEL_DATABASE_URL` | `tools/gorsel/.env` | varsayılan hedef (ör. deneme dalı). Yoksa betikler DURUR; canlı için komuta `--canli` eklenir |
 
 Değerler hiçbir çıktıya yazdırılmaz; veritabanı için yalnızca sunucu adı ve dal bilgisi gösterilir.
 Dal bilgisi `public.e2e_marker` tablosuna bakar: varsa `e2e-test`, yoksa **production** kabul edilir
@@ -31,7 +31,7 @@ npm run geri-al  -- --ornek 10            # eski Trendyol adreslerine döner (EV
 ```
 
 Bayraklar: `--ornek N` (model koduna göre ilk N uygun ürün; üç betikte aynı sıra), `--urun 5,17,42` (model kodları),
-`--tuval kare|oran` (varsayılan `kare`; `kopyala` ve `yaz` AYNI değerle çalıştırılmalı), `--dry-run`, `--siniri-as` (yalnızca `kopyala`).
+`--canli` (canlı `DATABASE_URL`'ye bağlanmaya izin verir; `GORSEL_DATABASE_URL` yoksa şart), `--tuval kare|oran` (varsayılan `kare`; `kopyala` ve `yaz` AYNI değerle çalıştırılmalı), `--dry-run`, `--siniri-as` (yalnızca `kopyala`).
 
 ## Nasıl çalışır
 
