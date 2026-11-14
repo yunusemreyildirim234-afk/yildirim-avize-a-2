@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { ADMIN_LIST_PRODUCT_SELECT, ADMIN_LIST_VARIATION_SELECT, coverByRule, mergeImages, rowCover, variationSetSig, withCover } from "../lib/admin-product-list.ts";
+import { ADMIN_LIST_PRODUCT_SELECT, ADMIN_LIST_VARIATION_SELECT, coverByRule, mergeImages, rowCover, withCover } from "../lib/admin-product-list.ts";
 import { coverImageOf } from "../lib/variation-input.ts";
 import { quickFilterTest } from "../lib/admin-product-quick-filters.ts";
 import { bulkTiersOf } from "../lib/bulk-pricing.ts";
@@ -87,11 +87,6 @@ test("rowCover: tam veri gelince kapak ondan hesaplanır (kayıttan sonra günce
   assert.equal(rowCover(row, { imageUrl: null, images: [], variations: [{ id: "v1", images: ["/r.jpg"] }] }), "/r.jpg");
 });
 
-test("variationSetSig: renk eklenince/silinince değişir", () => {
-  assert.notEqual(variationSetSig([{ id: "a" }]), variationSetSig([{ id: "a" }, { id: "b" }]));
-  assert.equal(variationSetSig([{ id: "a" }, { id: "b" }]), variationSetSig([{ id: "a" }, { id: "b" }]));
-});
-
 test("panel sayfası: dar select + kapak sorgusu + ayrı kopyalanmamış sayacı; görsel dizileri sayfada okunmaz", () => {
   const page = src("app/admin/page.tsx");
   assert.match(page, /select: ADMIN_LIST_PRODUCT_SELECT/);
@@ -101,4 +96,28 @@ test("panel sayfası: dar select + kapak sorgusu + ayrı kopyalanmamış sayacı
   assert.match(page, /uncopiedImages=\{uncopied\}/);
   assert.ok(!/\.images\b/.test(page), "sayfa ürün/renk görsel dizilerini okumaz");
   assert.ok(!/countUncopiedImages/.test(page));
+});
+
+test("GET /api/admin/product: adminGuard ilk satır; fields=images tam görselleri verir; varsayılan açıklama yanıtı aynı", () => {
+  const route = src("app/api/admin/product/route.ts");
+  const get = route.slice(route.indexOf("export async function GET"), route.indexOf("// 1. Yeni Avize Ekleme"));
+  assert.match(get, /export async function GET\(req: Request\) \{\s*const denied = await adminGuard\(\);\s*if \(denied\) return denied;/);
+  assert.match(get, /searchParams\.get\("fields"\) === "images"/);
+  assert.match(get, /select: \{ imageUrl: true, images: true, variations: \{ select: \{ id: true, images: true \}/);
+  assert.match(get, /select: \{ description: true, syncSnapshot: true \}/); // varsayılan yanıt değişmedi
+  assert.ok(get.indexOf("PRODUCT_ID_RE.test") < get.indexOf('"fields"'), "kimlik doğrulaması fields kipinden önce");
+  assert.match(get, /Cache-Control": "no-store"/);
+});
+
+test("liste: düzenleyici tam görseller gelmeden bağlanmaz; yükleniyor / hata + Yeniden dene; yenilemeden sonra yeniden çekilir", () => {
+  const s = src("components/AdminProductList.tsx");
+  assert.match(s, /fields=images/);
+  assert.match(s, /editingId === product\.id && !details\[product\.id\] &&/);
+  assert.match(s, /editingId === product\.id && details\[product\.id\] &&\s*\(\s*<AdminProductEditor/);
+  assert.match(s, /Düzenleyici yükleniyor/);
+  assert.match(s, /Yeniden dene/);
+  assert.match(s, /\[editingId, serverProducts\]/); // router.refresh sonrası (kayıt, renk ekleme/silme) yeniden çek
+  assert.match(s, /mergeImages\(product, details\[product\.id\]\)/);
+  assert.match(s, /rowCover\(product, details\[product\.id\]\)/);
+  assert.ok(!/coverImageOf/.test(s), "liste kapağı rowCover üzerinden");
 });

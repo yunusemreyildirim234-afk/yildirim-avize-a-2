@@ -22,7 +22,7 @@ import { smallImage } from "@/lib/img";
 import { QUICK_FILTER_LABELS, isQuickFilterKey, quickFilterTest, type QuickFilterKey } from "@/lib/admin-product-quick-filters";
 
 const NONE_KEY = "__kategorisiz__"; // "Kategorisiz (N)" çipi
-import { coverImageOf } from "@/lib/variation-input";
+import { mergeImages, rowCover, type ProductImagesDetail } from "@/lib/admin-product-list";
 
 interface Variation {
   id: string;
@@ -205,10 +205,40 @@ export default function AdminProductList({ products: serverProducts, maxTotalDis
   // Açık düzenleyicide kaydedilmemiş değişiklik var mı (kapatırken onay; Geri Al çubuğu kayıt çubuğunun üstüne taşınır)
   const [editorDirty, setEditorDirty] = useState(false);
   const [deleteAsk, setDeleteAsk] = useState<{ id: string; title: string } | null>(null); // "Modeli Sil" sayfa içi onayı
+  // Liste dar veriyle gelir (görsel dizileri yok): düzenleyici açılınca tek ürünün TAM görselleri GET /api/admin/product?fields=images ile çekilir.
+  // Düzenleyici bu veri gelmeden bağlanmaz; kayıt ve renk ekleme/silme sonrası sessizce yeniden çekilir.
+  const [details, setDetails] = useState<Record<string, ProductImagesDetail>>({});
+  const [detailError, setDetailError] = useState<string | null>(null);
+  const editingRef = useRef<string | null>(null);
+  const loadedRef = useRef(false); // açık düzenleyici için en az bir kez tam veri geldi mi
+  const loadDetail = async (id: string) => {
+    setDetailError(null);
+    try {
+      const res = await fetch(`/api/admin/product?productId=${encodeURIComponent(id)}&fields=images`, { cache: "no-store" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Görseller yüklenemedi.");
+      if (editingRef.current !== id) return; // düzenleyici arada kapandı/başka ürüne geçildi
+      loadedRef.current = true;
+      setDetails((d) => ({ ...d, [id]: { imageUrl: data.imageUrl ?? null, images: data.images ?? [], variations: data.variations ?? [] } }));
+    } catch (e) {
+      // Daha önce yüklenmiş veri varsa o korunur (sessiz yenileme hatası açık düzenleyiciyi bozmaz)
+      if (editingRef.current === id && !loadedRef.current) setDetailError((e as Error).message || "Görseller yüklenemedi.");
+    }
+  };
   const toggleEdit = (id: string) => {
     if (editingId && editorDirty && !confirm("Düzenleyicide kaydedilmemiş değişiklikler var. Kapatılırsa kaybolur. Devam edilsin mi?")) return;
-    setEditingId((cur) => (cur === id ? null : id));
+    const next = editingId === id ? null : id;
+    setDetails({}); // her açılışta taze görseller (eski açılıştan kalan veri düzenleyiciye girmez)
+    setDetailError(null);
+    editingRef.current = next;
+    loadedRef.current = false;
+    setEditingId(next);
   };
+  // Açılışta ve her sunucu yenilemesinden sonra (kayıt, renk ekleme/silme, ad düzenleme hepsi router.refresh çağırır) tam görseller yeniden çekilir
+  useEffect(() => {
+    if (editingId) void loadDetail(editingId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editingId, serverProducts]);
 
   // Tüm elle Öne Çıkan işaretlerini kaldırır (sunucu "zaten bu durumda" kontrolü ve Geri Al kaydı aynı yolu kullanır)
   const backToAuto = async () => {
@@ -581,8 +611,8 @@ Yine de geri alınsın mı?`)) break;
                 aria-label={`${product.title} sayfasını yeni sekmede aç`}
                 className="w-16 h-16 rounded-xl bg-neutral-200 overflow-hidden shrink-0 border border-neutral-200 block"
               >
-                {coverImageOf(product) ? (
-                  <img src={smallImage(coverImageOf(product)!)} alt={product.title} width={64} height={64} loading="lazy" decoding="async" className="w-full h-full object-cover" />
+                {rowCover(product, details[product.id]) ? (
+                  <img src={smallImage(rowCover(product, details[product.id])!)} alt={product.title} width={64} height={64} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-amber-400 text-xs font-serif"><Lightbulb aria-hidden="true" className="w-5 h-5" /></div>
                 )}
@@ -707,10 +737,24 @@ Yine de geri alınsın mı?`)) break;
             </div>
           </div>
           {descId === product.id && <AdminDescriptionEditor key={product.id} productId={product.id} title={product.title} />}
-          {editingId === product.id && (
+          {editingId === product.id && !details[product.id] && (
+            <div className="bg-neutral-50 border-t border-neutral-100 p-5 text-xs" role="status">
+              {detailError ? (
+                <p className="flex flex-wrap items-center gap-3 font-semibold text-red-800">
+                  <span role="alert">Görseller yüklenemedi: {detailError}</span>
+                  <button type="button" onClick={() => void loadDetail(product.id)} className="inline-flex min-h-10 items-center rounded-lg border border-neutral-300 bg-white px-3 font-semibold text-neutral-800 hover:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600">
+                    Yeniden dene
+                  </button>
+                </p>
+              ) : (
+                <p className="text-neutral-600">Düzenleyici yükleniyor…</p>
+              )}
+            </div>
+          )}
+          {editingId === product.id && details[product.id] && (
             <AdminProductEditor
               key={product.id} // veri değişince yeniden bağlanmaz: düzenleyici sunucu verisiyle kendi uzlaşır (kaydedilmemiş değişiklik kaybolmaz)
-              product={{ ...product, stocklessHidden: stocklessRule?.hiddenIds.includes(product.id) ?? false }}
+              product={{ ...mergeImages(product, details[product.id]), stocklessHidden: stocklessRule?.hiddenIds.includes(product.id) ?? false }}
               onDirtyChange={setEditorDirty}
               busyActive={loadingId === product.id}
               onSetActive={(makeActive) => setActive(product, makeActive)}

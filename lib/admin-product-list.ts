@@ -66,6 +66,3 @@ export function rowCover(product: { imageUrl?: string | null; variations: { id: 
   if (!detail) return product.imageUrl ?? null;
   return coverImageOf({ imageUrl: detail.imageUrl, images: detail.images, variations: product.variations.map((v) => ({ images: detail.variations.find((d) => d.id === v.id)?.images ?? [] })) });
 }
-
-/** Renk kimlikleri kümesi imzası: renk eklenince/silinince değişir (görseller yeniden çekilir). */
-export const variationSetSig = (variations: readonly { id: string }[]) => variations.map((v) => v.id).join(",");

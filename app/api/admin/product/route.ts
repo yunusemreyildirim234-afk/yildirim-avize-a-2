@@ -25,6 +25,15 @@ export async function GET(req: Request) {
   try {
     const productId = new URL(req.url).searchParams.get("productId") ?? "";
     if (!PRODUCT_ID_RE.test(productId)) return NextResponse.json({ error: "Geçersiz istek." }, { status: 400 });
+    // fields=images: düzenleyici açılınca tek ürünün TAM görselleri (liste dar select'le gelir; görsel dizileri listede yoktur)
+    if (new URL(req.url).searchParams.get("fields") === "images") {
+      const imgs = await prisma.product.findUnique({
+        where: { id: productId },
+        select: { imageUrl: true, images: true, variations: { select: { id: true, images: true }, orderBy: [{ position: "asc" }, { id: "asc" }] } },
+      });
+      if (!imgs) return NextResponse.json({ error: "Ürün bulunamadı." }, { status: 404 });
+      return NextResponse.json(imgs, { headers: { "Cache-Control": "no-store" } });
+    }
     const [product, config] = await Promise.all([
       prisma.product.findUnique({ where: { id: productId }, select: { description: true, syncSnapshot: true } }),
       prisma.siteConfig.findUnique({ where: { id: 1 }, select: { homepageConfig: true } }),
