@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { prisma } from "@/lib/db";
+import { getConfirmationOrder } from "@/lib/order-confirmation";
 import ClearCart from "@/components/ClearCart";
 import BankTransferCard from "@/components/BankTransferCard";
 import ReceiptUpload from "@/components/ReceiptUpload";
@@ -43,10 +43,7 @@ function ClosedNote({ id, returned }: { id: string; returned: boolean }) {
 
 export default async function OrderConfirmationPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const order = await prisma.order.findUnique({
-    where: { id },
-    include: { user: { select: { name: true, password: true } }, items: { include: { variation: { include: { product: { include: { variations: { orderBy: { position: "asc" }, select: { images: true } } } } } } } } },
-  });
+  const order = await getConfirmationOrder(id);
   if (!order) notFound();
 
   const canSeeDetails = canViewOrderDetails({ userId: order.userId, isGuest: order.user.password === "guest_checkout", createdAt: order.createdAt }, await getSessionUserId());
