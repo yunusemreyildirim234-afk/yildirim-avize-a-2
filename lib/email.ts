@@ -28,6 +28,7 @@ interface EmailOrderData {
 import { ADDRESS_LINE, ADMIN_EMAILS, BANK_INFO, PHONE_DISPLAY, SITE_URL } from "@/lib/site";
 import { orderCode, bankPaymentDeadline, breakdownOf, breakdownRows, deliveryAddressText, formatIstanbul, type BreakdownRow } from "@/lib/order-display";
 import { IADE_TALIMATI } from "@/lib/legal-texts";
+import { buildLegalSummaryHtml } from "@/lib/legal-email";
 import { adminOrderHref } from "@/lib/admin-order-detail";
 import { recipientDiffers } from "@/lib/recipient";
 import { buildQuestionReceivedHtml } from "@/lib/contact-confirm";
@@ -220,6 +221,8 @@ export async function sendOrderNotificationEmails(data: EmailOrderData) {
       ${bankBlock}
 
       ${kargonomiBlock}
+
+      ${buildLegalSummaryHtml(SITE_URL)}
 
       <p style="color: #737373; font-size: 12px; line-height: 1.5; text-align: center;">
         Avizeniz hazırlandığında veya kargoya verildiğinde tarafınıza tekrar bilgilendirme yapılacaktır.
