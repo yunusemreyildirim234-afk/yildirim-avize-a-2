@@ -3,9 +3,8 @@ import { cache } from "react";
 import Link from "next/link";
 import { notFound, permanentRedirect, redirect } from "next/navigation";
 import Breadcrumbs from "@/components/Breadcrumbs";
-import { prisma } from "@/lib/db";
 import ProductListing from "@/components/ProductListing";
-import { DISCOUNTED, FEATURED, getBestSellers, getProductsCached } from "@/lib/products";
+import { DISCOUNTED, FEATURED, getBestSellersCached, getProductsCached, hasFlaggedFeatured } from "@/lib/products";
 import { coverImageOf } from "@/lib/variation-input";
 import { getListing } from "@/lib/listing";
 import { isDefaultState, parseListingParams } from "@/lib/listing-core";
@@ -35,8 +34,8 @@ const resolve = cache(async (slug: string) => {
   if (slug === "tum") return { ...COLLECTIONS.tum, where: {} };
   if (slug === "one-cikanlar") {
     // Yönetici işaretlileri varsa yalnızca onlar; yoksa otomatik seçim
-    const flagged = await prisma.product.count({ where: { active: true, isFeatured: true } });
-    return { ...COLLECTIONS["one-cikanlar"], where: flagged > 0 ? { active: true, isFeatured: true } : { active: true, ...FEATURED } };
+    const flagged = await hasFlaggedFeatured();
+    return { ...COLLECTIONS["one-cikanlar"], where: flagged ? { active: true, isFeatured: true } : { active: true, ...FEATURED } };
   }
   if (slug === "cok-satanlar") return { ...COLLECTIONS["cok-satanlar"], where: null };
   if (slug === "indirimli") return { ...COLLECTIONS.indirimli, where: { active: true, ...DISCOUNTED } };
@@ -98,7 +97,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
 
   // Ortak liste katmanı (lib/listing.ts): sıralama + filtre + facet; Çok Satanlar listesi (48, kendi mantığı) hazır ürünlerle beslenir
   const path = `/kategori/${slug}`;
-  const all = current.where ? null : await getBestSellers(48);
+  const all = current.where ? null : await getBestSellersCached(48);
   const listing = await getListing(all ? { products: all } : { where: current.where!, cached: true }, query);
   const { total } = listing;
   const fix = canonicalListing(query, total);

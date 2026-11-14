@@ -6,6 +6,7 @@ import { productsCacheKey, storefrontTags } from "@/lib/storefront-cache-key";
 import { SHOWCASE_ORDER_BY } from "@/lib/showcase-order";
 import { resolveHiddenBestSellers } from "@/lib/homepage-compose";
 import { getVisibleWhere } from "@/lib/visibility";
+import { STOREFRONT_CACHE_VERSION } from "@/lib/storefront-cache-key";
 
 /**
  * Kart/liste için gereken alanlar (ProductCard, priceLadder, bulkTiersOf, ana sayfa havuzları).
@@ -159,6 +160,18 @@ export async function getHiddenBestSellerIds(): Promise<string[]> {
     return [];
   }
 }
+
+/** Çok Satanlar sayfası için 300 sn veri önbelleği ("storefront" etiketi: yönetici işlemleri sıfırlar). Sıralama/içerik getBestSellers ile aynı; yönetici ucu önbelleksiz getBestSellers kullanmaya devam eder. Boş sonuç yazılmaz. */
+export const BEST_SELLERS_PAGE_CACHE_SECONDS = 300;
+export const getBestSellersCached = (take: number) =>
+  cacheNonEmpty(["sf-best-sellers", STOREFRONT_CACHE_VERSION, String(take)], ["storefront"], () => getBestSellers(take), BEST_SELLERS_PAGE_CACHE_SECONDS);
+
+/** /kategori/one-cikanlar: yönetici işaretli öne çıkan ürün var mı (300 sn önbellek, "storefront" etiketi). */
+export const hasFlaggedFeatured = unstable_cache(
+  async (): Promise<boolean> => (await prisma.product.count({ where: { active: true, isFeatured: true } })) > 0,
+  ["sf-featured-flagged"],
+  { revalidate: BEST_SELLERS_PAGE_CACHE_SECONDS, tags: ["storefront"] }
+);
 
 /**
  * Çok Satanlar: yönetici işaretlileri önce; eksik kalırsa en çok sipariş edilen aktif ürünlerle, o da yetmezse güncel ürünlerle tamamlanır.
