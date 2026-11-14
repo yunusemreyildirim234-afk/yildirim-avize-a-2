@@ -10,7 +10,7 @@ import { getSessionUserId } from "@/lib/account";
 import { planPendingSwap, releaseStaleReservations, type PendingSwap } from "@/lib/orders";
 import { shouldPlanSwapForQuote, stockWithHeld } from "@/lib/order-swap";
 import { priceLadder } from "@/lib/price-ladder";
-import { getLadderContext } from "@/lib/showcase";
+import { getLadderContextFresh } from "@/lib/showcase";
 import { couponDiscountLabel } from "@/lib/coupon-label";
 
 const COUPON_GENERIC_ERROR = "Geçersiz veya süresi dolmuş kupon kodu.";
@@ -109,7 +109,7 @@ export async function POST(req: Request) {
   }
 
   // Sepet satırı fiyat merdiveni (yalnızca gösterim); vitrin kuponu + üst sınır istek başına bir kez okunur
-  const ladderCtx = await getLadderContext().catch(() => null);
+  const ladderCtx = await getLadderContextFresh().catch(() => null);
   const lines = [
     ...priced.lines.map((l, i) => ({
       variationId: l.variationId,
