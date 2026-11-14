@@ -146,6 +146,10 @@ export default function AdminTrendyolSync({
     let msg = `${count} ürün Trendyol'a göre güncellenecek.${everything ? ` Listede gösterilmeyen ${preview.listelenmeyen} ürün de dahil (toplam ${preview.toplamUrun}).` : ""}`;
     if (hasOverwrite) msg += `\n\nBu işlem elle yaptığınız değişiklikleri ezer; Geri Al yoktur.\nEzilecek: ${st.fields} alan, ${st.products} ürün (yalnızca listelenenler).`;
     else msg += "\n\nGeri Al yoktur.";
+    if (everything && hasOverwrite) {
+      const gruplar = overwriteGroups(settings).map((g) => ROWS.find((r) => r.group === g)?.label.split(" (")[0].toLowerCase()).join(", ");
+      msg += `\n\nListede görünmeyen ${preview.listelenmeyen} üründe de şunlar Trendyol'daki değerle ezilecek ve bunlar önizlemede gösterilmedi: ${gruplar}.`;
+    }
     const pendingCount = preview.urunler.filter((u) => checked.has(u.mainId)).reduce((n, u) => n + u.variations.filter((v) => (preview.bekleyen?.[v.barcode] ?? 0) > 0).length, 0);
     if (pendingCount > 0) msg += `\n\nUyarı: ${pendingCount} varyasyonda sitede bekleyen sipariş var. Bu satışların Trendyol'da düşüldüğünden emin olun; aksi halde stok eski sayıya dönebilir.`;
     if (!window.confirm(msg)) return;
