@@ -11,6 +11,8 @@ const eslintConfig = defineConfig([
     ".next/**",
     "e2e/**",
     "tools/**",
+    // İzlenmeyen çıktı klasörü (git'te yok)
+    "cikti/**",
     "out/**",
     "build/**",
     "next-env.d.ts",

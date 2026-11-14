@@ -236,8 +236,8 @@ export default function AdminProductList({ products: serverProducts, maxTotalDis
   };
   // Açılışta ve her sunucu yenilemesinden sonra (kayıt, renk ekleme/silme, ad düzenleme hepsi router.refresh çağırır) tam görseller yeniden çekilir
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (editingId) void loadDetail(editingId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editingId, serverProducts]);
 
   // Tüm elle Öne Çıkan işaretlerini kaldırır (sunucu "zaten bu durumda" kontrolü ve Geri Al kaydı aynı yolu kullanır)

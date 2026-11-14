@@ -76,7 +76,9 @@ export default function NotificationBell() {
   const isAdminScope = scopeQs.endsWith("admin");
   const known = useRef<NotificationSummary | null>(null);
   const openRef = useRef(false);
-  openRef.current = open;
+  useEffect(() => {
+    openRef.current = open;
+  }, [open]);
 
   useEffect(() => {
     return subscribeSummary(
