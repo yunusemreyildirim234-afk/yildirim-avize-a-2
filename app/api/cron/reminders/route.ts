@@ -13,6 +13,7 @@ import { ABANDONED_CARD_MINUTES, BANK_ORDER_HOLD_HOURS, shouldCancelUnpaidBank, 
 import { couponValueLabel, loadShowcaseCoupon } from "@/lib/showcase";
 import { revalidateStorefrontSafe } from "@/lib/revalidate";
 import { runDailyCleanup } from "@/lib/cleanup-rules";
+import { purgeExpiredAddressBooks } from "@/lib/address-retention";
 
 const HOUR = 60 * 60 * 1000;
 
@@ -31,6 +32,15 @@ export async function GET(req: Request) {
     cleanup = { codes: 0, notifications: 0, errors: [(err as Error).message] };
   }
   if (cleanup.errors.length) console.error("[cron] temizlik:", cleanup.errors.join("; "));
+
+  // 0b) Adres defteri saklama süresi (3 yıl): ayrı try/catch; hata diğer adımları durdurmaz. Günlüğe yalnız silinen adres SAYISI yazılır.
+  let addressesPurged = 0;
+  try {
+    addressesPurged = await purgeExpiredAddressBooks(prisma);
+    console.log(`[cron] adres defteri: ${addressesPurged} adres silindi`);
+  } catch (err) {
+    console.error("[cron] adres defteri:", (err as Error).message);
+  }
 
   const now = Date.now();
   let abandoned = 0;
@@ -134,5 +144,5 @@ export async function GET(req: Request) {
   // Stok iade edildiyse (terk edilmiş kartlı ödeme, süpürme, havale iptali) vitrin önbelleği hemen sona erer ("storefront" etiketi, expire: 0); en iyi çaba
   if (closed > 0 || bankCancelled > 0 || stuck.length > 0) revalidateStorefrontSafe();
 
-  return NextResponse.json({ success: true, abandoned, receipts, closed, bankCancelled, cleanup });
+  return NextResponse.json({ success: true, abandoned, receipts, closed, bankCancelled, cleanup, addressesPurged });
 }

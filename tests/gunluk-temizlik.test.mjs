@@ -82,7 +82,7 @@ test("temizlik reminders ucunun içinde: yetki denetiminden sonra, kendi try/cat
   const route = readFileSync(new URL("../app/api/cron/reminders/route.ts", import.meta.url), "utf8");
   assert.ok(route.indexOf("status: 401") < route.indexOf("runDailyCleanup(prisma)"), "yetki önce");
   assert.match(route, /try \{\s*cleanup = await runDailyCleanup\(prisma\);\s*\} catch/);
-  assert.match(route, /abandoned, receipts, closed, bankCancelled, cleanup \}/);
+  assert.match(route, /abandoned, receipts, closed, bankCancelled, cleanup, addressesPurged \}/);
   assert.ok(route.indexOf("runDailyCleanup(prisma)") < route.indexOf("abandonedEmailSent: false"), "hatırlatma hatası temizliği engellemez");
   assert.throws(() => readFileSync(new URL("../app/api/cron/cleanup/route.ts", import.meta.url)), /ENOENT/);
   const cfg = JSON.parse(readFileSync(new URL("../vercel.json", import.meta.url), "utf8"));
