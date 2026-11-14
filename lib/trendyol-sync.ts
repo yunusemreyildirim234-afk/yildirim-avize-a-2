@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { prisma } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { buildIncoming, fetchTrendyolProducts } from "@/lib/trendyol";
+import { assertIncomingSane } from "@/lib/trendyol-guard";
 import { applyImageMaps } from "@/lib/image-map";
 import { GROUPS, planSync, seciliPlan, type ExistingProduct, type Mode, type Plan, type ProductPlan, type Settings } from "@/lib/trendyol-plan";
 
@@ -30,6 +31,8 @@ export async function buildPlan(ayarlar: Settings): Promise<Plan> {
       variations: { select: { id: true, barcode: true, variationValue: true, extraPrice: true, stock: true, stockCode: true, salePrice: true, listPrice: true, syncStock: true, syncSnapshot: true } },
     },
   });
+  // Eksik/boş Trendyol listesi (ör. bozuk yanıt) asla "kalkan ürün" gibi işlenmez: önce akıl sağlığı denetimi
+  assertIncomingSane(gelen.length, rows.length);
   // Blob'a kopyalanmış görseller: Trendyol adresleri ürünün imageMap'iyle çevrilir (kopyalar geri ezilmez)
   const { incoming, existing: mevcut } = applyImageMaps(gelen, rows as unknown as ExistingProduct[]);
   const reserved = await prisma.orderItem.groupBy({

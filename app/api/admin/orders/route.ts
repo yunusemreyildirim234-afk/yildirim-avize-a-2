@@ -5,7 +5,7 @@ import { withStorefrontRevalidate } from "@/lib/revalidate";
 import { serverError } from "@/lib/api-error";
 import { planStatusChange } from "@/lib/order-undo";
 import { restoreStockInTx, type RestoreTx } from "@/lib/stock-restore";
-import { DELETE_GUARD_HOURS, isPaymentInFlight } from "@/lib/stock-rules";
+import { DELETE_GUARD_HOURS, isOrderDeletable, isPaymentInFlight } from "@/lib/stock-rules";
 import { orderNotificationLink } from "@/lib/order-display";
 import { checkDeleteCount } from "@/lib/bulk-delete";
 
@@ -35,6 +35,14 @@ async function DELETEHandler(req: Request) {
     if (inFlight.length > 0) {
       return NextResponse.json(
         { error: `Silinemedi: ${inFlight.map((o) => `#${o.id.slice(0, 8)}`).join(", ")} son ${DELETE_GUARD_HOURS} saat içinde oluşturulmuş ve hâlâ ödeme bekliyor; müşteri ödeme sayfasında olabilir. Önce durumu "İptal" veya "Ödeme başarısız" yapın ya da sürenin dolmasını bekleyin. Hiçbir sipariş silinmedi.` },
+        { status: 409 },
+      );
+    }
+    // Yalnız ödeme başarısız, iptal ve süresi geçmiş ödeme bekleyen siparişler silinir; ödenmiş/işlemdeki/teslim edilmiş sipariş kalıcı silinemez
+    const blocked = existing.filter((o) => !isOrderDeletable(o, Date.now()));
+    if (blocked.length > 0) {
+      return NextResponse.json(
+        { error: `Silinemedi: ${blocked.map((o) => `#${o.id.slice(0, 8)}`).join(", ")} silinebilir durumda değil. Yalnızca "Ödeme başarısız", "İptal" ve süresi geçmiş "Ödeme bekliyor" siparişler silinebilir; ödenmiş, hazırlanan, kargodaki veya teslim edilmiş siparişler muhasebe kaydı olarak saklanır. Hiçbir sipariş silinmedi.` },
         { status: 409 },
       );
     }

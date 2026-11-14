@@ -12,6 +12,9 @@ export const COMPANY_DEFAULTS = {
   etbisUrl: "https://www.eticaret.gov.tr" as string | null,
 };
 
+/** Kurumsal unvan alanı (yönetim paneli) boşsa kullanılan yedek. */
+export const BRAND_FALLBACK_TITLE = "Yıldırım Avize";
+
 export type CompanyInfo = typeof COMPANY_DEFAULTS;
 export const COMPANY_TAG = "site-config";
 
@@ -48,7 +51,7 @@ const isReal = (v: string, placeholder: string) => Boolean(v.trim()) && v.trim()
 /** Yasal metinlerde gösterilecek kurumsal bilgiler; fabrika yer tutucuları (MERSİS/KEP örnekleri) boş döner. */
 export function toPublicCompany(c: CompanyInfo): PublicCompany {
   return {
-    title: c.companyTitle,
+    title: c.companyTitle.trim() || BRAND_FALLBACK_TITLE, // unvan alanı boşsa marka adı yedeği
     taxOffice: c.taxOffice,
     taxNumber: c.taxNumber,
     mersis: isReal(c.mersisNo, COMPANY_DEFAULTS.mersisNo) ? c.mersisNo : "",

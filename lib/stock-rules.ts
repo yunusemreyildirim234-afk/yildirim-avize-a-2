@@ -50,3 +50,9 @@ export function reservationExpiresAt(createdAt: Date): Date {
 export function isStaleReservation(createdAt: Date, now: number): boolean {
   return createdAt.getTime() < now - RESERVATION_RELEASE_MINUTES * 60_000;
 }
+
+/** Yönetici toplu silmede silinebilen sipariş: yalnız ödeme başarısız, iptal ve süresi geçmiş (DELETE_GUARD_HOURS) ödeme bekleyen. Ödenmiş/işlemdeki/teslim edilmiş sipariş kalıcı silinmez. */
+export function isOrderDeletable(o: { status: string; createdAt: Date }, now: number): boolean {
+  if (o.status === "PAYMENT_FAILED" || o.status === "CANCELLED") return true;
+  return o.status === "AWAITING_PAYMENT" && !isPaymentInFlight(o, now);
+}

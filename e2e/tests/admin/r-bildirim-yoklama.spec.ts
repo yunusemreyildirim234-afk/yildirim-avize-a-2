@@ -3,7 +3,7 @@ import { test, expect, openOk } from "../../fixtures";
 // Zil bileşeni müşteri ucunu (/api/notifications) yoklar; yönetici oturumunda da aynı bileşen görünür.
 // Ağ taslaklanır (veritabanına gitmez), sayaç yalnızca GET isteklerini sayar. Sekme gizliliği document.hidden ile taklit edilir, 30 sn'lik aralık sahte saatle ilerletilir.
 test.describe("Bildirim yoklaması sekme görünürlüğü", () => {
-  test("sekme gizliyken istek gitmez; görünür olunca hemen bir kez gider ve yoklama sürer", async ({ page }) => {
+  test("sekme gizliyken istek gitmez; görünür olunca bir kez gider; zamanlayıcı yoktur", async ({ page }) => {
     let hits = 0;
     await page.route("**/api/notifications", (route) => {
       if (route.request().method() !== "GET") return route.continue();
@@ -33,7 +33,7 @@ test.describe("Bildirim yoklaması sekme görünürlüğü", () => {
     await setHidden(false);
     await expect.poll(() => hits, "görünür olunca hemen yenilenmeli").toBe(2);
 
-    await page.clock.runFor(31_000);
-    await expect.poll(() => hits, "yoklama devam etmeli").toBe(3);
+    await page.clock.runFor(120_000);
+    expect(hits, "zamanlayıcı kaldırıldı: süre geçince ek istek gitmemeli").toBe(2);
   });
 });

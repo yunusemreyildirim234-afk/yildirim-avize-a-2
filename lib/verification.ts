@@ -1,12 +1,12 @@
 import { randomInt } from "node:crypto";
 import { prisma } from "@/lib/db";
+import { MAX_ATTEMPTS, consumeWith, type CodeStore } from "@/lib/code-consume";
 import { signSession, verifySession } from "@/lib/session";
 
 export type CodeType = "REGISTER" | "RESET_PASSWORD" | "CHANGE_PASSWORD" | "TWO_FACTOR_ENABLE" | "TWO_FACTOR_DISABLE" | "TWO_FACTOR_LOGIN" | "ADMIN_LOGIN" | "ADMIN_PASSWORD";
 
 export const CODE_TTL_MS = 10 * 60 * 1000;
 export const RESEND_WAIT_SECONDS = 60;
-const MAX_ATTEMPTS = 5;
 
 export const clientIp = (req: Request) => {
   const raw = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "";
@@ -33,21 +33,25 @@ export async function createCode(email: string, type: CodeType, ip: string | nul
   return code;
 }
 
-/** Kod doğru, süresi dolmamış ve kullanılmamışsa used=true yapar. Çok sayıda yanlış denemede kodu iptal eder. */
-export async function consumeCode(email: string, type: CodeType, code: string): Promise<boolean> {
-  const active = await prisma.verificationCode.findFirst({
-    where: { email, type, used: false, expiresAt: { gt: new Date() } },
-    orderBy: { createdAt: "desc" },
-  });
-  if (!active) return false;
-  if (active.code !== code.trim()) {
-    const attempts = active.attempts + 1;
-    await prisma.verificationCode.update({ where: { id: active.id }, data: { attempts, used: attempts >= MAX_ATTEMPTS } });
-    return false;
-  }
-  const claimed = await prisma.verificationCode.updateMany({ where: { id: active.id, used: false }, data: { used: true } });
-  return claimed.count > 0;
-}
+const dbStore: CodeStore = {
+  findActive: (email, type) =>
+    prisma.verificationCode.findFirst({
+      where: { email, type, used: false, expiresAt: { gt: new Date() } },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, code: true },
+    }),
+  recentAttempts: async (email, since) => {
+    const r = await prisma.verificationCode.aggregate({ where: { email, createdAt: { gt: since } }, _sum: { attempts: true } });
+    return r._sum.attempts ?? 0;
+  },
+  recordWrong: async (id) => {
+    await prisma.$executeRaw`UPDATE "VerificationCode" SET "attempts" = "attempts" + 1, "used" = ("attempts" + 1 >= ${MAX_ATTEMPTS}) WHERE "id" = ${id} AND "used" = false`;
+  },
+  claim: async (id) => (await prisma.verificationCode.updateMany({ where: { id, used: false }, data: { used: true } })).count > 0,
+};
+
+/** Kod doğru, süresi dolmamış ve kullanılmamışsa used=true yapar (kurallar: lib/code-consume.ts). */
+export const consumeCode = (email: string, type: CodeType, code: string): Promise<boolean> => consumeWith(dbStore, email, type, code);
 
 // Doğrulanmış kod kanıtı (sonraki adımda şifre belirlemek için) ve 2FA bekleyen giriş jetonu: 10 dk geçerli
 interface Proof {

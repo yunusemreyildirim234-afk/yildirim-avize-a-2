@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { rateLimit, tooMany } from "@/lib/rate-limit";
 import { getSessionUserId } from "@/lib/account";
 import { sendNewMessageEmail, sendQuestionReceivedEmail } from "@/lib/email";
+import { CONTACT_CONFIRM_DAILY_LIMIT } from "@/lib/contact-confirm";
 import { notifyAdmins } from "@/lib/notifications";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -70,9 +71,11 @@ export async function POST(req: Request) {
       message,
       productTitle: product?.title,
     }).catch(() => false);
-    await sendQuestionReceivedEmail({ to: email, name, question: message, productTitle: product?.title }).catch((err) =>
-      console.error("[email] Müşteri onay maili hatası:", err)
-    );
+    // Aynı adrese günde en çok CONTACT_CONFIRM_DAILY_LIMIT onay e-postası (kayıtlı mesajlardan sayılır; başkasının adresine yağdırma engellenir)
+    const sentToday = await prisma.contactMessage.count({ where: { email, createdAt: { gt: new Date(Date.now() - 24 * 3_600_000) } } });
+    if (sentToday <= CONTACT_CONFIRM_DAILY_LIMIT) {
+      await sendQuestionReceivedEmail({ to: email, productTitle: product?.title }).catch((err) => console.error("[email] Müşteri onay maili hatası:", err));
+    }
     if (!emailed) console.warn("Yönetici bildirim e-postası gönderilemedi (mesaj:", saved.id, ")");
 
     return NextResponse.json({

@@ -7,6 +7,7 @@ import { rateLimit, tooMany } from "@/lib/rate-limit";
 import { applyPlan, buildPlan, parseSettings } from "@/lib/trendyol-sync";
 import { onizleme } from "@/lib/trendyol-plan";
 import { prisma } from "@/lib/db";
+import { TrendyolGuardError } from "@/lib/trendyol-guard";
 import { isDefaultModes, parseModesStrict } from "@/lib/trendyol-modes";
 
 // Vercel Hobby (Fluid Compute) üst sınırı 300 sn; Trendyol sayfalama + toplu yazma bu sınıra sığdırılır.
@@ -20,7 +21,10 @@ export async function POST(req: Request) {
   const rl = rateLimit(req, "admin-trendyol-sync", 5, 60_000);
   if (rl.limited) return tooMany(rl.retryAfter);
   const body = await req.json().catch(() => ({}));
-  const ayarlar = parseSettings(body.ayarlar);
+  // Uygulamada ayarlar tam ve geçerli olmak zorunda: eksik grup sessizce "Koruyarak" sayılmaz. Önizleme eksik ayarla yalnız bilgi verir.
+  const strict = parseModesStrict(body.ayarlar);
+  if (body.dryRun === false && !strict) return NextResponse.json({ error: "Eşitleme ayarları eksik veya geçersiz; hiçbir şey uygulanmadı. Sayfayı yenileyip ayarları yeniden seçin." }, { status: 400 });
+  const ayarlar = strict ?? parseSettings(body.ayarlar);
   const secili = Array.isArray(body.seciliUrunler) ? body.seciliUrunler.filter((x: unknown): x is string => typeof x === "string") : undefined;
   try {
     const plan = await buildPlan(ayarlar);
@@ -29,6 +33,7 @@ export async function POST(req: Request) {
     revalidateStorefront(); // vitrin yalnızca gerçek uygulamadan sonra yenilenir (önizleme yazmaz, önbelleği sıfırlamaz)
     return NextResponse.json({ success: true, dryRun: false, sonuc, sayac: plan.sayac });
   } catch (error) {
+    if (error instanceof TrendyolGuardError) return NextResponse.json({ error: error.message }, { status: 422 });
     return serverError("admin/trendyol/sync", error, error instanceof TrendyolTimeoutError ? error.message : "Trendyol senkronizasyonu başarısız oldu. Lütfen tekrar deneyin.", 502);
   }
 }
