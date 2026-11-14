@@ -1,5 +1,6 @@
 import Link from "next/link";
 import CompanyInfo from "@/components/CompanyInfo";
+import FooterMap from "@/components/FooterMap";
 import { ADDRESS_LINE, CATEGORIES, MAP_EMBED_SRC, MAP_LINK, PHONE_DISPLAY, PHONE_TEL } from "@/lib/site";
 
 const MAP_SRC = MAP_EMBED_SRC;
@@ -36,12 +37,7 @@ export default function Footer({ extraCategories = [], fixedOverrides = {}, show
               🕒 Hafta İçi (Pzt - Cuma): 09:00 - 18:00 | Hafta Sonu: Kapalı
             </p>
           </address>
-          <iframe
-            title="Yıldırım Avize Beyoğlu Şişhane mağaza konumu - Google Harita"
-            src={MAP_SRC}
-            loading="lazy"
-            className="w-full h-48 rounded-2xl border border-zinc-800 grayscale-[40%] hover:grayscale-0 transition"
-          />
+          <FooterMap title="Yıldırım Avize Beyoğlu Şişhane mağaza konumu - Google Harita" src={MAP_SRC} />
           <a
             href={DIRECTIONS}
             target="_blank"
@@ -119,7 +115,7 @@ export default function Footer({ extraCategories = [], fixedOverrides = {}, show
       <CompanyInfo variant="dark" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-20 sm:pb-6 md:pr-24 flex flex-col md:flex-row items-center justify-between text-[11px] text-neutral-400 gap-4">
-        <p>© 2026 Yıldırım Avize. Tüm hakları saklıdır.</p>
+        <p>© {new Date().getFullYear()} Yıldırım Avize. Tüm hakları saklıdır.</p>
         <nav aria-label="Yasal bağlantılar" className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
           <Link href="/gizlilik-politikasi" className="inline-block py-1 hover:text-neutral-200">
             Gizlilik Politikası
