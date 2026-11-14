@@ -7,7 +7,8 @@ import BankTransferCard from "@/components/BankTransferCard";
 import ReceiptUpload from "@/components/ReceiptUpload";
 import { maskName } from "@/lib/mask-name";
 import { recipientOf } from "@/lib/recipient";
-import { GtmAwaitPayment, GtmEvent } from "@/components/GtmEvent";
+import { GtmEvent } from "@/components/GtmEvent";
+import AwaitPaymentRefresh from "@/components/AwaitPaymentRefresh";
 import { gaItem, isPurchasable, purchaseEvent, purchaseOnceKey } from "@/lib/gtm-events";
 import { feedBrand } from "@/lib/feed";
 import { coverImageOf } from "@/lib/variation-input";
@@ -109,7 +110,7 @@ export default async function OrderConfirmationPage({ params }: { params: Promis
   return (
     <main className="min-h-screen bg-neutral-50 py-12 sm:py-16 px-4">
       {purchase && <GtmEvent event={purchase} onceKey={purchaseOnceKey(order.id)} />}
-      {awaitingPayment && <GtmAwaitPayment />}
+      {awaitingPayment && <AwaitPaymentRefresh />}
       {!paymentFailed && order.status !== "CANCELLED" && order.status !== "RETURNED" && <ClearCart orderId={order.id} createdAt={order.createdAt.toISOString()} />}
       <div data-testid="tam-gorunum" className="max-w-xl mx-auto bg-white rounded-3xl border border-neutral-200 p-6 sm:p-12 text-center space-y-6 shadow-sm">
         <div
