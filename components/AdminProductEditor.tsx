@@ -293,7 +293,7 @@ export default function AdminProductEditor({ product, onSaved, onDirtyChange, on
         </label>
         <label className="space-y-1">
           <span className="font-semibold text-neutral-700">Fiyat (₺)</span>
-          <input type="number" min={0} value={basePrice} onChange={(e) => setBasePrice(e.target.value)} className={`${field} w-full`} />
+          <input type="number" min={1} value={basePrice} onChange={(e) => setBasePrice(e.target.value)} className={`${field} w-full`} />
         </label>
         <label className="space-y-1">
           <span className="font-semibold text-neutral-700">Model kodu</span>

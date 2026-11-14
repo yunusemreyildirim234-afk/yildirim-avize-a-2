@@ -1,5 +1,6 @@
 // Hızlı ürün girişi: renk/varyasyon ve fotoğraf girdisi için SAF sunucu doğrulaması (içe aktarma yok; istemciye güvenilmez).
-import { parseSize, secenekColorName, titleTr, variationAttrs, type VariationAttrs } from "./listing-core.ts";
+import { MAX_PRICE } from "./price-input.ts";
+import { parseSize,secenekColorName, titleTr, variationAttrs, type VariationAttrs } from "./listing-core.ts";
 
 export const MAX_PRODUCT_IMAGES = 10;
 export const MAX_VARIATION_IMAGES = 5;
@@ -8,7 +9,7 @@ export const MAX_EDIT_IMAGES = 30;
 export const MAX_VARIATIONS = 30;
 export const MAX_COLOR_LEN = 60;
 export const MAX_STOCK = 99999;
-export const MAX_EXTRA_PRICE = 1_000_000;
+export const MAX_EXTRA_PRICE = MAX_PRICE;
 export const UPLOADED_IMAGE_PREFIX = "/api/product-images/";
 
 const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";

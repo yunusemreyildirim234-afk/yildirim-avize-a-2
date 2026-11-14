@@ -10,12 +10,14 @@ import { bulkTiersOf, upsertTier } from "@/lib/bulk-pricing";
 import { FEATURED, getBestSellers } from "@/lib/products";
 import { nextPosition } from "@/lib/variation-input";
 import { STOCK_CHANGED_ERROR, StockConflict, applyStockEdits, planBulkStockSet } from "@/lib/stock-edit";
-import { planActive, planAddVariation, planBestSeller, planCategory, planFeatured } from "@/lib/bulk-plan";
+import { EXTRA_PRICE_ERROR, discountedPrice, validExtraPrice, validPrice } from "@/lib/price-input";
+import { planActive,planAddVariation, planBestSeller, planCategory, planFeatured } from "@/lib/bulk-plan";
 
 interface Plan {
   targets: string[]; // gerçekten değişecek ürünler
   markFirst: string[]; // önce isFeatured=true yapılacaklar (otomatik Öne Çıkanlar kümesini elle işarete çevirir)
   info?: { auto: boolean; before: number; after: number; revertsToAuto: boolean };
+  zeroed?: number; // toplu indirimde sonucu 0 TL veya altına inecek için atlanan ürün sayısı
 }
 
 /**
@@ -61,12 +63,19 @@ async function planBulk(body: Record<string, unknown>, selected: string[]): Prom
       const mode = body.mode === "FIXED" ? "FIXED" : body.mode === "PERCENT" ? "PERCENT" : null;
       const value = Number(body.value);
       if (!mode || !Number.isFinite(value) || value <= 0 || (mode === "PERCENT" && value >= 100)) return all;
-      return keep((p) => {
+      let zeroed = 0;
+      const kept = keep((p) => {
         const original = p.listPrice && p.listPrice > p.basePrice ? p.listPrice : p.basePrice;
-        const next = round2(Math.max(0, mode === "PERCENT" ? original * (1 - value / 100) : original - value));
+        const next = discountedPrice(original, mode, value);
+        // İndirim sonucu 0 TL veya altı: ürün atlanır (fiyatı 0 olan ürün satılamaz)
+        if (!validPrice(next)) {
+          if (next <= 0) zeroed++;
+          return false;
+        }
         // Aynı indirim zaten uygulanmışsa (fiyat ve eski fiyat aynı) veya indirim fiyatı düşürmüyorsa atlanır
         return next < original && !(p.basePrice === next && p.listPrice === original);
       });
+      return { ...kept, zeroed };
     }
     case "tier": {
       const minQty = Math.floor(Number(body.minQty));
@@ -132,14 +141,15 @@ async function POSTHandler(req: Request) {
   // "Zaten bu durumda" kontrolü (sunucu asıl güvenilir olandır)
   const plan = await planBulk(body, selected);
   const ids = plan.targets;
-  const skipped = selected.length - ids.length;
+  const zeroed = plan.zeroed ?? 0;
+  const skipped = selected.length - ids.length - zeroed; // "zaten bu durumda" olanlar; 0 TL'ye inenler ayrı sayılır (zeroed)
   // Vitrine/indirime giren ama PASİF olan ürünler sitede (getProducts: active=true) görünmez; işlem engellenmez, yalnızca uyarılır
   const exposes = body.action === "discount" || body.action === "tier" || (body.action === "showcase" && body.value === true);
   const hidden = exposes && ids.length ? await prisma.product.count({ where: { id: { in: ids }, active: false } }) : 0;
   // Aktif yaparken: toplam stoğu 0 olanlar "Tükendi" görünür (onay metni için sayı)
   const soldOut = body.action === "active" && body.value === true && ids.length ? await prisma.product.count({ where: { id: { in: ids }, variations: { none: { stock: { gt: 0 } } } } }) : 0;
-  if (body.dryRun === true) return NextResponse.json({ dryRun: true, selected: selected.length, apply: ids.length, skipped, hidden, soldOut, showcase: plan.info ?? null });
-  if (ids.length === 0) return NextResponse.json({ success: true, updated: ids.length, skipped });
+  if (body.dryRun === true) return NextResponse.json({ dryRun: true, selected: selected.length, apply: ids.length, skipped, zeroed, hidden, soldOut, showcase: plan.info ?? null });
+  if (ids.length === 0) return NextResponse.json({ success: true, updated: ids.length, skipped, zeroed });
 
   // Geri Al için işlem öncesi durum: yalnızca gerçekten değişecek ürünler (otomatik işaretlenenler dahil)
   const before = await snapshotProducts([...new Set([...ids, ...plan.markFirst])]);
@@ -190,6 +200,7 @@ async function POSTHandler(req: Request) {
       const stock = Math.max(0, Math.floor(Number(body.stock) || 0));
       const extraPrice = Math.max(0, Number(body.extraPrice) || 0);
       if (!value) return NextResponse.json({ error: "Renk adı zorunludur." }, { status: 400 });
+      if (!validExtraPrice(extraPrice)) return NextResponse.json({ error: EXTRA_PRICE_ERROR }, { status: 400 });
 
       // Aynı renge sahip ürünler atlanır
       const existing = await prisma.productVariation.findMany({
@@ -225,19 +236,18 @@ async function POSTHandler(req: Request) {
       if (!mode || !Number.isFinite(value) || value <= 0) return NextResponse.json({ error: "Geçerli bir indirim değeri giriniz." }, { status: 400 });
       if (mode === "PERCENT" && value >= 100) return NextResponse.json({ error: "Yüzde 100'ün altında olmalıdır." }, { status: 400 });
       const products = await prisma.product.findMany({ where: { id: { in: ids } }, select: { id: true, basePrice: true, listPrice: true } });
-      const round2 = (n: number) => Math.round(n * 100) / 100;
       const ops = [];
       const drops: PriceChange[] = [];
       for (const p of products) {
         const original = p.listPrice && p.listPrice > p.basePrice ? p.listPrice : p.basePrice;
-        const next = round2(Math.max(0, mode === "PERCENT" ? original * (1 - value / 100) : original - value));
-        if (next >= original) continue;
+        const next = discountedPrice(original, mode, value);
+        if (!validPrice(next) || next >= original) continue; // 0 TL ve altı sonuç asla yazılmaz
         ops.push(prisma.product.update({ where: { id: p.id }, data: { basePrice: next, listPrice: original } }));
         drops.push({ productId: p.id, oldPrice: p.basePrice, newPrice: next });
       }
       await prisma.$transaction(ops);
       schedulePriceDrops(drops); // satış fiyatı düşenleri favorileyen üyelere bildirim (yanıttan sonra)
-      return NextResponse.json({ snapshot: await done(), success: true, updated: ids.length, skipped });
+      return NextResponse.json({ snapshot: await done(), success: true, updated: ids.length, skipped, zeroed });
     }
 
     // Adet kademesi ekle (aynı minQty varsa üstüne yazar); normal indirime ve diğer kademelere dokunmaz

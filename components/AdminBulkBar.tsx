@@ -79,9 +79,10 @@ export default function AdminBulkBar({ ids, scopes, onApplied, extraCategories, 
         alert(dry.data.error || "İşlem başarısız.");
         return;
       }
-      const d = dry.data as { selected: number; apply: number; skipped: number; hidden?: number; soldOut?: number; showcase: { auto: boolean; before: number; after: number; revertsToAuto: boolean } | null };
+      const d = dry.data as { selected: number; apply: number; skipped: number; zeroed?: number; hidden?: number; soldOut?: number; showcase: { auto: boolean; before: number; after: number; revertsToAuto: boolean } | null };
+      const zeroedNote = d.zeroed ? `${d.zeroed} ürün, indirim sonrası fiyatı 0 ₺ veya altına ineceği için atlandı.` : "";
       if (d.apply === 0) {
-        alert("Seçili ürünlerin hepsi zaten bu durumda.");
+        alert(zeroedNote || "Seçili ürünlerin hepsi zaten bu durumda.");
         return;
       }
       let msg = `${preface ? `${preface}
@@ -99,6 +100,9 @@ export default function AdminBulkBar({ ids, scopes, onApplied, extraCategories, 
       } else if (d.showcase?.revertsToAuto) {
         msg += "\n\nBu işlem elle işaretli son ürünü kaldırır; öne çıkanlar otomatik seçime dönecek.";
       }
+      if (zeroedNote) msg += `
+
+⚠ ${zeroedNote}`;
       const hiddenNote = d.hidden ? `${d.hidden} ürün pasif olduğu için sitede görünmeyecek.` : "";
       if (hiddenNote) msg += `
 
@@ -118,7 +122,8 @@ export default function AdminBulkBar({ ids, scopes, onApplied, extraCategories, 
         return;
       }
       if (data.snapshot) onApplied(data.snapshot, String(payload.label ?? TAB_LABEL[tab]));
-      alert(`✓ ${resultMessage(data.updated ?? 0, data.skipped ?? 0)}${hiddenNote ? `
+      alert(`✓ ${resultMessage(data.updated ?? 0, data.skipped ?? 0)}${zeroedNote ? `
+⚠ ${zeroedNote}` : ""}${hiddenNote ? `
 ⚠ ${hiddenNote}` : ""}`);
       router.refresh();
       onDone();

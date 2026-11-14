@@ -1,3 +1,5 @@
+import { PRICE_ERROR, validExtraPrice, validPrice } from "./price-input.ts";
+
 // Yönetici ürün düzenleyicisinin saf çekirdeği (React/veritabanı yok; birim test edilir).
 // "Taban" (base) = formun açıldığı andaki ya da son başarılı kayıttaki değerler. Canlı prop'tan AYRI tutulur:
 // stok kaydı sunucuya prevStock olarak tabanı gönderir; sunucu (lib/stock-edit.ts) yalnızca veritabanı hâlâ o değerdeyse yazar.
@@ -100,13 +102,15 @@ export function validateDirty(form: EditorState, d: Dirty, nameOf: NameOf): stri
   if (d.info) {
     if (!form.info.title.trim()) errors.push("Ürün başlığı boş olamaz.");
     const price = Number(form.info.basePrice);
-    if (form.info.basePrice.trim() === "" || !Number.isFinite(price) || price < 0) errors.push("Geçerli bir fiyat giriniz.");
+    if (form.info.basePrice.trim() === "" || !Number.isFinite(price)) errors.push("Geçerli bir fiyat giriniz.");
+    else if (price <= 0) errors.push("Fiyat 0 olamaz.");
+    else if (!validPrice(price)) errors.push(PRICE_ERROR);
   }
   for (const id of d.vars) {
     const v = form.vars[id];
     if (!/^\d+$/.test(v.stock.trim()) || Number(v.stock) > MAX_STOCK) errors.push(`${nameOf(id)}: stok 0-${MAX_STOCK} arasında tam sayı olmalı.`);
     const extra = Number(v.extraPrice);
-    if (v.extraPrice.trim() === "" || !Number.isFinite(extra) || extra < 0) errors.push(`${nameOf(id)}: ek fiyat 0 veya daha büyük olmalı.`);
+    if (v.extraPrice.trim() === "" || !validExtraPrice(extra)) errors.push(`${nameOf(id)}: ek fiyat 0 ile 10.000.000 ₺ arasında, en çok 2 ondalıklı olmalı.`);
   }
   return errors;
 }

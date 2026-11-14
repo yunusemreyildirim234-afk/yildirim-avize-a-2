@@ -34,7 +34,7 @@ test("fiyat farkı: varsayılan 0, makul sınır", () => {
   const ok = parseVariations([row({ extraPrice: undefined })]);
   assert.equal(ok.ok && ok.value[0].extraPrice, 0);
   assert.equal(parseVariations([row({ extraPrice: 250.5 })]).ok, true);
-  for (const extraPrice of [-1, 1_000_001, "x", Infinity]) assert.equal(parseVariations([row({ extraPrice })]).ok, false, String(extraPrice));
+  for (const extraPrice of [-1, 10_000_001, "x", Infinity]) assert.equal(parseVariations([row({ extraPrice })]).ok, false, String(extraPrice));
 });
 test("renk başına en fazla 5 fotoğraf; renk sayısı sınırı", () => {
   const imgs = (n) => Array.from({ length: n }, (_, i) => `https://cdn.example.com/${i}.jpg`);

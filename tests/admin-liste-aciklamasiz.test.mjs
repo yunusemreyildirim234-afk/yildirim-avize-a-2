@@ -40,7 +40,7 @@ test("açıklamaya dokunmayan düzenleme açıklamayı silemez: genel düzenleme
   assert.ok(!/description/.test(rest), "diğer PATCH dallarında açıklama yazılmaz");
   // Genel düzenleme: data nesnesi yalnızca istekte bulunan alanlardan kurulur (tipinde açıklama yoktur)
   const edit = patch.slice(patch.indexOf("// Tekil ürün düzenleme"), patch.indexOf("// Eski kısa yol"));
-  assert.match(edit, /const data: \{ title\?: string; basePrice\?: number; images\?: string\[\]; imageUrl\?: string \| null; modelCode\?: string \| null; isFeatured\?: boolean; isBestSeller\?: boolean; ebat\?: string \| null \} = \{\};/);
+  assert.match(edit, /const data: \{ title\?: string; basePrice\?: number; listPrice\?: null; images\?: string\[\]; imageUrl\?: string \| null; modelCode\?: string \| null; isFeatured\?: boolean; isBestSeller\?: boolean; ebat\?: string \| null \} = \{\};/);
   assert.match(edit, /tx\.product\.update\(\{ where: \{ id: body\.productId \}, data \}\)/);
 });
 

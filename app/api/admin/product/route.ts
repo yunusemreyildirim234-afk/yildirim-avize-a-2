@@ -14,6 +14,7 @@ import { buildUndoToken, snapshotForDelete, snapshotProducts } from "@/lib/admin
 import { STOCK_CHANGED_ERROR, STOCK_PREV_MISSING_ERROR, planStockWrite } from "@/lib/stock-edit";
 import { isTextOverwrite, normalizeDescription, snapshotDescription } from "@/lib/product-description";
 import { resolveSyncModes } from "@/lib/trendyol-modes";
+import { EXTRA_PRICE_ERROR, PRICE_ERROR, validExtraPrice, validPrice } from "@/lib/price-input";
 
 const PRODUCT_ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
 
@@ -64,7 +65,7 @@ async function POSTHandler(req: Request) {
     const category = categoryInput ? await resolveCategoryForSave(categoryInput) : ""; // mevcut kategoriyle harf farkı varsa mevcut yazım; yeniyse başlık biçimi
     if (!category) return NextResponse.json({ error: "Kategori seçiniz." }, { status: 400 });
     const basePrice = Number(body.basePrice);
-    if (!Number.isFinite(basePrice) || basePrice <= 0 || basePrice > 10_000_000) return NextResponse.json({ error: "Geçerli bir satış fiyatı giriniz." }, { status: 400 });
+    if (!validPrice(basePrice)) return NextResponse.json({ error: PRICE_ERROR }, { status: 400 });
     const description = typeof body.description === "string" ? body.description.trim().slice(0, 10_000) || null : null;
 
     const ebat = normalizeEbat(body.ebat);
@@ -170,7 +171,7 @@ async function PATCHHandler(req: Request) {
 
     // Tekil ürün düzenleme: başlık, fiyat, görseller (varsa model kodu ile birlikte)
     if (typeof body.productId === "string" && ("title" in body || "basePrice" in body || "images" in body || "modelCode" in body || "isFeatured" in body || "isBestSeller" in body || "ebat" in body)) {
-      const data: { title?: string; basePrice?: number; images?: string[]; imageUrl?: string | null; modelCode?: string | null; isFeatured?: boolean; isBestSeller?: boolean; ebat?: string | null } = {};
+      const data: { title?: string; basePrice?: number; listPrice?: null; images?: string[]; imageUrl?: string | null; modelCode?: string | null; isFeatured?: boolean; isBestSeller?: boolean; ebat?: string | null } = {};
       if (typeof body.title === "string") {
         const title = body.title.trim().slice(0, 300);
         if (!title) return NextResponse.json({ error: "Ürün başlığı boş olamaz." }, { status: 400 });
@@ -178,7 +179,7 @@ async function PATCHHandler(req: Request) {
       }
       if ("basePrice" in body) {
         const price = Number(body.basePrice);
-        if (!(price >= 0)) return NextResponse.json({ error: "Geçerli bir fiyat giriniz." }, { status: 400 });
+        if (!validPrice(price)) return NextResponse.json({ error: PRICE_ERROR }, { status: 400 });
         data.basePrice = price;
       }
       if ("ebat" in body) {
@@ -207,7 +208,10 @@ async function PATCHHandler(req: Request) {
         data.modelCode = modelCode || null;
       }
       const before = await snapshotProducts([body.productId]);
-      const oldBase = data.basePrice !== undefined ? (await prisma.product.findUnique({ where: { id: body.productId }, select: { basePrice: true } }))?.basePrice : undefined;
+      const cur = data.basePrice !== undefined ? await prisma.product.findUnique({ where: { id: body.productId }, select: { basePrice: true, listPrice: true } }) : null;
+      const oldBase = cur?.basePrice;
+      // Satış fiyatı eski (liste) fiyata eşit ya da üstüne çıktıysa üstü çizili liste fiyatı anlamsızdır: temizlenir
+      if (data.basePrice !== undefined && cur?.listPrice != null && data.basePrice >= cur.listPrice) data.listPrice = null;
       const product = await prisma.$transaction(async (tx) => {
         const updated = await tx.product.update({ where: { id: body.productId }, data });
         if (data.images) {
@@ -245,6 +249,7 @@ async function PATCHHandler(req: Request) {
     // hâlâ o başlangıç değerindeyse yazılır. Panel açıkken gelen siparişin rezervasyonu böylece ezilmez.
     const plan = planStockWrite(Math.max(0, parseInt(stock) || 0), body.prevStock);
     if (plan.kind === "INVALID") return NextResponse.json({ error: STOCK_PREV_MISSING_ERROR }, { status: 409 });
+    if (body.extraPrice !== undefined && !validExtraPrice(Number(body.extraPrice))) return NextResponse.json({ error: EXTRA_PRICE_ERROR }, { status: 400 });
     const owner = await prisma.productVariation.findUnique({ where: { id: variationId }, select: { productId: true, extraPrice: true, product: { select: { basePrice: true } } } });
     if (!owner) return NextResponse.json({ error: "Varyasyon bulunamadı." }, { status: 404 });
     const before = await snapshotProducts([owner.productId]);
@@ -252,7 +257,7 @@ async function PATCHHandler(req: Request) {
       const written = await prisma.productVariation.updateMany({ where: { id: variationId, stock: plan.expected }, data: { stock: plan.next } });
       if (written.count === 0) return NextResponse.json({ error: STOCK_CHANGED_ERROR }, { status: 409 });
     }
-    const newExtra = body.extraPrice !== undefined && Number(body.extraPrice) >= 0 ? Number(body.extraPrice) : undefined;
+    const newExtra = body.extraPrice !== undefined ? Number(body.extraPrice) : undefined;
     const updated =
       newExtra !== undefined
         ? await prisma.productVariation.update({ where: { id: variationId }, data: { extraPrice: newExtra } })
