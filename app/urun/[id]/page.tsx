@@ -24,6 +24,7 @@ import { coverImageOf, imageListOf } from "@/lib/variation-input";
 import { GtmEvent } from "@/components/GtmEvent";
 import { gaItem, viewItemEvent } from "@/lib/gtm-events";
 import { displayTitle } from "@/lib/title-display";
+import { productMetaDescription, productSeoTitle } from "@/lib/product-seo";
 
 const totalStockOf = (p: { variations: { stock: number }[] }) => p.variations.reduce((sum, v) => sum + Math.max(0, v.stock), 0);
 
@@ -35,24 +36,29 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const product = await getProductDetail(id); // önbellekli (60 sn), sayfayla aynı sonuç
   if (!product || !isProductVisible({ id: product.id, active: product.active, totalStock: totalStockOf(product), category: product.category }, await getStocklessRule())) return {};
-  // Satır sonları/yinelenen boşluklar tek boşluğa indirilir (og:description ve meta açıklama düz metin olsun)
-  const description =
-    (product.description ?? "").replace(/\s+/g, " ").trim().slice(0, 160) || `${product.title} – Yıldırım Avize Beyoğlu Şişhane`;
+  // Temiz başlık (displayTitle): <title>, OG, Twitter ve JSON-LD aynı kaynaktan; meta açıklama lib/product-seo.ts şablonundan (≤160, kelime sınırında)
+  const cleanTitle = displayTitle(product.title).title;
+  const description = productMetaDescription({
+    cleanTitle,
+    price: defaultOffer(product).price,
+    category: product.category,
+    pickupDiscountPct: product.pickupDiscountPct,
+  });
   const cover = coverImageOf(product);
   return {
-    title: displayTitle(product.title).title,
+    title: productSeoTitle(cleanTitle),
     description,
     alternates: { canonical: `/urun/${id}` },
     // og:type "product" Next'in tip listesinde yok: sayfa gövdesindeki <meta property="og:type"> ile (React başlığa taşır) verilir
     openGraph: {
-      title: product.title,
+      title: cleanTitle,
       description,
       url: `/urun/${id}`,
-      images: cover ? [{ url: cover, alt: product.title }] : undefined,
+      images: cover ? [{ url: cover, alt: cleanTitle }] : undefined,
     },
     twitter: {
-      card: "summary",
-      title: product.title,
+      card: "summary_large_image",
+      title: cleanTitle,
       description,
       images: cover ? [cover] : undefined,
     },
@@ -106,7 +112,7 @@ export default async function ProductDetailPage({ params }: Props) {
   const productSchema = {
     "@context": "https://schema.org",
     "@type": "Product",
-    name: product.title,
+    name: displayTitle(product.title).title,
     description: product.description || product.title,
     ...(hasCategory ? { category: product.category } : {}),
     brand: { "@type": "Brand", name: feedBrand() },

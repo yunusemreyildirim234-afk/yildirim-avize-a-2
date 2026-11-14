@@ -6,6 +6,8 @@ const headingLevels = (page: Page) => page.evaluate(() => [...document.querySele
 /** Başlık sırasında bir seviyeden fazla atlayan geçişler (ör. 2 → 4). */
 const skips = (levels: number[]) => levels.filter((l, i) => i > 0 && l - levels[i - 1] > 1).length;
 
+const ogDescLen = (s: string | null) => (s ?? "").length;
+
 test.describe("k) Vitrin küçük düzeltmeleri (paket A)", () => {
   test("'İçeriğe atla': ilk Tab ile odaklanır, görünür olur, Enter ana içeriğe götürür", async ({ page }) => {
     for (const path of ["/", "/kategori/tum"]) {
@@ -85,6 +87,8 @@ test.describe("k) Vitrin küçük düzeltmeleri (paket A)", () => {
     await expect(page.locator('meta[property="og:type"]')).toHaveCount(1);
     expect(await meta('meta[property="og:title"]')).toBe(title);
     expect(await meta('meta[name="twitter:title"]')).toBe(title);
+    expect(await meta('meta[name="twitter:card"]')).toBe("summary_large_image");
+    expect(ogDescLen(await meta('meta[name="description"]'))).toBeLessThanOrEqual(160);
     const ogDesc = (await meta('meta[property="og:description"]'))!;
     expect(ogDesc).not.toMatch(/[\r\n\t]/);
     expect(ogDesc).not.toMatch(/ {2,}/);
