@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Decision, Group, Mode, Settings, Val } from "@/lib/trendyol-plan";
 import { DEFAULT_SYNC_MODES, overwriteGroups, type SyncModes } from "@/lib/trendyol-modes";
+import { pendingWarning } from "@/lib/trendyol-bekleyen";
 import AdminImageCopy from "@/components/AdminImageCopy";
 
 const ROWS: { group: Group; label: string }[] = [
@@ -39,6 +40,8 @@ interface Preview {
   toplamUrun: number;
   listelenmeyen: number;
   urunler: ProductView[];
+  /** barkod → sitede bekleyen (stoğu düşülmüş, açık) sipariş adedi; yalnız uyarı için */
+  bekleyen?: Record<string, number>;
 }
 interface Result { guncellenenUrun: number; yeniUrun: number; yeniVaryasyon: number; stokGuncellenen: number; atlanan: number; hata: number }
 
@@ -143,6 +146,8 @@ export default function AdminTrendyolSync({
     let msg = `${count} ürün Trendyol'a göre güncellenecek.${everything ? ` Listede gösterilmeyen ${preview.listelenmeyen} ürün de dahil (toplam ${preview.toplamUrun}).` : ""}`;
     if (hasOverwrite) msg += `\n\nBu işlem elle yaptığınız değişiklikleri ezer; Geri Al yoktur.\nEzilecek: ${st.fields} alan, ${st.products} ürün (yalnızca listelenenler).`;
     else msg += "\n\nGeri Al yoktur.";
+    const pendingCount = preview.urunler.filter((u) => checked.has(u.mainId)).reduce((n, u) => n + u.variations.filter((v) => (preview.bekleyen?.[v.barcode] ?? 0) > 0).length, 0);
+    if (pendingCount > 0) msg += `\n\nUyarı: ${pendingCount} varyasyonda sitede bekleyen sipariş var. Bu satışların Trendyol'da düşüldüğünden emin olun; aksi halde stok eski sayıya dönebilir.`;
     if (!window.confirm(msg)) return;
     setBusy("apply");
     setError("");
@@ -166,13 +171,14 @@ export default function AdminTrendyolSync({
       return next;
     });
 
-  const detail = (fs: FieldView[], label?: string) =>
+  const detail = (fs: FieldView[], label?: string, pending = 0) =>
     fs.map((f) => (
       <li key={`${label ?? ""}${f.alan}`} className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px]">
         <span className="font-semibold text-neutral-700">{label ? `${label} · ` : ""}{f.alan}</span>
         <span className="text-neutral-500 break-all">{show(f.simdiki)} → {show(f.trendyol)}</span>
         <span className={`px-1.5 py-0.5 rounded font-bold ${badge[f.karar]}`}>{f.karar}</span>
         {f.elleDegisti && <span className="text-amber-700">elle değiştirilmiş</span>}
+        {f.alan === "stock" && pending > 0 && <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 font-semibold">{pendingWarning(pending)}</span>}
       </li>
     ));
 
@@ -295,7 +301,7 @@ export default function AdminTrendyolSync({
                   <ul className="mt-2 ml-6 space-y-1">
                     {u.yeni && <li className="text-[11px] text-sky-800">Yeni ürün oluşturulacak ({u.yeniVaryasyon} varyasyon).</li>}
                     {detail(u.fields)}
-                    {u.variations.map((v) => detail(v.fields, v.barcode))}
+                    {u.variations.map((v) => detail(v.fields, v.barcode, preview?.bekleyen?.[v.barcode] ?? 0))}
                     {u.yeniVaryasyon > 0 && !u.yeni && <li className="text-[11px] text-sky-800">{u.yeniVaryasyon} yeni varyasyon eklenecek.</li>}
                     {u.kalkanVaryasyon > 0 && <li className="text-[11px] text-neutral-500">{u.kalkanVaryasyon} varyasyon Trendyol&apos;da yok (silinmez).</li>}
                   </ul>
