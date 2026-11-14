@@ -8,7 +8,7 @@ interface Payload {
   messages: { id: string; name: string; topic: string }[];
 }
 
-const POLL_MS = 30_000;
+const POLL_MS = 180_000;
 
 /** Yönetim paneli açıkken yeni sipariş/soru düşünce listeleri yeniler (kayan uyarıyı bildirim zili gösterir). */
 export default function AdminLiveAlerts() {
@@ -18,6 +18,7 @@ export default function AdminLiveAlerts() {
   useEffect(() => {
     let stopped = false;
     const poll = async () => {
+      if (document.hidden) return; // gizli sekmede istek atma
       try {
         const res = await fetch("/api/admin/notifications", { cache: "no-store" });
         if (!res.ok || stopped) return;
@@ -38,9 +39,12 @@ export default function AdminLiveAlerts() {
     };
     poll();
     const timer = setInterval(poll, POLL_MS);
+    const onVisible = () => poll();
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       stopped = true;
       clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, [router]);
 

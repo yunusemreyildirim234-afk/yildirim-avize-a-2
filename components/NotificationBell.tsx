@@ -19,7 +19,6 @@ interface Item {
 }
 
 const ICONS: Record<string, typeof Bell> = { ORDER: Package, COUPON: Ticket, QUESTION: MessageSquare, SYSTEM: Sparkles, PRICE_DROP: TrendingDown };
-const POLL_MS = 30_000;
 
 const fmt = (d: string) =>
   new Date(d).toLocaleString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -72,16 +71,14 @@ export default function NotificationBell() {
   }, [router, scopeQs]);
 
   useEffect(() => {
-    // Sekme gizliyken istek atılmaz; tekrar görünür olunca hemen bir kez yenilenir.
+    // Zamanlayıcı yok: yalnız sayfa açılışında ve sekme tekrar görünür olunca bir kez çekilir (gizliyken istek atılmaz).
     const poll = () => {
       if (!document.hidden) load();
     };
     const onVisible = () => poll();
     poll();
-    const t = setInterval(poll, POLL_MS);
     document.addEventListener("visibilitychange", onVisible);
     return () => {
-      clearInterval(t);
       document.removeEventListener("visibilitychange", onVisible);
     };
   }, [load, pathname]);
