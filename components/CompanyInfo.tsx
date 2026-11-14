@@ -1,5 +1,5 @@
 import { ShieldCheck } from "lucide-react";
-import { COMPANY_DEFAULTS, getCompanyInfo } from "@/lib/company";
+import { COMPANY_DEFAULTS, getCompanyInfo, taxValue } from "@/lib/company";
 
 /** Kurumsal & yasal bilgiler. `dark`: koyu zeminli footer, `light`: iletişim sayfası kartı. */
 export default async function CompanyInfo({ variant }: { variant: "dark" | "light" }) {
@@ -12,7 +12,7 @@ export default async function CompanyInfo({ variant }: { variant: "dark" | "ligh
 
   const rows: [string, string][] = [
     ["Unvan", c.companyTitle],
-    ["Vergi Dairesi / No", `${c.taxOffice} / ${c.taxNumber}`],
+    ["Vergi Dairesi / No", taxValue(c.taxOffice, hidden(c.taxNumber, COMPANY_DEFAULTS.taxNumber) ? "" : c.taxNumber)],
     ...(hidden(c.mersisNo, COMPANY_DEFAULTS.mersisNo) ? [] : [["MERSİS No", c.mersisNo] as [string, string]]),
     ...(hidden(c.kepAddress, COMPANY_DEFAULTS.kepAddress) ? [] : [["KEP Adresi", c.kepAddress] as [string, string]]),
     ["Merkez Adresi", c.headquartersAddress],

@@ -19,9 +19,10 @@ export type CompanyInfo = typeof COMPANY_DEFAULTS;
 export const COMPANY_TAG = "site-config";
 
 /** Kurumsal & yasal bilgiler (tek satır). Satır yoksa veya DB erişilemezse varsayılanlar döner. */
-export const getCompanyInfo = unstable_cache(
+const readCompanyInfo = unstable_cache(
   async (): Promise<CompanyInfo> => {
-    const row = await prisma.siteConfig.findUnique({ where: { id: 1 } }).catch(() => null);
+    // Veritabanı hatası YAKALANMAZ: unstable_cache hatalı sonucu önbelleğe yazmaz (yer tutucu varsayılanlar 5 dk takılı kalmaz); varsayılana düşme aşağıdaki sarmalayıcıda
+    const row = await prisma.siteConfig.findUnique({ where: { id: 1 } });
     if (!row) return COMPANY_DEFAULTS;
     return {
       companyTitle: row.companyTitle,
@@ -37,6 +38,14 @@ export const getCompanyInfo = unstable_cache(
   { tags: [COMPANY_TAG], revalidate: 300 }
 );
 
+export async function getCompanyInfo(): Promise<CompanyInfo> {
+  try {
+    return await readCompanyInfo();
+  } catch {
+    return COMPANY_DEFAULTS; // yalnızca bu istek için; önbelleğe girmez
+  }
+}
+
 export interface PublicCompany {
   title: string;
   taxOffice: string;
@@ -46,6 +55,9 @@ export interface PublicCompany {
   address: string;
 }
 
+/** "Vergi Dairesi / No" değeri: boş parça atılır (yer tutucu vergi no gösterilmez). */
+export const taxValue = (office: string, number: string) => [office, number].filter((v) => v.trim()).join(" / ");
+
 const isReal = (v: string, placeholder: string) => Boolean(v.trim()) && v.trim() !== placeholder;
 
 /** Yasal metinlerde gösterilecek kurumsal bilgiler; fabrika yer tutucuları (MERSİS/KEP örnekleri) boş döner. */
@@ -53,7 +65,7 @@ export function toPublicCompany(c: CompanyInfo): PublicCompany {
   return {
     title: c.companyTitle.trim() || BRAND_FALLBACK_TITLE, // unvan alanı boşsa marka adı yedeği
     taxOffice: c.taxOffice,
-    taxNumber: c.taxNumber,
+    taxNumber: isReal(c.taxNumber, COMPANY_DEFAULTS.taxNumber) ? c.taxNumber : "", // fabrika yer tutucusu gerçek vergi no gibi gösterilmez
     mersis: isReal(c.mersisNo, COMPANY_DEFAULTS.mersisNo) ? c.mersisNo : "",
     kep: isReal(c.kepAddress, COMPANY_DEFAULTS.kepAddress) ? c.kepAddress : "",
     address: c.headquartersAddress,
@@ -64,7 +76,7 @@ export function toPublicCompany(c: CompanyInfo): PublicCompany {
 export function companyLine(p: PublicCompany, extra: string[] = []): string {
   return [
     p.title,
-    `Vergi Dairesi / No: ${p.taxOffice} / ${p.taxNumber}`,
+    taxValue(p.taxOffice, p.taxNumber) && `Vergi Dairesi / No: ${taxValue(p.taxOffice, p.taxNumber)}`,
     p.mersis && `MERSİS No: ${p.mersis}`,
     p.kep && `KEP: ${p.kep}`,
     `Adres: ${p.address}`,

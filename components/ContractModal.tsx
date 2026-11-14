@@ -68,7 +68,7 @@ export default function ContractModal({ kind, data, onClose }: { kind: "pre" | "
             {company ? (
               <>
                 {company.title}
-                <br />Vergi Dairesi / No: {company.taxOffice} / {company.taxNumber}
+                <br />Vergi Dairesi / No: {[company.taxOffice, company.taxNumber].filter(Boolean).join(" / ")}
                 {company.mersis && <><br />MERSİS No: {company.mersis}</>}
                 {company.kep && <><br />KEP: {company.kep}</>}
                 <br />Adres: {company.address || ADDRESS_LINE}
