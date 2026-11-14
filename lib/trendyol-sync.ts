@@ -45,9 +45,12 @@ export async function buildPlan(ayarlar: Settings): Promise<Plan> {
   return planSync(mevcut, incoming, ayarlar, rezerve);
 }
 
-export interface ApplyResult { guncellenenUrun: number; yeniUrun: number; yeniVaryasyon: number; stokGuncellenen: number; atlanan: number; hata: number }
+export interface ApplyResult { guncellenenUrun: number; yeniUrun: number; yeniVaryasyon: number; stokGuncellenen: number; atlanan: number; hata: number; hataliUrunler: { id: string; baslik: string }[] }
 
-async function inChunks<T>(items: T[], run: (chunk: T[]) => Promise<void>): Promise<number> {
+/** Sonuç nesnesine yazılacak en çok ürün sayısı (mesajı şişirmemek için). */
+export const HATALI_URUN_LIMIT = 20;
+
+async function inChunks<T>(items: T[], run: (chunk: T[]) => Promise<void>, onFail?: (chunk: T[]) => void): Promise<number> {
   let failed = 0;
   for (let i = 0; i < items.length; i += CHUNK) {
     const chunk = items.slice(i, i + CHUNK);
@@ -55,6 +58,7 @@ async function inChunks<T>(items: T[], run: (chunk: T[]) => Promise<void>): Prom
       await run(chunk);
     } catch (e) {
       failed += chunk.length;
+      onFail?.(chunk);
       console.error("[trendyol-sync] grup hatası:", (e as Error).message);
     }
   }
@@ -75,25 +79,37 @@ async function writeStock(mode: "KEEP" | "OVERWRITE", rows: { id: string; t: num
 export async function applyPlan(plan: Plan, secili?: string[]): Promise<ApplyResult> {
   const chosen: ProductPlan[] = seciliPlan(plan, secili);
   const now = new Date();
-  const res: ApplyResult = { guncellenenUrun: 0, yeniUrun: 0, yeniVaryasyon: 0, stokGuncellenen: 0, atlanan: plan.products.length - chosen.length, hata: 0 };
+  const res: ApplyResult = { guncellenenUrun: 0, yeniUrun: 0, yeniVaryasyon: 0, stokGuncellenen: 0, atlanan: plan.products.length - chosen.length, hata: 0, hataliUrunler: [] };
+  // Düşen gruptaki ürünlerin kimlik/başlık listesi (kişisel veri yok; en çok HATALI_URUN_LIMIT)
+  const fail = new Map<string, string>();
+  const note = (id: string, baslik: string) => { if (fail.size < HATALI_URUN_LIMIT) fail.set(id, baslik); };
+  const noteP = (p: ProductPlan) => note(p.id ?? p.mainId, p.title);
+  const ownerByVar = new Map<string, ProductPlan>();
+  const ownerByPid = new Map<string, ProductPlan>();
+  for (const p of chosen) {
+    if (p.id) ownerByPid.set(p.id, p);
+    for (const v of p.variations) if (v.id) ownerByVar.set(v.id, p);
+  }
 
   // 1) Yeni ürünler ve (mevcut ürünlere) yeni varyasyonlar
   const newProducts = chosen.filter((p) => p.create);
   const productRows = newProducts.map((p) => ({ ...(p.create!.data as Prisma.ProductCreateManyInput), id: randomUUID(), trendyolMainId: p.mainId, syncSnapshot: p.create!.snapshot as Json, lastSyncedAt: now }));
   const idOf = new Map(newProducts.map((p, i) => [p.mainId, productRows[i].id as string]));
+  const byMain = new Map(newProducts.map((p) => [p.mainId, p]));
   // Yalnızca BAŞARIYLA eklenen yeni ürünlerin kimlikleri tutulur: ürün eklenemediyse varyasyonları eklenmez (FK hatası ilgisiz varyasyonların grubunu da düşürürdü); ürün hatası zaten hata sayacındadır
   const created = new Set<string>();
-  res.hata += await inChunks(productRows, async (c) => { await prisma.product.createMany({ data: c, skipDuplicates: true }); res.yeniUrun += c.length; for (const r of c) created.add(r.id as string); });
+  res.hata += await inChunks(productRows, async (c) => { await prisma.product.createMany({ data: c, skipDuplicates: true }); res.yeniUrun += c.length; for (const r of c) created.add(r.id as string); }, (c) => c.forEach((r) => { const p = byMain.get(r.trendyolMainId as string); if (p) noteP(p); }));
   const varRows: Prisma.ProductVariationCreateManyInput[] = [];
   for (const p of chosen) {
     const pid = p.id ?? idOf.get(p.mainId);
     if (!pid || (!p.id && !created.has(pid))) continue;
+    if (!p.id) ownerByPid.set(pid, p);
     for (const v of p.variations) {
       if (!v.create) continue;
       varRows.push({ ...(v.create.data as Prisma.ProductVariationCreateManyInput), productId: pid, variationType: "Seçenek", syncSnapshot: v.create.snapshot as Json, syncStock: v.create.syncStock });
     }
   }
-  res.hata += await inChunks(varRows, async (c) => { await prisma.productVariation.createMany({ data: c, skipDuplicates: true }); res.yeniVaryasyon += c.length; });
+  res.hata += await inChunks(varRows, async (c) => { await prisma.productVariation.createMany({ data: c, skipDuplicates: true }); res.yeniVaryasyon += c.length; }, (c) => c.forEach((r) => { const p = ownerByPid.get(r.productId); if (p) noteP(p); }));
 
   // 2) Mevcut ürün alanları + anlık görüntü
   const pWrites = chosen.filter((p) => p.id && p.write);
@@ -107,7 +123,7 @@ export async function applyPlan(plan: Plan, secili?: string[]): Promise<ApplyRes
       ),
     );
     res.guncellenenUrun += c.filter((p) => p.degerYazar).length;
-  });
+  }, (c) => c.forEach(noteP));
 
   // 3) Varyasyon alanları + anlık görüntü (stok hariç)
   const vWrites = chosen.flatMap((p) => p.variations.filter((v) => v.id && v.write && (Object.keys(v.write.data).length > 0 || v.write.snapshot)));
@@ -120,12 +136,13 @@ export async function applyPlan(plan: Plan, secili?: string[]): Promise<ApplyRes
         }),
       ),
     );
-  });
+  }, (c) => c.forEach((v) => { const p = ownerByVar.get(v.id!); if (p) noteP(p); }));
 
   // 4) Stok: iki mod için tek atomik UPDATE ... FROM (VALUES ...)
   for (const mode of ["KEEP", "OVERWRITE"] as const) {
     const rows = chosen.flatMap((p) => p.variations.filter((v) => v.id && v.write?.stock?.mode === mode).map((v) => ({ id: v.id!, t: v.write!.stock!.t })));
-    res.hata += await inChunks(rows, async (c) => { await writeStock(mode, c); res.stokGuncellenen += c.length; });
+    res.hata += await inChunks(rows, async (c) => { await writeStock(mode, c); res.stokGuncellenen += c.length; }, (c) => c.forEach((r) => { const p = ownerByVar.get(r.id); if (p) noteP(p); }));
   }
+  res.hataliUrunler = [...fail].map(([id, baslik]) => ({ id, baslik }));
   return res;
 }

@@ -79,3 +79,16 @@ test("seçili liste: seçilmeyen değer yazan ürün atlanır ve sayılır", asy
   assert.equal(log.updates.length, 1);
   assert.equal(log.updates[0].where.id, "p1");
 });
+
+test("düşen gruptaki ürünler sonuçta kimlik/başlıkla listelenir (en çok 20)", async () => {
+  const mevcut = Array.from({ length: 30 }, (_, i) => exist(i));
+  const gelen = Array.from({ length: 30 }, (_, i) => inc(i));
+  const plan = planSync(mevcut, gelen, ayar({ TEXT: "OVERWRITE" }), {});
+  sahte({ transactionFail: () => true });
+  const res = await applyPlan(plan);
+  assert.equal(res.hata, 30);
+  assert.equal(res.hataliUrunler.length, 20);
+  assert.deepEqual(Object.keys(res.hataliUrunler[0]).sort(), ["baslik", "id"]);
+  const temiz = await (async () => { sahte(); return applyPlan(plan); })();
+  assert.deepEqual(temiz.hataliUrunler, []);
+});

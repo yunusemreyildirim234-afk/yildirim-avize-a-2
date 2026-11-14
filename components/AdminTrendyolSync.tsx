@@ -43,7 +43,7 @@ interface Preview {
   /** barkod → sitede bekleyen (stoğu düşülmüş, açık) sipariş adedi; yalnız uyarı için */
   bekleyen?: Record<string, number>;
 }
-interface Result { guncellenenUrun: number; yeniUrun: number; yeniVaryasyon: number; stokGuncellenen: number; atlanan: number; hata: number }
+interface Result { guncellenenUrun: number; yeniUrun: number; yeniVaryasyon: number; stokGuncellenen: number; atlanan: number; hata: number; hataliUrunler?: { id: string; baslik: string }[] }
 
 const show = (v: Val) => (v === null ? "—" : Array.isArray(v) ? `${v.length} görsel` : String(v));
 const badge: Record<Decision, string> = {
@@ -254,9 +254,16 @@ export default function AdminTrendyolSync({
       <div role="status" aria-live="polite" className="text-xs">
         {error && <p className="text-red-600 font-semibold">{error}</p>}
         {result && (
-          <p className="text-emerald-800 font-semibold">
-            Tamamlandı: {result.guncellenenUrun} ürün güncellendi, {result.yeniUrun} yeni ürün, {result.yeniVaryasyon} yeni varyasyon, {result.stokGuncellenen} stok yazıldı, {result.atlanan} atlandı, {result.hata} hata.
-          </p>
+          <>
+            <p className="text-emerald-800 font-semibold">
+              Tamamlandı: {result.guncellenenUrun} ürün güncellendi, {result.yeniUrun} yeni ürün, {result.yeniVaryasyon} yeni varyasyon, {result.stokGuncellenen} stok yazıldı, {result.atlanan} atlandı, {result.hata} hata.
+            </p>
+            {!!result.hataliUrunler?.length && (
+              <p className="mt-1 text-red-700 font-semibold">
+                {result.hataliUrunler.length} ürün eşitlenemedi{result.hataliUrunler.length >= 20 ? " (ilk 20)" : ""}: {result.hataliUrunler.map((u) => u.baslik).join(", ")}
+              </p>
+            )}
+          </>
         )}
       </div>
 
