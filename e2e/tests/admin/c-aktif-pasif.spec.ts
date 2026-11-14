@@ -66,7 +66,7 @@ test.describe("Aktif yap / Pasife al", () => {
     await expect.poll(() => dlg.messages.length).toBe(1);
     expect(dlg.messages[0]).toContain(`"${T.a}" vitrine alınacak`);
     expect(dlg.messages[0]).not.toContain("Stoğu 0"); // stoklu: Tükendi uyarısı yok
-    expect(dlg.messages[0]).toContain('Trendyol eşitlemesinde "Aktif/pasif" satırı "Trendyol'daki değeri yaz" ise');
+    expect(dlg.messages[0]).toContain('Trendyol eşitlemesinde "Aktif/pasif" satırı "Trendyol\'daki değeri yaz" ise');
     await page.waitForTimeout(500);
     expect(await isActive(id.a), "iptal: değişmedi").toBe(false);
     expect(await status(request, `/urun/${id.a}`)).toBe(404);
@@ -98,7 +98,7 @@ test.describe("Aktif yap / Pasife al", () => {
     await page.getByTestId("duzenle-vitrine-al").click();
     await expect.poll(() => isActive(id.c), POLL).toBe(true);
     expect(dlg.messages.at(-1)).toContain("Stoğu 0, 'Tükendi' olarak görünecek.");
-    expect(dlg.messages.at(-1)).toContain('"Trendyol'daki değeri yaz"');
+    expect(dlg.messages.at(-1)).toContain('"Trendyol\'daki değeri yaz"');
   });
 
   test("toplu işlem: Aktif/Pasif sekmesi; iptalde değişiklik yok; onayla hepsi aktif; Geri Al hepsini pasife döndürür", async ({ page, request }) => {
@@ -114,7 +114,7 @@ test.describe("Aktif yap / Pasife al", () => {
     await applyBtn(page).click();
     await expect.poll(() => dlg.messages.length).toBeGreaterThan(0);
     expect(dlg.messages.at(-1)).toContain("2 ürün vitrine alınacak");
-    expect(dlg.messages.at(-1)).toContain('"Trendyol'daki değeri yaz"');
+    expect(dlg.messages.at(-1)).toContain('"Trendyol\'daki değeri yaz"');
     await page.waitForTimeout(500);
     expect([await isActive(id.a), await isActive(id.b)]).toEqual([false, false]);
 
