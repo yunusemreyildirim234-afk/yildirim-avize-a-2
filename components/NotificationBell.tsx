@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { subscribeSummary, refreshSummary } from "@/lib/notification-poll";
+import { summaryChanged, type NotificationSummary } from "@/lib/notification-summary";
 import { resolveLinkAction } from "@/lib/toast-link";
 import { goToHash } from "@/components/ToastLinkRouter";
 import { Bell, CheckCheck, Package, Sparkles, Ticket, MessageSquare, Trash2, TrendingDown } from "lucide-react";
@@ -26,7 +28,7 @@ const fmt = (d: string) =>
 export default function NotificationBell() {
   const pathname = usePathname();
   const router = useRouter();
-  const seen = useRef<Set<string> | null>(null);
+  const seen = useRef<Set<string>>(new Set());
   const [items, setItems] = useState<Item[]>([]);
   const [unread, setUnread] = useState(0);
   const [open, setOpen] = useState(false);
@@ -35,53 +37,72 @@ export default function NotificationBell() {
 
   const scopeQs = pathname?.startsWith("/admin") ? "?scope=admin" : "?scope=user";
 
-  const load = useCallback(() => {
-    fetch(`/api/notifications${scopeQs}`, { cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (!d) return;
-        const list: Item[] = d.items;
-        setItems(list);
-        setUnread(d.unread);
+  // since: yeni düşen bildirimler için toast'ın başlangıç tarihi (ISO); null ise (zil açılışı) toast gösterilmez
+  const loadList = useCallback(
+    (since: string | null) => {
+      fetch(`/api/notifications${scopeQs}`, { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+          if (!d) return;
+          const list: Item[] = d.items;
+          setItems(list);
+          setUnread(d.unread);
+          for (const n of list) {
+            const fresh = since !== null && !n.read && n.createdAt > since && !seen.current.has(n.id);
+            seen.current.add(n.id);
+            if (!fresh) continue;
+            const go = () => {
+              const a = resolveLinkAction(window.location.pathname, n.link);
+              if (a.kind === "navigate") router.push(a.href);
+              else if (a.kind === "hash") goToHash(a.hash);
+              fetch(`/api/notifications${scopeQs}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: n.id }) }).catch(() => {});
+            };
+            toast.info(
+              <div onClick={go} className={n.link ? "cursor-pointer" : ""}>
+                <div className="font-semibold">{n.title}</div>
+                <div className="text-xs opacity-80">{n.message}</div>
+              </div>,
+              { duration: 12000, ...(n.link ? { action: { label: "Aç", onClick: go } } : {}) }
+            );
+          }
+        })
+        .catch(() => {});
+    },
+    [router, scopeQs]
+  );
 
-        // İlk yükleme sessiz; sonradan düşen okunmamış bildirimler tıklanabilir toast olur
-        if (seen.current === null) {
-          seen.current = new Set(list.map((n) => n.id));
-          return;
-        }
-        for (const n of list) {
-          if (seen.current.has(n.id) || n.read) continue;
-          seen.current.add(n.id);
-          const go = () => {
-            const a = resolveLinkAction(window.location.pathname, n.link);
-            if (a.kind === "navigate") router.push(a.href);
-            else if (a.kind === "hash") goToHash(a.hash);
-            fetch(`/api/notifications${scopeQs}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: n.id }) }).catch(() => {});
-          };
-          toast.info(
-            <div onClick={go} className={n.link ? "cursor-pointer" : ""}>
-              <div className="font-semibold">{n.title}</div>
-              <div className="text-xs opacity-80">{n.message}</div>
-            </div>,
-            { duration: 12000, ...(n.link ? { action: { label: "Aç", onClick: go } } : {}) }
-          );
-        }
-      })
-      .catch(() => {});
-  }, [router, scopeQs]);
+  // Özet adresi: yönetimde zil ile AdminLiveAlerts AYNI adresi dinler (tek istek, tek 180 sn zamanlayıcı); müşteride zamanlayıcı yok.
+  const summaryUrl = `/api/notifications${scopeQs}&ozet=1`;
+  const isAdminScope = scopeQs.endsWith("admin");
+  const known = useRef<NotificationSummary | null>(null);
+  const openRef = useRef(false);
+  openRef.current = open;
 
   useEffect(() => {
-    // Zamanlayıcı yok: yalnız sayfa açılışında ve sekme tekrar görünür olunca bir kez çekilir (gizliyken istek atılmaz).
-    const poll = () => {
-      if (!document.hidden) load();
-    };
-    const onVisible = () => poll();
-    poll();
-    document.addEventListener("visibilitychange", onVisible);
-    return () => {
-      document.removeEventListener("visibilitychange", onVisible);
-    };
-  }, [load, pathname]);
+    return subscribeSummary(
+      summaryUrl,
+      (s) => {
+        const prev = known.current;
+        known.current = s;
+        setUnread(s.unread);
+        if (!prev) return; // ilk özet: yalnız rozet; liste zil açılınca gelir
+        const ch = summaryChanged(prev, s);
+        if (ch.newItems) loadList(prev.latest ?? "");
+        else if (ch.badge && openRef.current) loadList(null);
+      },
+      isAdminScope ? 180_000 : 0
+    );
+  }, [summaryUrl, isAdminScope, loadList]);
+
+  // Sayfa geçişinde özet bir kez yenilenir (ilk açılış aboneliğin kendi isteğiyle gelir)
+  const firstPath = useRef(true);
+  useEffect(() => {
+    if (firstPath.current) {
+      firstPath.current = false;
+      return;
+    }
+    refreshSummary(summaryUrl);
+  }, [pathname, summaryUrl]);
 
   useEffect(() => {
     if (!open) return;
@@ -133,7 +154,10 @@ export default function NotificationBell() {
         type="button"
         aria-label={`Bildirimler${unread ? `, ${unread} okunmamış` : ""}`}
         aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => {
+          if (!open) loadList(null);
+          setOpen((o) => !o);
+        }}
         className="relative rounded-full p-2 sm:p-2.5 hover:bg-zinc-100 transition-colors"
       >
         <Bell aria-hidden="true" className="w-5 h-5 text-zinc-800" />

@@ -2,50 +2,24 @@
 
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { subscribeSummary } from "@/lib/notification-poll";
+import { summaryChanged, type NotificationSummary } from "@/lib/notification-summary";
 
-interface Payload {
-  orders: { id: string; total: number; customer: string }[];
-  messages: { id: string; name: string; topic: string }[];
-}
-
-const POLL_MS = 180_000;
-
-/** Yönetim paneli açıkken yeni sipariş/soru düşünce listeleri yeniler (kayan uyarıyı bildirim zili gösterir). */
+/** Yönetim paneli açıkken yeni sipariş/soru düşünce listeleri yeniler (kayan uyarıyı bildirim zili gösterir). Zil ile AYNI özet isteğini paylaşır (tek yoklama, 180 sn, gizli sekmede durur). */
 export default function AdminLiveAlerts() {
   const router = useRouter();
-  const seen = useRef<Set<string> | null>(null);
+  const known = useRef<NotificationSummary | null>(null);
 
   useEffect(() => {
-    let stopped = false;
-    const poll = async () => {
-      if (document.hidden) return; // gizli sekmede istek atma
-      try {
-        const res = await fetch("/api/admin/notifications", { cache: "no-store" });
-        if (!res.ok || stopped) return;
-        const data: Payload = await res.json();
-        const keys = [...data.orders.map((o) => `o:${o.id}`), ...data.messages.map((m) => `m:${m.id}`)];
-
-        // İlk yükleme: mevcutlar sessizce kaydedilir
-        if (seen.current === null) {
-          seen.current = new Set(keys);
-          return;
-        }
-        const fresh = keys.some((k) => !seen.current?.has(k));
-        keys.forEach((k) => seen.current?.add(k));
-        if (fresh) router.refresh();
-      } catch {
-        /* ağ hatası: bir sonraki turda yeniden denenir */
-      }
-    };
-    poll();
-    const timer = setInterval(poll, POLL_MS);
-    const onVisible = () => poll();
-    document.addEventListener("visibilitychange", onVisible);
-    return () => {
-      stopped = true;
-      clearInterval(timer);
-      document.removeEventListener("visibilitychange", onVisible);
-    };
+    return subscribeSummary(
+      "/api/notifications?scope=admin&ozet=1",
+      (s) => {
+        const prev = known.current;
+        known.current = s;
+        if (prev && summaryChanged(prev, s).newItems) router.refresh();
+      },
+      180_000
+    );
   }, [router]);
 
   return null;

@@ -1,14 +1,19 @@
 import { test, expect, openOk } from "../../fixtures";
 
-// Zil bileşeni müşteri ucunu (/api/notifications) yoklar; yönetici oturumunda da aynı bileşen görünür.
-// Ağ taslaklanır (veritabanına gitmez), sayaç yalnızca GET isteklerini sayar. Sekme gizliliği document.hidden ile taklit edilir, 30 sn'lik aralık sahte saatle ilerletilir.
-test.describe("Bildirim yoklaması sekme görünürlüğü", () => {
-  test("sekme gizliyken istek gitmez; görünür olunca bir kez gider; zamanlayıcı yoktur", async ({ page }) => {
+// Zil bileşeni artık liste yerine hafif ÖZET ucunu (/api/notifications?...&ozet=1) yoklar; müşteri tarafında zamanlayıcı yoktur.
+// Ağ taslaklanır (veritabanına gitmez), sayaç yalnızca özet GET isteklerini sayar. Sekme gizliliği document.hidden ile taklit edilir, süre sahte saatle ilerletilir.
+test.describe("Bildirim özet yoklaması sekme görünürlüğü", () => {
+  test("sekme gizliyken istek gitmez; görünür olunca bir kez gider; müşteri tarafında zamanlayıcı yoktur", async ({ page }) => {
     let hits = 0;
-    await page.route("**/api/notifications", (route) => {
+    let fullListHits = 0;
+    await page.route("**/api/notifications**", (route) => {
       if (route.request().method() !== "GET") return route.continue();
+      if (!route.request().url().includes("ozet=1")) {
+        fullListHits++;
+        return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ items: [], unread: 0 }) });
+      }
       hits++;
-      return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ items: [], unread: 0 }) });
+      return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ unread: 0, latest: null }) });
     });
     await page.addInitScript(() => {
       const w = window as unknown as { __hidden: boolean };
@@ -24,16 +29,17 @@ test.describe("Bildirim yoklaması sekme görünürlüğü", () => {
 
     await page.clock.install();
     await openOk(page, "/");
-    await expect.poll(() => hits).toBe(1); // ilk yükleme
+    await expect.poll(() => hits).toBe(1); // ilk yükleme: yalnız özet
 
     await setHidden(true);
-    await page.clock.runFor(95_000); // üç yoklama aralığı
+    await page.clock.runFor(200_000);
     expect(hits, "gizli sekmede istek gitmemeli").toBe(1);
 
     await setHidden(false);
-    await expect.poll(() => hits, "görünür olunca hemen yenilenmeli").toBe(2);
+    await expect.poll(() => hits, "görünür olunca bir kez yenilenmeli").toBe(2);
 
-    await page.clock.runFor(120_000);
-    expect(hits, "zamanlayıcı kaldırıldı: süre geçince ek istek gitmemeli").toBe(2);
+    await page.clock.runFor(200_000);
+    expect(hits, "müşteri tarafında zamanlayıcı yok: süre geçince ek istek gitmemeli").toBe(2);
+    expect(fullListHits, "tam liste yalnız zil açılınca ya da özet değişince istenir").toBe(0);
   });
 });
