@@ -15,6 +15,9 @@ import { revalidateStorefrontSafe } from "@/lib/revalidate";
 import { runDailyCleanup } from "@/lib/cleanup-rules";
 import { purgeExpiredAddressBooks } from "@/lib/address-retention";
 
+// Tek çağrıda temizlik + e-posta + iade adımları çalışır; varsayılan süre yetmeyebilir
+export const maxDuration = 60;
+
 const HOUR = 60 * 60 * 1000;
 
 // Vercel Cron her çağrıda "Authorization: Bearer $CRON_SECRET" gönderir. CRON_SECRET tanımlı değilse uç nokta kapalıdır.
@@ -53,7 +56,11 @@ export async function GET(req: Request) {
       abandonedEmailSent: false,
       createdAt: { lt: new Date(now - 2 * HOUR), gt: new Date(now - 7 * 24 * HOUR) },
     },
-    include: { user: true, items: { include: { variation: { include: { product: { select: { title: true } } } } } } },
+    select: {
+      id: true,
+      user: { select: { email: true, name: true } },
+      items: { select: { quantity: true, variation: { select: { product: { select: { title: true } } } } } },
+    },
     take: 50,
   });
   // Vitrin kuponu geçerli değilse (pasif, süresi dolmuş, limit dolu, kişiye/ürüne özel) onaylı kişiye de sade hatırlatma gider
@@ -82,7 +89,7 @@ export async function GET(req: Request) {
       receiptUrl: null,
       createdAt: { lt: new Date(now - 3 * HOUR), gt: new Date(now - BANK_ORDER_HOLD_HOURS * HOUR) },
     },
-    include: { user: true },
+    select: { id: true, user: { select: { email: true, name: true } } },
     take: 50,
   });
   for (const o of pending) {
@@ -124,7 +131,7 @@ export async function GET(req: Request) {
   let bankCancelled = 0;
   const unpaid = await prisma.order.findMany({
     where: { status: "PENDING_NEW", paymentMethod: "BANK_TRANSFER", receiptUrl: null, createdAt: { lt: new Date(now - BANK_ORDER_HOLD_HOURS * HOUR) } },
-    include: { user: true },
+    select: { id: true, userId: true, status: true, paymentMethod: true, receiptUrl: true, createdAt: true, user: { select: { email: true, name: true } } },
     take: 50,
   });
   for (const o of unpaid) {
