@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { isLimited, rateLimit, recordFailure, tooMany } from "@/lib/rate-limit";
 import { bulkTiersOf } from "@/lib/bulk-pricing";
 import { priceCart } from "@/lib/cart-pricing";
+import { isZeroTotal } from "@/lib/zero-total";
 import { isPurchasablePrice, priceUnavailableMessage } from "@/lib/purchasable";
 import { SHIPPING_LABELS, type CouponRule } from "@/lib/pricing";
 import { COUPON_FAIL_LIMIT, COUPON_LIMITED_ERROR, COUPON_PERSONAL_ERROR, validateCoupon } from "@/lib/coupons";
@@ -135,7 +136,7 @@ export async function POST(req: Request) {
   ];
   const { itemsTotal, shipping, couponDiscount, pickupDiscount, bankDiscount, total } = priced;
   return NextResponse.json(
-    { lines, showcaseCode: ladderCtx?.coupon?.code ?? null, showcaseLabel: ladderCtx?.coupon ? couponDiscountLabel(ladderCtx.coupon) : null, maxTotalDiscountPct: cap, itemsTotal, totals: { itemsTotal, shipping, couponDiscount, pickupDiscount, bankDiscount, total }, coupon },
+    { lines, showcaseCode: ladderCtx?.coupon?.code ?? null, showcaseLabel: ladderCtx?.coupon ? couponDiscountLabel(ladderCtx.coupon) : null, maxTotalDiscountPct: cap, itemsTotal, totals: { itemsTotal, shipping, couponDiscount, pickupDiscount, bankDiscount, total }, zeroTotal: lines.some((l) => l.available) && isZeroTotal(total), coupon },
     { headers: { "Cache-Control": "no-store" } }
   );
 }

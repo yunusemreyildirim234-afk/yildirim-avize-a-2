@@ -177,6 +177,8 @@ export async function POST(req: Request) {
       l.unitPrice = priced.lines[i].unitPrice;
     });
     const totals = priced;
+    // Ödenecek tutar 0 TL veya altı olamaz (kartta PayTR reddeder, havalede 0 TL sipariş ve stok ayrılırdı); kayıt, stok ve kupon rezervasyonundan önce
+    if (totals.total <= 0) return NextResponse.json({ error: "Kupon tutarı sepet toplamının tamamını karşılıyor; ödenecek tutar 0 ₺ olamaz. Lütfen kuponu kaldırın veya sepete ürün ekleyin." }, { status: 400 });
 
     // Havale: aynı e-posta/telefon için bekleyen sipariş sınırı (ürün ve kupon hataları önce gösterilir)
     if (paymentMethod === "BANK_TRANSFER") {

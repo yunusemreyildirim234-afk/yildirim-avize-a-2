@@ -30,6 +30,7 @@ import { activeTier, bulkLabel, type BulkRule } from "@/lib/bulk-pricing";
 import { isValidPhone, PHONE_ERROR } from "@/lib/phone";
 import { bulbNoteFor } from "@/lib/bulb-note";
 import { clearCartChoices, loadCartChoices, saveCartChoices, tabStore } from "@/lib/cart-choices";
+import { ZERO_TOTAL_ERROR } from "@/lib/zero-total";
 import { EMAIL_COMMIT_DELAY_MS, isCommittableEmail, quoteSignature } from "@/lib/quote-signature";
 import { forgetCardOrder, previousCardOrderId, rememberCardOrder } from "@/lib/pending-card-order";
 import { smallImage } from "@/lib/img";
@@ -227,6 +228,7 @@ export default function CartPage() {
     lines: { variationId: string; available: boolean; message?: string; stockShort?: boolean; title?: string; variationName?: string; price?: number; unitPrice?: number; bulk?: BulkRule[]; rules?: ItemRules; capInfo?: CapInfo | null; ladder?: LadderStep[] }[];
     totals: { itemsTotal: number; shipping: number; couponDiscount: number; pickupDiscount: number; bankDiscount: number; total: number };
     coupon: { ok: boolean; error?: string; limited?: boolean } | null;
+    zeroTotal?: boolean; // indirimler sonrası ödenecek tutar 0 ₺: sipariş sunucuda reddedilir
     maxTotalDiscountPct?: number | null;
     showcaseCode?: string | null; // vitrin kuponunun güncel adı
     showcaseLabel?: string | null; // "%5 indirim" / "50 ₺ indirim"
@@ -848,6 +850,9 @@ export default function CartPage() {
                 <button type="button" onClick={handleSkipCoupon} className="text-xs font-semibold text-amber-800 underline underline-offset-2">
                   Kuponsuz devam et
                 </button>
+              )}
+              {fresh && quote.zeroTotal && (
+                <p role="alert" className="text-xs text-red-600 font-medium">{ZERO_TOTAL_ERROR}</p>
               )}
               {couponSkipped && !appliedCoupon && (
                 <p className="text-xs text-neutral-600">Kupon olmadan devam ediyorsunuz; tutar kuponsuz hesaplanır.</p>
