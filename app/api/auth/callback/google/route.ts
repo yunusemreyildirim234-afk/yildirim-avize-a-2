@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { SITE_URL } from "@/lib/site";
-import { USER_COOKIE, cookieOptions } from "@/lib/session";
+import { USER_COOKIE, userCookieOptions } from "@/lib/session";
 import { issueUserToken } from "@/lib/account";
 import { touchLastLogin } from "@/lib/last-login";
 
@@ -79,7 +79,7 @@ export async function GET(req: Request) {
     // 4. Giriş başarılı -> imzalı oturum çerezi ile hesap sayfasına yönlendir
     const res = NextResponse.redirect(new URL("/giris", SITE_URL));
     res.cookies.delete("ya_oauth_state");
-    res.cookies.set(USER_COOKIE, await issueUserToken(user.id, { picture: googleUser.picture ?? null }), cookieOptions);
+    res.cookies.set(USER_COOKIE, await issueUserToken(user.id, { picture: googleUser.picture ?? null }), userCookieOptions);
     return res;
   } catch (err) {
     console.error("[google-auth]", (err as Error)?.message ?? "bilinmeyen hata");

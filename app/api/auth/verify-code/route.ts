@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSessionUserId, issueUserToken } from "@/lib/account";
 import { getCustomerWithOrders } from "@/lib/customer";
-import { USER_COOKIE, cookieOptions } from "@/lib/session";
+import { USER_COOKIE, userCookieOptions } from "@/lib/session";
 import { rateLimit, tooMany } from "@/lib/rate-limit";
 import { touchLastLogin } from "@/lib/last-login";
 import { consumeCode, issueProof, readProof, type CodeType } from "@/lib/verification";
@@ -47,7 +47,7 @@ export async function POST(req: Request) {
       if (!(await consumeCode(email, type, code))) return BAD();
       await touchLastLogin(prisma.user, pending.uid);
       const res = NextResponse.json({ success: true, user: await getCustomerWithOrders(pending.uid) });
-      res.cookies.set(USER_COOKIE, await issueUserToken(pending.uid), cookieOptions);
+      res.cookies.set(USER_COOKIE, await issueUserToken(pending.uid), userCookieOptions);
       return res;
     }
 

@@ -1,7 +1,7 @@
 import { cache } from "react";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
-import { USER_COOKIE, signSession, verifyUserSession, verifyVersioned, versionMatches } from "@/lib/session";
+import { USER_COOKIE, USER_SESSION_MAX_AGE, signSession, verifyUserSession, verifyVersioned, versionMatches } from "@/lib/session";
 
 type UserSession = { uid: string; sv?: number; picture?: string | null };
 
@@ -33,7 +33,7 @@ export const getUserSession = cache(async (): Promise<UserSession | null> => {
 /** Kullanıcının güncel oturum sürümünü içeren yeni oturum belirteci. */
 export async function issueUserToken(userId: string, extra: Record<string, unknown> = {}) {
   const u = await prisma.user.findUnique({ where: { id: userId }, select: { sessionVersion: true } });
-  return signSession({ ...extra, uid: userId, sv: u?.sessionVersion ?? 0, purpose: "session" });
+  return signSession({ ...extra, uid: userId, sv: u?.sessionVersion ?? 0, purpose: "session" }, USER_SESSION_MAX_AGE);
 }
 
 /** Sürümü artırır (eski tüm oturumlar geçersiz olur) ve yeni sürümü döner. */
