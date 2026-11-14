@@ -30,6 +30,7 @@ import { orderCode, bankPaymentDeadline, breakdownOf, breakdownRows, deliveryAdd
 import { IADE_TALIMATI } from "@/lib/legal-texts";
 import { adminOrderHref } from "@/lib/admin-order-detail";
 import { recipientDiffers } from "@/lib/recipient";
+import { buildQuestionReceivedHtml } from "@/lib/contact-confirm";
 import { buildCampaignFooter, unsubscribeHeaders } from "@/lib/marketing";
 
 const DEFAULT_FROM = "Yıldırım Avize <siparis@yildirimavize.com.tr>";
@@ -324,22 +325,12 @@ export async function sendReplyEmail(data: {
   return sent;
 }
 
-/** Soru / mesaj gönderen müşteriye otomatik teyit (sorusunun özetiyle). */
-export async function sendQuestionReceivedEmail(data: { to: string; name: string; question: string; productTitle?: string | null }) {
-  const summary = data.question.length > 300 ? `${data.question.slice(0, 300)}...` : data.question;
+/** Soru / mesaj gönderen müşteriye otomatik teyit (mesaj metni ve ad içermez). */
+export async function sendQuestionReceivedEmail(data: { to: string; productTitle?: string | null }) {
   return sendViaResend(process.env.RESEND_API_KEY, {
     to: [data.to],
     subject: "Sorunuz Bize Ulaştı - Yıldırım Avize",
-    html: `<div style="font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #171717;">
-      <h2 style="margin: 0 0 12px;">Sayın ${esc(data.name)},</h2>
-      <p style="font-size: 14px; line-height: 1.6;">Sayın ${esc(data.name)}, sorunuz ekibimize ulaşmıştır. En kısa sürede e-posta adresiniz üzerinden yanıtlanacaktır.</p>
-      ${data.productTitle ? `<p style="font-size: 13px;">Ürün: <strong>${esc(data.productTitle)}</strong></p>` : ""}
-      <div style="margin-top: 16px; padding: 12px 16px; background: #fafafa; border-left: 3px solid #d97706; font-size: 13px; color: #525252;">
-        <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #a3a3a3; margin-bottom: 4px;">Sorunuzun özeti</div>
-        ${multiline(summary)}
-      </div>
-      <p style="font-size: 12px; color: #737373; margin-top: 24px;">Yıldırım Avize | Tel: ${PHONE_DISPLAY}</p>
-    </div>`,
+    html: buildQuestionReceivedHtml(PHONE_DISPLAY, data.productTitle),
   });
 }
 
