@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { rateLimit, tooMany } from "../lib/rate-limit.ts";
 
-const read = (p) => readFileSync(new URL(p, import.meta.url), "utf8");
+const read = (p) => readFileSync(new URL(p, import.meta.url), "utf8").replace(/\r\n/g, "\n"); // Windows'ta CRLF çıkışı
 const reqFrom = (ip) => new Request("http://x.test/api", { headers: { "x-forwarded-for": ip } });
 
 // Uçların kullandığı kalıbın aynısı: sınır aşılınca 429 + Türkçe mesaj + Retry-After

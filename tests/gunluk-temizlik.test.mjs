@@ -78,14 +78,13 @@ test("where kuralları: tarih sınırları ve okundu koşulu", () => {
   assert.equal(w.notifications.createdAt.lt.getTime(), NOW - 90 * DAY);
 });
 
-test("uç CRON_SECRET ile korunur; vercel.json'a günlük görev eklenmiş, eskiler aynı", () => {
-  const route = readFileSync(new URL("../app/api/cron/cleanup/route.ts", import.meta.url), "utf8");
-  assert.match(route, /CRON_SECRET/);
-  assert.match(route, /safeCompare\(/);
-  assert.ok(route.indexOf("status: 401") < route.indexOf("runDailyCleanup(prisma)"));
+test("temizlik reminders ucunun içinde: yetki denetiminden sonra, kendi try/catch'iyle; ayrı cron yok (Hobby: en çok 2)", () => {
+  const route = readFileSync(new URL("../app/api/cron/reminders/route.ts", import.meta.url), "utf8");
+  assert.ok(route.indexOf("status: 401") < route.indexOf("runDailyCleanup(prisma)"), "yetki önce");
+  assert.match(route, /try \{\s*cleanup = await runDailyCleanup\(prisma\);\s*\} catch/);
+  assert.match(route, /abandoned, receipts, closed, bankCancelled, cleanup \}/);
+  assert.ok(route.indexOf("runDailyCleanup(prisma)") < route.indexOf("abandonedEmailSent: false"), "hatırlatma hatası temizliği engellemez");
+  assert.throws(() => readFileSync(new URL("../app/api/cron/cleanup/route.ts", import.meta.url)), /ENOENT/);
   const cfg = JSON.parse(readFileSync(new URL("../vercel.json", import.meta.url), "utf8"));
-  const paths = cfg.crons.map((c) => `${c.path} ${c.schedule}`);
-  assert.ok(paths.includes("/api/cron/reminders 0 9 * * *"));
-  assert.ok(paths.includes("/api/cron/sync-shipments 0 10 * * *"));
-  assert.ok(paths.includes("/api/cron/cleanup 30 3 * * *"));
+  assert.deepEqual(cfg.crons.map((c) => `${c.path} ${c.schedule}`), ["/api/cron/reminders 0 9 * * *", "/api/cron/sync-shipments 0 10 * * *"]);
 });
