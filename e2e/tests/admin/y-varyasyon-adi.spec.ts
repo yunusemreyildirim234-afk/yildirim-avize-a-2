@@ -49,6 +49,8 @@ test.describe("Admin: varyasyon adı düzenleme + rengi toplu değiştirme (E2E 
       await openAdmin(page);
       await findInProductList(page, title);
       await page.locator(`#ap-${ids[title]}`).getByRole("button", { name: /Düzenle/ }).click();
+      // Düzenleyici, tam görseller (GET ?fields=images) gelince açılır: Ebat kutusu görünene kadar beklenir
+      await expect(page.locator(`#ap-${ids[title]}`).getByLabel("Ebat", { exact: true })).toBeVisible({ timeout: 30_000 });
       return page.locator(`#ap-${ids[title]}`);
     };
     const lastDialog = async (before: number) => {

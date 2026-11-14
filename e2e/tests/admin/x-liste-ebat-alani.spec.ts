@@ -37,7 +37,7 @@ test.describe("Admin: Product.ebat alanı → ebat filtresi + sıralama (E2E ön
       await findInProductList(page, title);
       await page.locator(`#ap-${ids[title]}`).getByRole("button", { name: /Düzenle/ }).click();
       const box = page.locator(`#ap-${ids[title]}`).getByLabel("Ebat", { exact: true });
-      await expect(box).toBeVisible();
+      await expect(box).toBeVisible({ timeout: 30_000 }); // düzenleyici tam görseller gelince açılır
       await box.fill(value);
       // Kayıt sonucu pencereyle değil, düzenleyicinin altındaki yapışkan çubukta gösterilir
       await page.locator(`#ap-${ids[title]}`).getByTestId("tumunu-kaydet").click();
@@ -70,7 +70,7 @@ test.describe("Admin: Product.ebat alanı → ebat filtresi + sıralama (E2E ön
     await findInProductList(page, a);
     await page.locator(`#ap-${ids[a]}`).getByRole("button", { name: /Düzenle/ }).click();
     const box = page.locator(`#ap-${ids[a]}`).getByLabel("Ebat", { exact: true });
-    await expect(box).toBeVisible();
+    await expect(box).toBeVisible({ timeout: 30_000 }); // düzenleyici tam görseller gelince açılır
     expect(await box.evaluate((el) => getComputedStyle(el).fontSize)).toBe("16px");
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await expect(page.getByText("Ürünün ebadı (örn. 45 x 25). Boş bırakırsan renk adındaki ebat (örn. Krom / 58 x 58) kullanılır. Filtreleme ve sıralamada kullanılır.").first()).toBeVisible();

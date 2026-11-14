@@ -61,6 +61,8 @@ test.describe("Admin: renkli ürün ve fotoğraf yönetimi", () => {
       await openAdmin(page);
       await findInProductList(page, title);
       await page.locator(`#ap-${id}`).getByRole("button", { name: /Düzenle/ }).click();
+      // Düzenleyici, tam görseller (GET ?fields=images) gelince açılır: Ebat kutusu görünene kadar beklenir
+      await expect(page.locator(`#ap-${id}`).getByLabel("Ebat", { exact: true })).toBeVisible({ timeout: 30_000 });
       return page.locator(`#ap-${id}`);
     };
 

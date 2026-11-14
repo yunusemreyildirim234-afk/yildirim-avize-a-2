@@ -88,7 +88,7 @@ test.describe("Aktif yap / Pasife al", () => {
     const dlg = dialogs(page);
     await openList(page, T.c);
     await page.locator(`#ap-${id.c}`).getByRole("button", { name: "Düzenle" }).click();
-    await expect(page.getByTestId("durum-etiketi")).toContainText("Aktif");
+    await expect(page.getByTestId("durum-etiketi")).toContainText("Aktif", { timeout: 30_000 }); // düzenleyici tam görseller gelince açılır
 
     await page.getByTestId("duzenle-pasife-al").click();
     await expect.poll(() => isActive(id.c), POLL).toBe(false);

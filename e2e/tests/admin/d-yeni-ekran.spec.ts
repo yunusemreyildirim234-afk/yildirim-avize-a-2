@@ -69,7 +69,7 @@ test.describe("Yeni özellik ekran görüntüleri", () => {
       await row.scrollIntoViewIfNeeded();
       await row.screenshot({ path: `${OUT}/${m.name}-admin-vitrine-al.png` });
       await row.getByRole("button", { name: "Düzenle" }).click();
-      await expect(page.getByTestId("stoksuz-gizle")).toBeVisible();
+      await expect(page.getByTestId("stoksuz-gizle")).toBeVisible({ timeout: 30_000 }); // düzenleyici tam görseller gelince açılır
       await row.screenshot({ path: `${OUT}/${m.name}-admin-duzenle-durum.png` });
       await page.getByLabel("E2E Yeni Pasif Stoklu Avize seç").check();
       await page.locator('button[aria-controls="admin-selection-detail"]').click();

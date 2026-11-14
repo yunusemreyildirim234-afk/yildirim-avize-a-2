@@ -70,7 +70,7 @@ test.describe("Stoksuz ürün istisnası", () => {
     await page.getByLabel("Ürün ismi, stok kodu veya model kodu ile ara").fill(T.p1);
     await page.locator(`#ap-${id.p1}`).getByRole("button", { name: "Düzenle" }).click();
     const box = page.getByTestId("stoksuz-gizle");
-    await expect(box).not.toBeChecked();
+    await expect(box).not.toBeChecked({ timeout: 30_000 }); // düzenleyici tam görseller gelince açılır
     await expect(page.locator(`#ap-${id.p1}`)).toContainText("Kategori ayarı açık olsa bile bu ürün stoğu bittiğinde vitrinde görünmez");
     expect((await box.boundingBox())!.height).toBeGreaterThan(0);
 
@@ -133,7 +133,7 @@ test.describe("Stoksuz ürün istisnası", () => {
     await page.getByLabel("Ürün ismi, stok kodu veya model kodu ile ara").fill(T.p2);
     await page.locator(`#ap-${id.p2}`).getByRole("button", { name: "Düzenle" }).click();
     const box = page.getByTestId("stoksuz-gizle");
-    await expect(box).toBeVisible();
+    await expect(box).toBeVisible({ timeout: 30_000 }); // düzenleyici tam görseller gelince açılır
     expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(1);
   });
 });
