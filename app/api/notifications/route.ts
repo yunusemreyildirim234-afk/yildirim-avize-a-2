@@ -4,6 +4,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { ADMIN_COOKIE, verifyAdminSession } from "@/lib/session";
 import { getUserSession } from "@/lib/account";
+import { summarizeGroups } from "@/lib/notification-summary";
 import { buildNotificationWhere, parseNotificationScope } from "@/lib/notification-scope";
 
 // Oturumdaki müşteri ve/veya yöneticiye ait bildirimleri kapsayan filtre; ?scope=admin|user kümeyi tek tarafa daraltır
@@ -20,7 +21,12 @@ async function scope(req: Request, mode: "read" | "delete" = "read") {
 
 export async function GET(req: Request) {
   const where = await scope(req);
-  if (!where) return NextResponse.json({ items: [], unread: 0 });
+  if (!where) return NextResponse.json(new URL(req.url).searchParams.get("ozet") === "1" ? { unread: 0, latest: null } : { items: [], unread: 0 });
+  // Özet modu: liste yok; tek groupBy ile okunmamış sayısı + en yeni bildirim tarihi (aynı sahiplik filtresi)
+  if (new URL(req.url).searchParams.get("ozet") === "1") {
+    const rows = await prisma.notification.groupBy({ by: ["read"], where, _count: { _all: true }, _max: { createdAt: true } });
+    return NextResponse.json(summarizeGroups(rows.map((r) => ({ read: r.read, count: r._count._all, latest: r._max.createdAt }))));
+  }
   const [items, unread] = await Promise.all([
     prisma.notification.findMany({ where, orderBy: { createdAt: "desc" }, take: 40 }),
     prisma.notification.count({ where: { AND: [where, { read: false }] } }),
