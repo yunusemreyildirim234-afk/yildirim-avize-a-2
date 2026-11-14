@@ -173,9 +173,15 @@ function DiscountBadges({ product, onRemove, disabled }: { product: Product; onR
 
 const norm = (v?: string | null) => (v ?? "").toLocaleLowerCase("tr").trim();
 
-export default function AdminProductList({ products, maxTotalDiscountPct, showcase, extraCategories = [], categoryTitles = {}, stocklessRule }: { products: Product[]; maxTotalDiscountPct?: number | null; extraCategories?: string[]; categoryTitles?: Record<string, string>; stocklessRule?: StocklessRule; showcase: { featured: string[]; bestSellers: string[]; manualFeatured: number } }) {
+export default function AdminProductList({ products: serverProducts, maxTotalDiscountPct, showcase, extraCategories = [], categoryTitles = {}, stocklessRule }: { products: Product[]; maxTotalDiscountPct?: number | null; extraCategories?: string[]; categoryTitles?: Record<string, string>; stocklessRule?: StocklessRule; showcase: { featured: string[]; bestSellers: string[]; manualFeatured: number } }) {
   const sets = useMemo<ChipSets>(() => ({ featured: new Set(showcase.featured), bestseller: new Set(showcase.bestSellers) }), [showcase]);
   const router = useRouter();
+  // Stok +/−: sunucu yanıtındaki yeni değer yerelde tutulur (router.refresh yok). Sunucudan yeni liste gelince (başka işlem yenilemesi) geçersiz sayılır.
+  const [stockPatch, setStockPatch] = useState<{ base: Product[]; byId: Record<string, number> }>({ base: serverProducts, byId: {} });
+  const products = useMemo(() => {
+    const byId = stockPatch.base === serverProducts ? stockPatch.byId : {};
+    return Object.keys(byId).length ? serverProducts.map((p) => (p.variations.some((v) => v.id in byId) ? { ...p, variations: p.variations.map((v) => (v.id in byId ? { ...v, stock: byId[v.id] } : v)) } : p)) : serverProducts;
+  }, [serverProducts, stockPatch]);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   useOpenOnHash("urunler", setOpen);
@@ -379,7 +385,8 @@ Yine de geri alınsın mı?`)) break;
       const data = await res.json();
       if (data.success) {
         if (data.snapshot) setUndo({ snapshot: data.snapshot, label: `Stok ${oldStock} → ${newStock}` });
-        router.refresh();
+        const saved = typeof data.variation?.stock === "number" ? data.variation.stock : newStock; // sunucunun yazdığı değer
+        setStockPatch((cur) => ({ base: serverProducts, byId: { ...(cur.base === serverProducts ? cur.byId : {}), [variationId]: saved } }));
       } else {
         alert("Stok güncellenemedi: " + data.error);
       }
