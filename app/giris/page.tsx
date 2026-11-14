@@ -71,17 +71,12 @@ interface UserData {
 export default function AuthPage() {
   const router = useRouter();
   const [tab, setTab] = useState<"musteri" | "yonetici">("musteri");
-  // Yönetici sekmesi yalnız /giris?tab=yonetici adresinde görünür (müşteri sayfasında yönetici girişine ipucu verilmez)
-  const [adminTab, setAdminTab] = useState(false);
   const [user, setUser] = useState<UserData | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get("tab") === "yonetici") {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- URL parametresi ilk render sonrası okunur
-      setTab("yonetici");
-      setAdminTab(true);
-    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- URL parametresi ilk render sonrası okunur
+    if (params.get("tab") === "yonetici") setTab("yonetici");
 
     fetch("/api/auth/me?orders=1")
       .then((res) => res.json())
@@ -392,7 +387,6 @@ export default function AuthPage() {
   return (
     <main className="min-h-screen bg-neutral-50 py-16 px-4 flex items-center justify-center">
       <div className="max-w-md w-full bg-white rounded-3xl border border-neutral-200 p-8 sm:p-10 shadow-sm space-y-6">
-        {adminTab && (
         <div role="tablist" aria-label="Giriş türü" className="flex bg-neutral-100 p-1 rounded-2xl text-xs font-semibold">
           {(["musteri", "yonetici"] as const).map((key) => (
             <button
@@ -409,7 +403,6 @@ export default function AuthPage() {
             </button>
           ))}
         </div>
-        )}
 
         {tab === "yonetici" ? (
           <AdminLoginForm />
