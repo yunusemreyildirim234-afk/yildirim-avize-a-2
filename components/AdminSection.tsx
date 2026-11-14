@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { useOpenOnHash } from "@/components/useOpenOnHash";
+import { SectionOpenContext } from "@/components/SectionOpen";
 
 interface Badge {
   label: string;
@@ -65,7 +66,7 @@ export default function AdminSection({
       </button>
       <div id={`${id}-panel`} className={`grid transition-[grid-template-rows] duration-300 ease-out ${open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
         <div className="overflow-hidden" inert={!open}>
-          <div className="border-t border-neutral-100">{children}</div>
+          <div className="border-t border-neutral-100"><SectionOpenContext.Provider value={open}>{children}</SectionOpenContext.Provider></div>
         </div>
       </div>
     </section>

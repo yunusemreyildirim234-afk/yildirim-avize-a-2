@@ -1,6 +1,17 @@
 import { NextResponse } from "next/server";
 import { adminGuard } from "@/lib/admin-guard";
 import { prisma } from "@/lib/db";
+import { getActivity } from "@/lib/activity";
+import { rateLimit, tooMany } from "@/lib/rate-limit";
+
+// Son 3 günün müşteri hareketleri: panel sayfasıyla birlikte değil, "Müşteriler" bölümü açılınca istenir.
+export async function GET(req: Request) {
+  const denied = await adminGuard();
+  if (denied) return denied;
+  const rl = rateLimit(req, "admin-activity", 30, 60_000);
+  if (rl.limited) return tooMany(rl.retryAfter);
+  return NextResponse.json(await getActivity());
+}
 
 // Müşteri hareket kayıtlarını (ClientEvent) siler. Kullanıcı hesaplarına (User) asla dokunmaz.
 // keys: satır anahtarları (e-posta veya "s:<oturum>"); scope: "registered" | "guests" (sekmedeki tüm kayıtlar)

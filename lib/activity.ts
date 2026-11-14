@@ -81,3 +81,12 @@ export async function getActivity(): Promise<{ registered: ActivityRow[]; guests
     return { registered: [], guests: [], ok: false };
   }
 }
+
+/** Son 3 günün hata olayı sayısı (bölüm kapalıyken rozet için tek hafif sayım; satırlar yüklenmez). Okunamazsa 0. */
+export async function countRecentErrors(): Promise<number> {
+  try {
+    return await prisma.clientEvent.count({ where: { type: "ERROR", createdAt: { gte: new Date(Date.now() - RETENTION_MS) } } });
+  } catch {
+    return 0;
+  }
+}

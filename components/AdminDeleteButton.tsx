@@ -24,6 +24,7 @@ export default function AdminDeleteButton({
   disabled = false,
   expectedCount,
   typeToConfirm = false,
+  onDone,
 }: {
   endpoint: string;
   ids?: string[];
@@ -36,6 +37,8 @@ export default function AdminDeleteButton({
   expectedCount?: number;
   /** Onay penceresinde "SİL" yazdırır (toplu silme) */
   typeToConfirm?: boolean;
+  /** Silme başarılı olunca (listeyi kendi çeken bileşenler yeniden yüklemek için) */
+  onDone?: () => void;
 }) {
   const router = useRouter();
   const btn = useRef<HTMLButtonElement>(null);
@@ -74,6 +77,7 @@ export default function AdminDeleteButton({
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data.error || "Silinemedi.");
         router.refresh();
+        onDone?.();
         // Liste yenilendikten sonra satır hâlâ varsa (ör. hareketi silinen üye) yeniden gösterilir
         setTimeout(() => {
           if (el?.isConnected) el.style.display = "";

@@ -43,7 +43,7 @@ import AdminInvoice from "@/components/AdminInvoice";
 import AdminShipmentSync from "@/components/AdminShipmentSync";
 import AdminDeleteButton from "@/components/AdminDeleteButton";
 import { titleCaseTr } from "@/lib/display-case";
-import { getActivity } from "@/lib/activity";
+import { countRecentErrors, purgeOldEvents } from "@/lib/activity";
 import { getCompanyInfo } from "@/lib/company";
 import { UNCOUNTED_STATUSES, matchesGroups, parseGroupParam } from "@/lib/orderStatus";
 import { ORDER_LIST_LIMIT, countGroups, countVisible, dateWhere, effectiveDurum, groupsWhere } from "@/lib/admin-order-query";
@@ -202,7 +202,8 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const showcase = { featured: featuredIds.map((p) => p.id), bestSellers: homePools.bestsellers.slice(0, 48).map((p) => p.id), manualFeatured: flaggedFeatured.length };
   const slim = (list: { id: string; title: string; modelCode: string | null }[]) => list.map((p) => ({ id: p.id, title: p.title, modelCode: p.modelCode }));
   const discountCap = (await prisma.siteConfig.findUnique({ where: { id: 1 }, select: { maxTotalDiscountPct: true } }))?.maxTotalDiscountPct ?? null;
-  const activity = await getActivity();
+  // Hareket kayıtları sayfada yüklenmez (bölüm açılınca /api/admin/activity); yalnız hata rozeti için sayım. 3 günlük saklama süresi için eski kayıt temizliği eskisi gibi her yüklemede çalışır.
+  const [errorCount] = await Promise.all([countRecentErrors(), purgeOldEvents()]);
   // 2FA kapalı yönetici hesabı sayısı (uyarı bandı için); okunamazsa band gösterilmez
   const adminUsers = await prisma.user.findMany({ where: { role: "ADMIN" }, select: { id: true, email: true, twoFactorEnabled: true }, orderBy: { createdAt: "asc" } }).catch(() => []);
   const adminsWithout2fa = adminUsers.filter((a) => !a.twoFactorEnabled).length;
@@ -688,14 +689,9 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           icon={<Users aria-hidden="true" className="w-4 h-4 text-amber-600" />}
           title="Müşteriler & Son 3 Gün Hareket / Hata Kaydı"
           description="Arama, sepete ekleme, ödeme adımı ve karşılaşılan hatalar. Kayıtlar 3 gün sonra otomatik silinir."
-          badges={[
-            {
-              label: `${[...activity.registered, ...activity.guests].reduce((n, r) => n + r.errors.length, 0)} hata`,
-              tone: [...activity.registered, ...activity.guests].some((r) => r.errors.length > 0) ? "red" : "neutral",
-            },
-          ]}
+          badges={[{ label: `${errorCount} hata`, tone: errorCount > 0 ? "red" : "neutral" }]}
         >
-          <AdminActivity registered={activity.registered} guests={activity.guests} ok={activity.ok} />
+          <AdminActivity />
         </AdminSection>
 
         <AdminDiscountSettings initial={discountCap} />

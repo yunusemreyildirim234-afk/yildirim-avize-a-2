@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useSectionOpen } from "@/components/SectionOpen";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { ActivityRow } from "@/lib/activity";
@@ -9,7 +10,7 @@ import AdminDeleteButton from "@/components/AdminDeleteButton";
 const fmt = (iso: string | null) => (iso ? new Date(iso).toLocaleString("tr-TR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "—");
 const dur = (m: number) => (m < 1 ? "1 dakikadan az" : m < 60 ? `${m} dk` : `${Math.floor(m / 60)} sa ${m % 60} dk`);
 
-function Row({ r, guest }: { r: ActivityRow; guest: boolean }) {
+function Row({ r, guest, onChanged }: { r: ActivityRow; guest: boolean; onChanged: () => void }) {
   const router = useRouter();
   const quiet = !r.lastAt;
   // Üye adını düzenle: önce "eski ad → yeni ad" gösterilip onay alınır
@@ -28,6 +29,7 @@ E-posta, şifre ve rol değişmez. Onaylıyor musunuz?`)) return;
       if (!res.ok) throw new Error(data.error || "Ad güncellenemedi.");
       toast.success(`Ad güncellendi: ${data.oldName} → ${data.name}`);
       router.refresh();
+      onChanged();
     } catch (err) {
       toast.error((err as Error).message);
     }
@@ -50,6 +52,7 @@ E-posta, şifre ve rol değişmez. Onaylıyor musunuz?`)) return;
           label="Hareket kaydını sil"
           confirmText={guest ? "Bu misafirin 3 günlük hareket kayıtları silinecek." : "Bu üyenin 3 günlük hareket kayıtları silinecek (üye hesabı silinmez)."}
           disabled={quiet}
+          onDone={onChanged}
           className={`min-h-9 ${r.userId ? "ml-4" : "ml-auto"}`}
         />
       </div>
@@ -81,8 +84,49 @@ E-posta, şifre ve rol değişmez. Onaylıyor musunuz?`)) return;
   );
 }
 
+interface ActivityData {
+  registered: ActivityRow[];
+  guests: ActivityRow[];
+  ok: boolean;
+}
+
+/** Hareket kayıtları sayfayla birlikte yüklenmez: bölüm ilk açıldığında /api/admin/activity'den (yönetici oturumuyla) çekilir. */
+export default function AdminActivity() {
+  const open = useSectionOpen();
+  const started = useRef(false);
+  const [data, setData] = useState<ActivityData | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  const load = useCallback(() => {
+    setFailed(false);
+    fetch("/api/admin/activity", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("http"))))
+      .then((d: ActivityData) => setData(d))
+      .catch(() => setFailed(true));
+  }, []);
+
+  useEffect(() => {
+    if (open && !started.current) {
+      started.current = true;
+      load();
+    }
+  }, [open, load]);
+
+  if (!data) {
+    return failed ? (
+      <p className="p-10 text-center text-xs text-neutral-500">
+        Hareket kayıtları okunamadı.{" "}
+        <button type="button" onClick={load} className="font-semibold underline hover:text-amber-700">Yeniden dene</button>
+      </p>
+    ) : (
+      <p role="status" className="p-10 text-center text-xs text-neutral-400">{open ? "Hareket kayıtları yükleniyor…" : "Bölümü açınca yüklenir."}</p>
+    );
+  }
+  return <ActivityBody registered={data.registered} guests={data.guests} ok={data.ok} onChanged={load} />;
+}
+
 // Son 3 günlük müşteri hareketi: üyeler ve misafirler ayrı sekmelerde
-export default function AdminActivity({ registered, guests, ok }: { registered: ActivityRow[]; guests: ActivityRow[]; ok: boolean }) {
+function ActivityBody({ registered, guests, ok, onChanged }: { registered: ActivityRow[]; guests: ActivityRow[]; ok: boolean; onChanged: () => void }) {
   const [tab, setTab] = useState<"reg" | "guest">("reg");
   const [hideAdmin, setHideAdmin] = useState(true); // yönetici/test etkinlikleri varsayılan olarak gizli
   const visibleRegistered = hideAdmin ? registered.filter((r) => !r.isAdmin) : registered;
@@ -111,6 +155,7 @@ export default function AdminActivity({ registered, guests, ok }: { registered: 
           label="Bu Sekmedeki Tüm Hareket Kayıtlarını Temizle"
           confirmText={tab === "reg" ? "Kayıtlı müşterilerin tüm hareket kayıtları silinecek (hesaplar silinmez)." : "Tüm misafir hareket kayıtları silinecek."}
           disabled={list.every((r) => !r.lastAt)}
+          onDone={onChanged}
         />
       </div>
       {!ok ? (
@@ -120,7 +165,7 @@ export default function AdminActivity({ registered, guests, ok }: { registered: 
       ) : (
         <ul className="divide-y divide-neutral-100 max-h-[70vh] overflow-y-auto">
           {list.map((r) => (
-            <Row key={r.key} r={r} guest={tab === "guest"} />
+            <Row key={r.key} r={r} guest={tab === "guest"} onChanged={onChanged} />
           ))}
         </ul>
       )}
