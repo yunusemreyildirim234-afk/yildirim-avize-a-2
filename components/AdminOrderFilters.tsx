@@ -60,14 +60,14 @@ export default function AdminOrderFilters({ param, effectiveParam, counts, total
         )}
       </form>
       <nav aria-label="Sipariş durumu filtreleri" className="flex flex-wrap items-center gap-2 px-6 py-4">
-        <Link href={href("tumu")} scroll={false} aria-pressed={allActive} className={`${chip} ${allActive ? on : off}`}>
+        <Link href={href("tumu")} scroll={false} aria-current={allActive ? "true" : undefined} className={`${chip} ${allActive ? on : off}`}>
           {allActive && <Check aria-hidden="true" className="h-3 w-3" />}Tümü <span className="opacity-70">{total}</span>
         </Link>
         {ORDER_GROUPS.map((g) => {
           // "Tümü" modunda grup çipleri yanmaz: tıklamak yalnızca o grubu seçer
           const active = mode !== "all" && keys.includes(g.key);
           return (
-            <Link key={g.key} href={href(g.key)} scroll={false} aria-pressed={active} className={`${chip} ${active ? on : off}`}>
+            <Link key={g.key} href={href(g.key)} scroll={false} aria-current={active ? "true" : undefined} className={`${chip} ${active ? on : off}`}>
               {active && <Check aria-hidden="true" className="h-3 w-3" />}{g.label} <span className="opacity-70">{counts[g.key]}</span>
             </Link>
           );

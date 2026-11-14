@@ -30,3 +30,12 @@ test("odak tuzağı kancası: Esc, Tab döngüsü, odağı tetikleyiciye geri ve
     assert.match(read(`components/${f}.tsx`), /useFocusTrap\(/, f);
   }
 });
+
+test("giriş/kayıt sekmeleri seçili durumu bildirir; sipariş süzgeci bağlantısı aria-current kullanır", () => {
+  const a = read("components/AuthForms.tsx");
+  assert.equal((a.match(/aria-pressed="true"/g) ?? []).length, 2);
+  assert.equal((a.match(/aria-pressed="false"/g) ?? []).length, 2);
+  const f = read("components/AdminOrderFilters.tsx");
+  assert.doesNotMatch(f, /aria-pressed/);
+  assert.match(f, /aria-current=\{active \? "true" : undefined\}/);
+});

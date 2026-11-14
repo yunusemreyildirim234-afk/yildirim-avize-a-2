@@ -177,8 +177,8 @@ export default function AuthForms({ onAuthenticated }: { onAuthenticated: (user:
     return (
       <>
         <div className="flex bg-neutral-100 p-1 rounded-2xl text-xs font-semibold">
-          <button type="button" className="flex-1 py-2.5 rounded-xl bg-white text-neutral-900 shadow-sm">Giriş Yap</button>
-          <button type="button" onClick={() => switchMode("register")} className="flex-1 py-2.5 rounded-xl text-neutral-500 hover:text-neutral-900">
+          <button type="button" aria-pressed="true" className="flex-1 py-2.5 rounded-xl bg-white text-neutral-900 shadow-sm">Giriş Yap</button>
+          <button type="button" aria-pressed="false" onClick={() => switchMode("register")} className="flex-1 py-2.5 rounded-xl text-neutral-500 hover:text-neutral-900">
             Kayıt Ol
           </button>
         </div>
@@ -208,8 +208,8 @@ export default function AuthForms({ onAuthenticated }: { onAuthenticated: (user:
     <>
       {isRegister ? (
         <div className="flex bg-neutral-100 p-1 rounded-2xl text-xs font-semibold">
-          <button type="button" onClick={() => switchMode("login")} className="flex-1 py-2.5 rounded-xl text-neutral-500 hover:text-neutral-900">Giriş Yap</button>
-          <button type="button" className="flex-1 py-2.5 rounded-xl bg-white text-neutral-900 shadow-sm">Kayıt Ol</button>
+          <button type="button" aria-pressed="false" onClick={() => switchMode("login")} className="flex-1 py-2.5 rounded-xl text-neutral-500 hover:text-neutral-900">Giriş Yap</button>
+          <button type="button" aria-pressed="true" className="flex-1 py-2.5 rounded-xl bg-white text-neutral-900 shadow-sm">Kayıt Ol</button>
         </div>
       ) : (
         <div className="text-center space-y-1">
