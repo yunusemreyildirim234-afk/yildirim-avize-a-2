@@ -7,6 +7,7 @@ import { sendCampaignCouponEmail } from "@/lib/email";
 import { buildCampaignFooter, hasActiveConsent } from "@/lib/marketing";
 import { notifyCustomer } from "@/lib/notifications";
 import { COUPON_CODE_TAKEN_ERROR, couponCodeFormatError, isShowcaseCoupon, normalizeCouponCode, renamePromoCardCodes } from "@/lib/coupon-code";
+import { COUPON_DUPLICATE_ERROR, couponCreateInputError, couponDeleteBlock, createCouponSafe } from "@/lib/admin-coupon-rules";
 import type { Prisma } from "@/generated/prisma/client";
 
 const MAX_FIXED_AMOUNT = 100_000;
@@ -64,15 +65,18 @@ async function POSTHandler(req: Request) {
   const terms = parseTerms(body);
   if ("error" in terms) return NextResponse.json({ error: terms.error }, { status: 400 });
   const { discountPercent } = terms;
-  if (!(maxUses >= 1)) return NextResponse.json({ error: "Kullanım limiti en az 1 olmalı." }, { status: 400 });
+  const inputError = couponCreateInputError(maxUses, userEmail);
+  if (inputError) return NextResponse.json({ error: inputError }, { status: 400 });
   if (await prisma.coupon.findFirst({ where: { code: { equals: code, mode: "insensitive" } }, select: { id: true } })) {
-    return NextResponse.json({ error: "Bu kod zaten mevcut." }, { status: 409 });
+    return NextResponse.json({ error: COUPON_DUPLICATE_ERROR }, { status: 409 });
   }
   if (productId && !(await prisma.product.findUnique({ where: { id: productId }, select: { id: true } }))) {
     return NextResponse.json({ error: "Seçilen ürün bulunamadı." }, { status: 400 });
   }
 
-  const coupon = await prisma.coupon.create({ data: { code, ...terms, maxUses, userEmail, productId } });
+  const created = await createCouponSafe(() => prisma.coupon.create({ data: { code, ...terms, maxUses, userEmail, productId } }));
+  if (created.status !== 200) return NextResponse.json({ error: created.error }, { status: created.status });
+  const coupon = created.value;
   // Kişiye özel kuponda müşteriye hesap bildirimi gider; kampanya e-postası yalnızca ticari ileti onayı olana gönderilir
   let emailSkipped = false;
   if (userEmail) {
@@ -150,6 +154,13 @@ async function DELETEHandler(req: Request) {
   if (denied) return denied;
   const { id } = await req.json().catch(() => ({}));
   if (typeof id !== "string") return NextResponse.json({ error: "Eksik parametre" }, { status: 400 });
+  // Vitrin kuponu veya ana sayfa kartlarında geçen kod silinirse vitrin boş/kırık kalır: önce engelle
+  const [target, cfg] = await Promise.all([
+    prisma.coupon.findUnique({ where: { id }, select: { id: true, code: true } }),
+    prisma.siteConfig.findUnique({ where: { id: 1 }, select: { showcaseCouponId: true, homepageConfig: true } }),
+  ]);
+  const block = target ? couponDeleteBlock(target, cfg) : null;
+  if (block) return NextResponse.json({ error: block }, { status: 409 });
   await prisma.coupon.delete({ where: { id } });
   return NextResponse.json({ success: true });
 }

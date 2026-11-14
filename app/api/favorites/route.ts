@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { rateLimit, tooMany } from "@/lib/rate-limit";
 import { prisma } from "@/lib/db";
 import { sameIdSet } from "@/lib/list-sync";
 import { getSessionUserId } from "@/lib/account";
@@ -40,6 +41,8 @@ export async function GET() {
 }
 
 export async function PUT(req: Request) {
+  const rl = rateLimit(req, "favorites-put", 60, 60_000);
+  if (rl.limited) return tooMany(rl.retryAfter);
   const userId = await getSessionUserId();
   if (!userId) return NextResponse.json({ error: "Oturum yok" }, { status: 401 });
 

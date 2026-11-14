@@ -8,7 +8,9 @@ import { createAddress } from "@/lib/address-store";
 import { addressDbFor, toPublicAddress } from "@/lib/address-db";
 
 // Giriş yapmış müşterinin kayıtlı teslimat adresleri (adres defteri). Yalnızca kendi adreslerini görür ve değiştirir.
-export async function GET() {
+export async function GET(req: Request) {
+  const rl = rateLimit(req, "address-read", 60, 60_000);
+  if (rl.limited) return tooMany(rl.retryAfter);
   const userId = await getSessionUserId();
   if (!userId) return NextResponse.json({ error: "Oturum açmanız gerekiyor." }, { status: 401 });
   try {

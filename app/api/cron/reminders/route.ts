@@ -12,6 +12,7 @@ import { adminOrderHref } from "@/lib/admin-order-detail";
 import { ABANDONED_CARD_MINUTES, BANK_ORDER_HOLD_HOURS, shouldCancelUnpaidBank, shouldCloseAbandonedCard } from "@/lib/stock-rules";
 import { couponValueLabel, loadShowcaseCoupon } from "@/lib/showcase";
 import { revalidateStorefrontSafe } from "@/lib/revalidate";
+import { runDailyCleanup } from "@/lib/cleanup-rules";
 
 const HOUR = 60 * 60 * 1000;
 
@@ -21,6 +22,15 @@ export async function GET(req: Request) {
   if (!secret || !safeCompare(req.headers.get("authorization") ?? "", `Bearer ${secret}`)) {
     return NextResponse.json({ error: "Yetkisiz" }, { status: 401 });
   }
+
+  // 0) Günlük veri temizliği (süresi geçmiş doğrulama kodları, eski okunmuş bildirimler): kendi try/catch'i var; hata hatırlatma adımlarını durdurmaz, onların hatası da bunu engellemez (en başta çalışır)
+  let cleanup: { codes: number; notifications: number; errors: string[] };
+  try {
+    cleanup = await runDailyCleanup(prisma);
+  } catch (err) {
+    cleanup = { codes: 0, notifications: 0, errors: [(err as Error).message] };
+  }
+  if (cleanup.errors.length) console.error("[cron] temizlik:", cleanup.errors.join("; "));
 
   const now = Date.now();
   let abandoned = 0;
@@ -124,5 +134,5 @@ export async function GET(req: Request) {
   // Stok iade edildiyse (terk edilmiş kartlı ödeme, süpürme, havale iptali) vitrin önbelleği hemen sona erer ("storefront" etiketi, expire: 0); en iyi çaba
   if (closed > 0 || bankCancelled > 0 || stuck.length > 0) revalidateStorefrontSafe();
 
-  return NextResponse.json({ success: true, abandoned, receipts, closed, bankCancelled });
+  return NextResponse.json({ success: true, abandoned, receipts, closed, bankCancelled, cleanup });
 }

@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
+import { rateLimit, tooMany } from "@/lib/rate-limit";
 import { isExpired } from "@/lib/coupon-expiry";
 import { prisma } from "@/lib/db";
 import { getSessionUserId } from "@/lib/account";
 import { ensureDefaultCoupon } from "@/lib/coupons";
 
 // Giriş yapmış müşterinin kullanabileceği kuponlar: herkese açık aktif kodlar + kendi e-postasına özel olanlar
-export async function GET() {
+export async function GET(req: Request) {
+  const rl = rateLimit(req, "my-coupons-get", 60, 60_000);
+  if (rl.limited) return tooMany(rl.retryAfter);
   const userId = await getSessionUserId();
   if (!userId) return NextResponse.json({ error: "Oturum yok" }, { status: 401 });
 
