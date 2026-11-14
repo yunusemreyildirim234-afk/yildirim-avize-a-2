@@ -2,34 +2,37 @@
 // Saf, bağımlılıksız (Prisma'ya yalnız `select` nesnesi olarak verilir). Kapak SQL'i: lib/admin-product-covers.ts.
 import { coverImageOf } from "./variation-input.ts";
 
+// Değişmez true türü: Prisma çıkarımı yalnız seçilen alanları döndürür; `as const` dizileri salt okunur yapıp orderBy türünü bozduğu için kullanılmaz.
+const T = true as const;
+
 export const ADMIN_LIST_VARIATION_SELECT = {
-  id: true,
-  variationType: true,
-  variationValue: true,
-  extraPrice: true,
-  stock: true,
-  stockCode: true,
-  barcode: true,
-} as const;
+  id: T,
+  variationType: T,
+  variationValue: T,
+  extraPrice: T,
+  stock: T,
+  stockCode: T,
+  barcode: T,
+};
 
 export const ADMIN_LIST_PRODUCT_SELECT = {
-  id: true,
-  title: true,
-  category: true,
-  basePrice: true,
-  listPrice: true,
-  active: true,
-  isFeatured: true,
-  isBestSeller: true,
-  couponAllowed: true,
-  pickupDiscountPct: true,
-  transferDiscountPct: true,
-  bulkTiers: true,
-  trendyolMainId: true,
-  modelCode: true,
-  ebat: true,
-  variations: { select: ADMIN_LIST_VARIATION_SELECT, orderBy: [{ position: "asc" }, { id: "asc" }] },
-} as const;
+  id: T,
+  title: T,
+  category: T,
+  basePrice: T,
+  listPrice: T,
+  active: T,
+  isFeatured: T,
+  isBestSeller: T,
+  couponAllowed: T,
+  pickupDiscountPct: T,
+  transferDiscountPct: T,
+  bulkTiers: T,
+  trendyolMainId: T,
+  modelCode: T,
+  ebat: T,
+  variations: { select: ADMIN_LIST_VARIATION_SELECT, orderBy: [{ position: "asc" as const }, { id: "asc" as const }] },
+};
 
 /**
  * Kapak kuralının SAF aynası (SQL ile aynı sıra): images'ın ilk dolu elemanı → imageUrl → sıradaki ilk fotoğraflı rengin ilk dolu fotoğrafı.

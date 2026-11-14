@@ -91,3 +91,14 @@ test("variationSetSig: renk eklenince/silinince değişir", () => {
   assert.notEqual(variationSetSig([{ id: "a" }]), variationSetSig([{ id: "a" }, { id: "b" }]));
   assert.equal(variationSetSig([{ id: "a" }, { id: "b" }]), variationSetSig([{ id: "a" }, { id: "b" }]));
 });
+
+test("panel sayfası: dar select + kapak sorgusu + ayrı kopyalanmamış sayacı; görsel dizileri sayfada okunmaz", () => {
+  const page = src("app/admin/page.tsx");
+  assert.match(page, /select: ADMIN_LIST_PRODUCT_SELECT/);
+  assert.match(page, /loadAdminCovers\(\)/);
+  assert.match(page, /prismaCopyStore\.count\?\.\(\[\]\)/);
+  assert.match(page, /withCover\(productRows, covers\)/);
+  assert.match(page, /uncopiedImages=\{uncopied\}/);
+  assert.ok(!/\.images\b/.test(page), "sayfa ürün/renk görsel dizilerini okumaz");
+  assert.ok(!/countUncopiedImages/.test(page));
+});

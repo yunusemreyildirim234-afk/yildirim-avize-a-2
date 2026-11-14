@@ -53,7 +53,10 @@ import { adminOrderHref } from "@/lib/admin-order-detail";
 import { recipientDiffers, recipientLabel } from "@/lib/recipient";
 import { deleteButtonLabel, deleteConfirmText } from "@/lib/bulk-delete";
 import { matchesOrderSearch, resolveDateRange, type DateRange } from "@/lib/admin-order-search";
-import { countUncopiedImages, smallImage } from "@/lib/img";
+import { smallImage } from "@/lib/img";
+import { ADMIN_LIST_PRODUCT_SELECT, withCover } from "@/lib/admin-product-list";
+import { loadAdminCovers } from "@/lib/admin-product-covers";
+import { prismaCopyStore } from "@/lib/image-copy-store";
 
 // Büyük ve ilk görünümde kapalı bölümlerde duran bileşenler ayrı parçada yüklenir (davranış aynı)
 const AdminProductList = nextDynamic(() => import("@/components/AdminProductList"));
@@ -69,18 +72,15 @@ const AdminAccountDeletions = nextDynamic(() => import("@/components/AdminAccoun
 export const dynamic = "force-dynamic";
 
 async function getAdminData() {
-  const [products, messages, coupons, customers, reviews, company] = await Promise.all([
+  const [productRows, covers, uncopied, messages, coupons, customers, reviews, company] = await Promise.all([
     prisma.product.findMany({
-      // Açıklama listede kullanılmaz: düzenleyici açılınca tek ürün için okunur (GET /api/admin/product). Kataloğun en ağır alanı her yenilemede çekilmez.
-      omit: { syncSnapshot: true, lastSyncedAt: true, description: true },
-      include: {
-        variations: {
-          omit: { syncSnapshot: true, syncStock: true },
-          orderBy: [{ position: "asc" }, { id: "asc" }],
-        },
-      },
+      // Dar liste: yalnız listenin kullandığı alanlar. Açıklama ve tüm görsel dizileri düzenleyici açılınca tek ürün için okunur (GET /api/admin/product).
+      select: ADMIN_LIST_PRODUCT_SELECT,
       orderBy: { createdAt: "desc" },
     }),
+    loadAdminCovers(), // kapak veritabanında hesaplanır (görsel dizileri çekilmez); hata olursa kapaksız
+    Promise.resolve(prismaCopyStore.count?.([])).then((c) => c?.kalan ?? 0).catch(() => 0), // "Blob'a kopyalanmamış": tek sayı, veritabanında sayılır
+
     prisma.contactMessage.findMany({
       include: { product: { select: { title: true } } },
       orderBy: { createdAt: "desc" },
@@ -103,7 +103,8 @@ async function getAdminData() {
     getCompanyInfo(),
   ]);
 
-  return { products, messages, coupons, customers, reviews, company };
+  const products = withCover(productRows, covers);
+  return { products, uncopied, messages, coupons, customers, reviews, company };
 }
 
 const ORDER_INCLUDE = {
@@ -186,7 +187,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const sp = await searchParams;
   const durumParam = sp.durum;
   const orderFilters = { q: sp.q, tarih: sp.tarih, bas: sp.bas, bit: sp.bit };
-  const { products, messages, coupons, customers, reviews, company } = await getAdminData();
+  const { products, uncopied, messages, coupons, customers, reviews, company } = await getAdminData();
   const extraCategories = await getExtraCategoryNames(); // yönetim panelinden eklenen kategoriler (form/toplu işlem seçenekleri)
   // Vitrin çipleri için sitedeki kümeler: Öne Çıkanlar = işaretliler (yoksa otomatik seçim), Çok Satanlar = kategori sayfasındaki liste
   const flaggedFeatured = await prisma.product.findMany({ where: { active: true, isFeatured: true }, select: { id: true } });
@@ -714,7 +715,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
 
         {/* Trendyol ürün senkronizasyonu (varsayılan kapalı; bileşen state'i gövde gizliyken de korunur) */}
         <AdminSection id="trendyol" icon={<ShoppingBag aria-hidden="true" className="w-4 h-4 text-amber-600" />} title="Trendyol Ürünleri" description="Mağazadaki ürünleri, fiyat ve stokları Trendyol'dan önizleyip seçerek güncelleyin.">
-          <AdminTrendyolSync initial={resolveSyncModes(homeRaw)} uncopiedImages={countUncopiedImages(products.flatMap((p) => [p.images, [p.imageUrl], ...p.variations.map((v) => v.images)]))} />
+          <AdminTrendyolSync initial={resolveSyncModes(homeRaw)} uncopiedImages={uncopied} />
         </AdminSection>
       </div>
     </main>

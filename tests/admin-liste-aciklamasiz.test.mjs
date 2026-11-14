@@ -7,7 +7,10 @@ const src = (p) => readFileSync(new URL(`../${p}`, import.meta.url), "utf8");
 test("admin ürün sorgusu açıklamayı çekmez", () => {
   const page = src("app/admin/page.tsx");
   const q = page.slice(page.indexOf("prisma.product.findMany({"), page.indexOf("prisma.contactMessage.findMany"));
-  assert.match(q, /omit: \{ syncSnapshot: true, lastSyncedAt: true, description: true \}/);
+  // Dar select (lib/admin-product-list.ts): açıklama, eşitleme alanları ve görsel dizileri seçilmez
+  assert.match(q, /select: ADMIN_LIST_PRODUCT_SELECT/);
+  const sel = src("lib/admin-product-list.ts");
+  assert.ok(!/\b(description|syncSnapshot|lastSyncedAt)\b\s*:/.test(sel.slice(sel.indexOf("ADMIN_LIST_VARIATION_SELECT"), sel.indexOf("export function coverByRule"))));
   assert.ok(!/\.description/.test(page), "sayfa açıklamayı hiçbir yerde kullanmaz");
 });
 
