@@ -11,9 +11,10 @@ interface Status {
 
 export default function AdminKargonomiHeader() {
   const [status, setStatus] = useState<Status | null>(null);
-  const [tick, setTick] = useState(0);
+  const [tick, setTick] = useState(0); // 0: henüz kontrol edilmedi (panel açılınca Kargonomi'ye istek GİTMEZ)
 
   useEffect(() => {
+    if (tick === 0) return;
     let active = true;
     fetch("/api/admin/kargonomi")
       .then((res) => res.json())
@@ -43,13 +44,13 @@ export default function AdminKargonomiHeader() {
       <div className="flex items-start gap-3">
         <span
           className={`mt-1 w-2.5 h-2.5 rounded-full shrink-0 ${
-            status === null ? "bg-neutral-300 animate-pulse" : status.connected ? "bg-emerald-500" : "bg-red-500"
+            status === null ? (tick === 0 ? "bg-neutral-300" : "bg-neutral-300 animate-pulse") : status.connected ? "bg-emerald-500" : "bg-red-500"
           }`}
         />
         <div>
           <h2 className="text-lg font-serif font-bold text-neutral-900">Kargonomi API v1</h2>
           <p className="text-xs text-neutral-600 mt-0.5">
-            {status === null && "Bağlantı kontrol ediliyor..."}
+            {status === null && (tick === 0 ? "Bağlantı henüz kontrol edilmedi. Gerektiğinde \"Kontrol et\" düğmesine basın." : "Bağlantı kontrol ediliyor...")}
             {status?.connected &&
               `Bağlantı aktif • ${status.shipmentCount ?? 0} gönderi${status.warehouse ? ` • Depo: ${status.warehouse}` : ""}`}
             {status && !status.connected && `Bağlantı kurulamadı: ${status.error ?? "bilinmeyen hata"}`}
@@ -59,10 +60,10 @@ export default function AdminKargonomiHeader() {
       <button
         type="button"
         onClick={refresh}
-        aria-label="Kargonomi bağlantısını yeniden kontrol et"
+        aria-label="Kargonomi bağlantısını kontrol et"
         className="text-xs font-semibold bg-white border border-neutral-300 text-neutral-700 px-4 py-2 rounded-xl hover:bg-neutral-50 transition-colors w-fit"
       >
-        Yeniden Kontrol Et
+        {tick === 0 ? "Kontrol et" : "Yeniden Kontrol Et"}
       </button>
     </div>
   );
