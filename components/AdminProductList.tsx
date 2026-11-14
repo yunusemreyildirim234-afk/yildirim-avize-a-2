@@ -572,7 +572,7 @@ Yine de geri alınsın mı?`)) break;
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={`${product.title} sayfasını yeni sekmede aç`}
-                className="w-16 h-16 rounded-xl bg-neutral-200 animate-pulse overflow-hidden shrink-0 border border-neutral-200 block"
+                className="w-16 h-16 rounded-xl bg-neutral-200 overflow-hidden shrink-0 border border-neutral-200 block"
               >
                 {coverImageOf(product) ? (
                   <img src={smallImage(coverImageOf(product)!)} alt={product.title} width={64} height={64} loading="lazy" decoding="async" className="w-full h-full object-cover" />
