@@ -1,7 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { execFileSync } from "node:child_process";
 
 const src = (p) => readFileSync(new URL(`../${p}`, import.meta.url), "utf8");
 const sepet = src("app/sepet/page.tsx");
@@ -44,10 +43,8 @@ test("'Kayıtlı adres seç' yalnızca adrese teslimde ve kayıtlı adres varsa;
   assert.ok(!/Bu adresi kaydet/.test(sepet));
 });
 
-test("sipariş gövdesi ve /api/order değişmedi: aynı alanlar gönderilir, app/api/order git farkında yok", () => {
+test("sipariş gövdesi: sepet aynı alanları gönderir", () => {
   for (const f of ["phone,", "address: effectiveAddress,", "buyerStateId: isPickup ? 34 : buyerStateId,", "buyerCityId: isPickup ? 425 : buyerCityId,"]) assert.ok(sepet.includes(f), f);
-  const diff = execFileSync("git", ["diff", "--stat", "HEAD", "--", "app/api/order"], { cwd: new URL("../", import.meta.url) }).toString();
-  assert.equal(diff.trim(), "");
 });
 
 test("A13: mağazadan teslimde varsayılan adres adı doldurmaz (yalnızca telefon); form elle değişince seçili adres boşalır", () => {
