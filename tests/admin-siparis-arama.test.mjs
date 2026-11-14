@@ -104,9 +104,11 @@ test("süzgeç adresi: boş alanlar atılır, geçersiz ön ayar/tarih düşer",
 
 test("bağlantı: sayfa süzgeci sunucuda uygular; çipler, form ve rozetler doğru kümeyi kullanır", () => {
   const page = read("../app/admin/page.tsx");
-  assert.match(page, /matchesOrderSearch\(o, sp\.q \?\? ""\) && inDateRange\(o\.createdAt, dateRange\)/);
-  assert.match(page, /const visibleOrders = scopedOrders\.filter\(\(o\) => matchesGroups\(o, selectedGroups\)\)/);
-  assert.match(page, /counts=\{groupCounts\} total=\{scopedOrders\.length\} filters=\{orderFilters\}/);
+  // Süzme artık sunucu sorgularında: arama bellekte (yalnız hafif alanlarla) matchesOrderSearch, tarih + gruplar sorguda
+  assert.match(page, /matched = light\.filter\(\(o\) => matchesOrderSearch\(o, q\)\)/);
+  assert.match(page, /getOrderPanel\(sp\.q \?\? "", dateRange, selectedGroups\)/);
+  assert.match(page, /counts=\{groupCounts\} total=\{panel\.scopedTotal\}/);
+  assert.match(page, /effectiveParam=\{effDurum\}/);
   assert.match(page, /allGroupCounts\.yeni/, "bölüm rozeti süzgeçten bağımsız");
   const f = read("../components/AdminOrderFilters.tsx");
   assert.match(f, /filterQuery\(\{ \.\.\.filters, durum: next \}\)/);

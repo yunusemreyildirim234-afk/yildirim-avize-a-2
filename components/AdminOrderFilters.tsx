@@ -11,10 +11,11 @@ import { DATE_PRESETS, DATE_PRESET_LABELS, MAX_ORDER_QUERY, filterQuery, type Or
  * - diğer → özel seçim (virgülle ayrılmış grup anahtarları).
  * Tıklama mantığı saf fonksiyondadır (lib/filter-chips.ts → nextParam). Sunucu bileşenidir; ilk render ile aynı küme kullanılır.
  */
-export default function AdminOrderFilters({ param, counts, total, filters }: { param: string | undefined; counts: Record<OrderGroupKey, number>; total: number; filters: OrderFilterParams }) {
-  const { mode, keys } = chipState(param, ALL_GROUP_KEYS, DEFAULT_GROUP_KEYS);
+export default function AdminOrderFilters({ param, effectiveParam, counts, total, filters }: { param: string | undefined; /** Çip görünümü için etkin durum (arama/tarih açıkken ?durum= yoksa "tumu"); verilmezse param */ effectiveParam?: string; counts: Record<OrderGroupKey, number>; total: number; filters: OrderFilterParams }) {
+  const chipParam = effectiveParam ?? param;
+  const { mode, keys } = chipState(chipParam, ALL_GROUP_KEYS, DEFAULT_GROUP_KEYS);
   const href = (clicked: OrderGroupKey | "tumu") => {
-    const next = nextParam(param, clicked, ALL_GROUP_KEYS, DEFAULT_GROUP_KEYS);
+    const next = nextParam(chipParam, clicked, ALL_GROUP_KEYS, DEFAULT_GROUP_KEYS);
     return `/admin${filterQuery({ ...filters, durum: next })}#siparisler`;
   };
   const allActive = mode === "all";
