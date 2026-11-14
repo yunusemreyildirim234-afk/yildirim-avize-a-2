@@ -16,16 +16,24 @@ const fail = (e: unknown) => {
 };
 
 /** Faturayı müşteriye ek olarak gönderir; başarılıysa emailSentAt işaretlenir. Başarısızlıkta fatura silinmez. */
-async function emailInvoice(orderId: string): Promise<boolean> {
-  const inv = await prisma.orderInvoice.findUnique({ where: { orderId } });
-  const order = await prisma.order.findUnique({ where: { id: orderId }, include: { user: { select: { name: true, email: true } } } });
+type InvoiceMail = { fileName: string; pdf: Buffer; user: { name: string; email: string } };
+
+/** loaded verilirse (yükleme akışı: bellekte zaten var) Neon'dan geri okuma yapılmaz; verilmezse (yeniden gönderim) veritabanından okunur. */
+async function emailInvoice(orderId: string, loaded?: InvoiceMail): Promise<boolean> {
+  let inv: { fileName: string; pdf: Buffer } | undefined = loaded;
+  let order: { user: { name: string; email: string } } | null = loaded ?? null;
+  if (!loaded) {
+    const row = await prisma.orderInvoice.findUnique({ where: { orderId } });
+    order = await prisma.order.findUnique({ where: { id: orderId }, include: { user: { select: { name: true, email: true } } } });
+    if (row) inv = { fileName: row.fileName, pdf: Buffer.from(row.data) };
+  }
   if (!inv || !order) return false;
   const ok = await sendInvoiceEmail({
     to: cleanGuestEmail(order.user.email),
     name: order.user.name,
     orderId,
     fileName: inv.fileName,
-    pdf: Buffer.from(inv.data),
+    pdf: inv.pdf,
   }).catch(() => false);
   if (ok) await prisma.orderInvoice.update({ where: { orderId }, data: { emailSentAt: new Date() } });
   return ok;
@@ -39,7 +47,7 @@ export async function POST(req: Request, ctx: Ctx) {
   if (rl.limited) return tooMany(rl.retryAfter);
   try {
     const { id } = await ctx.params;
-    const order = await prisma.order.findUnique({ where: { id }, select: { id: true, status: true } });
+    const order = await prisma.order.findUnique({ where: { id }, select: { id: true, status: true, user: { select: { name: true, email: true } } } });
     if (!order) return NextResponse.json({ error: "Sipariş bulunamadı." }, { status: 404 });
     if (order.status !== "DELIVERED") return NextResponse.json({ error: "Fatura yalnızca teslim edilmiş siparişlere yüklenebilir." }, { status: 409 });
 
@@ -58,7 +66,7 @@ export async function POST(req: Request, ctx: Ctx) {
       update: { fileName, mimeType: "application/pdf", size: data.length, data, uploadedAt: new Date(), emailSentAt: null },
     });
 
-    const emailed = await emailInvoice(id);
+    const emailed = await emailInvoice(id, { fileName, pdf: data, user: order.user });
     return NextResponse.json({ success: true, emailed });
   } catch (e) {
     return fail(e);
