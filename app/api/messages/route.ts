@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { rateLimit, tooMany } from "@/lib/rate-limit";
 import { prisma } from "@/lib/db";
 import { getSessionUserId } from "@/lib/account";
 import type { Prisma } from "@/generated/prisma/client";
@@ -6,7 +7,9 @@ import type { Prisma } from "@/generated/prisma/client";
 type MessageRow = Prisma.ContactMessageGetPayload<{ include: { product: { select: { id: true; title: true } } } }>;
 
 // Müşterinin kendi mesajları ve ürün soruları (yanıtlarıyla birlikte)
-export async function GET() {
+export async function GET(req: Request) {
+  const rl = rateLimit(req, "messages-get", 60, 60_000);
+  if (rl.limited) return tooMany(rl.retryAfter);
   const userId = await getSessionUserId();
   if (!userId) return NextResponse.json({ error: "Oturum yok" }, { status: 401 });
 

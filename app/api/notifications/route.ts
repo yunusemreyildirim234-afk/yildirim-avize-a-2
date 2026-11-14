@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { rateLimit, tooMany } from "@/lib/rate-limit";
 import { cookies } from "next/headers";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
@@ -19,6 +20,8 @@ async function scope(req: Request, mode: "read" | "delete" = "read") {
 }
 
 export async function GET(req: Request) {
+  const rl = rateLimit(req, "notifications-get", 120, 60_000);
+  if (rl.limited) return tooMany(rl.retryAfter);
   const where = await scope(req);
   if (!where) return NextResponse.json({ items: [], unread: 0 });
   const [items, unread] = await Promise.all([
@@ -37,6 +40,8 @@ export async function GET(req: Request) {
 // scope=admin|user yalnızca o kümeyi siler; scope yoksa müşteri oturumu varsa yalnızca müşterinin, yoksa yöneticinin kümesi silinir (çift oturumda diğer taraf silinmez).
 // Kapsam scope() ile sınırlıdır: müşteri yalnızca kendi kayıtlarını, yönetici kayıtları ise yalnızca geçerli yönetici oturumuyla silebilir.
 export async function DELETE(req: Request) {
+  const rl = rateLimit(req, "notifications-write", 60, 60_000);
+  if (rl.limited) return tooMany(rl.retryAfter);
   const where = await scope(req, "delete");
   if (!where) return NextResponse.json({ error: "Oturum yok" }, { status: 401 });
   const { count } = await prisma.notification.deleteMany({ where });
@@ -45,6 +50,8 @@ export async function DELETE(req: Request) {
 
 // { all: true } tümünü, { id } tek bildirimi okundu yapar
 export async function POST(req: Request) {
+  const rl = rateLimit(req, "notifications-write", 60, 60_000);
+  if (rl.limited) return tooMany(rl.retryAfter);
   const where = await scope(req);
   if (!where) return NextResponse.json({ error: "Oturum yok" }, { status: 401 });
   const body = await req.json().catch(() => ({}));
