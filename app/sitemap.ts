@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/db";
 import { CATEGORIES, COLLECTIONS, SITE_URL } from "@/lib/site";
 import { withVisibleProducts } from "@/lib/categories";
@@ -8,12 +9,20 @@ import { getVisibleWhere } from "@/lib/visibility";
 
 export const dynamic = "force-dynamic";
 
+// Ürün listesi 1 saat önbelleklenir (her tarayıcı/bot isteğinde veritabanına gitmez); yönetimden yapılan değişiklikte "storefront" etiketiyle hemen yenilenir.
+// Hata durumunda boş liste önbelleğe girmesin diye catch önbelleğin DIŞINDADIR. JSON'a çevrildiği için updatedAt metin olarak gelir.
+const getSitemapProducts = unstable_cache(
+  async () => (await prisma.product.findMany({ where: await getVisibleWhere(), select: { id: true, updatedAt: true } })).map((p) => ({ id: p.id, updatedAt: p.updatedAt.toISOString() })),
+  ["sitemap-products"],
+  { revalidate: 3600, tags: ["storefront"] },
+);
+
 const GALLERY_PAGE = "/musterilerimizden-gelenler";
 const STATIC_PAGES = ["/kargo-takip", "/iletisim", "/gizlilik-politikasi", "/kullanim-sartlari", "/mesafeli-satis-sozlesmesi", "/iptal-iade-cayma", "/aydinlatma-metni", "/cerez-politikasi"];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const products = await prisma.product
-    .findMany({ where: await getVisibleWhere(), select: { id: true, updatedAt: true } })
+  const products = await getSitemapProducts()
+    .then((l) => l.map((p) => ({ id: p.id, updatedAt: new Date(p.updatedAt) })))
     .catch(() => []);
 
   const galleryCount = await getGalleryPhotoCount();
