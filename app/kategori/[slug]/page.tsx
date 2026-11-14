@@ -13,6 +13,7 @@ import { CATEGORIES, COLLECTIONS } from "@/lib/site";
 import { getCategoryConfig, getCategoryList } from "@/lib/category-list";
 import { RESERVED_SLUGS, categoryKey, categoryWhere, findDynamicCategory } from "@/lib/categories";
 import { categoryDisplayTitle, resolveRedirect } from "@/lib/category-settings";
+import { categorySeo } from "@/lib/category-seo";
 
 export const dynamic = "force-dynamic";
 
@@ -29,21 +30,22 @@ const resolve = cache(async (slug: string) => {
     const entry = await getCategoryList().then((l) => l.find((c) => c.fixed && c.slug === slug)).catch(() => undefined);
     // Görünen ad ayarı varsa yeni ad (sayfa başlığı, metadata, breadcrumb); yoksa mevcut başlık aynen. Gizli kategorinin adresi çalışmaya devam eder.
     const settings = await getCategoryConfig().then((c) => c.settings).catch(() => ({}));
-    return { title: categoryDisplayTitle(settings, categoryKey(category.dbCategory), category.title), desc: category.desc, where: categoryWhere(entry?.spellings ?? [category.dbCategory]) };
+    const shown = categoryDisplayTitle(settings, categoryKey(category.dbCategory), category.title);
+    return { title: shown, desc: category.desc, seo: categorySeo(slug, shown, shown !== category.title), where: categoryWhere(entry?.spellings ?? [category.dbCategory]) };
   }
-  if (slug === "tum") return { ...COLLECTIONS.tum, where: {} };
+  if (slug === "tum") return { ...COLLECTIONS.tum, seo: categorySeo(slug, COLLECTIONS.tum.title), where: {} };
   if (slug === "one-cikanlar") {
     // Yönetici işaretlileri varsa yalnızca onlar; yoksa otomatik seçim
     const flagged = await hasFlaggedFeatured();
-    return { ...COLLECTIONS["one-cikanlar"], where: flagged ? { active: true, isFeatured: true } : { active: true, ...FEATURED } };
+    return { ...COLLECTIONS["one-cikanlar"], seo: categorySeo(slug, COLLECTIONS["one-cikanlar"].title), where: flagged ? { active: true, isFeatured: true } : { active: true, ...FEATURED } };
   }
-  if (slug === "cok-satanlar") return { ...COLLECTIONS["cok-satanlar"], where: null };
-  if (slug === "indirimli") return { ...COLLECTIONS.indirimli, where: { active: true, ...DISCOUNTED } };
+  if (slug === "cok-satanlar") return { ...COLLECTIONS["cok-satanlar"], seo: categorySeo(slug, COLLECTIONS["cok-satanlar"].title), where: null };
+  if (slug === "indirimli") return { ...COLLECTIONS.indirimli, seo: categorySeo(slug, COLLECTIONS.indirimli.title), where: { active: true, ...DISCOUNTED } };
 
   // Yönetim panelinden eklenen yeni koleksiyonlar: tek kaynak lib/category-list.ts (büyük/küçük harf birleştirilmiş; yazımlar IN ile aranır)
   const match = findDynamicCategory(await getCategoryList(), slug);
   if (match) {
-    return { title: match.title, desc: `${match.title} koleksiyonundaki avize ve aydınlatma modelleri.`, where: categoryWhere(match.spellings) };
+    return { title: match.title, desc: `${match.title} koleksiyonundaki avize ve aydınlatma modelleri.`, seo: categorySeo(slug, match.title), where: categoryWhere(match.spellings) };
   }
   return null;
 });
@@ -55,6 +57,8 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   // Paylaşım görseli: kategorideki ilk ürünün kapağı, yoksa site görseli (sayfanın openGraph'ı layout'unkini tümüyle ezer)
   const first = current.where ? (await getProductsCached(current.where, 1).catch(() => []))[0] : undefined;
   const images = [{ url: (first && coverImageOf(first)) || "/og-v2.png", alt: current.title }];
+  const seoTitle = current.seo.title; // <title>/OG: arama terimli başlık (lib/category-seo.ts); sayfadaki h1 görünen ad olarak kalır
+  const seoDesc = current.seo.desc;
   // Her sayfanın kendi kanonik adresi vardır (sayfa=1 parametresiz)
   const sp = await searchParams;
   const page = parsePage(sp.sayfa);
@@ -64,19 +68,19 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   if (adet !== "24" || !isDefaultState(parseListingParams(sp))) {
     const base = pageHref(path, 1);
     return {
-      title: current.title,
-      description: current.desc,
+      title: seoTitle,
+      description: seoDesc,
       alternates: { canonical: base },
       robots: { index: false, follow: true },
-      openGraph: { title: current.title, description: current.desc, url: base, images },
+      openGraph: { title: seoTitle, description: seoDesc, url: base, images },
     };
   }
   const url = pageHref(path, page);
   return {
-    title: page > 1 ? `${current.title} - Sayfa ${page}` : current.title,
-    description: current.desc,
+    title: page > 1 ? `${seoTitle} - Sayfa ${page}` : seoTitle,
+    description: seoDesc,
     alternates: { canonical: url },
-    openGraph: { title: current.title, description: current.desc, url, images },
+    openGraph: { title: seoTitle, description: seoDesc, url, images },
     // "next" burada yazılmaz (toplam sayı metadata'da okunmuyor); sayfadaki Sonraki bağlantısı rel="next" taşır
     ...(page > 1 ? { pagination: { previous: pageHref(path, page - 1) } } : {}),
   };
