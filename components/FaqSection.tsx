@@ -1,6 +1,7 @@
+import Link from "next/link";
 import JsonLd from "@/components/JsonLd";
 
-const FAQS = [
+const FAQS: { q: string; a: string; link?: { href: string; label: string } }[] = [
   {
     q: "Ampuller avizeye dahil midir? Hangi ampulü almalıyım?",
     a: "Ampuller, ürün sayfasında 'LED ampul hediye' yazan ürünlerde hediye olarak gönderilir; diğer ürünlerde ürüne dahil değildir. Ürün detayında belirtilen standart duy tipine (E14, E27 veya G9) uygun tüm tasarruflu LED ampulleri güvenle tercih edebilirsiniz.",
@@ -19,11 +20,12 @@ const FAQS = [
   },
   {
     q: "Kurumsal fatura alabilir miyim?",
-    a: "Evet. Ödeme adımında \"Kurumsal Fatura\" seçeneğini işaretleyip şirket unvanı, vergi dairesi ve VKN bilgilerinizi girerek şirketiniz adına resmi e-Arşiv faturanızı oluşturabilirsiniz.",
+    a: "Evet. Ödeme adımında \"Kurumsal Fatura\" seçeneğini işaretleyip şirket unvanı, vergi dairesi ve VKN bilgilerinizi girerek faturanızın şirketiniz adına düzenlenmesini sağlayabilirsiniz.",
   },
   {
     q: "Beğenmezsem iade veya değişim yapabilir miyim?",
-    a: "Standart ürünlerimizi teslim aldığınız tarihten itibaren 14 gün içinde faturası ve orijinal koruyucu ambalajıyla birlikte koşulsuz iade edebilir veya başka bir modelle değiştirebilirsiniz. (Özel ölçü veya isteğe bağlı modifiye edilen ürünler cayma hakkı kapsamı dışındadır).",
+    a: "Standart ürünlerimizi teslim aldığınız tarihten itibaren 14 gün içinde cayma hakkınızı kullanabilir veya başka bir modelle değiştirebilirsiniz; ürünü mümkünse orijinal ambalajıyla gönderin. Değişim için WhatsApp'tan bize yazın. (Özel ölçü veya isteğe bağlı modifiye edilen ürünler cayma hakkı kapsamı dışındadır).",
+    link: { href: "/iptal-iade-cayma", label: "İptal, İade ve Cayma sayfası" },
   },
   {
     q: "Kristal avizelerin temizliği ve bakımı nasıl yapılmalıdır?",
@@ -69,6 +71,11 @@ export default function FaqSection() {
               </span>
             </summary>
             <p className="mt-3 text-xs text-zinc-300 leading-relaxed">{f.a}</p>
+            {f.link && (
+              <Link href={f.link.href} className="mt-2 inline-block text-xs text-amber-400 underline underline-offset-2 hover:text-amber-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400">
+                {f.link.label}
+              </Link>
+            )}
           </details>
         ))}
       </div>
