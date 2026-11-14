@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { bumpUserSessionVersion, getSessionUserId, getUserSession, issueUserToken } from "@/lib/account";
 import { rateLimit, tooMany } from "@/lib/rate-limit";
-import { USER_COOKIE, cookieOptions } from "@/lib/session";
+import { USER_COOKIE, userCookieOptions } from "@/lib/session";
 
 // "Tüm cihazlardan çıkış yap": oturum sürümü artar, bu cihazın oturumu yeni sürümle yenilenir (kullanıcı kendi oturumundan atılmaz)
 export async function POST(req: Request) {
@@ -12,6 +12,6 @@ export async function POST(req: Request) {
   const picture = (await getUserSession())?.picture;
   await bumpUserSessionVersion(uid);
   const res = NextResponse.json({ success: true });
-  res.cookies.set(USER_COOKIE, await issueUserToken(uid, picture ? { picture } : {}), cookieOptions);
+  res.cookies.set(USER_COOKIE, await issueUserToken(uid, picture ? { picture } : {}), userCookieOptions);
   return res;
 }

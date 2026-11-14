@@ -96,7 +96,7 @@ export default function AccountSecurity({ email, twoFactorEnabled, onChanged }: 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="text-xs">
           <p className="font-bold text-neutral-900 text-sm">İki Aşamalı Doğrulama (E-posta ile Güvenlik)</p>
-          <p className="text-neutral-500 mt-0.5">Girişte şifrenize ek olarak e-postanıza gönderilen 6 haneli kod istenir.</p>
+          <p className="text-neutral-500 mt-0.5">Girişte şifrenize ek olarak e-postanıza gönderilen 6 haneli kod istenir. Google ile girişte ek kod istenmez.</p>
         </div>
         <button
           type="button"

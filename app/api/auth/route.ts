@@ -7,7 +7,7 @@ import { getCustomerWithOrders } from "@/lib/customer";
 import { hashPassword, verifyPasswordOrDummy } from "@/lib/password";
 import { touchLastLogin } from "@/lib/last-login";
 import { sendVerificationCodeEmail } from "@/lib/email";
-import { USER_COOKIE, cookieOptions } from "@/lib/session";
+import { USER_COOKIE, userCookieOptions } from "@/lib/session";
 import { EMAIL_RE, isStrongPassword } from "@/lib/validation";
 import { clientIp, createCode, issueProof, rateLimitRemaining, readProof } from "@/lib/verification";
 
@@ -17,7 +17,7 @@ const WEAK = "Şifre en az 8 karakter olmalı; büyük harf, küçük harf, raka
 async function respond(userId: string) {
   await touchLastLogin(prisma.user, userId);
   const res = NextResponse.json({ success: true, user: await getCustomerWithOrders(userId) });
-  res.cookies.set(USER_COOKIE, await issueUserToken(userId), cookieOptions);
+  res.cookies.set(USER_COOKIE, await issueUserToken(userId), userCookieOptions);
   return res;
 }
 
@@ -26,7 +26,7 @@ async function revokeOthers(userId: string, keepCurrent: boolean) {
   const picture = (await getUserSession())?.picture;
   await bumpUserSessionVersion(userId);
   const res = NextResponse.json({ success: true });
-  if (keepCurrent) res.cookies.set(USER_COOKIE, await issueUserToken(userId, picture ? { picture } : {}), cookieOptions);
+  if (keepCurrent) res.cookies.set(USER_COOKIE, await issueUserToken(userId, picture ? { picture } : {}), userCookieOptions);
   return res;
 }
 

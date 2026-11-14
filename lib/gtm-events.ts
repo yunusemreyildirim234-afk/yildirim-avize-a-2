@@ -51,8 +51,8 @@ export function purchaseEvent(o: { id: string; total: number; shipping: number; 
   };
 }
 
-/** Ödemesi alınmamış/başarısız/iptal/iade siparişler için purchase atılmaz. Kartlı ödeme onaylanınca durum AWAITING_PAYMENT'tan çıkar; havale siparişi PENDING_NEW ile oluşur. */
-export const PURCHASE_EXCLUDED_STATUSES = ["AWAITING_PAYMENT", "PAYMENT_FAILED", "CANCELLED", "RETURNED"];
+/** Ödemesi alınmamış/başarısız/iptal/iade siparişler için purchase atılmaz. Kartlı ödeme onaylanınca durum AWAITING_PAYMENT'tan çıkar; havale siparişi PENDING_NEW ile oluşur (ödeme onaylanana kadar purchase atılmaz); ödenmiş kartlı sipariş PENDING olur. */
+export const PURCHASE_EXCLUDED_STATUSES = ["AWAITING_PAYMENT", "PENDING_NEW", "PAYMENT_FAILED", "CANCELLED", "RETURNED"];
 export const isPurchasable = (status: string) => !PURCHASE_EXCLUDED_STATUSES.includes(status);
 
 /** Aynı sipariş için purchase yalnızca bir kez: tarayıcıda (localStorage) sipariş başına işaret. */

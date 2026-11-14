@@ -8,6 +8,7 @@ import { applyPlan, buildPlan, parseSettings } from "@/lib/trendyol-sync";
 import { onizleme } from "@/lib/trendyol-plan";
 import { prisma } from "@/lib/db";
 import { TrendyolGuardError } from "@/lib/trendyol-guard";
+import { OPEN_ORDER_STATUSES, pendingByBarcode, stockChangeVariationIds, sumPendingByVariation } from "@/lib/trendyol-bekleyen";
 import { isDefaultModes, parseModesStrict } from "@/lib/trendyol-modes";
 
 // Vercel Hobby (Fluid Compute) üst sınırı 300 sn; Trendyol sayfalama + toplu yazma bu sınıra sığdırılır.
@@ -28,7 +29,18 @@ export async function POST(req: Request) {
   const secili = Array.isArray(body.seciliUrunler) ? body.seciliUrunler.filter((x: unknown): x is string => typeof x === "string") : undefined;
   try {
     const plan = await buildPlan(ayarlar);
-    if (body.dryRun !== false) return NextResponse.json({ success: true, dryRun: true, plan: onizleme(plan) });
+    if (body.dryRun !== false) {
+      // Yalnız UYARI: stok değişikliği olan varyasyonlarda sitede bekleyen (stoğu düşülmüş, açık) sipariş adedi; stok formülü ve yazma değişmez
+      const ids = stockChangeVariationIds(plan.products);
+      const items = ids.length
+        ? await prisma.orderItem.findMany({
+            where: { variationId: { in: ids }, order: { stockDeducted: true, status: { in: [...OPEN_ORDER_STATUSES] } } },
+            select: { variationId: true, quantity: true, order: { select: { status: true, stockDeducted: true } } },
+          })
+        : [];
+      const bekleyen = pendingByBarcode(plan.products, sumPendingByVariation(items));
+      return NextResponse.json({ success: true, dryRun: true, plan: { ...onizleme(plan), bekleyen } });
+    }
     const sonuc = await applyPlan(plan, secili);
     revalidateStorefront(); // vitrin yalnızca gerçek uygulamadan sonra yenilenir (önizleme yazmaz, önbelleği sıfırlamaz)
     return NextResponse.json({ success: true, dryRun: false, sonuc, sayac: plan.sayac });

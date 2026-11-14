@@ -1,7 +1,10 @@
 // HMAC imzalı oturum çerezleri (Web Crypto: hem proxy hem route handler içinde çalışır)
 export const ADMIN_COOKIE = "ya_admin";
 export const USER_COOKIE = "ya_user";
+/** Yönetici (ve diğer imzalı belirteçler) için varsayılan süre: 8 saat. */
 export const SESSION_MAX_AGE = 60 * 60 * 8;
+/** Yalnız müşteri oturum çerezi: 30 gün (sessionVersion ile "tüm cihazlardan çık" geçerli kalır). */
+export const USER_SESSION_MAX_AGE = 60 * 60 * 24 * 30;
 
 const enc = new TextEncoder();
 
@@ -30,8 +33,8 @@ function safeEqual(a: string, b: string) {
   return diff === 0;
 }
 
-export async function signSession(payload: Record<string, unknown>) {
-  const body = toBase64Url(enc.encode(JSON.stringify({ ...payload, exp: Date.now() + SESSION_MAX_AGE * 1000 })));
+export async function signSession(payload: Record<string, unknown>, maxAgeSeconds: number = SESSION_MAX_AGE) {
+  const body = toBase64Url(enc.encode(JSON.stringify({ ...payload, exp: Date.now() + maxAgeSeconds * 1000 })));
   return `${body}.${await hmac(body)}`;
 }
 
@@ -67,6 +70,9 @@ export const cookieOptions = {
   path: "/",
   maxAge: SESSION_MAX_AGE,
 };
+
+/** Müşteri oturum çerezi seçenekleri (yönetici `cookieOptions` 8 saat kalır). */
+export const userCookieOptions = { ...cookieOptions, maxAge: USER_SESSION_MAX_AGE };
 
 export function safeCompare(a: string, b: string) {
   return safeEqual(a, b);

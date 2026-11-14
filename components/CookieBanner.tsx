@@ -36,12 +36,11 @@ export default function CookieBanner() {
       className="fixed bottom-3 left-3 right-24 sm:right-auto sm:bottom-6 sm:left-6 sm:max-w-md z-[55] rounded-2xl bg-zinc-900 text-zinc-200 border border-zinc-700 shadow-xl p-4"
     >
       <p className="text-xs leading-relaxed text-zinc-300">
-        Deneyiminizi iyileştirmek için zorunlu çerezler kullanılır. Kişisel verileriniz 6698 sayılı KVKK kapsamında
-        işlenir; ayrıntılar için{" "}
-        <Link href="/gizlilik-politikasi" className="text-amber-400 underline underline-offset-2">
-          Gizlilik Politikası
+        Sitemizin çalışması için zorunlu çerezler kullanırız. &apos;Kabul Et&apos;e basarsanız ayrıca ziyaretinizi ölçmek (Google Analytics) ve reklam performansını değerlendirmek için Google çerezleri de açılır. &apos;Reddet&apos;e basarsanız yalnız zorunlu çerezler kullanılır. Ayrıntılar için{" "}
+        <Link href="/cerez-politikasi" className="text-amber-400 underline underline-offset-2">
+          Çerez Politikası
         </Link>
-        &apos;nı inceleyebilirsiniz.
+        &apos;na bakın.
       </p>
       <div className="flex items-center gap-2 mt-3 text-xs">
         <button
