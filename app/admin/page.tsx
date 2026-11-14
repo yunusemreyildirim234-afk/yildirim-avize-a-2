@@ -45,13 +45,14 @@ import AdminDeleteButton from "@/components/AdminDeleteButton";
 import { titleCaseTr } from "@/lib/display-case";
 import { getActivity } from "@/lib/activity";
 import { getCompanyInfo } from "@/lib/company";
-import { ORDER_GROUPS, isCountedOrder, matchesGroups, parseGroupParam, type OrderGroupKey } from "@/lib/orderStatus";
+import { UNCOUNTED_STATUSES, matchesGroups, parseGroupParam } from "@/lib/orderStatus";
+import { ORDER_LIST_LIMIT, countGroups, countVisible, dateWhere, effectiveDurum, groupsWhere } from "@/lib/admin-order-query";
 import { getInvoiceMeta } from "@/lib/invoice";
 import { orderItemProductView } from "@/lib/order-item-product";
 import { adminOrderHref } from "@/lib/admin-order-detail";
 import { recipientDiffers, recipientLabel } from "@/lib/recipient";
 import { deleteButtonLabel, deleteConfirmText } from "@/lib/bulk-delete";
-import { inDateRange, matchesOrderSearch, resolveDateRange } from "@/lib/admin-order-search";
+import { matchesOrderSearch, resolveDateRange, type DateRange } from "@/lib/admin-order-search";
 import { countUncopiedImages, smallImage } from "@/lib/img";
 
 // Büyük ve ilk görünümde kapalı bölümlerde duran bileşenler ayrı parçada yüklenir (davranış aynı)
@@ -68,21 +69,7 @@ const AdminAccountDeletions = nextDynamic(() => import("@/components/AdminAccoun
 export const dynamic = "force-dynamic";
 
 async function getAdminData() {
-  const [orders, products, messages, coupons, customers, reviews, company] = await Promise.all([
-    prisma.order.findMany({
-      include: {
-        user: { select: { name: true, email: true } },
-        items: {
-          include: {
-            variation: {
-              omit: { syncSnapshot: true, syncStock: true },
-              include: { product: { select: { id: true, title: true, imageUrl: true, images: true } } },
-            },
-          },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-    }),
+  const [products, messages, coupons, customers, reviews, company] = await Promise.all([
     prisma.product.findMany({
       // Açıklama listede kullanılmaz: düzenleyici açılınca tek ürün için okunur (GET /api/admin/product). Kataloğun en ağır alanı her yenilemede çekilmez.
       omit: { syncSnapshot: true, lastSyncedAt: true, description: true },
@@ -116,7 +103,82 @@ async function getAdminData() {
     getCompanyInfo(),
   ]);
 
-  return { orders, products, messages, coupons, customers, reviews, company };
+  return { products, messages, coupons, customers, reviews, company };
+}
+
+const ORDER_INCLUDE = {
+  user: { select: { name: true, email: true } },
+  items: {
+    include: {
+      variation: {
+        omit: { syncSnapshot: true, syncStock: true },
+        include: { product: { select: { id: true, title: true, imageUrl: true, images: true } } },
+      },
+    },
+  },
+} as const;
+
+/**
+ * Sipariş bölümü: tüm siparişleri yüklemek yerine sayaçlar GROUP BY / toplama sorgularıyla, liste ise en çok ORDER_LIST_LIMIT kayıtla gelir.
+ * - Arama yokken: tarih + durum grupları doğrudan sorguya girer.
+ * - Arama (q) varken: Türkçe/aksan duyarsız eşleşme bellekte yapılır; bunun için YALNIZ hafif alanlar (kimlik, ad, e-posta, telefon, durum) okunur, kalemler/ürünler değil.
+ */
+async function getOrderPanel(q: string, range: DateRange | null, keys: ReturnType<typeof parseGroupParam>) {
+  const dw = dateWhere(range);
+  const counted = { status: { notIn: UNCOUNTED_STATUSES } };
+  const [globalGroups, countedAgg, pendingAgg, openShipmentCount, beyogluCount, beyogluDelivered] = await Promise.all([
+    prisma.order.groupBy({ by: ["status", "cancelReturnStatus"], _count: { _all: true } }),
+    prisma.order.aggregate({ where: counted, _count: { _all: true }, _sum: { totalAmount: true } }),
+    prisma.order.aggregate({ where: { status: "PENDING_NEW", paymentMethod: "BANK_TRANSFER" }, _count: { _all: true }, _sum: { totalAmount: true } }),
+    prisma.order.count({ where: { kargonomiShipmentId: { not: null }, status: { in: ["PENDING", "SHIPPED"] } } }),
+    prisma.order.count({ where: { ...counted, shippingType: "BEYOGLU_MAGAZA_TESLIM" } }),
+    prisma.order.count({ where: { status: "DELIVERED", shippingType: "BEYOGLU_MAGAZA_TESLIM" } }),
+  ]);
+  const toRows = (g: typeof globalGroups) => g.map((r) => ({ status: r.status, cancelReturnStatus: r.cancelReturnStatus, n: r._count._all }));
+  const globalRows = toRows(globalGroups);
+
+  let scopeRows = globalRows;
+  let visibleCount: number;
+  let orders;
+  if (q.trim()) {
+    const light = await prisma.order.findMany({
+      where: dw ?? undefined,
+      select: { id: true, status: true, cancelReturnStatus: true, phone: true, recipientName: true, user: { select: { name: true, email: true } } },
+      orderBy: { createdAt: "desc" },
+    });
+    const matched = light.filter((o) => matchesOrderSearch(o, q));
+    scopeRows = matched.map((o) => ({ status: o.status, cancelReturnStatus: o.cancelReturnStatus, n: 1 }));
+    const visibleIds = matched.filter((o) => matchesGroups(o, keys)).map((o) => o.id);
+    visibleCount = visibleIds.length;
+    orders = visibleIds.length
+      ? await prisma.order.findMany({ where: { id: { in: visibleIds.slice(0, ORDER_LIST_LIMIT) } }, include: ORDER_INCLUDE, orderBy: { createdAt: "desc" } })
+      : [];
+  } else {
+    if (dw) {
+      const scoped = await prisma.order.groupBy({ by: ["status", "cancelReturnStatus"], where: dw, _count: { _all: true } });
+      scopeRows = toRows(scoped);
+    }
+    visibleCount = countVisible(scopeRows, keys);
+    orders = await prisma.order.findMany({ where: { ...(dw ?? {}), ...(groupsWhere(keys) ?? {}) }, include: ORDER_INCLUDE, orderBy: { createdAt: "desc" }, take: ORDER_LIST_LIMIT });
+  }
+  const all = countGroups(globalRows);
+  const scope = countGroups(scopeRows);
+  return {
+    orders,
+    visibleCount,
+    allGroupCounts: all.counts, // bölüm rozetleri süzgeçten bağımsız
+    groupCounts: scope.counts,
+    scopedTotal: scope.total,
+    totalAll: all.total,
+    attemptCount: globalRows.filter((r) => r.status === "AWAITING_PAYMENT").reduce((n, r) => n + r.n, 0),
+    countedCount: countedAgg._count._all,
+    totalRevenue: countedAgg._sum.totalAmount ?? 0,
+    pendingTransferCount: pendingAgg._count._all,
+    pendingTransferTotal: pendingAgg._sum.totalAmount ?? 0,
+    openShipmentCount,
+    beyogluCount,
+    beyogluDelivered,
+  };
 }
 
 export default async function AdminPage({ searchParams }: { searchParams: Promise<{ durum?: string; q?: string; tarih?: string; bas?: string; bit?: string }> }) {
@@ -124,8 +186,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const sp = await searchParams;
   const durumParam = sp.durum;
   const orderFilters = { q: sp.q, tarih: sp.tarih, bas: sp.bas, bit: sp.bit };
-  const selectedGroups = parseGroupParam(durumParam);
-  const { orders, products, messages, coupons, customers, reviews, company } = await getAdminData();
+  const { products, messages, coupons, customers, reviews, company } = await getAdminData();
   const extraCategories = await getExtraCategoryNames(); // yönetim panelinden eklenen kategoriler (form/toplu işlem seçenekleri)
   // Vitrin çipleri için sitedeki kümeler: Öne Çıkanlar = işaretliler (yoksa otomatik seçim), Çok Satanlar = kategori sayfasındaki liste
   const flaggedFeatured = await prisma.product.findMany({ where: { active: true, isFeatured: true }, select: { id: true } });
@@ -163,28 +224,17 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
     (a, b) => Number(b.status === "PENDING") - Number(a.status === "PENDING") || b.createdAt.getTime() - a.createdAt.getTime()
   );
 
-  // Sayaçlar: yalnızca ödemesi alınmış, iptal/iade edilmemiş siparişler "geçerli" sayılır (lib/orderStatus.ts)
-  const countedOrders = orders.filter((o) => isCountedOrder(o.status));
-  const attempts = orders.filter((o) => o.status === "AWAITING_PAYMENT");
   // Arama + tarih aralığı: durum çiplerinden önce uygulanır; çip sayaçları ve "Tümü" aynı kümeden çıkar (liste = çip seçimi ∩ arama ∩ tarih).
-  // Süzme sunucudadır: sipariş listesi zaten tek sorguda tümüyle yüklenir, istemciye ek veri/JS gitmez ve sonuç adres çubuğunda paylaşılabilir.
+  // Varsayılan görünüm yalnız açık işlerdir; arama ya da tarih süzgeci kullanılırken (ve ?durum= verilmemişken) tüm durumlarda aranır.
   const dateRange = resolveDateRange(sp.tarih, sp.bas, sp.bit, new Date());
-  const scopedOrders = orders.filter((o) => matchesOrderSearch(o, sp.q ?? "") && inDateRange(o.createdAt, dateRange));
-  const allGroupCounts = Object.fromEntries(ORDER_GROUPS.map((g) => [g.key, orders.filter((o) => g.test(o)).length])) as Record<OrderGroupKey, number>; // bölüm rozetleri süzgeçten bağımsız
-  const groupCounts = Object.fromEntries(ORDER_GROUPS.map((g) => [g.key, scopedOrders.filter((o) => g.test(o)).length])) as Record<OrderGroupKey, number>;
+  const filtered = Boolean(sp.q?.trim()) || dateRange !== null;
+  const effDurum = effectiveDurum(durumParam, filtered);
+  const selectedGroups = parseGroupParam(effDurum);
+  const panel = await getOrderPanel(sp.q ?? "", dateRange, selectedGroups);
+  const { orders: visibleOrders, allGroupCounts, groupCounts } = panel;
   const pendingMessages = messages.filter((m) => m.status === "PENDING").length;
-  // Bekleyen havale: yalnızca zaten yüklü sipariş listesinden türer (ek sorgu yok)
-  const pendingTransfer = orders.filter((o) => o.status === "PENDING_NEW" && o.paymentMethod === "BANK_TRANSFER");
-  const pendingTransferTotal = pendingTransfer.reduce((sum, o) => sum + o.totalAmount, 0);
-  const totalRevenue = countedOrders.reduce((sum, o) => sum + o.totalAmount, 0);
-  const beyogluOrders = countedOrders.filter((o) => o.shippingType === "BEYOGLU_MAGAZA_TESLIM");
-  const beyogluDelivered = beyogluOrders.filter((o) => o.status === "DELIVERED").length;
-  // Açık Kargonomi gönderisi: gönderisi oluşturulmuş ve henüz teslim edilmemiş/iptal edilmemiş sipariş
-  const openShipmentCount = orders.filter((o) => Boolean(o.kargonomiShipmentId) && ["PENDING", "SHIPPED"].includes(o.status)).length;
-
-  // Liste: seçili durum gruplarına göre süzülür
+  const { totalRevenue, pendingTransferTotal, openShipmentCount } = panel;
   const bulkFilters = { ...orderFilters, durum: durumParam, dateActive: dateRange !== null };
-  const visibleOrders = scopedOrders.filter((o) => matchesGroups(o, selectedGroups));
 
   // Fatura bilgileri ana sipariş sorgusundan ayrı okunur; tablo yoksa panelin geri kalanı çalışır
   const deliveredIds = visibleOrders.filter((o) => o.status === "DELIVERED").map((o) => o.id);
@@ -279,16 +329,16 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
             <span className="text-2xl font-bold text-neutral-900 mt-1 block break-words">
               {pendingTransferTotal.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺
             </span>
-            <span className="text-[11px] text-neutral-500 mt-1 block">{pendingTransfer.length} sipariş, ödeme onayı bekliyor</span>
+            <span className="text-[11px] text-neutral-500 mt-1 block">{panel.pendingTransferCount} sipariş, ödeme onayı bekliyor</span>
           </div>
 
           <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm">
             <span className="text-xs text-neutral-500 font-medium block">Geçerli Sipariş</span>
             <span className="text-2xl font-bold text-neutral-900 mt-1 block">
-              {countedOrders.length} adet
+              {panel.countedCount} adet
             </span>
             <span className="text-[11px] text-neutral-600 font-semibold mt-1 block">
-              Geçerli: {countedOrders.length} · Tüm kayıt: {orders.length}
+              Geçerli: {panel.countedCount} · Tüm kayıt: {panel.totalAll}
             </span>
             <span className="text-[11px] text-neutral-500 block">
               Geçerli: iptal, iade ve ödemesi tamamlanmayanlar hariç
@@ -310,7 +360,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
               Beyoğlu Mağaza Siparişleri
             </span>
             <span className="text-2xl font-bold text-amber-900 mt-1 block">
-              {beyogluOrders.length} sipariş • {beyogluDelivered} teslim edilen
+              {panel.beyogluCount} sipariş • {panel.beyogluDelivered} teslim edilen
             </span>
             <span className="text-[11px] text-amber-800/70 mt-1 block">
               İptal, iade ve ödemesi tamamlanmayanlar hariç • Katalog: {products.length} model
@@ -327,14 +377,14 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           badges={[
             { label: `${allGroupCounts.yeni} yeni gelen`, tone: allGroupCounts.yeni > 0 ? "amber" : "neutral" },
             ...(allGroupCounts.talep > 0 ? [{ label: `${allGroupCounts.talep} talep bekliyor`, tone: "red" as const }] : []),
-            ...(attempts.length > 0 ? [{ label: `${attempts.length} deneme`, tone: "neutral" as const }] : []),
+            ...(panel.attemptCount > 0 ? [{ label: `${panel.attemptCount} deneme`, tone: "neutral" as const }] : []),
           ]}
         >
-          <AdminOrderFilters param={durumParam} counts={groupCounts} total={scopedOrders.length} filters={orderFilters} />
+          <AdminOrderFilters param={durumParam} effectiveParam={effDurum} counts={groupCounts} total={panel.scopedTotal} filters={orderFilters} />
           <div className="flex flex-wrap items-center justify-end gap-3 px-6 pt-4">
             <AdminShipmentSync />
           </div>
-          {orders.length === 0 ? (
+          {panel.totalAll === 0 ? (
             <div className="p-12 text-center text-neutral-500 text-xs">
               Henüz verilmiş bir sipariş bulunmuyor.
             </div>
@@ -506,6 +556,9 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                 </tbody>
               </table>
             </div>
+          )}
+          {panel.visibleCount > visibleOrders.length && (
+            <p className="border-t border-neutral-200 px-6 py-3 text-[11px] font-semibold text-amber-800 bg-amber-50/60">İlk {ORDER_LIST_LIMIT} kayıt gösteriliyor; aramayla daralt.</p>
           )}
           {visibleOrders.length > 0 && (
             <details className="border-t border-neutral-200 px-6 py-3 text-xs">
