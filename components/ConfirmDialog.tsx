@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useId, useRef } from "react";
+import { useId, useRef } from "react";
 import { createPortal } from "react-dom";
+import { useFocusTrap } from "@/components/useFocusTrap";
 
 /**
  * Sayfa içi onay penceresi (tarayıcının confirm/prompt kutusu yerine). Escape ve "Vazgeç" kapatır; ilk odak güvenli seçenekte (Vazgeç).
@@ -30,30 +31,13 @@ export default function ConfirmDialog({
 }) {
   const id = useId();
   const cancelRef = useRef<HTMLButtonElement>(null);
-  const cancelFn = useRef(onCancel);
-  cancelFn.current = onCancel; // pencere yeniden çizilince odak ve dinleyici sıfırlanmasın
-
-  useEffect(() => {
-    if (!open) return;
-    const opener = document.activeElement as HTMLElement | null;
-    cancelRef.current?.focus();
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.stopPropagation();
-        cancelFn.current();
-      }
-    };
-    window.addEventListener("keydown", onKey, true);
-    return () => {
-      window.removeEventListener("keydown", onKey, true);
-      opener?.focus?.();
-    };
-  }, [open]);
+  const boxRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(open, boxRef, { onEscape: onCancel, initialFocus: cancelRef }); // Esc, Tab döngüsü, ilk odak Vazgeç, kapanınca odak tetikleyiciye
 
   if (!open) return null;
   return createPortal(
     <div className="fixed inset-0 z-[90] flex items-end sm:items-center justify-center bg-black/50 p-4" onMouseDown={(e) => e.target === e.currentTarget && onCancel()}>
-      <div role="alertdialog" aria-modal="true" aria-labelledby={`${id}-t`} aria-describedby={`${id}-d`} className="w-full max-w-md rounded-xl border border-neutral-200 bg-white p-5 shadow-2xl">
+      <div ref={boxRef} role="alertdialog" aria-modal="true" aria-labelledby={`${id}-t`} aria-describedby={`${id}-d`} className="w-full max-w-md rounded-xl border border-neutral-200 bg-white p-5 shadow-2xl">
         <h2 id={`${id}-t`} className="text-sm font-bold text-neutral-900">{title}</h2>
         <div id={`${id}-d`} className="mt-2 space-y-2 text-xs leading-relaxed text-neutral-700">{children}</div>
         <div className="mt-4 flex flex-wrap justify-end gap-3">

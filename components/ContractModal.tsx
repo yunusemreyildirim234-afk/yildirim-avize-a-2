@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useFocusTrap } from "@/components/useFocusTrap";
 import { X } from "lucide-react";
 import { ADDRESS_LINE, LEGAL_CONTACT_EMAIL, PHONE_DISPLAY } from "@/lib/site";
 import type { PublicCompany } from "@/lib/company";
@@ -26,16 +27,15 @@ const tl = (n: number) => `${n.toLocaleString("tr-TR", { minimumFractionDigits: 
 
 /** Sipariş bilgilerini dinamik basan Ön Bilgilendirme Formu / Mesafeli Satış Sözleşmesi penceresi. */
 export default function ContractModal({ kind, data, onClose }: { kind: "pre" | "sales"; data: ContractData; onClose: () => void }) {
+  const boxRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(true, boxRef, { onEscape: onClose });
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", onKey);
     return () => {
-      window.removeEventListener("keydown", onKey);
       document.body.style.overflow = prev;
     };
-  }, [onClose]);
+  }, []);
 
   const [company, setCompany] = useState<PublicCompany | null>(null);
   useEffect(() => {
@@ -52,7 +52,7 @@ export default function ContractModal({ kind, data, onClose }: { kind: "pre" | "
   return (
     <div role="dialog" aria-modal="true" aria-label={title} className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6">
       <button type="button" aria-label="Kapat" onClick={onClose} className="absolute inset-0 bg-zinc-950/60" />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[88vh] flex flex-col">
+      <div ref={boxRef} className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[88vh] flex flex-col">
         <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 shrink-0">
           <h2 className="text-base font-serif font-bold text-neutral-900">{title}</h2>
           <button type="button" onClick={onClose} aria-label="Kapat" className="rounded-full p-1.5 hover:bg-neutral-100">

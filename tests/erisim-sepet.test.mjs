@@ -18,3 +18,15 @@ test("sepet: kupon etiketi input'a bağlı; ödeme yöntemi radiogroup", () => {
   assert.match(s, /aria-checked=\{paymentMethod === "CREDIT_CARD"\}/);
   assert.match(s, /aria-checked=\{paymentMethod === "BANK_TRANSFER"\}/);
 });
+
+const read = (p) => readFileSync(new URL(`../${p}`, import.meta.url), "utf8");
+
+test("odak tuzağı kancası: Esc, Tab döngüsü, odağı tetikleyiciye geri verme; dört yerde kullanılır", () => {
+  const hook = read("components/useFocusTrap.ts");
+  assert.match(hook, /e\.key === "Escape"/);
+  assert.match(hook, /e\.key !== "Tab"/);
+  assert.match(hook, /opener\?\.focus\?\.\(\)/);
+  for (const f of ["ConfirmDialog", "Navbar", "ContractModal", "NavSearch"]) {
+    assert.match(read(`components/${f}.tsx`), /useFocusTrap\(/, f);
+  }
+});

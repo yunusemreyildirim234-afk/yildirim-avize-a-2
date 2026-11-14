@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useFocusTrap } from "@/components/useFocusTrap";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Loader2, Search, X } from "lucide-react";
@@ -211,6 +212,10 @@ export default function NavSearch() {
     };
   }, [open]);
 
+  // Mobil katman: Tab döngüsü, Esc ve kapanınca odağın büyüteç düğmesine dönmesi (ilk odağı aşağıdaki mobileInput.focus() verir)
+  const mobileLayerRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(open && typeof window !== "undefined" && window.innerWidth < 768, mobileLayerRef, { onEscape: () => setOpen(false), initialFocus: "none" });
+
   // Mobil katman açıkken sayfa kaydırmasını kilitle
   useEffect(() => {
     if (!open || window.innerWidth >= 768) return;
@@ -312,7 +317,7 @@ export default function NavSearch() {
 
       {/* Mobil: tam genişlik arama katmanı */}
       {open && (
-        <div role="dialog" aria-modal="true" aria-label="Ürün ara" className="md:hidden fixed inset-0 z-[60] bg-white flex flex-col">
+        <div ref={mobileLayerRef} role="dialog" aria-modal="true" aria-label="Ürün ara" className="md:hidden fixed inset-0 z-[60] bg-white flex flex-col">
           <form onSubmit={onSubmit} role="search" className="flex items-center gap-2 px-3 h-16 border-b border-zinc-100 shrink-0">
             <div className="relative flex-1">
               <button type="submit" aria-label="Ara" className="absolute left-0 top-0 h-full w-10 flex items-center justify-center rounded-l-full text-zinc-400 hover:text-amber-700">

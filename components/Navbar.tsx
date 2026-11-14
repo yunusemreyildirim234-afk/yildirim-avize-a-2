@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useFocusTrap } from "@/components/useFocusTrap";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -79,6 +80,7 @@ export default function Navbar({ extraCategories = [], fixedOverrides = {}, show
   const router = useRouter();
   const [session, setSession] = useState<Session>({ user: null, admin: false });
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const drawerRef = useRef<HTMLDivElement>(null);
 
   // Sayfa değişince çekmeceyi kapat
   useEffect(() => {
@@ -86,18 +88,17 @@ export default function Navbar({ extraCategories = [], fixedOverrides = {}, show
     setDrawerOpen(false);
   }, [pathname]);
 
-  // Çekmece açıkken ESC ile kapanır ve sayfa kaydırması kilitlenir
+  // Çekmece açıkken sayfa kaydırması kilitlenir
   useEffect(() => {
     if (!drawerOpen) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setDrawerOpen(false);
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", onKey);
     return () => {
-      window.removeEventListener("keydown", onKey);
       document.body.style.overflow = prev;
     };
   }, [drawerOpen]);
+  // Esc, Tab döngüsü ve kapanınca odağın hamburger düğmesine dönmesi
+  useFocusTrap(drawerOpen, drawerRef, { onEscape: () => setDrawerOpen(false) });
 
   useEffect(() => {
     let active = true;
@@ -319,7 +320,7 @@ export default function Navbar({ extraCategories = [], fixedOverrides = {}, show
       {drawerOpen && (
         <div className="md:hidden fixed inset-0 z-[60]" role="dialog" aria-modal="true" aria-label="Menü">
           <button type="button" aria-label="Menüyü kapat" onClick={() => setDrawerOpen(false)} className="absolute inset-0 bg-zinc-950/50" />
-          <div className="absolute left-0 top-0 bottom-0 w-[85vw] max-w-sm bg-white shadow-2xl flex flex-col">
+          <div ref={drawerRef} className="absolute left-0 top-0 bottom-0 w-[85vw] max-w-sm bg-white shadow-2xl flex flex-col">
             <div className="flex items-center justify-between h-16 px-4 border-b border-zinc-100 shrink-0">
               <span className="font-serif font-black text-xl tracking-tight text-zinc-950">
                 Yıldırım Avize
