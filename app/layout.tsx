@@ -15,6 +15,7 @@ import { getGalleryPhotoCount } from "@/lib/customer-gallery";
 import { getExtraCategoryLinks, getFixedCategoryOverrides } from "@/lib/category-list";
 import { CartProvider } from "@/context/CartContext";
 import { WishlistProvider } from "@/context/WishlistContext";
+import { AuthProvider } from "@/context/AuthContext";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 
 // Türkçe karakterler (ğ, ş, ı, İ) latin-ext alt kümesindedir; yoksa sistem yazı tipine düşer
@@ -87,6 +88,7 @@ export default async function RootLayout({
       </head>
       <body className={`${inter.className} bg-gray-50 text-gray-900 antialiased`}>
         <SkipLink />
+        <AuthProvider>
         <CartProvider>
           <WishlistProvider>
             {/* Yönetim panelinde mağaza menüsü ve alt bilgi yerine sade admin üst çubuğu */}
@@ -104,6 +106,7 @@ export default async function RootLayout({
             <ToastLinkRouter />
           </WishlistProvider>
         </CartProvider>
+        </AuthProvider>
       </body>
     </html>
   );

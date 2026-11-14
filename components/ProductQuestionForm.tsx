@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
 import { toast } from "sonner";
 
@@ -13,17 +14,14 @@ export default function ProductQuestionForm({ productId, productTitle }: { produ
   const [error, setError] = useState("");
 
   // Giriş yapmış müşterinin bilgilerini önceden doldur
+  const { user: account } = useAuth();
   useEffect(() => {
-    fetch("/api/auth/me")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.user) {
-          setName((n) => n || data.user.name);
-          setEmail((e) => e || data.user.email);
-        }
-      })
-      .catch(() => {});
-  }, []);
+    if (account) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- oturum bilgisi geldikten sonra boş alanlar doldurulur
+      setName((n) => n || account.name);
+      setEmail((e) => e || account.email);
+    }
+  }, [account]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();

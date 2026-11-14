@@ -31,12 +31,8 @@ import NavSearch from "@/components/NavSearch";
 import NotificationBell from "@/components/NotificationBell";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useCart } from "@/context/CartContext";
+import { useAuth } from "@/context/AuthContext";
 import { PHONE_DISPLAY, PHONE_TEL } from "@/lib/site";
-
-interface Session {
-  user: { name: string; email: string; picture?: string | null } | null;
-  admin: boolean;
-}
 
 const CATEGORY_LINKS = [
   { href: "/kategori/tum", label: "Tüm Ürünler" },
@@ -78,7 +74,7 @@ export default function Navbar({ extraCategories = [], fixedOverrides = {}, show
   const { totalItems } = useCart();
   const pathname = usePathname();
   const router = useRouter();
-  const [session, setSession] = useState<Session>({ user: null, admin: false });
+  const { user, admin, clear } = useAuth();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
 
@@ -100,31 +96,15 @@ export default function Navbar({ extraCategories = [], fixedOverrides = {}, show
   // Esc, Tab döngüsü ve kapanınca odağın hamburger düğmesine dönmesi
   useFocusTrap(drawerOpen, drawerRef, { onEscape: () => setDrawerOpen(false) });
 
-  useEffect(() => {
-    let active = true;
-    const load = () =>
-      fetch("/api/auth/me")
-        .then((res) => res.json())
-        .then((data: Session) => active && setSession({ user: data.user, admin: data.admin }))
-        .catch(() => {});
-    load();
-    window.addEventListener("ya-auth", load);
-    return () => {
-      active = false;
-      window.removeEventListener("ya-auth", load);
-    };
-  }, [pathname]);
-
   const logout = async (close: () => void) => {
     close();
     await fetch("/api/auth/logout", { method: "POST" });
-    setSession({ user: null, admin: false });
+    clear();
     window.dispatchEvent(new Event("ya-auth"));
     router.push("/");
     router.refresh();
   };
 
-  const { user, admin } = session;
   const initial = user?.name?.trim().charAt(0).toUpperCase();
 
   return (

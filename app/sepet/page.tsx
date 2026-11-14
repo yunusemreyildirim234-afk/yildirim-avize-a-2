@@ -2,6 +2,7 @@
 
 import { toast } from "sonner";
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useAuth } from "@/context/AuthContext";
 import { sortByNameTr } from "@/lib/sort-tr";
 import { pickDefault } from "@/lib/address-book";
 import type { SavedAddress } from "@/components/AddressBook";
@@ -117,20 +118,17 @@ export default function CartPage() {
   }, []);
 
   // Giriş yapmış müşterinin ad ve e-postasını otomatik doldur
+  const { user: authUser } = useAuth();
   useEffect(() => {
-    fetch("/api/auth/me")
-      .then((res) => res.json())
-      .then((data) => {
-        if (!data.user) return;
-        accountName.current = data.user.name || "";
-        setName((v) => v || data.user.name || "");
-        if (data.user.email) {
-          setAccountEmail(data.user.email);
-          setEmail(data.user.email);
-        }
-      })
-      .catch(() => {});
-  }, []);
+    if (!authUser) return;
+    accountName.current = authUser.name || "";
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- oturum bilgisi geldikten sonra alanlar doldurulur
+    setName((v) => v || authUser.name || "");
+    if (authUser.email) {
+      setAccountEmail(authUser.email);
+      setEmail(authUser.email);
+    }
+  }, [authUser]);
 
   // Kargonomi Şehir Listesini Yükle
   useEffect(() => {

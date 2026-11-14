@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useAuth } from "@/context/AuthContext";
 import { isShortOrderCode } from "@/lib/order-lookup";
 
 /** /kargo-takip formu. 8 haneli sipariş kodunda e-posta zorunlu olur; girişli kullanıcıda hesabından dolar. Sunucu eylemi değişmez. */
@@ -9,15 +10,12 @@ export default function TrackForm({ action, defaultCode }: { action: (formData: 
   const [email, setEmail] = useState("");
   const short = isShortOrderCode(code);
 
+  const { user: account } = useAuth();
   useEffect(() => {
-    fetch("/api/auth/me")
-      .then((res) => res.json())
-      .then((data: { user?: { email?: string } | null }) => {
-        const mail = data.user?.email;
-        if (mail) setEmail((cur) => cur || mail);
-      })
-      .catch(() => {});
-  }, []);
+    const mail = account?.email;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- oturum bilgisi geldikten sonra boş alan doldurulur
+    if (mail) setEmail((cur) => cur || mail);
+  }, [account]);
 
   return (
     <form action={action} className="space-y-2">
