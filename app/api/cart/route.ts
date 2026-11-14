@@ -7,7 +7,27 @@ import { bulkTiersOf } from "@/lib/bulk-pricing";
 import { coverImageOf } from "@/lib/variation-input";
 import { isPurchasablePrice, priceUnavailableMessage } from "@/lib/purchasable";
 
-type CartRow = Prisma.CartItemGetPayload<{ include: { variation: { include: { product: { include: { variations: { select: { images: true } } } } } } } }>;
+// Yanıtta kullanılan alanlar dışında ürün/varyasyon verisi okunmaz (açıklama, Trendyol anlık görüntüsü vb. çekilmez)
+const CART_SELECT = {
+  variationId: true,
+  quantity: true,
+  variation: {
+    select: {
+      productId: true,
+      variationValue: true,
+      stock: true,
+      extraPrice: true,
+      product: {
+        select: {
+          title: true, active: true, basePrice: true, listPrice: true, imageUrl: true, images: true,
+          bulkTiers: true, couponAllowed: true, pickupDiscountPct: true, transferDiscountPct: true,
+          variations: { select: { images: true }, orderBy: [{ position: "asc" }, { id: "asc" }] },
+        },
+      },
+    },
+  },
+} satisfies Prisma.CartItemSelect;
+type CartRow = Prisma.CartItemGetPayload<{ select: typeof CART_SELECT }>;
 
 // Giriş yapmış müşterinin kalıcı sepeti (fiyat ve stok her seferinde veritabanından okunur)
 export async function GET() {
@@ -17,7 +37,7 @@ export async function GET() {
 
   const rows = await prisma.cartItem.findMany({
     where: { userId },
-    include: { variation: { include: { product: { include: { variations: { select: { images: true }, orderBy: [{ position: "asc" }, { id: "asc" }] } } } } } },
+    select: CART_SELECT,
     orderBy: { updatedAt: "asc" },
   });
 

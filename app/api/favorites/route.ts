@@ -6,7 +6,17 @@ import type { Prisma } from "@/generated/prisma/client";
 import { coverImageOf } from "@/lib/variation-input";
 import { getVisibleWhere } from "@/lib/visibility";
 
-type FavoriteRow = Prisma.FavoriteGetPayload<{ include: { product: { include: { variations: { select: { images: true } } } } } }>;
+// Yanıtta kullanılan alanlar dışında ürün verisi okunmaz
+const FAVORITE_SELECT = {
+  productId: true,
+  product: {
+    select: {
+      title: true, category: true, basePrice: true, imageUrl: true, images: true,
+      variations: { select: { images: true }, orderBy: [{ position: "asc" }, { id: "asc" }] },
+    },
+  },
+} satisfies Prisma.FavoriteSelect;
+type FavoriteRow = Prisma.FavoriteGetPayload<{ select: typeof FAVORITE_SELECT }>;
 
 // Giriş yapmış müşterinin kalıcı favorileri
 export async function GET() {
@@ -16,7 +26,7 @@ export async function GET() {
 
   const rows = await prisma.favorite.findMany({
     where: { userId, product: await getVisibleWhere() },
-    include: { product: { include: { variations: { select: { images: true }, orderBy: [{ position: "asc" }, { id: "asc" }] } } } },
+    select: FAVORITE_SELECT,
     orderBy: { createdAt: "asc" },
   });
   const items = rows.map((r: FavoriteRow) => ({
