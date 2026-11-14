@@ -54,11 +54,11 @@ test.describe("d) Sepet", () => {
   test("sepette adet değiştirme, kaldırma ve Geri Al (Geri Al yönlendirmez); kupon yer tutucusu vitrin kodunu gösterir", async ({ page }) => {
     const { showcaseCode } = await addFirstProduct(page);
     await openOk(page, "/sepet");
-    const qty = page.getByRole("button", { name: "+", exact: true }).first().locator("xpath=preceding-sibling::span[1]");
+    const qty = page.getByRole("button", { name: /^Adedi artır:/ }).first().locator("xpath=preceding-sibling::span[1]");
     await expect(qty).toHaveText("1");
-    await page.getByRole("button", { name: "+", exact: true }).first().click();
+    await page.getByRole("button", { name: /^Adedi artır:/ }).first().click();
     await expect(qty).toHaveText("2");
-    await page.getByRole("button", { name: "-", exact: true }).first().click();
+    await page.getByRole("button", { name: /^Adedi azalt:/ }).first().click();
     await expect(qty).toHaveText("1");
 
     // Kupon alanı yer tutucusu sunucu teklifinden gelen vitrin kodunu gösterir
@@ -73,7 +73,7 @@ test.describe("d) Sepet", () => {
     await toast(page).filter({ hasText: "Ürün sepetten çıkarıldı" }).getByRole("button", { name: /Geri Al/ }).click();
     await expect(page).toHaveURL(/\/sepet$/);
     await expect(page.getByText("Ürünler Toplamı")).toBeVisible();
-    await expect(page.getByRole("button", { name: "+", exact: true }).first()).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Adedi artır:/ }).first()).toBeVisible();
   });
 
   test("varsayılan teslimat adrese teslim; mağazadan teslim indirim bilgisiyle seçenek; alanlarda autocomplete", async ({ page }) => {
@@ -117,7 +117,7 @@ test.describe("d) Sepet", () => {
 
     let total = await check();
     // Adedi artırarak eşiğin diğer tarafına geç (en çok 8 tık; stok sınırında durur)
-    const plus = page.getByRole("button", { name: "+", exact: true }).first();
+    const plus = page.getByRole("button", { name: /^Adedi artır:/ }).first();
     for (let i = 0; i < 8 && total < threshold; i++) {
       await plus.click();
       total = await check();
@@ -195,7 +195,7 @@ test.describe("d) Sepet", () => {
     await openOk(page, "/sepet");
     await expect(page.getByText("Ürünler Toplamı")).toBeVisible();
     await expect(page.getByTestId("satir-toplami")).toHaveCount(0);
-    await page.getByRole("button", { name: "+", exact: true }).first().click();
+    await page.getByRole("button", { name: /^Adedi artır:/ }).first().click();
     await expect(page.getByTestId("satir-toplami").first()).toContainText(/^2 × .* ₺ = .* ₺$/);
     if (testInfo.project.name === "mobile") {
       const w = await page.getByLabel("Kupon kodu").evaluate((e) => e.getBoundingClientRect().width);

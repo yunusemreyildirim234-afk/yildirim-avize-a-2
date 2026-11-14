@@ -743,6 +743,7 @@ export default function CartPage() {
                       <button
                         type="button"
                         onClick={() => updateQuantity(item.variationId, item.quantity - 1)}
+                        aria-label={`Adedi azalt: ${item.title}`}
                         className="min-w-11 min-h-11 sm:min-w-0 sm:min-h-0 px-2.5 py-1 text-sm sm:text-xs font-bold hover:bg-neutral-200"
                       >
                         -
@@ -753,6 +754,7 @@ export default function CartPage() {
                       <button
                         type="button"
                         onClick={() => updateQuantity(item.variationId, item.quantity + 1)}
+                        aria-label={`Adedi artır: ${item.title}`}
                         className="min-w-11 min-h-11 sm:min-w-0 sm:min-h-0 px-2.5 py-1 text-sm sm:text-xs font-bold hover:bg-neutral-200"
                       >
                         +
@@ -764,6 +766,7 @@ export default function CartPage() {
                       onClick={() => removeFromCart(item.variationId)}
                       className="text-neutral-400 hover:text-red-600 transition-colors p-1 text-sm min-w-11 min-h-11 sm:min-w-0 sm:min-h-0 flex items-center justify-center"
                       title="Kaldır"
+                      aria-label={`Kaldır: ${item.title}`}
                     >
                       ✕
                     </button>
@@ -774,7 +777,7 @@ export default function CartPage() {
 
             {/* KUPON KODU GİRİŞ KUTUSU */}
             <div className="bg-white rounded-3xl border border-neutral-200 p-4 sm:p-6 shadow-sm space-y-3">
-              <label className="text-xs font-bold text-neutral-700 uppercase tracking-wider block">
+              <label htmlFor="kupon-kodu" className="text-xs font-bold text-neutral-700 uppercase tracking-wider block">
                 İndirim / Kupon Kodu:
               </label>
 
@@ -799,7 +802,7 @@ export default function CartPage() {
                 </div>
               ) : (
                 <form onSubmit={handleApplyCoupon} className="flex flex-col sm:flex-row gap-2">
-                  <input aria-label="Kupon kodu"
+                  <input id="kupon-kodu"
                     type="text"
                     placeholder={couponPlaceholder(quote?.showcaseCode)}
                     value={couponInput}
@@ -1131,9 +1134,11 @@ export default function CartPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div role="radiogroup" aria-label="Ödeme yöntemi" className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
+                  role="radio"
+                  aria-checked={paymentMethod === "CREDIT_CARD"}
                   onClick={() => setPaymentMethod("CREDIT_CARD")}
                   className={`p-3 rounded-xl border text-xs font-semibold transition-all ${
                     paymentMethod === "CREDIT_CARD"
@@ -1145,6 +1150,8 @@ export default function CartPage() {
                 </button>
                 <button
                   type="button"
+                  role="radio"
+                  aria-checked={paymentMethod === "BANK_TRANSFER"}
                   onClick={() => setPaymentMethod("BANK_TRANSFER")}
                   className={`p-3 rounded-xl border text-xs font-semibold transition-all ${
                     paymentMethod === "BANK_TRANSFER"

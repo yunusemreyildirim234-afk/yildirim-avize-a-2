@@ -149,7 +149,7 @@ test.describe("Havale siparişi (uçtan uca)", () => {
       expect(near(await buttonTotal(page), under.total), "düğmedeki tutar = özet toplamı").toBe(true);
 
       // 2) eşiğin üstü (2 adet): kargo ücretsiz
-      await page.getByRole("button", { name: "+", exact: true }).first().click();
+      await page.getByRole("button", { name: /^Adedi artır:/ }).first().click();
       await expect(page.getByText("Ürünler Toplamı", { exact: true }).locator("xpath=following-sibling::span[1]")).not.toHaveText(/^300,00/);
       const over = await readSummary(page);
       expect(over.items).toBeGreaterThanOrEqual(threshold);
@@ -340,7 +340,7 @@ test.describe("Havale siparişi (uçtan uca)", () => {
       });
       await addToCartViaPage(page, B.id, 2);
       await page.goto("/sepet", { waitUntil: "domcontentloaded" });
-      await page.getByRole("button", { name: "+", exact: true }).first().click();
+      await page.getByRole("button", { name: /^Adedi artır:/ }).first().click();
       await expect(page.getByRole("alert").filter({ hasText: `"${B.title}" için yeterli stok yok.` })).toBeVisible();
       await chooseDelivery(page, "magaza");
       await choosePayment(page, "havale");
