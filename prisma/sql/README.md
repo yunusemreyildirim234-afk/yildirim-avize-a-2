@@ -16,8 +16,9 @@ Bu klasör, veritabanı şemasının **gerçek geçmişidir**. Şema değişikli
 | `alici-adi-ekle.sql` | `Order.recipientName` |
 | `ebat-ekle.sql` | `Product.ebat` |
 | `variation-index-ekle.sql` | `ProductVariation.productId` indeksi |
+| `account-deletion.sql` | `AccountDeletionRequest` tablosu, `User.lastLoginAt`, durum CHECK kuralı ve kullanıcı başına tek bekleyen talep kısmi benzersiz indeksi |
 
-`account-deletion.sql` (hesap silme tablosu, CHECK ve kullanıcı başına tek bekleyen talep kısmi indeksi) `denetim-duzeltme` dalındadır; `00-tam-sema.sql` içindeki son bölüm aynı kuralları içerir.
+`00-tam-sema.sql` içindeki son bölüm, `account-deletion.sql`'deki Prisma şemasında görünmeyen kuralları (CHECK ve kısmi benzersiz indeks) içerir.
 
 ## 00-tam-sema.sql'i yeniden üretmek
 Gerçek bağlantı gerekmez; geçici bir yapılandırma dosyasına **sahte** adres verilir (`.env` okunmaz):
