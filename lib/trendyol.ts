@@ -65,7 +65,10 @@ export async function fetchTrendyolProducts(): Promise<TrendyolItem[]> {
   return items;
 }
 
-const ACCESSORY_WORDS = /(taşı|\btop\b|top taş|halka|kol şapkası|kol camı|kılıfı|tabak|ampül|duyu|tutucu|boncuk|plaket|rondela)/;
+// Kesin parça kelimeleri: avize geçse de yedek parçadır ("avize halkası", "avize tabağı" gibi iyelik ekli biçimler dahil)
+const ACCESSORY_WORDS = /(taşı|top taş|halkası|tabağı|topu|kol şapkası|kol camı|kılıfı|ampül|duyu|tutucu|boncuk|plaket|rondela)/;
+// Belirsiz kelimeler: "Halkalı Avize", "Tabaklı Avize", "Top Avize" avizedir; başlıkta/kategoride avize yoksa aksesuar sayılır
+const WEAK_ACCESSORY_WORDS = /(\btop\b|halka|tabak)/;
 const ACCESSORY_CATEGORIES = ["ampul", "duy", "boncuk", "araç içi telefon tutucu"];
 
 /** Başlıktaki anahtar kelimelere (Kristal, Modern, Klasik, Sarkıt, Aplik) göre site kategorisi. */
@@ -74,7 +77,8 @@ export function mapCategory(item: TrendyolItem): string {
   const c = (item.categoryName ?? "").toLocaleLowerCase("tr");
 
   // 1. Yedek parça / aksesuar (avize taşı, ampul, duy, halka, kol şapkası ...)
-  if (ACCESSORY_WORDS.test(t) || ACCESSORY_CATEGORIES.includes(c)) return "Aksesuar";
+  const avizeMi = t.includes("avize") || c === "avize";
+  if (ACCESSORY_WORDS.test(t) || (!avizeMi && WEAK_ACCESSORY_WORDS.test(t)) || ACCESSORY_CATEGORIES.includes(c)) return "Aksesuar";
 
   // 2. Sarkıt & aplik & lamba
   if (/aplik|lambader|abajur|lambası/.test(t)) return "Sarkıt";
