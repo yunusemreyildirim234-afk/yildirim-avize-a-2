@@ -1,24 +1,29 @@
 # Yıldırım Avize
 
-> Yıldırım Avize, İstanbul Beyoğlu Şişhane'de faaliyet gösteren avize ve aydınlatma mağazasıdır. Bohem el kesimi kristal, modern LED sarkıt, klasik pirinç avize ve aplik modelleri satar; siparişler mağazadan teslim alınabilir veya üst düzey korumalı koliyle kargoyla gönderilir.
+> Yıldırım Avize, İstanbul Beyoğlu Şişhane'de faaliyet gösteren avize ve aydınlatma mağazasıdır. Bohem el kesimi kristal, modern LED sarkıt, klasik pirinç avize ve aplik modelleri satar; siparişler mağazadan teslim alınabilir veya Aras Kargo ile Türkiye genelinde gönderilir.
 
 ## Mağaza
 - Web sitesi: https://www.yildirimavize.com.tr
 - Adres: Emekyemez Mah. İskender Cad, Nazlı Hanım Sk. No:6 D:11, Şişhane Beyoğlu / İstanbul
 - Telefon / WhatsApp: 0537 211 42 23
 - Çalışma saatleri: Hafta içi 09:00 - 18:00, hafta sonu kapalı
-- Teslimat: Beyoğlu mağaza teslimi (ücretsiz) veya Türkiye geneli üst düzey korumalı koli kargo (Kargonomi altyapısı)
+- Teslimat: Beyoğlu mağaza teslimi (ücretsiz) veya Türkiye geneli Aras Kargo ile gönderim; 350 TL üzeri siparişlerde kargo ücretsizdir
+- İade ve cayma: [İptal, İade ve Cayma](/iptal-iade-cayma)
 
 ## Kategoriler
 - [Kristal Serisi](/kategori/kristal): el kesimi prizmatik kristal avizeler
 - [Modern Avizeler](/kategori/modern): minimalist LED sarkıtlar
 - [Klasik Avizeler](/kategori/klasik): antika pirinç ve eskitme gövdeler
 - [Sarkıt & Aplik](/kategori/sarkit): masa üstü, antre ve köşe aydınlatmaları
+- [Aksesuar & Yedek Parça](/kategori/aksesuar): kristal taşlar, ampul, duy ve avize yedek parçaları
 
 ## Sayfalar
 - [Ana Sayfa](/)
 - [İletişim & Yol Tarifi](/iletisim)
 - [Gizlilik Politikası](/gizlilik-politikasi)
+- [Aydınlatma Metni (KVKK)](/aydinlatma-metni)
+- [Çerez Politikası](/cerez-politikasi)
+- [İptal, İade ve Cayma](/iptal-iade-cayma)
 - [Kullanım Şartları](/kullanim-sartlari)
 - [Mesafeli Satış Sözleşmesi](/mesafeli-satis-sozlesmesi)
 - [Site Haritası](/sitemap.xml)
