@@ -24,7 +24,7 @@ import { coverImageOf, imageListOf } from "@/lib/variation-input";
 import { GtmEvent } from "@/components/GtmEvent";
 import { gaItem, viewItemEvent } from "@/lib/gtm-events";
 import { displayTitle } from "@/lib/title-display";
-import { productMetaDescription, productSeoTitle } from "@/lib/product-seo";
+import { JSONLD_DESCRIPTION_MAX, gtin13Of, offerExtras, productMetaDescription, productSeoTitle, truncateAtWord } from "@/lib/product-seo";
 
 const totalStockOf = (p: { variations: { stock: number }[] }) => p.variations.reduce((sum, v) => sum + Math.max(0, v.stock), 0);
 
@@ -113,12 +113,13 @@ export default async function ProductDetailPage({ params }: Props) {
     "@context": "https://schema.org",
     "@type": "Product",
     name: displayTitle(product.title).title,
-    description: product.description || product.title,
+    description: truncateAtWord(product.description || product.title, JSONLD_DESCRIPTION_MAX),
     ...(hasCategory ? { category: product.category } : {}),
     brand: { "@type": "Brand", name: feedBrand() },
     url: `${SITE_URL}/urun/${id}`,
     ...(productImages.length ? { image: productImages.slice(0, 6) } : {}),
     ...(product.modelCode ? { sku: product.modelCode } : {}),
+    ...gtin13Of(offer.variation?.barcode),
     ...(reviews.length
       ? {
           aggregateRating: { "@type": "AggregateRating", ratingValue: ratingAvg.toFixed(1), reviewCount: reviews.length },
@@ -139,6 +140,7 @@ export default async function ProductDetailPage({ params }: Props) {
       seller: { "@type": "Organization", name: "Yıldırım Avize" },
       availability: offer.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
       itemCondition: "https://schema.org/NewCondition",
+      ...offerExtras({ price: offer.price, siteUrl: SITE_URL }),
     },
   };
 

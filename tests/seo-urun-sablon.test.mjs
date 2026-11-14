@@ -41,3 +41,11 @@ test("Offer ekleri: kargo eşiği, iade 14 gün, +30 gün, gtin13", () => {
   assert.deepEqual(gtin13Of("4006381333932"), {});
   assert.deepEqual(gtin13Of(null), {});
 });
+
+test("ürün sayfası JSON-LD: Offer ekleri ve gtin13 bağlı", async () => {
+  const { readFileSync } = await import("node:fs");
+  const s = readFileSync(new URL("../app/urun/[id]/page.tsx", import.meta.url), "utf8");
+  assert.match(s, /\.\.\.offerExtras\(\{ price: offer\.price, siteUrl: SITE_URL \}\)/);
+  assert.match(s, /\.\.\.gtin13Of\(offer\.variation\?\.barcode\)/);
+  assert.match(s, /truncateAtWord\(product\.description \|\| product\.title, JSONLD_DESCRIPTION_MAX\)/);
+});
