@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { listSignature } from "@/lib/list-sync";
 
 interface Options<T> {
   /** GET (401 veya `anon: true` = oturum yok) ve PUT için API yolu */
@@ -23,6 +24,8 @@ interface Options<T> {
 export function useAccountSync<T>({ endpoint, list, setList, merge, serialize, ready }: Options<T>) {
   const [synced, setSynced] = useState(false);
   const flagKey = `ya_sync_${endpoint}`;
+  // Sunucudaki (son bilinen) listenin imzası: liste bundan farklılaşmadıkça PUT gitmez
+  const lastSig = useRef<string | null>(null);
 
   useEffect(() => {
     if (!ready) return;
@@ -47,6 +50,7 @@ export function useAccountSync<T>({ endpoint, list, setList, merge, serialize, r
         if (!active) return;
         const returning = Boolean(localStorage.getItem(flagKey));
         localStorage.setItem(flagKey, "1");
+        lastSig.current = listSignature(serialize(remote) as unknown[]);
         setList((prev) => (returning ? remote : merge(prev, remote)));
         setSynced(true);
       } catch {
@@ -60,11 +64,14 @@ export function useAccountSync<T>({ endpoint, list, setList, merge, serialize, r
       active = false;
       window.removeEventListener("ya-auth", probe);
     };
-  }, [ready, endpoint, flagKey, setList, merge]);
+  }, [ready, endpoint, flagKey, setList, merge, serialize]);
 
   useEffect(() => {
     if (!synced) return;
+    const sig = listSignature(serialize(list) as unknown[]);
+    if (sig === lastSig.current) return; // sunucudakiyle aynı: yazma yok
     const timer = setTimeout(() => {
+      lastSig.current = sig;
       fetch(endpoint, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },

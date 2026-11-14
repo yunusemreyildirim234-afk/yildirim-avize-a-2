@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { sameCartRows } from "@/lib/list-sync";
 import { getSessionUserId } from "@/lib/account";
 import type { Prisma } from "@/generated/prisma/client";
 import { bulkTiersOf } from "@/lib/bulk-pricing";
@@ -58,11 +59,14 @@ export async function PUT(req: Request) {
   const existing = found.filter((v) => isPurchasablePrice(v.product.basePrice + v.extraPrice));
   const rejected = found.filter((v) => !existing.includes(v)).map((v) => ({ variationId: v.id, error: priceUnavailableMessage(v.product.title) }));
 
-  await prisma.$transaction([
-    prisma.cartItem.deleteMany({ where: { userId } }),
-    prisma.cartItem.createMany({
-      data: existing.map((v) => ({ userId, variationId: v.id, quantity: quantities.get(v.id) as number })),
-    }),
-  ]);
+  // Gelen liste kayıtlıyla aynıysa yazma yapılmaz (her sayfa açılışında sil-yeniden-yaz yok)
+  const next = existing.map((v) => ({ variationId: v.id, quantity: quantities.get(v.id) as number }));
+  const stored = await prisma.cartItem.findMany({ where: { userId }, select: { variationId: true, quantity: true } });
+  if (!sameCartRows(stored, next)) {
+    await prisma.$transaction([
+      prisma.cartItem.deleteMany({ where: { userId } }),
+      prisma.cartItem.createMany({ data: next.map((r) => ({ userId, ...r })) }),
+    ]);
+  }
   return NextResponse.json({ success: true, ...(rejected.length ? { rejected } : {}) });
 }

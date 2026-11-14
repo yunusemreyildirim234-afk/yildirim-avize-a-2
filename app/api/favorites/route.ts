@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { sameIdSet } from "@/lib/list-sync";
 import { getSessionUserId } from "@/lib/account";
 import type { Prisma } from "@/generated/prisma/client";
 import { coverImageOf } from "@/lib/variation-input";
@@ -38,9 +39,13 @@ export async function PUT(req: Request) {
 
   const products = await prisma.product.findMany({ where: { id: { in: ids } }, select: { id: true } });
 
-  await prisma.$transaction([
-    prisma.favorite.deleteMany({ where: { userId } }),
-    prisma.favorite.createMany({ data: products.map((p: { id: string }) => ({ userId, productId: p.id })) }),
-  ]);
+  // Gelen liste kayıtlıyla aynıysa yazma yapılmaz
+  const stored = await prisma.favorite.findMany({ where: { userId }, select: { productId: true } });
+  if (!sameIdSet(stored.map((f: { productId: string }) => f.productId), products.map((p: { id: string }) => p.id))) {
+    await prisma.$transaction([
+      prisma.favorite.deleteMany({ where: { userId } }),
+      prisma.favorite.createMany({ data: products.map((p: { id: string }) => ({ userId, productId: p.id })) }),
+    ]);
+  }
   return NextResponse.json({ success: true });
 }
