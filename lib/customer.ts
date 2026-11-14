@@ -6,6 +6,52 @@ export async function getCustomerProfile(id: string) {
   return prisma.user.findUnique({ where: { id }, select: { id: true, name: true, email: true, role: true, twoFactorEnabled: true } });
 }
 
+export const CUSTOMER_ORDER_LIMIT = 20;
+
+/** Hesabım'ın gösterdiği sipariş alanları (açık liste): yönetici/iç alanlar (kargo maliyeti, gönderi/etiket kimliği, hatırlatma bayrakları, vergi bilgisi vb.) yanıta girmez. */
+export const CUSTOMER_ORDER_SELECT = {
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  totalAmount: true,
+  paymentMethod: true,
+  shippingType: true,
+  status: true,
+  address: true,
+  buyerCityName: true,
+  buyerStateName: true,
+  kargonomiStatus: true,
+  kargonomiStatusLabel: true,
+  shippingProviderName: true,
+  shippingTrackingCode: true,
+  cancelReturnType: true,
+  cancelReturnStatus: true,
+  cancelReturnReason: true,
+  cancelReturnNote: true,
+  receiptUrl: true,
+  receiptSenderName: true,
+  items: {
+    select: {
+      id: true,
+      quantity: true,
+      unitPrice: true,
+      variation: {
+        select: { id: true, variationValue: true, product: { select: { id: true, title: true, imageUrl: true, images: true, variations: { orderBy: { position: "asc" }, select: { images: true } } } } },
+      },
+    },
+  },
+} as const;
+
+type RawOrderItem = { id: string; quantity: number; unitPrice: number; variation: { id: string; variationValue: string; product: Parameters<typeof coverImageOf>[0] & { id: string; title: string } } };
+
+/** Sipariş satırı: ürün için yalnızca id/başlık/kapak istemciye gider. */
+export function shapeCustomerOrder<O extends { items: RawOrderItem[] }>(o: O) {
+  return {
+    ...o,
+    items: o.items.map((i) => ({ ...i, variation: { ...i.variation, product: { id: i.variation.product.id, title: i.variation.product.title, imageUrl: coverImageOf(i.variation.product) } } })),
+  };
+}
+
 /** Yalnızca istemcinin kullandığı müşteri alanları (parola, oturum sürümü yok) + siparişleri. */
 export async function getCustomerWithOrders(id: string) {
   const user = await prisma.user.findUnique({ where: { id }, select: { id: true, name: true, email: true, role: true, twoFactorEnabled: true } });
@@ -17,26 +63,10 @@ export async function getCustomerWithOrders(id: string) {
       // Ödeme ekranını terk eden denemeler müşteri geçmişinde görünmez
       status: { notIn: ["AWAITING_PAYMENT", "PAYMENT_FAILED"] },
     },
-    include: {
-      items: {
-        include: {
-          variation: {
-            select: { id: true, variationValue: true, product: { select: { id: true, title: true, imageUrl: true, images: true, variations: { orderBy: { position: "asc" }, select: { images: true } } } } },
-          },
-        },
-      },
-    },
+    select: CUSTOMER_ORDER_SELECT,
     orderBy: { createdAt: "desc" },
+    take: CUSTOMER_ORDER_LIMIT,
   });
   // Küçük resim: tek kapak kuralı (genel fotoğrafın ilki, yoksa ilk rengin fotoğrafı); istemciye yalnızca id/başlık/kapak gider
-  return {
-    ...user,
-    orders: orders.map((o) => ({
-      ...o,
-      items: o.items.map((i) => {
-        const p = i.variation.product;
-        return { ...i, variation: { ...i.variation, product: { id: p.id, title: p.title, imageUrl: coverImageOf(p) } } };
-      }),
-    })),
-  };
+  return { ...user, orders: orders.map(shapeCustomerOrder) };
 }
