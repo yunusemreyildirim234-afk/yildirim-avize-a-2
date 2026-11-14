@@ -41,7 +41,7 @@ const emptyDraft = (fullName: string, hasAny: boolean): Draft => ({
   isDefault: !hasAny,
 });
 
-const input = "w-full text-base sm:text-sm p-3 rounded-xl border border-neutral-300 bg-white focus:outline-none focus:border-amber-600";
+const input = "w-full text-base sm:text-sm p-3 rounded-xl border border-neutral-300 bg-white focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600";
 const label = "block text-xs font-semibold text-neutral-700 mb-1";
 
 // Hesabım → Adreslerim (adres defteri). Sunucu doğrulaması /api/user/addresses içindedir; burada yalnızca hızlı geri bildirim vardır.

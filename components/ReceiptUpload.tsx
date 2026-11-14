@@ -96,7 +96,7 @@ export default function ReceiptUpload({
           value={sender}
           onChange={(e) => setSender(e.target.value)}
           placeholder="Havaleyi yapan kişinin adı soyadı"
-          className="w-full p-2.5 rounded-xl border border-neutral-300 bg-white focus:outline-none focus:border-emerald-600"
+          className="w-full p-2.5 rounded-xl border border-neutral-300 bg-white focus:border-emerald-600 focus-visible:outline-2 focus-visible:outline-emerald-600"
         />
       </div>
       <div>

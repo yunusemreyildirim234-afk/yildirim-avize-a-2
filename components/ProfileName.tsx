@@ -44,7 +44,7 @@ export default function ProfileName({ name, onChanged }: { name: string; onChang
           onChange={(e) => setValue(e.target.value)}
           aria-invalid={dirty && !valid}
           aria-describedby="profile-name-hint"
-          className="flex-1 p-3 rounded-xl border border-neutral-300 text-sm focus:outline-none focus:border-amber-600"
+          className="flex-1 p-3 rounded-xl border border-neutral-300 text-sm focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600"
         />
         <button type="submit" disabled={busy || !dirty || !valid} className="bg-neutral-900 hover:bg-amber-600 disabled:opacity-50 text-white text-sm font-semibold px-5 py-3 rounded-xl transition-colors">
           {busy ? "Kaydediliyor..." : "Kaydet"}

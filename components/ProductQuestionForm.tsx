@@ -77,7 +77,7 @@ export default function ProductQuestionForm({ productId, productTitle }: { produ
               placeholder="Adınız Soyadınız"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
+              className="w-full p-3 rounded-xl border border-neutral-300 focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600"
             />
             <input
               aria-label="E-posta adresiniz"
@@ -86,7 +86,7 @@ export default function ProductQuestionForm({ productId, productTitle }: { produ
               placeholder="E-posta adresiniz"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
+              className="w-full p-3 rounded-xl border border-neutral-300 focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600"
             />
           </div>
           <textarea
@@ -96,7 +96,7 @@ export default function ProductQuestionForm({ productId, productTitle }: { produ
             placeholder="Sorunuzu yazın (ölçü, duy sayısı, montaj vb.)"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            className="w-full p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
+            className="w-full p-3 rounded-xl border border-neutral-300 focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600"
           />
           {error && (
             <p role="alert" className="text-red-600">

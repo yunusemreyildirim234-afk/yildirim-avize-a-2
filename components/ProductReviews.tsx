@@ -187,7 +187,7 @@ export default function ProductReviews({
               onChange={(e) => setComment(e.target.value)}
               aria-label="Yorumunuz"
               placeholder="Ürünle ilgili deneyiminizi paylaşın..."
-              className="w-full p-3 rounded-xl border border-neutral-300 text-sm focus:outline-none focus:border-amber-600"
+              className="w-full p-3 rounded-xl border border-neutral-300 text-sm focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600"
             />
             <div className="text-xs">
               <label className="font-semibold text-neutral-700 block mb-1">Avize fotoğrafı (isteğe bağlı — JPG, PNG, WEBP, en çok 20 MB, otomatik küçültülür)</label>

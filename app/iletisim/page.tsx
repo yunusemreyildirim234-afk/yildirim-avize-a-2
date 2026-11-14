@@ -230,7 +230,7 @@ export default function IletisimPage() {
                         placeholder="Örn: Yunus Emre Yıldırım"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        className="w-full p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
+                        className="w-full p-3 rounded-xl border border-neutral-300 focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600"
                       />
                     </div>
 
@@ -242,7 +242,7 @@ export default function IletisimPage() {
                         placeholder="ornek@mail.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="w-full p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
+                        className="w-full p-3 rounded-xl border border-neutral-300 focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600"
                       />
                     </div>
                   </div>
@@ -255,7 +255,7 @@ export default function IletisimPage() {
                         placeholder="05XX XXX XX XX"
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
-                        className="w-full p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
+                        className="w-full p-3 rounded-xl border border-neutral-300 focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600"
                       />
                     </div>
 
@@ -265,7 +265,7 @@ export default function IletisimPage() {
                         id="iletisim-konu"
                         value={subject}
                         onChange={(e) => setSubject(e.target.value)}
-                        className="w-full p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600 bg-white"
+                        className="w-full p-3 rounded-xl border border-neutral-300 focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600 bg-white"
                       >
                         <option value="Özel Avize Tasarımı">Özel Avize Tasarımı / Üretim</option>
                         <option value="Mimari Proje & Keşif">Mimari Proje (Villa / Otel / Restoran)</option>
@@ -284,7 +284,7 @@ export default function IletisimPage() {
                       placeholder="Mekanınızın tavan yüksekliği, istediğiniz avize stili veya sormak istediğiniz sorular..."
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
-                      className="w-full p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
+                      className="w-full p-3 rounded-xl border border-neutral-300 focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600"
                     />
                   </div>
 

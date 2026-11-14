@@ -49,7 +49,7 @@ export default function CodeStep({
         value={code}
         onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
         placeholder="______"
-        className="w-full p-3 text-center text-2xl font-mono tracking-[0.5em] rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
+        className="w-full p-3 text-center text-2xl font-mono tracking-[0.5em] rounded-xl border border-neutral-300 focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600"
       />
       <button
         type="button"

@@ -39,3 +39,11 @@ test("giriş/kayıt sekmeleri seçili durumu bildirir; sipariş süzgeci bağlan
   assert.doesNotMatch(f, /aria-pressed/);
   assert.match(f, /aria-current=\{active \? "true" : undefined\}/);
 });
+
+test("müşteri formlarında odak çerçevesi görünür (focus:outline-none + yalnız border yok)", () => {
+  for (const f of ["components/AddressBook.tsx", "components/AuthForms.tsx", "components/CodeStep.tsx", "components/PasswordFields.tsx", "app/giris/page.tsx", "app/iletisim/page.tsx", "app/sepet/page.tsx"]) {
+    const s = read(f);
+    assert.doesNotMatch(s, /focus:outline-none focus:border-/, f);
+    assert.match(s, /focus-visible:outline-2 focus-visible:outline-amber-600/, f);
+  }
+});

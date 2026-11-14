@@ -100,7 +100,7 @@ export default function OrderRequestBox({ order, onChanged }: Props) {
         rows={2}
         maxLength={1000}
         placeholder="Nedeninizi kısaca yazın (opsiyonel)"
-        className="w-full p-2.5 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
+        className="w-full p-2.5 rounded-xl border border-neutral-300 focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600"
       />
       {error && <p className="text-red-600 font-medium">{error}</p>}
       <div className="flex gap-2">

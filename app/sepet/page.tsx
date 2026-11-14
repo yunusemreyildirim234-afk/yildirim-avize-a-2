@@ -807,7 +807,7 @@ export default function CartPage() {
                     placeholder={couponPlaceholder(quote?.showcaseCode)}
                     value={couponInput}
                     onChange={(e) => setCouponInput(e.target.value)}
-                    className="w-full sm:flex-1 min-w-0 text-base sm:text-xs p-3 rounded-xl border border-neutral-300 font-mono uppercase placeholder:font-sans placeholder:normal-case focus:outline-none focus:border-amber-600"
+                    className="w-full sm:flex-1 min-w-0 text-base sm:text-xs p-3 rounded-xl border border-neutral-300 font-mono uppercase placeholder:font-sans placeholder:normal-case focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600"
                   />
                   <button
                     type="submit"
@@ -921,7 +921,7 @@ export default function CartPage() {
                       const a = savedAddresses.find((x) => x.id === e.target.value);
                       if (a) applyAddress(a);
                     }}
-                    className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 bg-white focus:outline-none focus:border-amber-600"
+                    className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 bg-white focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600"
                   >
                     <option value="">Kayıtlı adres seçin</option>
                     {savedAddresses.map((a) => (
@@ -942,7 +942,7 @@ export default function CartPage() {
                 placeholder="Adınız Soyadınız (En az 2 kelime)"
                 value={name}
                 onChange={(e) => { formTouched.current = true; setSelectedAddrId(""); setName(e.target.value); }}
-                className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
+                className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600"
               />
               </div>
               <div>
@@ -955,7 +955,7 @@ export default function CartPage() {
                 value={email}
                 readOnly={Boolean(accountEmail)}
                 onChange={(e) => setEmail(e.target.value)}
-                className={`w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600 ${accountEmail ? "bg-neutral-100 text-neutral-600" : ""}`}
+                className={`w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600 ${accountEmail ? "bg-neutral-100 text-neutral-600" : ""}`}
               />
               {accountEmail && <p className="mt-1 text-[11px] text-neutral-500">Hesap e-postanız. Farklı bir e-posta için önce çıkış yapın.</p>}
               </div>
@@ -991,7 +991,7 @@ export default function CartPage() {
                   formTouched.current = true; setSelectedAddrId("");
                   setPhone(e.target.value);
                 }}
-                className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
+                className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600"
               />
               </div>
 
@@ -1014,7 +1014,7 @@ export default function CartPage() {
                     autoComplete="address-level1"
                     value={buyerStateId}
                     onChange={(e) => { formTouched.current = true; setSelectedAddrId(""); pendingCityId.current = null; setBuyerStateId(Number(e.target.value)); setBuyerCityId(0); }}
-                    className="w-full text-base sm:text-xs p-2.5 rounded-xl border border-neutral-300 bg-white focus:outline-none focus:border-amber-600"
+                    className="w-full text-base sm:text-xs p-2.5 rounded-xl border border-neutral-300 bg-white focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600"
                   >
                     {sortedStates.map((st) => (
                       <option key={st.id} value={st.id}>
@@ -1033,7 +1033,7 @@ export default function CartPage() {
                     autoComplete="address-level2"
                     value={buyerCityId}
                     onChange={(e) => { formTouched.current = true; setSelectedAddrId(""); setBuyerCityId(Number(e.target.value)); }}
-                    className="w-full text-base sm:text-xs p-2.5 rounded-xl border border-neutral-300 bg-white focus:outline-none focus:border-amber-600"
+                    className="w-full text-base sm:text-xs p-2.5 rounded-xl border border-neutral-300 bg-white focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600"
                   >
                     <option value={0}>İlçe seçin</option>
                     {cities.map((ct) => (
@@ -1054,7 +1054,7 @@ export default function CartPage() {
                 placeholder="Açık Teslimat Adresiniz (Mahalle, Sokak, Bina ve Daire No)"
                 value={address}
                 onChange={(e) => { formTouched.current = true; setSelectedAddrId(""); setAddress(e.target.value); }}
-                className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
+                className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600"
               />
               </div>
               </>
@@ -1082,14 +1082,14 @@ export default function CartPage() {
                     placeholder="T.C. Kimlik Numarası (isteğe bağlı)"
                     value={taxNumber}
                     onChange={(e) => setTaxNumber(e.target.value.replace(/\D/g, ""))}
-                    className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600"
+                    className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600"
                   />
                 ) : (
                   <>
-                    <input aria-label="Şirket / Firma Unvanı" required placeholder="Şirket / Firma Unvanı" value={companyTitle} onChange={(e) => setCompanyTitle(e.target.value)} className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600" />
+                    <input aria-label="Şirket / Firma Unvanı" required placeholder="Şirket / Firma Unvanı" value={companyTitle} onChange={(e) => setCompanyTitle(e.target.value)} className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600" />
                     <div className="grid grid-cols-2 gap-2">
-                      <input aria-label="Vergi Dairesi" required placeholder="Vergi Dairesi" value={taxOffice} onChange={(e) => setTaxOffice(e.target.value)} className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600" />
-                      <input aria-label="Vergi Kimlik No (VKN)" required inputMode="numeric" maxLength={10} placeholder="VKN (10 hane)" value={taxNumber} onChange={(e) => setTaxNumber(e.target.value.replace(/\D/g, ""))} className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-amber-600" />
+                      <input aria-label="Vergi Dairesi" required placeholder="Vergi Dairesi" value={taxOffice} onChange={(e) => setTaxOffice(e.target.value)} className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600" />
+                      <input aria-label="Vergi Kimlik No (VKN)" required inputMode="numeric" maxLength={10} placeholder="VKN (10 hane)" value={taxNumber} onChange={(e) => setTaxNumber(e.target.value.replace(/\D/g, ""))} className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600" />
                     </div>
                   </>
                 )}
@@ -1112,7 +1112,7 @@ export default function CartPage() {
                 value={orderNote}
                 onChange={(e) => setOrderNote(e.target.value)}
                 placeholder="Örn: Tavan yüksekliğim 280 cm, zincir boyu 60 cm olsun."
-                className="w-full text-base sm:text-xs p-3 rounded-xl border border-amber-300 bg-white focus:outline-none focus:border-amber-600"
+                className="w-full text-base sm:text-xs p-3 rounded-xl border border-amber-300 bg-white focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600"
               />
             </div>
 
