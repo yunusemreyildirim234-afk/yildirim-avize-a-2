@@ -5,6 +5,14 @@ import { displayTitle } from "../lib/title-display.ts";
 
 const T = "Kontes 12 Li Yemek Masası Eskitme (TAM MONTAJLIDIR.) ( Led Ampuller Hediye)";
 
+test("kesilen başlık sayı ya da en çok 2 karakterlik kelimeyle bitmez", () => {
+  assert.equal(truncateAtWord("Modern Kristal Salon Avizesi 18 Kollu", 29), "Modern Kristal Salon Avizesi");
+  assert.equal(truncateAtWord("Kristal Avize Modern Tasarım", 20), "Kristal Avize Modern"); // normal
+  assert.equal(truncateAtWord("Kristal Avize 12", 40), "Kristal Avize 12"); // kısa başlık kesilmez
+  assert.equal(truncateAtWord("Salon Avizesi Led Ve Modern", 17), "Salon Avizesi Led"); // 3 karakter kalır
+  assert.equal(truncateAtWord("Salon Avizesi Ve Modern", 16), "Salon Avizesi"); // 2 karakterlik "Ve" atılır
+});
+
 test("kelime sınırında kesme: kelime ortasında bitmez, açık parantez atılır", () => {
   assert.equal(truncateAtWord("Kristal Avize Modern Tasarım", 20), "Kristal Avize Modern");
   assert.equal(truncateAtWord("kısa", 20), "kısa");

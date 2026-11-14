@@ -17,7 +17,17 @@ export function truncateAtWord(text: string, max: number): string {
   cut = sp > 0 ? cut.slice(0, sp) : cut.slice(0, max);
   const open = cut.lastIndexOf("(");
   if (open > cut.lastIndexOf(")")) cut = cut.slice(0, open);
-  return cut.replace(/[\s,;:.\-–(]+$/u, "");
+  const trim = (x: string) => x.replace(/[\s,;:.\-–(]+$/u, "");
+  cut = trim(cut);
+  // Kesilen başlığın sonunda yalnız sayı ya da 2 karakter veya daha kısa kelime kalırsa atılır ("...Salon Avizesi 18" → "...Salon Avizesi")
+  for (;;) {
+    const i = cut.lastIndexOf(" ");
+    if (i <= 0) break;
+    const last = cut.slice(i + 1);
+    if (!/^\d+$/.test(last) && last.length > 2) break;
+    cut = trim(cut.slice(0, i));
+  }
+  return cut;
 }
 
 /** Sayfa <title> metni (ek düzenden gelir): temiz başlık, 40 karakteri aşarsa kelime sınırında kısaltılır. */
