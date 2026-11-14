@@ -69,3 +69,13 @@ tools/gorsel/cikti
 tools/gorsel/yedek-*.json
 tools/gorsel/.env*
 !tools/gorsel/.env.example
+
+# Denetim/rapor/plan dosyaları ve yerel görseller (commit edilmez)
+docs/kod-denetimi/
+docs/rapor-*.md
+docs/plan-*.md
+docs/inceleme-*.md
+/cikti/
+/logo-*.png
+/logo-*.jpeg
+/logo*.png
