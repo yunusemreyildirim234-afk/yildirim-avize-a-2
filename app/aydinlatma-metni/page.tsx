@@ -14,7 +14,7 @@ export default async function Page() {
   return (
     <LegalPage
       path="/aydinlatma-metni"
-      updated="13 Kasım 2026"
+      updated="14 Kasım 2026"
       title="Kişisel Verilerin İşlenmesine İlişkin Aydınlatma Metni"
       intro="Bu metin, 6698 sayılı Kişisel Verilerin Korunması Kanunu'nun (KVKK) 10. maddesi ve Aydınlatma Yükümlülüğünün Yerine Getirilmesinde Uyulacak Usul ve Esaslar Hakkında Tebliğ kapsamında, müşterilerimizi ve site ziyaretçilerimizi bilgilendirmek amacıyla hazırlanmıştır. Bir onay metni değildir; bilgilendirme amaçlıdır."
       sections={[
@@ -34,6 +34,7 @@ export default async function Page() {
             "Ödeme bilgileri: kartlı ödemelerde kart bilgileriniz doğrudan ödeme kuruluşu PayTR'nin güvenli ödeme sayfasında girilir ve tarafımızca saklanmaz. Havale/EFT'de gönderici adı ve yüklenen dekont tarafımızca işlenir.",
             "İçerik bilgileri: iletişim formu mesajları, ürün soruları, ürün yorumları ve yüklediğiniz fotoğraflar, dekont dosyaları.",
             "Hesap ve işlem güvenliği bilgileri: Google ile giriş yapıldığında Google'dan alınan ad, e-posta ve profil fotoğrafı; doğrulama kodları; oturum çerezi; kötüye kullanımı sınırlamak için istekler sırasında işlenen IP adresi.",
+            "Sitenin kendi etkinlik kaydı: oturum kimliği, giriş yapılmışsa e-posta adresi, ziyaret edilen sayfa ve yapılan işlem bilgisi; hata tespiti ve hizmeti iyileştirme amacıyla işlenir ve 3 gün saklanır.",
           ],
         },
         {
@@ -62,7 +63,7 @@ export default async function Page() {
           title: "Ticari Elektronik İleti (Kampanya E-postası) Onayı",
           body: [
             "Sipariş sırasında isteğe bağlı olarak sunulan kutuyu işaretlemeniz halinde, e-posta adresinize kampanya, indirim ve fırsat içerikli ticari elektronik iletiler göndermemiz için açık rızanızı vermiş olursunuz. Bu kutu varsayılan olarak işaretsizdir; işaretlemeden de sipariş verebilirsiniz ve siparişiniz, sipariş ve kargo bildirimleriniz bundan etkilenmez.",
-            "6563 sayılı Elektronik Ticaretin Düzenlenmesi Hakkında Kanun'un 6. maddesi uyarınca ticari elektronik iletiler alıcının önceden onayı alınarak gönderilir. Onayınız yazılı veya elektronik ortamda alınır; onayın verildiğini ispat edebilmek için e-posta adresiniz, onay tarihi ve saati (zaman damgası), onayın verildiği IP adresi, tarayıcı bilgisi, onay metninin sürümü ve onayın alındığı kaynak (sepet formu) kayıt altına alınır. Bu kayıtlar, hukuki yükümlülüğümüzü yerine getirmek ve bir hakkın tesisi, kullanılması veya korunması amacıyla saklanır.",
+            "6563 sayılı Elektronik Ticaretin Düzenlenmesi Hakkında Kanun'un 6. maddesi uyarınca ticari elektronik iletiler alıcının önceden onayı alınarak gönderilir. Onayınız yazılı veya elektronik ortamda alınır; onayın verildiğini ispat edebilmek için e-posta adresiniz, onay tarihi ve saati (zaman damgası), onayın verildiği IP adresi, tarayıcı bilgisi, onay metninin sürümü ve onayın alındığı kaynak (sipariş formu, Hesabım veya Favoriler sayfası) kayıt altına alınır. Bu kayıtlar, hukuki yükümlülüğümüzü yerine getirmek ve bir hakkın tesisi, kullanılması veya korunması amacıyla saklanır.",
             "Onayınızı dilediğiniz zaman, hiçbir gerekçe göstermeden ve ücretsiz olarak geri alabilirsiniz. Her kampanya e-postasının en altında yer alan çıkış bağlantısına tıklamanız yeterlidir; geri alma işlemi derhal uygulanır. Ayrıca yukarıdaki başvuru yollarıyla da talepte bulunabilirsiniz. Onayı geri alınan e-posta adresine kampanya içerikli ileti gönderilmez; ödeme tamamlanmayan siparişiniz için tek seferlik sade bir sepet hatırlatması ise indirim veya kampanya içermeden gönderilebilir.",
           ],
         },
