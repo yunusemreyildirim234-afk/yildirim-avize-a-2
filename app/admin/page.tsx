@@ -197,13 +197,17 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const categorySettings = await getCategorySettings();
   // Kategori satırı: "yayında" = vitrin sayısı (c.count), "toplam" = pasifler dahil o kategorideki tüm ürünler (Tüm Ürünler filtresindeki sayı)
   const categoryEntries = categoryList.map((c) => ({ key: c.key, slug: c.slug, title: c.title, count: c.count, total: products.filter((p) => productInCategory(p.category, c)).length, fixed: c.fixed }));
-  const collectionOptions = (await getCategoryList().catch(() => [])).map((c) => ({ key: c.key, title: c.title, count: c.count })); // ana sayfa koleksiyon seçenekleri
+  const collectionOptions = categoryList.map((c) => ({ key: c.key, title: c.title, count: c.count })); // ana sayfa koleksiyon seçenekleri
   // Çok Satanlar: bölüm havuzu (100) aynı sıralamanın uzun hâlidir; ilk 48 = getBestSellers(48) (ikinci sorgu yapılmaz)
   const showcase = { featured: featuredIds.map((p) => p.id), bestSellers: homePools.bestsellers.slice(0, 48).map((p) => p.id), manualFeatured: flaggedFeatured.length };
   const slim = (list: { id: string; title: string; modelCode: string | null }[]) => list.map((p) => ({ id: p.id, title: p.title, modelCode: p.modelCode }));
-  const discountCap = (await prisma.siteConfig.findUnique({ where: { id: 1 }, select: { maxTotalDiscountPct: true } }))?.maxTotalDiscountPct ?? null;
   // Hareket kayıtları sayfada yüklenmez (bölüm açılınca /api/admin/activity); yalnız hata rozeti için sayım. 3 günlük saklama süresi için eski kayıt temizliği eskisi gibi her yüklemede çalışır.
-  const [errorCount] = await Promise.all([countRecentErrors(), purgeOldEvents()]);
+  const [errorCount, , discountRow] = await Promise.all([
+    countRecentErrors(),
+    purgeOldEvents(),
+    prisma.siteConfig.findUnique({ where: { id: 1 }, select: { maxTotalDiscountPct: true } }),
+  ]);
+  const discountCap = discountRow?.maxTotalDiscountPct ?? null;
   // 2FA kapalı yönetici hesabı sayısı (uyarı bandı için); okunamazsa band gösterilmez
   const adminUsers = await prisma.user.findMany({ where: { role: "ADMIN" }, select: { id: true, email: true, twoFactorEnabled: true }, orderBy: { createdAt: "asc" } }).catch(() => []);
   const adminsWithout2fa = adminUsers.filter((a) => !a.twoFactorEnabled).length;
