@@ -182,6 +182,8 @@ model OrderItem {
   variation   ProductVariation @relation(fields: [variationId], references: [id])
   quantity    Int
   unitPrice   Float // Sipariş anındaki birim fiyat
+  productTitle   String? // Sipariş anındaki ürün adı; boşsa (eski siparişler) canlı kayıt
+  variationLabel String? // Sipariş anındaki seçenek adı (örn. "Gold"); boşsa canlı kayıt
 
   @@index([orderId])
   @@index([variationId])

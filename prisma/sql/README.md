@@ -14,6 +14,7 @@ Bu klasör, veritabanı şemasının **gerçek geçmişidir**. Şema değişikli
 | `00-tam-sema.sql` | **Boş** bir veritabanında tüm şemayı sıfırdan kurar (21 tablo + Prisma'da görünmeyen CHECK ve kısmi benzersiz indeks). Dolu veritabanında çalıştırmayın. Şema değiştikçe yeniden üretilir (komut dosyanın başında). |
 | `adres-defteri-ekle.sql` | `Address` tablosu |
 | `alici-adi-ekle.sql` | `Order.recipientName` |
+| `siparis-kalemi-ad-ekle.sql` | `OrderItem.productTitle` ve `variationLabel` (sipariş anındaki ad/renk), ikinci bölümde geriye dönük doldurma |
 | `ebat-ekle.sql` | `Product.ebat` |
 | `variation-index-ekle.sql` | `ProductVariation.productId` indeksi |
 | `account-deletion.sql` | `AccountDeletionRequest` tablosu, `User.lastLoginAt`, durum CHECK kuralı ve kullanıcı başına tek bekleyen talep kısmi benzersiz indeksi |

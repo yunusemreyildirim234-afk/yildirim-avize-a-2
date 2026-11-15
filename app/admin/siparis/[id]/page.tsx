@@ -40,7 +40,7 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
   const isPickup = order.shippingType === "BEYOGLU_MAGAZA_TESLIM";
   const dt = istanbulDateTimeParts(order.createdAt);
   const rows = breakdownRows(breakdownOf(order.items, order.shippingType, order.totalAmount));
-  const fis = buildFis({ ...order, items: order.items.map((i) => ({ quantity: i.quantity, variationValue: i.variation?.variationValue, title: orderItemProductView(i.variation?.product).title })) }, ADDRESS_LINE);
+  const fis = buildFis({ ...order, items: order.items.map((i) => ({ quantity: i.quantity, variationValue: i.variationLabel ?? i.variation?.variationValue, title: i.productTitle ?? orderItemProductView(i.variation?.product).title })) }, ADDRESS_LINE);
   const fisTime = dt ? `${dt.date} ${dt.time}` : "-";
   const awaitsReceipt = order.paymentMethod === "BANK_TRANSFER" && order.status === "PENDING_NEW";
 
@@ -127,7 +127,8 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
           <h2 id="urunler" className={h}>Ürünler</h2>
           <ul className="divide-y divide-neutral-100">
             {order.items.map((item) => {
-              const p = orderItemProductView(item.variation?.product);
+              const live = orderItemProductView(item.variation?.product);
+              const p = { ...live, title: item.productTitle ?? live.title };
               const thumb = p.image ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={smallImage(p.image)} alt={p.title ?? "Ürün"} loading="lazy" width={56} height={56} className="h-14 w-14 shrink-0 rounded bg-neutral-100 object-cover" />
@@ -139,7 +140,7 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
                   {p.href ? <a href={p.href} target="_blank" rel="noopener" className="shrink-0">{thumb}</a> : thumb}
                   <div className="min-w-0 flex-1">
                     {p.title && (p.href ? <a href={p.href} target="_blank" rel="noopener" className="block text-sm font-bold text-neutral-900 hover:underline">{p.title}</a> : <span className="block text-sm font-bold text-neutral-900">{p.title}</span>)}
-                    <span className="text-xs text-neutral-600">{item.variation?.variationValue ?? "-"}</span>
+                    <span className="text-xs text-neutral-600">{item.variationLabel ?? item.variation?.variationValue ?? "-"}</span>
                   </div>
                   <div className="shrink-0 text-right text-xs text-neutral-700">
                     <div className="font-semibold">{item.quantity} × {formatTl(item.unitPrice)}</div>

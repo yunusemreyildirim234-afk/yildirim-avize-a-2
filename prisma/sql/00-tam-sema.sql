@@ -155,6 +155,8 @@ CREATE TABLE "OrderItem" (
     "variationId" TEXT NOT NULL,
     "quantity" INTEGER NOT NULL,
     "unitPrice" DOUBLE PRECISION NOT NULL,
+    "productTitle" TEXT,
+    "variationLabel" TEXT,
 
     CONSTRAINT "OrderItem_pkey" PRIMARY KEY ("id")
 );

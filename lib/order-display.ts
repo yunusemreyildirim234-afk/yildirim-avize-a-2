@@ -65,3 +65,14 @@ export function deliveryAddressText(o: { shippingType: string; address?: string 
 
 /** Müşterinin "Siparişiniz Alındı" bildirimindeki bağlantı; sipariş silinirken bildirim bu bağlantıyla bulunup silinir. */
 export const orderNotificationLink = (orderId: string) => `/siparis-onay/${orderId}`;
+
+/**
+ * Kalemin sipariş anındaki ad/renk kaydı varsa görünen ad onunla değişir (ürün sonradan yeniden adlandırılsa da sipariş eski adı gösterir);
+ * boşsa (eski siparişler) canlı kayıt kalır. Görsel ve bağlantı canlı üründen gelmeye devam eder.
+ */
+export function withStoredNames<I extends { productTitle?: string | null; variationLabel?: string | null; variation: { variationValue: string; product: { title: string } } }>(i: I): I {
+  return {
+    ...i,
+    variation: { ...i.variation, variationValue: i.variationLabel ?? i.variation.variationValue, product: { ...i.variation.product, title: i.productTitle ?? i.variation.product.title } },
+  };
+}

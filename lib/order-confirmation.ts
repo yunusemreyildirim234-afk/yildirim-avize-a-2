@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { prisma } from "@/lib/db";
+import { withStoredNames } from "@/lib/order-display";
 
 /**
  * Sipariş onay sayfası ve layout'u AYNI isteğte tek okuma paylaşır (React cache): layout yalnızca varlığı denetler, sayfa tüm veriyi kullanır.
@@ -15,6 +16,8 @@ export const getConfirmationOrder = cache((id: string) =>
           id: true,
           quantity: true,
           unitPrice: true,
+          productTitle: true,
+          variationLabel: true,
           variation: {
             select: {
               variationValue: true,
@@ -24,5 +27,5 @@ export const getConfirmationOrder = cache((id: string) =>
         },
       },
     },
-  })
+  }).then((o) => (o ? { ...o, items: o.items.map(withStoredNames) } : o))
 );

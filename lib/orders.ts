@@ -219,8 +219,8 @@ async function announceNewOrder(order: FullOrder) {
     kargonomiShipmentId: order.kargonomiShipmentId,
     shippingBarcode: order.shippingBarcode,
     items: order.items.map((i) => ({
-      title: i.variation.product.title,
-      variationName: i.variation.variationValue,
+      title: i.productTitle ?? i.variation.product.title,
+      variationName: i.variationLabel ?? i.variation.variationValue,
       quantity: i.quantity,
       price: i.unitPrice,
     })),

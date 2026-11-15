@@ -35,6 +35,8 @@ export const CUSTOMER_ORDER_SELECT = {
       id: true,
       quantity: true,
       unitPrice: true,
+      productTitle: true,
+      variationLabel: true,
       variation: {
         select: { id: true, variationValue: true, product: { select: { id: true, title: true, imageUrl: true, images: true, variations: { orderBy: { position: "asc" }, select: { images: true } } } } },
       },
@@ -42,13 +44,13 @@ export const CUSTOMER_ORDER_SELECT = {
   },
 } as const;
 
-type RawOrderItem = { id: string; quantity: number; unitPrice: number; variation: { id: string; variationValue: string; product: Parameters<typeof coverImageOf>[0] & { id: string; title: string } } };
+type RawOrderItem = { id: string; quantity: number; unitPrice: number; productTitle: string | null; variationLabel: string | null; variation: { id: string; variationValue: string; product: Parameters<typeof coverImageOf>[0] & { id: string; title: string } } };
 
 /** Sipariş satırı: ürün için yalnızca id/başlık/kapak istemciye gider. */
 export function shapeCustomerOrder<O extends { items: RawOrderItem[] }>(o: O) {
   return {
     ...o,
-    items: o.items.map((i) => ({ ...i, variation: { ...i.variation, product: { id: i.variation.product.id, title: i.variation.product.title, imageUrl: coverImageOf(i.variation.product) } } })),
+    items: o.items.map((i) => ({ ...i, variation: { ...i.variation, variationValue: i.variationLabel ?? i.variation.variationValue, product: { id: i.variation.product.id, title: i.productTitle ?? i.variation.product.title, imageUrl: coverImageOf(i.variation.product) } } })),
   };
 }
 

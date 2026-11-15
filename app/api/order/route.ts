@@ -215,7 +215,7 @@ export async function POST(req: Request) {
     }
 
     // 3. Siparişi kaydet (kartlı ödemede ödeme onayına kadar AWAITING_PAYMENT)
-    const itemRows = orderLines.map((l) => ({ variationId: l.variation.id, quantity: l.quantity, unitPrice: l.unitPrice }));
+    const itemRows = orderLines.map((l) => ({ variationId: l.variation.id, quantity: l.quantity, unitPrice: l.unitPrice, productTitle: l.variation.product.title, variationLabel: l.variation.variationValue }));
     const totalQty = orderLines.reduce((sum, l) => sum + l.quantity, 0);
     // Kupon hakkı rezervasyonu ve sipariş kaydı tek işlemde: limit doluysa sipariş hiç oluşmaz
     class CouponLimitError extends Error {}
