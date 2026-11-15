@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Decision, Group, Mode, Settings, Val } from "@/lib/trendyol-plan";
-import type { KalkanSonuc, KalkanVaryasyon, SifirlaAtlanan, SifirlaSatir } from "@/lib/trendyol-kalkan";
+import { ROZET_BASKA_URUN, type KalkanSonuc, type KalkanVaryasyon, type SifirlaAtlanan, type SifirlaSatir } from "@/lib/trendyol-kalkan";
 import { DEFAULT_SYNC_MODES, overwriteGroups, type SyncModes } from "@/lib/trendyol-modes";
 import { pendingWarning } from "@/lib/trendyol-bekleyen";
 import AdminImageCopy from "@/components/AdminImageCopy";
@@ -199,16 +199,17 @@ export default function AdminTrendyolSync({
           aria-label={`${v.deger} stoğunu 0 yap`}
           data-testid="kalkan-sifirla"
           checked={sifirla.has(v.varyasyonId)}
-          disabled={v.elleDegisti || stale}
+          disabled={v.elleDegisti || v.barkodBaskaUrunde || stale}
           onChange={() => toggleSifirla(v)}
           className="w-4 h-4 mt-0.5 accent-amber-600 shrink-0"
         />
         <span>
           <span className="font-semibold">{v.deger}</span> — mevcut stok {v.mevcutStok} → 0 (satır silinmez, sitede Tükendi görünür)
           {v.rozetler.map((r) => (
-            <span key={r} className="ml-1.5 px-1.5 py-0.5 rounded bg-neutral-200 text-neutral-800 font-bold">{r}</span>
+            <span key={r} className={`ml-1.5 px-1.5 py-0.5 rounded font-bold ${r === ROZET_BASKA_URUN ? "bg-amber-100 text-amber-900" : "bg-neutral-200 text-neutral-800"}`}>{r}</span>
           ))}
           {v.elleDegisti && <span className="block text-amber-800">Elle değişmiş görünüyor (stok eşitleme kaydından fazla): bu satıra dokunulmaz.</span>}
+          {v.barkodBaskaUrunde && <span className="block text-amber-800">Bu barkod Trendyol listesinde başka üründe geçiyor (taşınmış olabilir): bu satır işaretlenemez.</span>}
           {v.olasiYeniBarkod && <span className="block text-neutral-500">Olası yeni barkod: {v.olasiYeniBarkod}</span>}
         </span>
       </label>
@@ -310,7 +311,7 @@ export default function AdminTrendyolSync({
                 <ul className="list-disc ml-5">
                   {result.sifirlama.sifirlanan.map((r) => <li key={r.varyasyonId}>{r.baslik} · {r.deger}: {r.eskiStok} → 0</li>)}
                 </ul>
-                {result.sifirlama.atlanan.length > 0 && <p className="text-neutral-600">Atlananlar: önizlemeden beri stoğu değişen, elle değişmiş veya listeden çıkan renkler.</p>}
+                {result.sifirlama.atlanan.length > 0 && <p className="text-neutral-600">Atlananlar: önizlemeden beri stoğu değişen, elle değişmiş, barkodu başka üründe geçen veya listeden çıkan renkler.</p>}
               </div>
             )}
             {!!result.hataliUrunler?.length && (

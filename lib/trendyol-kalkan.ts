@@ -58,6 +58,8 @@ export interface KalkanVaryasyon {
   rezerve: number;
   guven: KalkanGuven;
   elleDegisti: boolean;
+  /** Barkod gelen listede BAŞKA ürün altında da geçiyor (taşınmış olabilir): satır işaretlenemez */
+  barkodBaskaUrunde: boolean;
   /** Aynı üründe aynı renk + aynı ebatta TEK eski/yeni çift varsa yeni barkod; aksi halde null (öneri yok). */
   olasiYeniBarkod: string | null;
   metin: string;
@@ -81,6 +83,7 @@ export interface KalkanSonuc {
 export const KAPALI_METIN = "Trendyol'da KAPALI -> sitede stok 0 (Tükendi) olacak";
 export const YOK_METIN = "Trendyol listesinde YOK -> sitede stok 0 (Tükendi) olacak (emin değil)";
 export const ROZET_ELLE = "ELLE DEĞİŞMİŞ";
+export const ROZET_BASKA_URUN = "BARKOD BAŞKA ÜRÜNDE";
 export const ROZET_BARKOD = "BARKOD DEĞİŞMİŞ OLABİLİR";
 export const rozetRezervasyon = (n: number) => `REZERVASYON ${n}`;
 
@@ -124,6 +127,13 @@ export function kalkanPlani(mevcut: ExistingProduct[], gelen: IncomingProduct[],
   let kalkanToplam = 0;
   let eslesen = 0;
   let toplam = 0;
+
+  // barkod -> gelen listede geçtiği ürünler (baş/son boşluk yok sayılır)
+  const barkodUrunleri = new Map<string, Set<string>>();
+  for (const g of gelen) for (const v of g.variations) {
+    const b = v.barcode?.trim();
+    if (b) barkodUrunleri.set(b, (barkodUrunleri.get(b) ?? new Set()).add(g.mainId));
+  }
 
   for (const ex of mevcut) {
     if (!ex.trendyolMainId) continue;
@@ -170,11 +180,13 @@ export function kalkanPlani(mevcut: ExistingProduct[], gelen: IncomingProduct[],
       const el = elleDegisti(v.stock, v.syncStock);
       const rez = rezerve[v.id] ?? 0;
       const yeniBarkod = oneri(v);
+      const baska = [...(barkodUrunleri.get(v.barcode!.trim()) ?? [])].some((m) => m !== ex.trendyolMainId);
       const rozetler: string[] = [];
+      if (baska) rozetler.push(ROZET_BASKA_URUN);
       if (el) rozetler.push(ROZET_ELLE);
       if (rez > 0) rozetler.push(rozetRezervasyon(rez));
       if (yeniBarkod) rozetler.push(ROZET_BARKOD);
-      vars.push({ varyasyonId: v.id, barkod: v.barcode!, deger: v.variationValue, mevcutStok: v.stock, rezerve: rez, guven, elleDegisti: el, olasiYeniBarkod: yeniBarkod, metin: guven === "KESIN" ? KAPALI_METIN : YOK_METIN, rozetler });
+      vars.push({ varyasyonId: v.id, barkod: v.barcode!, deger: v.variationValue, mevcutStok: v.stock, rezerve: rez, guven, elleDegisti: el, barkodBaskaUrunde: baska, olasiYeniBarkod: yeniBarkod, metin: guven === "KESIN" ? KAPALI_METIN : YOK_METIN, rozetler });
     }
     toplam += vars.length;
     if (vars.length) urunler.push({ mainId: ex.trendyolMainId, urunId: ex.id, baslik: ex.title, suphe, varyasyonlar: vars });
@@ -184,12 +196,12 @@ export function kalkanPlani(mevcut: ExistingProduct[], gelen: IncomingProduct[],
 
 export interface SifirlaIstek { varyasyonId: string; /** Önizlemede görülen stok */ stok: number }
 export interface SifirlaSatir { varyasyonId: string; urunId: string; baslik: string; deger: string; eskiStok: number }
-export interface SifirlaAtlanan { varyasyonId: string; neden: "LISTEDE_YOK" | "ELLE_DEGISMIS" | "STOK_DEGISTI" }
+export interface SifirlaAtlanan { varyasyonId: string; neden: "LISTEDE_YOK" | "ELLE_DEGISMIS" | "STOK_DEGISTI" | "BARKOD_BASKA_URUNDE" }
 export interface SifirlaSecim { uygulanacak: SifirlaSatir[]; atlanan: SifirlaAtlanan[] }
 
 /**
  * Kullanıcının işaretlediği satırları SUNUCUDA yeniden hesaplanan kalkan listesine karşı süzer (istemciye güvenilmez).
- * Atlananlar: güncel listede olmayanlar, elle değişmiş (stock > syncStock) olanlar, önizlemeden beri stoğu değişenler.
+ * Atlananlar: güncel listede olmayanlar, barkodu gelen listede başka üründe de geçenler, elle değişmiş (stock > syncStock) olanlar, önizlemeden beri stoğu değişenler.
  * Silme yok; yalnız stock=0 ve syncStock=0 yazılır (uygulama: sifirlaKalkan, koşullu atomik UPDATE).
  */
 export function kalkanSifirlaSecimi(kalkan: KalkanSonuc, istekler: SifirlaIstek[]): SifirlaSecim {
@@ -203,6 +215,7 @@ export function kalkanSifirlaSecimi(kalkan: KalkanSonuc, istekler: SifirlaIstek[
     gorulen.add(i.varyasyonId);
     const k = harita.get(i.varyasyonId);
     if (!k) atlanan.push({ varyasyonId: i.varyasyonId, neden: "LISTEDE_YOK" });
+    else if (k.v.barkodBaskaUrunde) atlanan.push({ varyasyonId: i.varyasyonId, neden: "BARKOD_BASKA_URUNDE" });
     else if (k.v.elleDegisti) atlanan.push({ varyasyonId: i.varyasyonId, neden: "ELLE_DEGISMIS" });
     else if (k.v.mevcutStok !== i.stok) atlanan.push({ varyasyonId: i.varyasyonId, neden: "STOK_DEGISTI" });
     else uygulanacak.push({ varyasyonId: i.varyasyonId, urunId: k.u.urunId, baslik: k.u.baslik, deger: k.v.deger, eskiStok: k.v.mevcutStok });
