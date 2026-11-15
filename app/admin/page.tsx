@@ -8,7 +8,7 @@ import AdminPayoutCard from "@/components/AdminPayoutCard";
 import AdminOrderBreakdown from "@/components/AdminOrderBreakdown";
 import { PAYOUT_EXCLUDED_STATUSES, buildPayouts, payoutWindowStart } from "@/lib/payout";
 import Link from "next/link";
-import { ArrowLeft, Building2, KeyRound, MapPin, MessageSquare, Package, Phone, Receipt, ShieldCheck, ShoppingBag, Star, StickyNote, Truck, Users } from "lucide-react";
+import { ArrowLeft, BarChart3, Building2, KeyRound, MapPin, MessageSquare, Package, Phone, Receipt, ShieldCheck, ShoppingBag, Star, StickyNote, Truck, Users } from "lucide-react";
 import AdminSectionNav from "@/components/AdminSectionNav";
 import nextDynamic from "next/dynamic";
 import { prisma } from "@/lib/db";
@@ -65,6 +65,7 @@ const AdminHomepage = nextDynamic(() => import("@/components/AdminHomepage"));
 const AdminCategories = nextDynamic(() => import("@/components/AdminCategories"));
 const AdminCoupons = nextDynamic(() => import("@/components/AdminCoupons"));
 const AdminActivity = nextDynamic(() => import("@/components/AdminActivity"));
+const AdminComplementReport = nextDynamic(() => import("@/components/AdminComplementReport"));
 const AdminMessages = nextDynamic(() => import("@/components/AdminMessages"));
 const AdminReviews = nextDynamic(() => import("@/components/AdminReviews"));
 const AdminAccountDeletions = nextDynamic(() => import("@/components/AdminAccountDeletions"));
@@ -302,6 +303,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                 { id: "ana-sayfa", label: "Ana Sayfa" },
                 { id: "kuponlar", label: "Promosyon Kodları" },
                 { id: "indirim", label: "İndirim Ayarları" },
+                { id: "tamamlayici-satislar", label: "Tamamlayıcı Satışlar" },
                 { id: "stok-rozeti", label: "Stok Rozeti" },
               ],
             },
@@ -697,6 +699,16 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           badges={[{ label: `${errorCount} hata`, tone: errorCount > 0 ? "red" : "neutral" }]}
         >
           <AdminActivity />
+        </AdminSection>
+
+        {/* Tamamlayıcı ("bununla birlikte alın") satış raporu: veri bölüm açılınca çekilir */}
+        <AdminSection
+          id="tamamlayici-satislar"
+          icon={<BarChart3 aria-hidden="true" className="w-4 h-4 text-amber-600" />}
+          title="Tamamlayıcı Satışlar"
+          description="Birlikte alma indirimiyle satılan ürünler: adet, verilen indirim ve net ciro. Sipariş verilme tarihine göre; iptal, iade ve ödenmemiş siparişler hariç."
+        >
+          <AdminComplementReport />
         </AdminSection>
 
         <AdminDiscountSettings initial={discountCap} />
