@@ -48,3 +48,12 @@ test("236 gerçekçi kimlikte kısa kimlik çakışması yok", () => {
   for (let i = 0; i < 236; i++) seen.add(crypto.randomUUID().slice(0, 8));
   assert.equal(seen.size, 236);
 });
+
+test("ürün sayfası: kanonik adres tek kaynaktan, 308 var, ham /urun/${id} kalmadı", async () => {
+  const { readFileSync } = await import("node:fs");
+  const src = readFileSync(new URL("../app/urun/[id]/page.tsx", import.meta.url), "utf8");
+  assert.ok(src.includes("permanentRedirect(canonicalPath)"));
+  assert.ok(!src.includes("/urun/${id}"));
+  assert.ok(src.includes("alternates: { canonical }"));
+  assert.equal((src.match(/\$\{SITE_URL\}\$\{canonicalPath\}/g) ?? []).length, 2); // JSON-LD url + offers.url
+});

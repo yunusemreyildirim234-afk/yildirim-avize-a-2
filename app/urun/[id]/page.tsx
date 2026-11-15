@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { getLadderContext } from "@/lib/showcase";
 import ProductDetailClient from "@/components/ProductDetailClient";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import ProductReviews from "@/components/ProductReviews";
 import ProductQuestionForm from "@/components/ProductQuestionForm";
 import ProductCard from "@/components/ProductCard";
-import { getLiveStocks, getProductDetail, getProductsCached } from "@/lib/products";
+import { getLiveStocks, getProductDetail, getProductIdsByShort, getProductsCached } from "@/lib/products";
+import { parseProductParam, productPath } from "@/lib/product-url";
 import { applyLiveStock } from "@/lib/stock-freshness";
 import { getUserSession } from "@/lib/account";
 import { getStocklessRule } from "@/lib/visibility";
@@ -32,12 +33,23 @@ interface Props {
   params: Promise<{ id: string }>;
 }
 
+/** Adres parametresi → tam ürün kimliği. Eski uuid doğrudan; /urun/{ad}-{8 hex} kısa kimlikle (tek eşleşme şart); bozuk/çoklu/yok → null (404). */
+async function resolveProductId(param: string): Promise<string | null> {
+  const parsed = parseProductParam(param);
+  if (parsed.kind === "legacy-uuid") return parsed.id;
+  if (parsed.kind === "bad") return null;
+  const ids = await getProductIdsByShort(parsed.short);
+  return ids.length === 1 ? ids[0] : null;
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { id } = await params;
-  const product = await getProductDetail(id); // önbellekli (60 sn), sayfayla aynı sonuç
+  const { id: param } = await params;
+  const id = await resolveProductId(param);
+  const product = id ? await getProductDetail(id) : null; // önbellekli (60 sn), sayfayla aynı sonuç
   if (!product || !isProductVisible({ id: product.id, active: product.active, totalStock: totalStockOf(product), category: product.category }, await getStocklessRule())) return {};
   // Temiz başlık (displayTitle): <title>, OG, Twitter ve JSON-LD aynı kaynaktan; meta açıklama lib/product-seo.ts şablonundan (≤160, kelime sınırında)
   const cleanTitle = displayTitle(product.title).title;
+  const canonical = productPath(product); // kanonik adres: istek eski uuid/yanlış ad olsa da aynı
   const description = productMetaDescription({
     cleanTitle,
     price: defaultOffer(product).price,
@@ -48,12 +60,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: productSeoTitle(cleanTitle),
     description,
-    alternates: { canonical: `/urun/${id}` },
+    alternates: { canonical },
     // og:type "product" Next'in tip listesinde yok: sayfa gövdesindeki <meta property="og:type"> ile (React başlığa taşır) verilir
     openGraph: {
       title: cleanTitle,
       description,
-      url: `/urun/${id}`,
+      url: canonical,
       images: cover ? [{ url: cover, alt: cleanTitle }] : undefined,
     },
     twitter: {
@@ -66,13 +78,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ProductDetailPage({ params }: Props) {
-  const { id } = await params;
+  const { id: param } = await params;
+  const id = await resolveProductId(param);
 
   // Veritabanından ilgili ürünü ve bağlı varyasyonlarını çekiyoruz
   // Ürün bilgisi 60 sn önbellekli (süre dolunca ilk ziyaretçiye eski veri sunulur); stok ise her istekte canlı okunup üzerine yazılır.
   // Canlı okuma hata verirse önbellekli stok kalır (sayfa açılır; sepet ve sipariş ucu stoğu zaten canlı doğrular).
-  const cachedProduct = await getProductDetail(id);
-  const product = cachedProduct ? applyLiveStock(cachedProduct, await getLiveStocks(id).catch(() => null)) : null;
+  const cachedProduct = id ? await getProductDetail(id) : null;
+  const product = id && cachedProduct ? applyLiveStock(cachedProduct, await getLiveStocks(id).catch(() => null)) : null;
 
   const ladderCtx = await getLadderContext();
 
@@ -80,6 +93,15 @@ export default async function ProductDetailPage({ params }: Props) {
   if (!product || !isProductVisible({ id: product.id, active: product.active, totalStock: totalStockOf(product), category: product.category }, await getStocklessRule())) {
     notFound();
   }
+
+  // Kanonik adres dışındaki her istek (eski uuid, eski/yanlış ad, büyük harf) tek sıçramayla 308 alır; kanonik adres asla yönlendirmez (döngü yok).
+  // Görünmeyen/yok ürün yukarıda 404 aldı, yani yönlendirme ürünün varlığını sızdırmaz.
+  const canonicalPath = productPath(product);
+  let requested = param;
+  try {
+    requested = decodeURIComponent(param);
+  } catch {}
+  if (`/urun/${requested}` !== canonicalPath) permanentRedirect(canonicalPath);
 
   const hasCategory = product.category.trim().length > 0; // kategorisiz ürün: benzer ürün / kategori yolu / kategori alanı yok
   const similar = hasCategory ? await getProductsCached({ active: true, variations: { some: { stock: { gt: 0 } } }, category: product.category, id: { not: product.id } }, 4).catch(() => []) : [];
@@ -116,7 +138,7 @@ export default async function ProductDetailPage({ params }: Props) {
     description: truncateAtWord(product.description || product.title, JSONLD_DESCRIPTION_MAX),
     ...(hasCategory ? { category: product.category } : {}),
     brand: { "@type": "Brand", name: feedBrand() },
-    url: `${SITE_URL}/urun/${id}`,
+    url: `${SITE_URL}${canonicalPath}`,
     ...(productImages.length ? { image: productImages.slice(0, 6) } : {}),
     ...(product.modelCode ? { sku: product.modelCode } : {}),
     ...gtin13Of(offer.variation?.barcode),
@@ -134,7 +156,7 @@ export default async function ProductDetailPage({ params }: Props) {
       : {}),
     offers: {
       "@type": "Offer",
-      url: `${SITE_URL}/urun/${id}`,
+      url: `${SITE_URL}${canonicalPath}`,
       priceCurrency: "TRY",
       price: offer.price,
       seller: { "@type": "Organization", name: "Yıldırım Avize" },

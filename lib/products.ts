@@ -115,6 +115,10 @@ export const getProductDetail = unstable_cache(
   { revalidate: STOREFRONT_CACHE_SECONDS, tags: ["storefront"] }
 );
 
+/** Kısa kimlik (kimliğin ilk 8 hex'i) → tam kimlik adayları. En çok 2 satır okunur; boş sonuç önbelleğe yazılmaz (yeni eklenen ürün hemen çözülür). Çoklu eşleşmeyi çağıran reddeder. */
+export const getProductIdsByShort = (short: string) =>
+  cacheNonEmpty(["sf-product-short", short], ["storefront"], async () => (await prisma.product.findMany({ where: { id: { startsWith: short } }, select: { id: true }, take: 2 })).map((r) => r.id));
+
 /** Ürünün varyasyon stokları ÖNBELLEKSİZ (ürün sayfası her istekte okur; önbellekli detayın üzerine lib/stock-freshness.ts applyLiveStock ile yazılır). */
 export const getLiveStocks = (productId: string) => prisma.productVariation.findMany({ where: { productId }, select: { id: true, stock: true } });
 
