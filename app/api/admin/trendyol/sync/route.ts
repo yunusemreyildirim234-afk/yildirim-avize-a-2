@@ -4,7 +4,7 @@ import { TrendyolTimeoutError } from "@/lib/trendyol";
 import { serverError } from "@/lib/api-error";
 import { adminGuard } from "@/lib/admin-guard";
 import { rateLimit, tooMany } from "@/lib/rate-limit";
-import { applyPlan, buildPlan, parseSettings } from "@/lib/trendyol-sync";
+import { applyPlan, buildPlan, parseSettings, sifirlaKalkan } from "@/lib/trendyol-sync";
 import { onizleme } from "@/lib/trendyol-plan";
 import { prisma } from "@/lib/db";
 import { TrendyolGuardError } from "@/lib/trendyol-guard";
@@ -27,6 +27,10 @@ export async function POST(req: Request) {
   if (body.dryRun === false && !strict) return NextResponse.json({ error: "Eşitleme ayarları eksik veya geçersiz; hiçbir şey uygulanmadı. Sayfayı yenileyip ayarları yeniden seçin." }, { status: 400 });
   const ayarlar = strict ?? parseSettings(body.ayarlar);
   const secili = Array.isArray(body.seciliUrunler) ? body.seciliUrunler.filter((x: unknown): x is string => typeof x === "string") : undefined;
+  // Kapalı renkleri sıfırla: yalnız açıkça işaretlenen {varyasyonId, stok} çiftleri (varsayılan boş = hiçbir şey sıfırlanmaz)
+  const sifirla = Array.isArray(body.sifirlaVaryasyonlar)
+    ? body.sifirlaVaryasyonlar.filter((x: unknown): x is { varyasyonId: string; stok: number } => !!x && typeof x === "object" && typeof (x as { varyasyonId?: unknown }).varyasyonId === "string" && Number.isInteger((x as { stok?: unknown }).stok)).slice(0, 500)
+    : [];
   try {
     const plan = await buildPlan(ayarlar);
     if (body.dryRun !== false) {
@@ -42,8 +46,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, dryRun: true, plan: { ...onizleme(plan), bekleyen, kalkanVaryasyonlar: plan.kalkan } });
     }
     const sonuc = await applyPlan(plan, secili);
+    const sifirlama = sifirla.length ? await sifirlaKalkan(plan.kalkan, sifirla) : undefined;
     revalidateStorefront(); // vitrin yalnızca gerçek uygulamadan sonra yenilenir (önizleme yazmaz, önbelleği sıfırlamaz)
-    return NextResponse.json({ success: true, dryRun: false, sonuc, sayac: plan.sayac });
+    return NextResponse.json({ success: true, dryRun: false, sonuc, sifirlama, sayac: plan.sayac });
   } catch (error) {
     if (error instanceof TrendyolGuardError) return NextResponse.json({ error: error.message }, { status: 422 });
     return serverError("admin/trendyol/sync", error, error instanceof TrendyolTimeoutError ? error.message : "Trendyol senkronizasyonu başarısız oldu. Lütfen tekrar deneyin.", 502);

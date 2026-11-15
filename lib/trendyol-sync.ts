@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { buildIncoming, fetchTrendyolProducts } from "@/lib/trendyol";
 import { assertIncomingSane } from "@/lib/trendyol-guard";
-import { kalkanPlani, type KalkanSonuc } from "@/lib/trendyol-kalkan";
+import { kalkanPlani, kalkanSifirlaSecimi, type KalkanSonuc, type SifirlaAtlanan, type SifirlaIstek, type SifirlaSatir } from "@/lib/trendyol-kalkan";
 import { applyImageMaps } from "@/lib/image-map";
 import { GROUPS, planSync, seciliPlan, type ExistingProduct, type Mode, type Plan, type ProductPlan, type Settings } from "@/lib/trendyol-plan";
 
@@ -151,4 +151,28 @@ export async function applyPlan(plan: Plan, secili?: string[]): Promise<ApplyRes
   }
   res.hataliUrunler = [...fail].map(([id, baslik]) => ({ id, baslik }));
   return res;
+}
+
+export const SIFIRLANAN_LIMIT = 50;
+export interface SifirlaSonuc { sifirlanan: SifirlaSatir[]; atlanan: SifirlaAtlanan[]; hata: number }
+
+/**
+ * Trendyol'da kapalı renklerin stoğunu 0 yapar (satır SİLİNMEZ): tek atomik, KOŞULLU UPDATE.
+ * Yalnız satırın stoğu hâlâ önizlemedeki değerdeyse yazılır (arada satış/elle değişiklik olduysa atlanır). Boş seçimde hiçbir sorgu atılmaz.
+ * syncStock=0: renk Trendyol'a dönerse KEEP formülü T+(0-0)=T doğru kurar. Eski stok sonuçta listelenir (elle geri yazım için).
+ */
+export async function sifirlaKalkan(kalkan: KalkanSonuc, istekler: SifirlaIstek[]): Promise<SifirlaSonuc> {
+  const { uygulanacak, atlanan } = kalkanSifirlaSecimi(kalkan, istekler);
+  const out: SifirlaSonuc = { sifirlanan: [], atlanan: [...atlanan], hata: 0 };
+  out.hata += await inChunks(uygulanacak, async (c) => {
+    const values = Prisma.join(c.map((r) => Prisma.sql`(${r.varyasyonId}::text, ${r.eskiStok}::int)`));
+    const yazilan = await prisma.$queryRaw<{ id: string }[]>`UPDATE "ProductVariation" v SET "stock" = 0, "syncStock" = 0 FROM (VALUES ${values}) AS x(id, beklenen) WHERE v."id" = x.id AND v."stock" = x.beklenen AND v."stock" > 0 RETURNING v."id"`;
+    const ok = new Set(yazilan.map((r) => r.id));
+    for (const r of c) {
+      if (ok.has(r.varyasyonId)) out.sifirlanan.push(r);
+      else out.atlanan.push({ varyasyonId: r.varyasyonId, neden: "STOK_DEGISTI" });
+    }
+  });
+  out.sifirlanan = out.sifirlanan.slice(0, SIFIRLANAN_LIMIT);
+  return out;
 }

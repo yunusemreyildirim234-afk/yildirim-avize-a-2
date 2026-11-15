@@ -1,4 +1,4 @@
-// Trendyol'dan kalkan / kapanan VARYASYON listesi (saf: veritabanı/ağ yok). YALNIZ GÖSTERİR; stok yazmaz.
+// Trendyol'dan kalkan / kapanan VARYASYON listesi (saf: veritabanı/ağ yok). kalkanPlani yalnız gösterir; kalkanSifirlaSecimi (Aşama 4) seçilen satırları stok 0 için süzer.
 // Kaynak plan: docs/kod-denetimi/plan-17/02-lib11-trn03-kalkan-varyasyon.md (Aşama 1-3).
 import type { ExistingProduct, IncomingProduct, Settings } from "@/lib/trendyol-plan";
 
@@ -131,4 +131,32 @@ export function kalkanPlani(mevcut: ExistingProduct[], gelen: IncomingProduct[],
     if (vars.length) urunler.push({ mainId: ex.trendyolMainId, urunId: ex.id, baslik: ex.title, suphe, varyasyonlar: vars });
   }
   return { urunler, toplam, kalkanToplam, eslesen, genelUyari: kalkanToplam > 0 && genelSupheli(kalkanToplam, eslesen) };
+}
+
+export interface SifirlaIstek { varyasyonId: string; /** Önizlemede görülen stok */ stok: number }
+export interface SifirlaSatir { varyasyonId: string; urunId: string; baslik: string; deger: string; eskiStok: number }
+export interface SifirlaAtlanan { varyasyonId: string; neden: "LISTEDE_YOK" | "ELLE_DEGISMIS" | "STOK_DEGISTI" }
+export interface SifirlaSecim { uygulanacak: SifirlaSatir[]; atlanan: SifirlaAtlanan[] }
+
+/**
+ * Kullanıcının işaretlediği satırları SUNUCUDA yeniden hesaplanan kalkan listesine karşı süzer (istemciye güvenilmez).
+ * Atlananlar: güncel listede olmayanlar, elle değişmiş (stock > syncStock) olanlar, önizlemeden beri stoğu değişenler.
+ * Silme yok; yalnız stock=0 ve syncStock=0 yazılır (uygulama: sifirlaKalkan, koşullu atomik UPDATE).
+ */
+export function kalkanSifirlaSecimi(kalkan: KalkanSonuc, istekler: SifirlaIstek[]): SifirlaSecim {
+  const harita = new Map<string, { v: KalkanVaryasyon; u: KalkanUrun }>();
+  for (const u of kalkan.urunler) for (const v of u.varyasyonlar) harita.set(v.varyasyonId, { v, u });
+  const uygulanacak: SifirlaSatir[] = [];
+  const atlanan: SifirlaAtlanan[] = [];
+  const gorulen = new Set<string>();
+  for (const i of istekler) {
+    if (gorulen.has(i.varyasyonId)) continue;
+    gorulen.add(i.varyasyonId);
+    const k = harita.get(i.varyasyonId);
+    if (!k) atlanan.push({ varyasyonId: i.varyasyonId, neden: "LISTEDE_YOK" });
+    else if (k.v.elleDegisti) atlanan.push({ varyasyonId: i.varyasyonId, neden: "ELLE_DEGISMIS" });
+    else if (k.v.mevcutStok !== i.stok) atlanan.push({ varyasyonId: i.varyasyonId, neden: "STOK_DEGISTI" });
+    else uygulanacak.push({ varyasyonId: i.varyasyonId, urunId: k.u.urunId, baslik: k.u.baslik, deger: k.v.deger, eskiStok: k.v.mevcutStok });
+  }
+  return { uygulanacak, atlanan };
 }
