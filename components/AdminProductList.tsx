@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { refreshAdminNow, scheduleAdminRefresh } from "@/lib/admin-refresh";
 import { applyHiddenIds, applyPatch, emptyPatch, withPatched, type ProductPatch } from "@/lib/admin-product-patch";
 import AdminBulkBar from "@/components/AdminBulkBar";
+import AdminComplementDialog from "@/components/AdminComplementDialog";
 import AdminSelectionPanel, { scrollToRow } from "@/components/AdminSelectionPanel";
 import { addAll, chipLabel, nextLastId, removeAll, removeId, toggleId } from "@/lib/admin-selection";
 import AdminProductEditor from "@/components/AdminProductEditor";
@@ -209,6 +210,7 @@ export default function AdminProductList({ products: serverProducts, maxTotalDis
   const [undoing, setUndoing] = useState(false);
   // Açık düzenleyicide kaydedilmemiş değişiklik var mı (kapatırken onay; Geri Al çubuğu kayıt çubuğunun üstüne taşınır)
   const [editorDirty, setEditorDirty] = useState(false);
+  const [complementOpen, setComplementOpen] = useState(false); // "Tamamlayıcı ürün ekle" iletişim kutusu
   const [deleteAsk, setDeleteAsk] = useState<{ id: string; title: string } | null>(null); // "Modeli Sil" sayfa içi onayı
   // Liste dar veriyle gelir (görsel dizileri yok): düzenleyici açılınca tek ürünün TAM görselleri GET /api/admin/product?fields=images ile çekilir.
   // Düzenleyici bu veri gelmeden bağlanmaz; kayıt ve renk ekleme/silme sonrası sessizce yeniden çekilir.
@@ -595,9 +597,19 @@ Yine de geri alınsın mı?`)) break;
 
       <AdminSelectionPanel chips={chipItems} lastId={lastId} onRemove={dropOne} onClear={() => { setSelected(new Set()); setLastId(null); }} onChipClick={focusProduct}>
         {selected.size > 0 && (
+          <div className="px-5 sm:px-6 pt-3">
+            <button type="button" onClick={() => setComplementOpen(true)} className="inline-flex items-center min-h-10 rounded-lg border border-amber-600 px-4 text-sm font-semibold text-amber-900 hover:bg-amber-100 focus-visible:outline-2 focus-visible:outline-amber-600">
+              Tamamlayıcı ürün ekle
+            </button>
+          </div>
+        )}
+        {selected.size > 0 && (
           <AdminBulkBar maxTotalDiscountPct={maxTotalDiscountPct} expectedStock={Object.fromEntries([...selected].flatMap((id) => (byId.get(id)?.variations ?? []).map((v) => [v.id, v.stock])))} ids={[...selected]} scopes={scopes} onApplied={(snapshot, label) => setUndo({ snapshot, label })} extraCategories={extraCategories} categoryTitles={categoryTitles} onDone={() => { setSelected(new Set()); setLastId(null); }} />
         )}
       </AdminSelectionPanel>
+      {complementOpen && selected.size > 0 && (
+        <AdminComplementDialog mainIds={[...selected]} products={products} onClose={() => setComplementOpen(false)} onChanged={() => refreshAdminNow(router)} />
+      )}
       {notice && <p role="status" className="px-5 sm:px-6 py-2 text-[11px] text-amber-900 bg-amber-100/60 border-b border-amber-200">{notice}</p>}
 
       {filtered.length > 0 && (
