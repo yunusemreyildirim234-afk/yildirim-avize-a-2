@@ -1,4 +1,5 @@
 import { unitPriceFor, type BulkRule } from "@/lib/bulk-pricing";
+import { bestComplement, type ComplementRule } from "@/lib/complement-pricing";
 import {
   BANK_TRANSFER_DISCOUNT,
   DEFAULT_COUPON_CODE,
@@ -18,6 +19,7 @@ export interface ProductRules {
   couponAllowed: boolean;
   pickupPct: number | null;
   transferPct: number | null;
+  complementOf?: ComplementRule[]; // yalnızca sunucu DB'den doldurur
 }
 
 /** Bir indirim o ürün için kapalıysa / özel oran varsa gösterilecek kısa notlar. */
@@ -43,6 +45,7 @@ export interface CartPriceLine {
   couponAllowed: boolean;
   pickupPct: number | null; // null: varsayılan, 0: bu üründe yok
   transferPct: number | null;
+  complementOf?: ComplementRule[]; // sunucuda DB'den okunur; istemci gövdesinden asla alınmaz
 }
 
 export interface CapInfo {
@@ -56,6 +59,7 @@ export interface PricedLine extends CartPriceLine {
   unitPrice: number; // kademe sonrası birim fiyat
   lineTotal: number; // unitPrice × quantity (yuvarlanmaz)
   tierQty: number; // kademeyi belirleyen toplam adet (aynı ürünün tüm renkleri)
+  bundle?: { mainProductId: string; unitDiscount: number; total: number }; // birlikte alma indirimi (yalnız uygulandıysa)
 }
 
 export interface CartPricing {
@@ -88,10 +92,15 @@ export function priceCart(opts: {
   // 1) Kademe: aynı ürünün tüm renk/varyasyon satırlarının TOPLAM adedine göre
   const qtyByProduct = new Map<string, number>();
   for (const l of opts.lines) qtyByProduct.set(l.productId, (qtyByProduct.get(l.productId) ?? 0) + l.quantity);
+  const present = new Set([...qtyByProduct].filter(([, q]) => q >= 1).map(([id]) => id));
   const lines: PricedLine[] = opts.lines.map((l) => {
     const tierQty = qtyByProduct.get(l.productId) ?? l.quantity;
-    const unitPrice = unitPriceFor(l.price, tierQty, l.tiers);
-    return { ...l, tierQty, unitPrice, lineTotal: unitPrice * l.quantity };
+    const tierUnit = unitPriceFor(l.price, tierQty, l.tiers);
+    // Birlikte alma: ana ürün sepetteyse tüm adetler kademeden SONRA indirimli (kupon/kargo/üst sınır bu birim fiyattan hesaplanır)
+    const pick = bestComplement(l.complementOf, present, tierUnit);
+    const unitPrice = pick ? Math.round((tierUnit - pick.unitDiscount) * 100) / 100 : tierUnit;
+    const bundle = pick ? { mainProductId: pick.mainProductId, unitDiscount: pick.unitDiscount, total: Math.round(pick.unitDiscount * l.quantity * 100) / 100 } : undefined;
+    return { ...l, tierQty, unitPrice, lineTotal: unitPrice * l.quantity, ...(bundle ? { bundle } : {}) };
   });
   const itemsTotal = lines.reduce((sum, l) => sum + l.lineTotal, 0);
 
