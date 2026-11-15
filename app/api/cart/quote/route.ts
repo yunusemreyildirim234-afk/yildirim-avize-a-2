@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { isLimited, rateLimit, recordFailure, tooMany } from "@/lib/rate-limit";
 import { bulkTiersOf } from "@/lib/bulk-pricing";
 import { priceCart } from "@/lib/cart-pricing";
+import { groupComplementRules } from "@/lib/complement-pricing";
 import { isZeroTotal } from "@/lib/zero-total";
 import { isPurchasablePrice, priceUnavailableMessage } from "@/lib/purchasable";
 import { SHIPPING_LABELS, type CouponRule } from "@/lib/pricing";
@@ -64,6 +65,13 @@ export async function POST(req: Request) {
     }
     return [{ v, quantity }];
   });
+  // Tamamlayıcı ürün bağları: yalnızca DB'den ve yalnızca sepetteki ürünler arasında (istemciden okunmaz)
+  const cartProductIds = [...new Set(usable.map(({ v }) => v.productId))];
+  const complementRules = groupComplementRules(
+    cartProductIds.length > 1
+      ? await prisma.productComplement.findMany({ where: { mainProductId: { in: cartProductIds }, complementProductId: { in: cartProductIds } }, select: { mainProductId: true, complementProductId: true, discountType: true, discountValue: true } })
+      : []
+  );
   const priceLines = usable.map(({ v, quantity }) => ({
     variationId: v.id,
     productId: v.productId,
@@ -73,6 +81,7 @@ export async function POST(req: Request) {
     couponAllowed: v.product.couponAllowed,
     pickupPct: v.product.pickupDiscountPct,
     transferPct: v.product.transferDiscountPct,
+    complementOf: complementRules.get(v.productId),
   }));
 
   // Kupon (yalnızca doğrulama ve hesap; rezervasyon yok)
@@ -127,7 +136,8 @@ export async function POST(req: Request) {
       unitPrice: l.unitPrice,
       lineTotal: l.lineTotal,
       capInfo: l.capInfo ?? null,
-      rules: { couponAllowed: l.couponAllowed, pickupPct: l.pickupPct, transferPct: l.transferPct },
+      rules: { couponAllowed: l.couponAllowed, pickupPct: l.pickupPct, transferPct: l.transferPct, complementOf: l.complementOf ?? [] },
+      bundle: l.bundle ?? null,
       ladder: ladderCtx
         ? priceLadder({ basePrice: l.price, couponAllowed: l.couponAllowed, pickupDiscountPct: l.pickupPct, transferDiscountPct: l.transferPct }, ladderCtx, l.price, { quantity: l.tierQty, tiers: l.tiers })
         : [],

@@ -12,6 +12,7 @@ import { EMAIL_RE, cleanControlChars, invoiceError, shippingFormError } from "@/
 import { bulkTiersOf } from "@/lib/bulk-pricing";
 import { isShort, mergeByVariation } from "@/lib/stock-rules";
 import { priceCart } from "@/lib/cart-pricing";
+import { groupComplementRules } from "@/lib/complement-pricing";
 import { isPurchasablePrice, priceUnavailableMessage } from "@/lib/purchasable";
 import { releaseCoupon, reserveCouponLocked, validateCoupon } from "@/lib/coupons";
 import { reserveLines, StockShortError } from "@/lib/stock-reserve";
@@ -143,6 +144,13 @@ export async function POST(req: Request) {
 
     // Tek hesaplama (lib/cart-pricing.ts): kademe aynı ürünün tüm renklerinin toplam adedine göre, kupon yalnızca uygun kalemlere,
     // mağaza/Havale indirimi ürünün oranına göre. Sepet ve /api/cart/quote aynı fonksiyonu çağırır.
+    // Tamamlayıcı ürün bağları: yalnızca DB'den, yalnızca sepetteki ürünler arasında (istemci gövdesinden complementOf ASLA okunmaz)
+    const cartProductIds = [...new Set(orderLines.map((l) => l.variation.productId))];
+    const complementRules = groupComplementRules(
+      cartProductIds.length > 1
+        ? await prisma.productComplement.findMany({ where: { mainProductId: { in: cartProductIds }, complementProductId: { in: cartProductIds } }, select: { mainProductId: true, complementProductId: true, discountType: true, discountValue: true } })
+        : []
+    );
     const priceLines = orderLines.map((l) => ({
       variationId: l.variation.id,
       productId: l.variation.productId,
@@ -152,6 +160,7 @@ export async function POST(req: Request) {
       couponAllowed: l.variation.product.couponAllowed,
       pickupPct: l.variation.product.pickupDiscountPct,
       transferPct: l.variation.product.transferDiscountPct,
+      complementOf: complementRules.get(l.variation.productId),
     }));
     const cap = (await prisma.siteConfig.findUnique({ where: { id: 1 }, select: { maxTotalDiscountPct: true } }))?.maxTotalDiscountPct ?? null;
     let priced = priceCart({ lines: priceLines, maxTotalDiscountPct: cap, shippingType, paymentMethod });
@@ -216,7 +225,7 @@ export async function POST(req: Request) {
     }
 
     // 3. Siparişi kaydet (kartlı ödemede ödeme onayına kadar AWAITING_PAYMENT)
-    const itemRows = orderLines.map((l) => ({ variationId: l.variation.id, quantity: l.quantity, unitPrice: l.unitPrice, productTitle: l.variation.product.title, variationLabel: l.variation.variationValue }));
+    const itemRows = orderLines.map((l, i) => ({ variationId: l.variation.id, quantity: l.quantity, unitPrice: l.unitPrice, productTitle: l.variation.product.title, variationLabel: l.variation.variationValue, bundleMainProductId: priced.lines[i].bundle?.mainProductId ?? null, bundleDiscount: priced.lines[i].bundle?.total ?? null }));
     const totalQty = orderLines.reduce((sum, l) => sum + l.quantity, 0);
     // Kupon hakkı rezervasyonu ve sipariş kaydı tek işlemde: limit doluysa sipariş hiç oluşmaz
     class CouponLimitError extends Error {}
