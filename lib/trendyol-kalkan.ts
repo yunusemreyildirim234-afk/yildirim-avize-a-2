@@ -2,6 +2,52 @@
 // Kaynak plan: docs/kod-denetimi/plan-17/02-lib11-trn03-kalkan-varyasyon.md (Aşama 1-3).
 import type { ExistingProduct, IncomingProduct, Settings } from "@/lib/trendyol-plan";
 
+export interface CakisanUrun { mainId: string; baslik: string; /** bu üründe barkodun gelen listedeki tekrar sayısı */ adet: number }
+export interface CakisanBarkod {
+  barkod: string;
+  /** Barkodun gelen listede geçtiği ürünler (ürün içi tekrar: adet > 1) */
+  urunler: CakisanUrun[];
+  /** Barkodu şu an sitede tutan ürün (yoksa null); gelen listedekilerden biri olmayabilir */
+  sitede: { mainId: string; baslik: string } | null;
+}
+
+/**
+ * Gelen listede (buildIncoming sonrası) birden fazla kez geçen barkodlar: ürünler arası VE ürün içi. Saf; yalnız gösterir, hiçbir şey yazmaz.
+ * Karşılaştırmada baş/son boşluk yok sayılır. Sonuç barkoda göre sıralıdır.
+ */
+export function cakisanBarkodlar(
+  gelen: { mainId: string; title: string; variations: { barcode: string }[] }[],
+  mevcut: { trendyolMainId: string | null; title: string; variations: { barcode: string | null }[] }[],
+): CakisanBarkod[] {
+  const harita = new Map<string, Map<string, CakisanUrun>>();
+  for (const p of gelen) {
+    for (const v of p.variations) {
+      const b = v.barcode?.trim();
+      if (!b) continue;
+      const urunler = harita.get(b) ?? new Map<string, CakisanUrun>();
+      const u = urunler.get(p.mainId) ?? { mainId: p.mainId, baslik: p.title, adet: 0 };
+      u.adet += 1;
+      urunler.set(p.mainId, u);
+      harita.set(b, urunler);
+    }
+  }
+  const sahip = new Map<string, { mainId: string; baslik: string }>();
+  for (const p of mevcut) {
+    if (!p.trendyolMainId) continue;
+    for (const v of p.variations) {
+      const b = v.barcode?.trim();
+      if (b && harita.has(b) && !sahip.has(b)) sahip.set(b, { mainId: p.trendyolMainId, baslik: p.title });
+    }
+  }
+  const out: CakisanBarkod[] = [];
+  for (const [barkod, urunler] of harita) {
+    const liste = [...urunler.values()];
+    if (liste.length < 2 && liste[0].adet < 2) continue;
+    out.push({ barkod, urunler: liste, sitede: sahip.get(barkod) ?? null });
+  }
+  return out.sort((a, b) => (a.barkod < b.barkod ? -1 : a.barkod > b.barkod ? 1 : 0));
+}
+
 export type KalkanGuven = "KESIN" | "ZAYIF";
 
 export interface KalkanVaryasyon {
@@ -28,6 +74,8 @@ export interface KalkanSonuc {
   eslesen: number;
   /** kalkanToplam > eşleşenin %10'u: liste eksik olabilir */
   genelUyari: boolean;
+  /** Gelen listede ürünler arası / ürün içi tekrar eden barkodlar (yalnız uyarı; STOCK ayarından bağımsız) */
+  cakisanBarkodlar: CakisanBarkod[];
 }
 
 export const KAPALI_METIN = "Trendyol'da KAPALI -> sitede stok 0 (Tükendi) olacak";
@@ -68,7 +116,8 @@ export const elleDegisti = (stock: number, syncStock: number | null) => (syncSto
  * STOCK "SKIP" ise boş döner. Yalnız Trendyol'da hâlâ var olan ürünlerin içindeki varyasyonlar işlenir; barkodsuz varyasyona dokunulmaz.
  */
 export function kalkanPlani(mevcut: ExistingProduct[], gelen: IncomingProduct[], kapaliBarkodlar: ReadonlySet<string>, rezerve: Record<string, number>, ayarlar: Settings): KalkanSonuc {
-  const bos: KalkanSonuc = { urunler: [], toplam: 0, kalkanToplam: 0, eslesen: 0, genelUyari: false };
+  const cakisan = cakisanBarkodlar(gelen, mevcut);
+  const bos: KalkanSonuc = { urunler: [], toplam: 0, kalkanToplam: 0, eslesen: 0, genelUyari: false, cakisanBarkodlar: cakisan };
   if (ayarlar.STOCK === "SKIP") return bos;
   const gelenMap = new Map(gelen.map((g) => [g.mainId, g]));
   const urunler: KalkanUrun[] = [];
@@ -130,7 +179,7 @@ export function kalkanPlani(mevcut: ExistingProduct[], gelen: IncomingProduct[],
     toplam += vars.length;
     if (vars.length) urunler.push({ mainId: ex.trendyolMainId, urunId: ex.id, baslik: ex.title, suphe, varyasyonlar: vars });
   }
-  return { urunler, toplam, kalkanToplam, eslesen, genelUyari: kalkanToplam > 0 && genelSupheli(kalkanToplam, eslesen) };
+  return { urunler, toplam, kalkanToplam, eslesen, genelUyari: kalkanToplam > 0 && genelSupheli(kalkanToplam, eslesen), cakisanBarkodlar: cakisan };
 }
 
 export interface SifirlaIstek { varyasyonId: string; /** Önizlemede görülen stok */ stok: number }

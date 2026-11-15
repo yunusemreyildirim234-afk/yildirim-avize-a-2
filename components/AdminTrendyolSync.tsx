@@ -372,6 +372,28 @@ export default function AdminTrendyolSync({
             ))}
           </ul>
 
+          {preview.kalkanVaryasyonlar && preview.kalkanVaryasyonlar.cakisanBarkodlar.length > 0 && (
+            <section aria-label="Çakışan barkodlar" data-testid="cakisan-barkodlar" className="bg-white border border-neutral-300 rounded-xl p-2.5 text-xs space-y-2">
+              <h3 className="font-semibold text-neutral-900">{preview.kalkanVaryasyonlar.cakisanBarkodlar.length} barkod Trendyol listesinde birden fazla kayıtta geçiyor</h3>
+              <p className="text-neutral-600">Bir barkod sitede yalnız tek satırda yaşayabilir; diğer kayıtlar eklenemez. Bu kutu yalnızca bilgidir, hiçbir şey değiştirmez. Gerekirse Trendyol&apos;da ya da sitede elle düzeltin.</p>
+              <ul className="max-h-60 overflow-y-auto divide-y divide-neutral-100">
+                {preview.kalkanVaryasyonlar.cakisanBarkodlar.map((c) => (
+                  <li key={c.barkod} className="py-1.5 text-[11px] text-neutral-700">
+                    <span className="font-semibold text-neutral-900 break-all">{c.barkod}</span>
+                    <ul className="mt-0.5 ml-3 list-disc">
+                      {c.urunler.map((u) => (
+                        <li key={u.mainId}>{u.baslik}{u.adet > 1 ? ` (aynı üründe ${u.adet} kez)` : ""}</li>
+                      ))}
+                    </ul>
+                    <span className={`mt-0.5 inline-block px-1.5 py-0.5 rounded font-bold ${c.sitede ? "bg-emerald-100 text-emerald-800" : "bg-neutral-200 text-neutral-800"}`}>
+                      {c.sitede ? `Sitede kayıtlı: ${c.sitede.baslik}` : "Sitede kayıtlı değil"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
           {preview.kalkanVaryasyonlar && preview.kalkanVaryasyonlar.toplam > 0 && (
             <section aria-label="Trendyol'da kapanan renkler" className="bg-white border border-amber-300 rounded-xl p-2.5 text-xs space-y-2">
               <h3 className="font-semibold text-neutral-900">

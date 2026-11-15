@@ -109,5 +109,5 @@ test("STOCK=SKIP → boş; stoğu 0 olan kalkan listelenmez; yazma/yan etki yok 
 test("kalkan olmayan her şey değişmez: tüm barkodlar gelen listede → boş", () => {
   const p = prod([ev("a", "B1", "Krom", 5)]);
   const s = run([p], [inc([iv("B1", "Krom")])]);
-  assert.deepEqual(s, { urunler: [], toplam: 0, kalkanToplam: 0, eslesen: 1, genelUyari: false });
+  assert.deepEqual(s, { urunler: [], toplam: 0, kalkanToplam: 0, eslesen: 1, genelUyari: false, cakisanBarkodlar: [] });
 });
