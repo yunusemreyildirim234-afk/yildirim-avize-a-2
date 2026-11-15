@@ -144,6 +144,7 @@ CREATE TABLE "Order" (
     "receiptReminderSent" BOOLEAN NOT NULL DEFAULT false,
     "legalConsentAt" TIMESTAMP(3),
     "legalConsentVersion" TEXT,
+    "deliveredAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 

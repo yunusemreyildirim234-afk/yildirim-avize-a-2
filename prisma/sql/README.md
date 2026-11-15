@@ -16,6 +16,7 @@ Bu klasör, veritabanı şemasının **gerçek geçmişidir**. Şema değişikli
 | `alici-adi-ekle.sql` | `Order.recipientName` |
 | `siparis-kalemi-ad-ekle.sql` | `OrderItem.productTitle` ve `variationLabel` (sipariş anındaki ad/renk), ikinci bölümde geriye dönük doldurma |
 | `sozlesme-onayi-ekle.sql` | `Order.legalConsentAt` ve `legalConsentVersion` (sözleşme onay kaydı; eski siparişler NULL) |
+| `teslim-tarihi-ekle.sql` | `Order.deliveredAt` (teslim anı), ikinci bölümde geriye dönük doldurma (yaklaşık) |
 | `ebat-ekle.sql` | `Product.ebat` |
 | `variation-index-ekle.sql` | `ProductVariation.productId` indeksi |
 | `account-deletion.sql` | `AccountDeletionRequest` tablosu, `User.lastLoginAt`, durum CHECK kuralı ve kullanıcı başına tek bekleyen talep kısmi benzersiz indeksi |

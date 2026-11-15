@@ -135,7 +135,9 @@ export async function applyStatusChangeInTx(
   if (!before) return { outcome: "NOT_FOUND" };
   const refusal = transitionError(before.status, status);
   if (refusal) return { outcome: "FORBIDDEN", from: before.status, message: refusal };
-  const moved = await tx.order.updateMany({ where: { id: orderId, status: before.status }, data: { status } });
+  // Teslim anı yalnız DELIVERED'a ilk geçişte yazılır; DELIVERED → RETURNED'de korunur (iade süresi tarihi kaybolmasın)
+  const data = status === "DELIVERED" && before.status !== "DELIVERED" ? { status, deliveredAt: new Date() } : { status };
+  const moved = await tx.order.updateMany({ where: { id: orderId, status: before.status }, data });
   if (moved.count === 0) return { outcome: "CONFLICT" };
   const plan = before.status !== status ? planStatusChange(before.status, status, before.stockDeducted) : NO_PLAN;
   if (plan.restoreStock) await restoreStockInTx(tx as unknown as RestoreTx, orderId);
@@ -191,7 +193,8 @@ export async function applyUndoInTx(
   t: UndoRequest,
   deps: { deduct: (variationId: string, quantity: number) => Promise<boolean>; reserve: (code: string) => Promise<boolean> },
 ): Promise<{ warning?: string }> {
-  const claimed = await tx.order.updateMany({ where: { id: t.orderId, status: t.to }, data: { status: t.from } });
+  // Teslim geri alınıyorsa teslim anı da silinir
+  const claimed = await tx.order.updateMany({ where: { id: t.orderId, status: t.to }, data: t.to === "DELIVERED" ? { status: t.from, deliveredAt: null } : { status: t.from } });
   if (claimed.count === 0) throw new UndoRefusal("Sipariş durumu bu arada değiştirilmiş; geri alınamadı.");
   if (t.restoredStock) {
     const flag = await tx.order.updateMany({ where: { id: t.orderId, stockDeducted: false }, data: { stockDeducted: true } });

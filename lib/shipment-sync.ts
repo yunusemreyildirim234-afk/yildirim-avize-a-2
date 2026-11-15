@@ -35,7 +35,7 @@ export function isDeliveredStatus(...values: unknown[]): boolean {
 export async function markDelivered(orderId: string, extra: { kargonomiStatus?: string; kargonomiStatusLabel?: string } = {}): Promise<boolean> {
   const res = await prisma.order.updateMany({
     where: { id: orderId, status: "SHIPPED", OR: [{ cancelReturnStatus: null }, { cancelReturnStatus: { not: "APPROVED" } }] },
-    data: { status: "DELIVERED", ...extra },
+    data: { status: "DELIVERED", deliveredAt: new Date(), ...extra },
   });
   if (res.count !== 1) return false;
   // Yalnızca durum ilk kez değiştiğinde (count === 1) müşteri bildirimi gönderilir

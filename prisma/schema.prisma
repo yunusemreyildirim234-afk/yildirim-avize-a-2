@@ -166,6 +166,7 @@ model Order {
   invoice              OrderInvoice? // Yalnızca ilişki alanı (sütun değil); sipariş sorgularına include ile bağlanmaz
   legalConsentAt       DateTime? // Sözleşme/ön bilgilendirme onay anı (sunucu saati); boşsa kayıt öncesi sipariş
   legalConsentVersion  String? // Onaylanan metin sürümü (LEGAL_VERSION)
+  deliveredAt          DateTime? // DELIVERED'a geçilen an (cayma süresi başlangıcı); eski siparişlerde yaklaşık (backfill), boşsa bilinmiyor
   items                OrderItem[]
   createdAt            DateTime     @default(now())
   updatedAt            DateTime     @updatedAt

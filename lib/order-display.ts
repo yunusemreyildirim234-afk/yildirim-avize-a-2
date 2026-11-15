@@ -76,3 +76,19 @@ export function withStoredNames<I extends { productTitle?: string | null; variat
     variation: { ...i.variation, variationValue: i.variationLabel ?? i.variation.variationValue, product: { ...i.variation.product, title: i.productTitle ?? i.variation.product.title } },
   };
 }
+
+const DAY_MS = 86_400_000;
+/** Yasal cayma süresi (gün); lib/legal-texts.ts CAYMA metniyle aynı (14 gün). */
+export const CAYMA_DAYS = 14;
+
+/**
+ * Yönetici ekranı bilgi satırı: "Teslim: 10.11.2026 · 4 gün önce (cayma süresi: 10 gün kaldı)". Yalnız bilgi; iade onayını engellemez.
+ * deliveredAt boşsa (kayıt öncesi sipariş) null döner, satır gösterilmez.
+ */
+export function deliverySummary(deliveredAt: Date | null | undefined, now: Date, dateText: string): string | null {
+  if (!deliveredAt) return null;
+  const elapsed = Math.max(0, Math.floor((now.getTime() - deliveredAt.getTime()) / DAY_MS));
+  const left = CAYMA_DAYS - elapsed;
+  const ago = elapsed === 0 ? "bugün" : `${elapsed} gün önce`;
+  return `Teslim: ${dateText} · ${ago} (${left > 0 ? `cayma süresi: ${left} gün kaldı` : "cayma süresi doldu"})`;
+}

@@ -7,7 +7,7 @@ import { cleanGuestEmail } from "@/lib/guest-email";
 import { ADDRESS_LINE } from "@/lib/site";
 import { formatIstanbulDateTime, istanbulDateTimeParts } from "@/lib/format-date";
 import { orderItemProductView } from "@/lib/order-item-product";
-import { bankPaymentDeadline, breakdownOf, breakdownRows, deliveryAddressText, formatIstanbul, formatTl, orderCode } from "@/lib/order-display";
+import { bankPaymentDeadline, breakdownOf, breakdownRows, deliveryAddressText, deliverySummary, formatIstanbul, formatTl, orderCode } from "@/lib/order-display";
 import { buildFis, paymentMethodLabel } from "@/lib/admin-order-detail";
 import { recipientDiffers, recipientLabel } from "@/lib/recipient";
 import AdminPrintButton from "@/components/AdminPrintButton";
@@ -77,6 +77,10 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
             <h1 className="font-mono text-2xl font-bold text-neutral-900">{orderCode(order.id)}</h1>
             <p className="mt-1 break-all font-mono text-[11px] text-neutral-500">Tam kimlik: {order.id}</p>
             <p className="mt-1 text-xs text-neutral-600">{dt ? `${dt.date} ${dt.time}` : "—"}</p>
+            {(() => {
+              const t = deliverySummary(order.deliveredAt, new Date(), order.deliveredAt ? formatIstanbulDateTime(order.deliveredAt).slice(0, 10) : "");
+              return t ? <p data-testid="teslim-tarihi" className="mt-1 text-xs text-neutral-600">{t}</p> : null;
+            })()}
             <p data-testid="sozlesme-onayi" className="mt-1 text-xs text-neutral-600">
               {order.legalConsentAt ? `Sözleşme onayı: ${formatIstanbulDateTime(order.legalConsentAt)} · sürüm ${order.legalConsentVersion ?? "—"}` : "Sözleşme onayı: Kayıt öncesi sipariş"}
             </p>
