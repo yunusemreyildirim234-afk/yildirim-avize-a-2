@@ -1,5 +1,6 @@
 import { SITE_NAME } from "./site.ts";
 import { pickDefaultOption } from "./default-variation.ts";
+import { productPath } from "./product-url.ts";
 import { imageListOf } from "./variation-input.ts"; // göreli + .ts: node --test bu dosyayı doğrudan yükler (@/ takma adı çözülmez)
 
 // Google Merchant Center ürün feed'i için SAF yardımcılar (veritabanı/ağ yok). Fiyat ve stok, ürün sayfasındaki
@@ -123,7 +124,7 @@ export function feedItemXml(p: FeedProduct, site: string): string | null {
     tag("id", p.id),
     `<title>${xmlEscape(title)}</title>`,
     `<description>${xmlEscape(description)}</description>`,
-    `<link>${xmlEscape(`${site}/urun/${p.id}`)}</link>`,
+    `<link>${xmlEscape(`${site}${productPath(p)}`)}</link>`,
     tag("image_link", images[0]),
     ...images.slice(1, 1 + FEED_EXTRA_IMAGES).map((u) => tag("additional_image_link", u)),
     tag("availability", offer.inStock ? "in_stock" : "out_of_stock"),

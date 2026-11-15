@@ -57,3 +57,14 @@ test("ürün sayfası: kanonik adres tek kaynaktan, 308 var, ham /urun/${id} kal
   assert.ok(src.includes("alternates: { canonical }"));
   assert.equal((src.match(/\$\{SITE_URL\}\$\{canonicalPath\}/g) ?? []).length, 2); // JSON-LD url + offers.url
 });
+
+test("feed: <link> okunur adres, g:id hâlâ ham ürün kimliği", async () => {
+  const { feedItemXml } = await import("../lib/feed.ts");
+  const xml = feedItemXml(
+    { id: ID, title: "Kristal Avize 6 Lı", description: "açıklama", category: "Avize", modelCode: null, images: ["/a.jpg"], variations: [{ id: "v1", stock: 3, price: 100, barcode: null, variationValue: "Gold", imageUrl: null, position: 0 }], basePrice: 100, listPrice: null },
+    "https://www.yildirimavize.com.tr"
+  );
+  assert.ok(xml, "örnek ürün feed öğesi üretmeli");
+  assert.ok(xml.includes("<link>https://www.yildirimavize.com.tr/urun/kristal-avize-6-li-3f9a1c2e</link>"));
+  assert.ok(xml.includes(`<g:id>${ID}</g:id>`));
+});

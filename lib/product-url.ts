@@ -1,5 +1,5 @@
-import { slugifyTr } from "@/lib/categories";
-import { displayTitle } from "@/lib/title-display";
+import { slugifyTr } from "./categories.ts";
+import { displayTitle } from "./title-display.ts";
 
 /** Ürün adresi: /urun/{ad-slug}-{kimliğin ilk 8 hex'i}. Çözümleme yalnız sondaki kısa kimliğe bakar; ad kısmı süstür (eski/yanlış ad 308 ile düzelir). */
 export const SHORT_ID_LEN = 8;

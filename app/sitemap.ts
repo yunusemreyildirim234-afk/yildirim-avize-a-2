@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/db";
 import { CATEGORIES, COLLECTIONS, SITE_URL } from "@/lib/site";
+import { productPath } from "@/lib/product-url";
 import { withVisibleProducts } from "@/lib/categories";
 import { getCategoryList, getFixedCategoryOverrides } from "@/lib/category-list";
 import { getGalleryPhotoCount } from "@/lib/customer-gallery";
@@ -12,7 +13,7 @@ export const dynamic = "force-dynamic";
 // Ürün listesi 1 saat önbelleklenir (her tarayıcı/bot isteğinde veritabanına gitmez); yönetimden yapılan değişiklikte "storefront" etiketiyle hemen yenilenir.
 // Hata durumunda boş liste önbelleğe girmesin diye catch önbelleğin DIŞINDADIR. JSON'a çevrildiği için updatedAt metin olarak gelir.
 const getSitemapProducts = unstable_cache(
-  async () => (await prisma.product.findMany({ where: await getVisibleWhere(), select: { id: true, updatedAt: true } })).map((p) => ({ id: p.id, updatedAt: p.updatedAt.toISOString() })),
+  async () => (await prisma.product.findMany({ where: await getVisibleWhere(), select: { id: true, title: true, updatedAt: true } })).map((p) => ({ id: p.id, title: p.title, updatedAt: p.updatedAt.toISOString() })),
   ["sitemap-products"],
   { revalidate: 3600, tags: ["storefront"] },
 );
@@ -49,7 +50,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     })),
     ...products.map((p) => ({
-      url: `${SITE_URL}/urun/${p.id}`,
+      url: `${SITE_URL}${productPath(p)}`,
       lastModified: p.updatedAt,
       changeFrequency: "weekly" as const,
       priority: 0.7,

@@ -14,7 +14,7 @@ test("sitemap ürün sorgusu 1 saat ve storefront etiketiyle önbelleklenir; hat
 });
 
 test("sitemap içeriği aynı: ürün adresi, lastModified ve sabit sayfalar korunur", () => {
-  assert.match(s, /url: `\$\{SITE_URL\}\/urun\/\$\{p\.id\}`/);
+  assert.match(s, /url: `\$\{SITE_URL\}\$\{productPath\(p\)\}`/);
   assert.match(s, /lastModified: p\.updatedAt/);
   assert.match(s, /STATIC_PAGES/);
 });
