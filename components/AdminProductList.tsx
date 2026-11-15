@@ -5,6 +5,8 @@ import { isPurchasablePrice } from "@/lib/purchasable";
 import { AlertTriangle, Boxes, ChevronDown, ExternalLink, FileText, Lightbulb, MoreHorizontal, Pencil, Search, Trash2, Undo2 } from "lucide-react";
 import { useOpenOnHash } from "@/components/useOpenOnHash";
 import { useRouter } from "next/navigation";
+import { refreshAdminNow, scheduleAdminRefresh } from "@/lib/admin-refresh";
+import { applyHiddenIds, applyPatch, emptyPatch, withPatched, type ProductPatch } from "@/lib/admin-product-patch";
 import AdminBulkBar from "@/components/AdminBulkBar";
 import AdminSelectionPanel, { scrollToRow } from "@/components/AdminSelectionPanel";
 import { addAll, chipLabel, nextLastId, removeAll, removeId, toggleId } from "@/lib/admin-selection";
@@ -173,15 +175,17 @@ function DiscountBadges({ product, onRemove, disabled }: { product: Product; onR
 
 const norm = (v?: string | null) => (v ?? "").toLocaleLowerCase("tr").trim();
 
-export default function AdminProductList({ products: serverProducts, maxTotalDiscountPct, showcase, extraCategories = [], categoryTitles = {}, stocklessRule }: { products: Product[]; maxTotalDiscountPct?: number | null; extraCategories?: string[]; categoryTitles?: Record<string, string>; stocklessRule?: StocklessRule; showcase: { featured: string[]; bestSellers: string[]; manualFeatured: number } }) {
+export default function AdminProductList({ products: serverProducts, maxTotalDiscountPct, showcase, extraCategories = [], categoryTitles = {}, stocklessRule: serverStocklessRule }: { products: Product[]; maxTotalDiscountPct?: number | null; extraCategories?: string[]; categoryTitles?: Record<string, string>; stocklessRule?: StocklessRule; showcase: { featured: string[]; bestSellers: string[]; manualFeatured: number } }) {
   const sets = useMemo<ChipSets>(() => ({ featured: new Set(showcase.featured), bestseller: new Set(showcase.bestSellers) }), [showcase]);
   const router = useRouter();
-  // Stok +/−: sunucu yanıtındaki yeni değer yerelde tutulur (router.refresh yok). Sunucudan yeni liste gelince (başka işlem yenilemesi) geçersiz sayılır.
-  const [stockPatch, setStockPatch] = useState<{ base: Product[]; byId: Record<string, number> }>({ base: serverProducts, byId: {} });
-  const products = useMemo(() => {
-    const byId = stockPatch.base === serverProducts ? stockPatch.byId : {};
-    return Object.keys(byId).length ? serverProducts.map((p) => (p.variations.some((v) => v.id in byId) ? { ...p, variations: p.variations.map((v) => (v.id in byId ? { ...v, stock: byId[v.id] } : v)) } : p)) : serverProducts;
-  }, [serverProducts, stockPatch]);
+  // Yerel yama (CMP-02): stok ±, aktif/pasif ve "stoksuzken gizle" için SUNUCUNUN döndürdüğü değer yerelde tutulur; tam yenileme
+  // sakin kalınca tek seferde (scheduleAdminRefresh) gelir. Sunucudan yeni liste gelince yama geçersiz sayılır (lib/admin-product-patch.ts).
+  const [patch, setPatch] = useState<ProductPatch<Product>>(() => emptyPatch(serverProducts));
+  const products = useMemo(() => applyPatch(serverProducts, patch), [serverProducts, patch]);
+  const stocklessRule = useMemo<StocklessRule | undefined>(
+    () => (serverStocklessRule ? { ...serverStocklessRule, hiddenIds: applyHiddenIds(serverStocklessRule.hiddenIds, serverProducts, patch) } : undefined),
+    [serverStocklessRule, serverProducts, patch]
+  );
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   useOpenOnHash("urunler", setOpen);
@@ -252,7 +256,7 @@ export default function AdminProductList({ products: serverProducts, maxTotalDis
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "İşlem başarısız.");
       if (data.snapshot) setUndo({ snapshot: data.snapshot, label: "Otomatik seçime dönüş" });
-      router.refresh();
+      refreshAdminNow(router); // toplu işlem: hemen
     } catch (e) {
       alert((e as Error).message);
     }
@@ -286,7 +290,7 @@ Yine de geri alınsın mı?`)) break;
       alert((e as Error).message);
     } finally {
       setUndo(queue.length > 0 ? { snapshot: queue[queue.length - 1], earlier: queue.slice(0, -1), label: undo.label } : null);
-      if (queue.length < total) router.refresh();
+      if (queue.length < total) refreshAdminNow(router); // geri alma birden çok alanı değiştirir: hemen
       setUndoing(false);
     }
   };
@@ -300,9 +304,15 @@ Yine de geri alınsın mı?`)) break;
     try {
       const res = await fetch("/api/admin/product", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ productId: p.id, active: makeActive }) });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || "İşlem başarısız.");
+      if (!res.ok) {
+        if (res.status === 409) refreshAdminNow(router);
+        throw new Error(data.error || "İşlem başarısız.");
+      }
       if (data.snapshot) setUndo({ snapshot: data.snapshot, label: makeActive ? "Aktif yapma" : "Pasife alma" });
-      router.refresh();
+      if (typeof data.active === "boolean") {
+        setPatch((cur) => withPatched(cur, serverProducts, "active", p.id, data.active)); // sunucunun yazdığı değer
+        scheduleAdminRefresh(router);
+      } else refreshAdminNow(router);
     } catch (e) {
       alert((e as Error).message);
     } finally {
@@ -316,8 +326,14 @@ Yine de geri alınsın mı?`)) break;
     try {
       const res = await fetch("/api/admin/product", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ productId: p.id, stocklessHidden: hidden }) });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || "İşlem başarısız.");
-      router.refresh();
+      if (!res.ok) {
+        if (res.status === 409) refreshAdminNow(router);
+        throw new Error(data.error || "İşlem başarısız.");
+      }
+      if (typeof data.stocklessHidden === "boolean") {
+        setPatch((cur) => withPatched(cur, serverProducts, "hidden", p.id, data.stocklessHidden)); // sunucunun yazdığı değer
+        scheduleAdminRefresh(router);
+      } else refreshAdminNow(router);
     } catch (e) {
       alert((e as Error).message);
     } finally {
@@ -331,9 +347,12 @@ Yine de geri alınsın mı?`)) break;
     try {
       const res = await fetch("/api/admin/product/bulk", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids: [productId], action: "removeDiscount", ...payload }) });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "İşlem başarısız.");
+      if (!res.ok) {
+        if (res.status === 409) refreshAdminNow(router);
+        throw new Error(data.error || "İşlem başarısız.");
+      }
       if (data.snapshot) setUndo({ snapshot: data.snapshot, label });
-      router.refresh();
+      refreshAdminNow(router); // yanıt yeni indirim değerlerini taşımaz (yalnız geri alma belirteci): tahmin yerine hemen yenile
     } catch (e) {
       alert((e as Error).message);
     } finally {
@@ -416,8 +435,9 @@ Yine de geri alınsın mı?`)) break;
       if (data.success) {
         if (data.snapshot) setUndo({ snapshot: data.snapshot, label: `Stok ${oldStock} → ${newStock}` });
         const saved = typeof data.variation?.stock === "number" ? data.variation.stock : newStock; // sunucunun yazdığı değer
-        setStockPatch((cur) => ({ base: serverProducts, byId: { ...(cur.base === serverProducts ? cur.byId : {}), [variationId]: saved } }));
+        setPatch((cur) => withPatched(cur, serverProducts, "stock", variationId, saved));
       } else {
+        if (res.status === 409) refreshAdminNow(router); // "bu sırada değişti": sunucu verisini hemen getir
         alert("Stok güncellenemedi: " + data.error);
       }
     } catch {
@@ -439,8 +459,11 @@ Yine de geri alınsın mı?`)) break;
       const data = await res.json();
       if (data.success) {
         if (data.snapshot) setUndo({ snapshot: data.snapshot, label: "Model kodu değişikliği" });
-        router.refresh();
-      } else alert("Model kodu kaydedilemedi: " + data.error);
+        refreshAdminNow(router); // model kodu: hemen
+      } else {
+        if (res.status === 409) refreshAdminNow(router);
+        alert("Model kodu kaydedilemedi: " + data.error);
+      }
     } catch {
       alert("İşlem tamamlanamadı.");
     } finally {
@@ -462,8 +485,9 @@ Yine de geri alınsın mı?`)) break;
       if (data.success) {
         if (data.snapshot) setUndo({ snapshot: data.snapshot, label: `"${title}" silme` });
         alert(data.message ? "ℹ " + data.message : "✓ Avize katalogdan silindi. Aşağıdaki çubuktan geri alabilirsiniz.");
-        router.refresh();
+        refreshAdminNow(router); // silme: hemen
       } else {
+        if (res.status === 409) refreshAdminNow(router);
         alert("Silinemedi: " + data.error);
       }
     } catch {
