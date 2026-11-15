@@ -34,7 +34,7 @@ interface Preview {
 const API = "/api/admin/product/complements";
 const tl = (n: number) => `${n.toLocaleString("tr-TR", { maximumFractionDigits: 2 })} ₺`;
 const valueLabel = (t: string, v: number) => (t === "PERCENT" ? `%${v.toLocaleString("tr-TR")}` : tl(v));
-const field = "w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-amber-600";
+const field = "w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-amber-600";
 const btn = "inline-flex items-center justify-center min-h-10 rounded-lg px-4 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-amber-600 disabled:opacity-50";
 
 /** "Tamamlayıcı ürün ekle": seçili ana ürünlere "bununla birlikte alın" bağı kurar, mevcut bağları kaldırır, öneri kartı sayısını ayarlar. */
@@ -187,29 +187,29 @@ export default function AdminComplementDialog({ mainIds, products, onClose, onCh
   }
 
   const chip = (id: string, onRemove: () => void) => (
-    <li key={id} className="inline-flex items-center rounded-full bg-amber-50 border border-amber-300 text-xs text-stone-800">
+    <li key={id} className="inline-flex items-center rounded-full bg-amber-50 border border-amber-300 text-xs text-neutral-800">
       <span className="pl-2.5 pr-1 py-1 max-w-48 truncate">{nameOf(id)}</span>
-      <button type="button" aria-label={`${nameOf(id)} çıkar`} onClick={onRemove} className="px-1.5 py-1 text-stone-500 hover:text-red-700 focus-visible:outline-2 focus-visible:outline-amber-600 rounded-r-full">
+      <button type="button" aria-label={`${nameOf(id)} çıkar`} onClick={onRemove} className="px-1.5 py-1 text-neutral-500 hover:text-red-700 focus-visible:outline-2 focus-visible:outline-amber-600 rounded-r-full">
         <X aria-hidden="true" className="w-3 h-3" />
       </button>
     </li>
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-stone-900/50 p-0 sm:p-4" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div role="dialog" aria-modal="true" aria-labelledby="comp-title" className="w-full sm:max-w-2xl max-h-[92vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl bg-white shadow-xl">
-        <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-stone-200 bg-white px-5 py-3">
-          <h2 id="comp-title" className="text-base font-bold text-stone-900">Tamamlayıcı ürün ekle</h2>
-          <button ref={closeRef} type="button" onClick={onClose} aria-label="Kapat" className="p-2 rounded-lg text-stone-600 hover:bg-stone-100 focus-visible:outline-2 focus-visible:outline-amber-600">
+        <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-neutral-200 bg-white px-5 py-3">
+          <h2 id="comp-title" className="text-base font-bold text-neutral-900">Tamamlayıcı ürün ekle</h2>
+          <button ref={closeRef} type="button" onClick={onClose} aria-label="Kapat" className="p-2 rounded-lg text-neutral-600 hover:bg-neutral-100 focus-visible:outline-2 focus-visible:outline-amber-600">
             <X aria-hidden="true" className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="space-y-5 px-5 py-4 text-sm text-stone-800">
-          <p className="text-xs text-stone-600">Ana ürün sepetteyken tamamlayıcı ürün (örn. ampul) indirimli satılır. Varyasyonu (renk, ebat) müşteri seçer.</p>
+        <div className="space-y-5 px-5 py-4 text-sm text-neutral-800">
+          <p className="text-xs text-neutral-600">Ana ürün sepetteyken tamamlayıcı ürün (örn. ampul) indirimli satılır. Varyasyonu (renk, ebat) müşteri seçer.</p>
 
           <section aria-label="Ana ürünler">
-            <h3 className="text-xs font-bold uppercase tracking-wide text-stone-500 mb-1.5">Ana ürünler ({mains.length})</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wide text-neutral-500 mb-1.5">Ana ürünler ({mains.length})</h3>
             {mains.length === 0 ? (
               <p className="text-xs text-red-700">Ana ürün kalmadı; listeden ürün seçin.</p>
             ) : (
@@ -219,15 +219,15 @@ export default function AdminComplementDialog({ mainIds, products, onClose, onCh
           </section>
 
           <section aria-label="Tamamlayıcı ürünler">
-            <h3 className="text-xs font-bold uppercase tracking-wide text-stone-500 mb-1.5">Tamamlayıcı ürünler ({comps.length}/{MAX_COMPLEMENTS_PER_MAIN})</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wide text-neutral-500 mb-1.5">Tamamlayıcı ürünler ({comps.length}/{MAX_COMPLEMENTS_PER_MAIN})</h3>
             {comps.length > 0 && <ul className="flex flex-wrap gap-1.5 mb-2">{comps.map((id) => chip(id, () => toggleComp(id)))}</ul>}
             <div className="relative">
-              <Search aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+              <Search aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
               <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Model kodu veya ürün adı ara" aria-label="Tamamlayıcı ürün ara" className={`${field} pl-9`} />
             </div>
             {q && (
-              <ul className="mt-1.5 max-h-48 overflow-y-auto rounded-lg border border-stone-200 divide-y divide-stone-100">
-                {results.length === 0 && <li className="px-3 py-2 text-xs text-stone-500">Ürün bulunamadı.</li>}
+              <ul className="mt-1.5 max-h-48 overflow-y-auto rounded-lg border border-neutral-200 divide-y divide-neutral-100">
+                {results.length === 0 && <li className="px-3 py-2 text-xs text-neutral-500">Ürün bulunamadı.</li>}
                 {results.map((p) => {
                   const blocked = blockedReason(p.id);
                   const on = comps.includes(p.id);
@@ -236,8 +236,8 @@ export default function AdminComplementDialog({ mainIds, products, onClose, onCh
                     <li key={p.id}>
                       <label className={`flex items-center gap-2 px-3 py-2 text-xs ${blocked || full ? "opacity-50" : "cursor-pointer hover:bg-amber-50"}`}>
                         <input type="checkbox" checked={on} disabled={Boolean(blocked) || full} onChange={() => toggleComp(p.id)} className="w-4 h-4 accent-amber-600" />
-                        <span className="flex-1 min-w-0 truncate">{p.title}{p.modelCode ? <span className="text-stone-500"> · {p.modelCode}</span> : null}</span>
-                        {blocked && <span className="text-stone-500">{blocked}</span>}
+                        <span className="flex-1 min-w-0 truncate">{p.title}{p.modelCode ? <span className="text-neutral-500"> · {p.modelCode}</span> : null}</span>
+                        {blocked && <span className="text-neutral-500">{blocked}</span>}
                         {p.active === false && !blocked && <span className="text-amber-800">Pasif</span>}
                       </label>
                     </li>
@@ -248,11 +248,11 @@ export default function AdminComplementDialog({ mainIds, products, onClose, onCh
           </section>
 
           <section aria-label="İndirim">
-            <h3 className="text-xs font-bold uppercase tracking-wide text-stone-500 mb-1.5">İndirim</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wide text-neutral-500 mb-1.5">İndirim</h3>
             <div className="flex items-center gap-2">
-              <div role="group" aria-label="İndirim türü" className="inline-flex rounded-lg border border-stone-300 overflow-hidden">
+              <div role="group" aria-label="İndirim türü" className="inline-flex rounded-lg border border-neutral-300 overflow-hidden">
                 {(["PERCENT", "FIXED"] as const).map((t) => (
-                  <button key={t} type="button" aria-pressed={type === t} onClick={() => { reset(); setType(t); }} className={`min-h-10 px-4 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-amber-600 ${type === t ? "bg-amber-600 text-white" : "bg-white text-stone-700"}`}>
+                  <button key={t} type="button" aria-pressed={type === t} onClick={() => { reset(); setType(t); }} className={`min-h-10 px-4 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-amber-600 ${type === t ? "bg-amber-600 text-white" : "bg-white text-neutral-700"}`}>
                     {t === "PERCENT" ? "%" : "TL"}
                   </button>
                 ))}
@@ -261,21 +261,21 @@ export default function AdminComplementDialog({ mainIds, products, onClose, onCh
             </div>
             {discountError && <p role="alert" className="mt-1 text-xs text-red-700">{discountError}</p>}
             {!discountError && type === "PERCENT" && num > 50 && <p className="mt-1 text-xs text-amber-800">Yüksek indirim: %{num.toLocaleString("tr-TR")}. Emin olun.</p>}
-            <p className="mt-1.5 text-xs text-stone-600">Ana ürün sepetteyken tamamlayıcının sepetteki tüm adetleri indirimli olur.</p>
+            <p className="mt-1.5 text-xs text-neutral-600">Ana ürün sepetteyken tamamlayıcının sepetteki tüm adetleri indirimli olur.</p>
             {stackNotes.map((n) => <p key={n} className="mt-1 text-xs text-amber-800">{n}</p>)}
           </section>
 
           <section aria-label="Önizleme">
-            <button type="button" onClick={runPreview} disabled={busy || mains.length === 0 || comps.length === 0 || Boolean(discountError)} className={`${btn} bg-stone-900 text-white hover:bg-stone-800`}>
+            <button type="button" onClick={runPreview} disabled={busy || mains.length === 0 || comps.length === 0 || Boolean(discountError)} className={`${btn} bg-neutral-900 text-white hover:bg-neutral-800`}>
               Önizle
             </button>
             {preview && (
               <div role="status" className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs space-y-1.5">
-                <p className="font-semibold text-stone-900">
+                <p className="font-semibold text-neutral-900">
                   {preview.mains} ana ürüne {preview.complements} tamamlayıcı: {preview.created} bağ eklenecek, {preview.updated} bağın indirimi güncellenecek, {preview.skipped} bağ atlanacak.
                 </p>
                 {preview.skippedItems.length > 0 && (
-                  <ul className="list-disc pl-4 text-stone-700">
+                  <ul className="list-disc pl-4 text-neutral-700">
                     {[...new Set(preview.skippedItems.map((s) => s.reason))].map((r) => <li key={r}>{r}</li>)}
                     {preview.skipped > preview.skippedItems.length && <li>… ve {preview.skipped - preview.skippedItems.length} atlanan bağ daha.</li>}
                   </ul>
@@ -289,12 +289,12 @@ export default function AdminComplementDialog({ mainIds, products, onClose, onCh
           </section>
 
           <section aria-label="Mevcut bağlar">
-            <h3 className="text-xs font-bold uppercase tracking-wide text-stone-500 mb-1.5">Mevcut bağlar ({links.length})</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wide text-neutral-500 mb-1.5">Mevcut bağlar ({links.length})</h3>
             {links.length === 0 ? (
-              <p className="text-xs text-stone-500">Seçili ürünlerde tamamlayıcı bağ yok.</p>
+              <p className="text-xs text-neutral-500">Seçili ürünlerde tamamlayıcı bağ yok.</p>
             ) : (
               <>
-                <ul className="rounded-lg border border-stone-200 divide-y divide-stone-100 max-h-56 overflow-y-auto">
+                <ul className="rounded-lg border border-neutral-200 divide-y divide-neutral-100 max-h-56 overflow-y-auto">
                   {links.map((l) => (
                     <li key={l.id} className="flex items-center gap-2 px-3 py-2 text-xs">
                       <input type="checkbox" aria-label="Kaldırmak için işaretle" checked={picked.has(l.id)} onChange={() => setPicked((s) => { const n = new Set(s); if (n.has(l.id)) n.delete(l.id); else n.add(l.id); return n; })} className="w-4 h-4 accent-amber-600" />
@@ -316,19 +316,19 @@ export default function AdminComplementDialog({ mainIds, products, onClose, onCh
                 <p className="font-semibold text-red-900">{removeAsk.length} bağ silinecek; geri almak için yeniden eklemeniz gerekir.</p>
                 <div className="mt-2 flex gap-2">
                   <button type="button" onClick={() => remove(removeAsk)} disabled={busy} className={`${btn} bg-red-700 text-white hover:bg-red-800`}>Evet, kaldır</button>
-                  <button type="button" onClick={() => setRemoveAsk(null)} className={`${btn} border border-stone-300 text-stone-700`}>Vazgeç</button>
+                  <button type="button" onClick={() => setRemoveAsk(null)} className={`${btn} border border-neutral-300 text-neutral-700`}>Vazgeç</button>
                 </div>
               </div>
             )}
           </section>
 
           <section aria-label="Öneri kartı sayısı">
-            <h3 className="text-xs font-bold uppercase tracking-wide text-stone-500 mb-1.5">Öneri kartı sayısı</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wide text-neutral-500 mb-1.5">Öneri kartı sayısı</h3>
             <div className="flex items-center gap-2">
               <input inputMode="numeric" value={count} onChange={(e) => setCount(e.target.value)} placeholder={String(DEFAULT_SUGGEST_COUNT)} aria-label="Öneri kartı sayısı" className={`${field} max-w-24`} />
-              <button type="button" onClick={saveCount} disabled={busy} className={`${btn} border border-stone-300 text-stone-800 hover:bg-stone-50`}>Kaydet</button>
+              <button type="button" onClick={saveCount} disabled={busy} className={`${btn} border border-neutral-300 text-neutral-800 hover:bg-neutral-50`}>Kaydet</button>
             </div>
-            <p className="mt-1 text-xs text-stone-600">0-{MAX_SUGGEST_COUNT} arası tam sayı. Boş: {DEFAULT_SUGGEST_COUNT}. 0: öneriler kapalı.</p>
+            <p className="mt-1 text-xs text-neutral-600">0-{MAX_SUGGEST_COUNT} arası tam sayı. Boş: {DEFAULT_SUGGEST_COUNT}. 0: öneriler kapalı.</p>
           </section>
 
           <div aria-live="polite" className="min-h-5">

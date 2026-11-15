@@ -206,7 +206,7 @@ export default function AdminTrendyolSync({
         <span>
           <span className="font-semibold">{v.deger}</span> — mevcut stok {v.mevcutStok} → 0 (satır silinmez, sitede Tükendi görünür)
           {v.rozetler.map((r) => (
-            <span key={r} className="ml-1.5 px-1.5 py-0.5 rounded bg-stone-200 text-stone-800 font-bold">{r}</span>
+            <span key={r} className="ml-1.5 px-1.5 py-0.5 rounded bg-neutral-200 text-neutral-800 font-bold">{r}</span>
           ))}
           {v.elleDegisti && <span className="block text-amber-800">Elle değişmiş görünüyor (stok eşitleme kaydından fazla): bu satıra dokunulmaz.</span>}
           {v.olasiYeniBarkod && <span className="block text-neutral-500">Olası yeni barkod: {v.olasiYeniBarkod}</span>}
