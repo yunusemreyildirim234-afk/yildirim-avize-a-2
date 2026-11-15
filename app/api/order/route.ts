@@ -20,6 +20,7 @@ import { bestEffort, createOrFindGuest } from "@/lib/best-effort";
 import { recordConsent } from "@/lib/marketing";
 import { effectiveOrderEmail } from "@/lib/order-email";
 import { revalidateStorefrontSafe } from "@/lib/revalidate";
+import { LEGAL_VERSION } from "@/lib/legal-texts";
 
 interface CartLine {
   variationId: string;
@@ -256,6 +257,8 @@ export async function POST(req: Request) {
         buyerStateName: buyerStateName || "İSTANBUL",
         buyerCityName: buyerCityName || "BEYOĞLU",
         packageDesi: Math.max(3, totalQty * 3),
+        legalConsentAt: new Date(),
+        legalConsentVersion: LEGAL_VERSION,
         items: {
           create: itemRows,
         },

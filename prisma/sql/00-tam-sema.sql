@@ -142,6 +142,8 @@ CREATE TABLE "Order" (
     "companyTitle" TEXT,
     "abandonedEmailSent" BOOLEAN NOT NULL DEFAULT false,
     "receiptReminderSent" BOOLEAN NOT NULL DEFAULT false,
+    "legalConsentAt" TIMESTAMP(3),
+    "legalConsentVersion" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 

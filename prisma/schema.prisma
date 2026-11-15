@@ -164,6 +164,8 @@ model Order {
   receiptReminderSent  Boolean      @default(false)
   receipt              ReceiptFile?
   invoice              OrderInvoice? // Yalnızca ilişki alanı (sütun değil); sipariş sorgularına include ile bağlanmaz
+  legalConsentAt       DateTime? // Sözleşme/ön bilgilendirme onay anı (sunucu saati); boşsa kayıt öncesi sipariş
+  legalConsentVersion  String? // Onaylanan metin sürümü (LEGAL_VERSION)
   items                OrderItem[]
   createdAt            DateTime     @default(now())
   updatedAt            DateTime     @updatedAt

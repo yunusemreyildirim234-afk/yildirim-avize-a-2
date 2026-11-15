@@ -4,6 +4,8 @@
 import { LEGAL_CONTACT_EMAIL, PHONE_DISPLAY } from "@/lib/site";
 
 export const LEGAL_UPDATED = "2 Kasım 2026";
+/** Siparişte saklanan sözleşme/ön bilgilendirme sürümü (Order.legalConsentVersion); LEGAL_UPDATED ile aynı değer, kaydın adı açık olsun diye. */
+export const LEGAL_VERSION = LEGAL_UPDATED;
 
 export const CAYMA = {
   hak: "ALICI, malı teslim aldığı tarihten itibaren 14 gün içinde herhangi bir gerekçe göstermeksizin ve cezai şart ödemeksizin sözleşmeden cayma hakkına sahiptir.",
