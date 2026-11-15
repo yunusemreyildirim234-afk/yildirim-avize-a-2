@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Decision, Group, Mode, Settings, Val } from "@/lib/trendyol-plan";
+import type { KalkanSonuc } from "@/lib/trendyol-kalkan";
 import { DEFAULT_SYNC_MODES, overwriteGroups, type SyncModes } from "@/lib/trendyol-modes";
 import { pendingWarning } from "@/lib/trendyol-bekleyen";
 import AdminImageCopy from "@/components/AdminImageCopy";
@@ -42,6 +43,8 @@ interface Preview {
   urunler: ProductView[];
   /** barkod → sitede bekleyen (stoğu düşülmüş, açık) sipariş adedi; yalnız uyarı için */
   bekleyen?: Record<string, number>;
+  /** Trendyol'da kapanan/kalkan renkler; YALNIZ bilgi (bu ekran stok yazmaz) */
+  kalkanVaryasyonlar?: KalkanSonuc;
 }
 interface Result { guncellenenUrun: number; yeniUrun: number; yeniVaryasyon: number; stokGuncellenen: number; atlanan: number; hata: number; hataliUrunler?: { id: string; baslik: string }[] }
 
@@ -320,6 +323,41 @@ export default function AdminTrendyolSync({
               </li>
             ))}
           </ul>
+
+          {preview.kalkanVaryasyonlar && preview.kalkanVaryasyonlar.toplam > 0 && (
+            <section aria-label="Trendyol'da kapanan renkler" className="bg-white border border-amber-300 rounded-xl p-2.5 text-xs space-y-2">
+              <h3 className="font-semibold text-neutral-900">
+                {preview.kalkanVaryasyonlar.toplam} renk/varyasyon Trendyol&apos;da kapalı veya listede yok
+              </h3>
+              <p className="text-neutral-600">Yalnızca bilgi: bu eşitleme bu renklerin stoğuna dokunmaz; sitede satılmaya devam ederler.</p>
+              {preview.kalkanVaryasyonlar.genelUyari && (
+                <p className="font-semibold text-amber-900 bg-amber-50 border border-amber-300 rounded-lg p-2">
+                  Çok sayıda varyasyon birden görünmüyor; Trendyol listesi eksik olabilir. Birkaç dakika sonra önizlemeyi yeniden alın.
+                </p>
+              )}
+              <ul className="max-h-60 overflow-y-auto divide-y divide-neutral-100">
+                {preview.kalkanVaryasyonlar.urunler.map((u) => (
+                  <li key={u.mainId} className="py-1.5">
+                    <div className="font-medium text-neutral-900">
+                      {u.baslik}
+                      {u.suphe && <span className="ml-2 px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 font-bold">ŞÜPHELİ</span>}
+                    </div>
+                    <ul className="mt-1 ml-3 space-y-1">
+                      {u.varyasyonlar.map((v) => (
+                        <li key={v.varyasyonId} className="text-[11px] text-neutral-700">
+                          <span className="font-semibold">{v.deger}</span> — {v.metin} (stok {v.mevcutStok} → 0)
+                          {v.rozetler.map((r) => (
+                            <span key={r} className="ml-1.5 px-1.5 py-0.5 rounded bg-stone-200 text-stone-800 font-bold">{r}</span>
+                          ))}
+                          {v.olasiYeniBarkod && <span className="block text-neutral-500">Olası yeni barkod: {v.olasiYeniBarkod}</span>}
+                        </li>
+                      ))}
+                    </ul>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
 
           {preview.listelenmeyen > 0 && (
             <label className="flex items-start gap-2 text-xs text-neutral-800 bg-white border border-amber-300 rounded-xl p-2.5">

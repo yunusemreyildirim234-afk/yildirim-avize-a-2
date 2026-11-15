@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { buildIncoming, fetchTrendyolProducts } from "@/lib/trendyol";
 import { assertIncomingSane } from "@/lib/trendyol-guard";
+import { kalkanPlani, type KalkanSonuc } from "@/lib/trendyol-kalkan";
 import { applyImageMaps } from "@/lib/image-map";
 import { GROUPS, planSync, seciliPlan, type ExistingProduct, type Mode, type Plan, type ProductPlan, type Settings } from "@/lib/trendyol-plan";
 
@@ -21,8 +22,12 @@ export function parseSettings(raw: unknown): Settings {
 }
 
 /** Trendyol'dan OKUR (yazmaz), mevcut ürünlerle karşılaştırıp planı üretir. Önizleme ve uygulama aynı fonksiyonu kullanır. */
-export async function buildPlan(ayarlar: Settings): Promise<Plan> {
-  const gelen = buildIncoming(await fetchTrendyolProducts());
+export async function buildPlan(ayarlar: Settings): Promise<Plan & { kalkan: KalkanSonuc }> {
+  const ham = await fetchTrendyolProducts();
+  const gelen = buildIncoming(ham);
+  // Yanıtta VAR ama gelen listeye alınmayan (kapalı/arşiv/kara liste/fiyat 0) barkodlar: "KESİN kapalı"; yanıtta hiç yoksa "ZAYIF"
+  const gelenKodlar = new Set(gelen.flatMap((p) => p.variations.map((v) => v.barcode)));
+  const kapaliBarkodlar = new Set(ham.filter((i) => i.barcode && !gelenKodlar.has(i.barcode)).map((i) => i.barcode));
   const rows = await prisma.product.findMany({
     where: { trendyolMainId: { not: null } },
     select: {
@@ -42,7 +47,8 @@ export async function buildPlan(ayarlar: Settings): Promise<Plan> {
   });
   const rezerve: Record<string, number> = {};
   for (const r of reserved) rezerve[r.variationId] = r._sum.quantity ?? 0;
-  return planSync(mevcut, incoming, ayarlar, rezerve);
+  // Kalkan varyasyonlar YALNIZ gösterilir (stok yazılmaz); planSync çıktısı ve formüller değişmez
+  return { ...planSync(mevcut, incoming, ayarlar, rezerve), kalkan: kalkanPlani(mevcut, incoming, kapaliBarkodlar, rezerve, ayarlar) };
 }
 
 export interface ApplyResult { guncellenenUrun: number; yeniUrun: number; yeniVaryasyon: number; stokGuncellenen: number; atlanan: number; hata: number; hataliUrunler: { id: string; baslik: string }[] }

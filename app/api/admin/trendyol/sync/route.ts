@@ -39,7 +39,7 @@ export async function POST(req: Request) {
           })
         : [];
       const bekleyen = pendingByBarcode(plan.products, sumPendingByVariation(items));
-      return NextResponse.json({ success: true, dryRun: true, plan: { ...onizleme(plan), bekleyen } });
+      return NextResponse.json({ success: true, dryRun: true, plan: { ...onizleme(plan), bekleyen, kalkanVaryasyonlar: plan.kalkan } });
     }
     const sonuc = await applyPlan(plan, secili);
     revalidateStorefront(); // vitrin yalnızca gerçek uygulamadan sonra yenilenir (önizleme yazmaz, önbelleği sıfırlamaz)

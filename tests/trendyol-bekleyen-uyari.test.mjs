@@ -39,7 +39,7 @@ test("stok formülü değişmedi (OVERWRITE: T - rezerve; KEEP: kayma)", () => {
 test("kablolama: uç yalnız önizlemede sayar; arayüz uyarıyı satırda ve onay penceresinde gösterir", () => {
   const r = read("app/api/admin/trendyol/sync/route.ts");
   assert.match(r, /pendingByBarcode\(plan\.products/);
-  assert.match(r, /plan: \{ \.\.\.onizleme\(plan\), bekleyen \}/);
+  assert.match(r, /plan: \{ \.\.\.onizleme\(plan\), bekleyen(, kalkanVaryasyonlar: plan\.kalkan)? \}/);
   const c = read("components/AdminTrendyolSync.tsx");
   assert.match(c, /pendingWarning\(pending\)/);
   assert.match(c, /sitede bekleyen sipariş var/);
