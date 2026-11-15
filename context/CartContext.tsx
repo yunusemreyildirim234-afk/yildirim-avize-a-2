@@ -8,7 +8,9 @@ import { track } from "@/lib/track";
 import { gtmPush } from "@/lib/gtm";
 import { addToCartEvent, gaItem } from "@/lib/gtm-events";
 import { bulkTiersOf, type BulkRule } from "@/lib/bulk-pricing";
-import { priceCart, type CartPriceLine } from "@/lib/cart-pricing";
+import { priceCart } from "@/lib/cart-pricing";
+import { cartPriceLines } from "@/lib/cart-lines";
+import type { ComplementRule } from "@/lib/complement-pricing";
 import { applyNameUpdates } from "@/lib/cart-names";
 
 export interface CartItem {
@@ -28,20 +30,10 @@ export interface ItemRules {
   couponAllowed: boolean;
   pickupPct: number | null;
   transferPct: number | null;
+  complementOf?: ComplementRule[]; // "birlikte alma" bağları (sunucu teklifinden / öneri kartından); yoksa indirim yok
 }
 
-/** Sepet kalemlerini ortak fiyat hesabı (lib/cart-pricing.ts) girdisine çevirir. */
-export const cartPriceLines = (cart: CartItem[]): CartPriceLine[] =>
-  cart.map((i) => ({
-    variationId: i.variationId,
-    productId: i.productId,
-    price: i.price,
-    quantity: i.quantity,
-    tiers: i.bulk ?? [],
-    couponAllowed: i.rules?.couponAllowed ?? true,
-    pickupPct: i.rules?.pickupPct ?? null,
-    transferPct: i.rules?.transferPct ?? null,
-  }));
+export { cartPriceLines };
 
 interface CartContextType {
   cart: CartItem[];
