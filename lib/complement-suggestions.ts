@@ -1,4 +1,5 @@
 // Tamamlayıcı öneri yükleyici (SALT OKUNUR). Ürün sayfası (sunucu) ve /api/cart/complements aynı sorguyu kullanır.
+import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/db";
 import { buildSuggestions, MAX_SUGGEST_COUNT, type Suggestion } from "@/lib/complements";
 
@@ -40,3 +41,9 @@ export async function loadSuggestions(mainIds: string[], hideIds: ReadonlySet<st
   );
   return { suggestions, count };
 }
+
+/**
+ * Ürün sayfası: bu ürünün tamamlayıcıları (üst sınır kadar; sepetteki ürünleri istemci süzer). 60 sn önbellekli ve "storefront" etiketli:
+ * bağ/ayar değişince admin uçları etiketi yeniler; ürün başına en çok dakikada 1 sorgu (uyku hâlinde bağ yoksa 1, varsa 2).
+ */
+export const getProductComplements = unstable_cache((productId: string) => loadSuggestions([productId], new Set([productId]), { all: true }), ["sf-complements"], { revalidate: 60, tags: ["storefront"] });

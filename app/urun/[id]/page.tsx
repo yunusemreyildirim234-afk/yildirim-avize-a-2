@@ -6,6 +6,8 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import ProductReviews from "@/components/ProductReviews";
 import ProductQuestionForm from "@/components/ProductQuestionForm";
 import ProductCard from "@/components/ProductCard";
+import { ProductPageComplements } from "@/components/ComplementSuggestions";
+import { getProductComplements } from "@/lib/complement-suggestions";
 import { getLiveStocks, getProductDetail, getProductIdsByShort, getProductsCached } from "@/lib/products";
 import { parseProductParam, productPath } from "@/lib/product-url";
 import { applyLiveStock } from "@/lib/stock-freshness";
@@ -106,6 +108,9 @@ export default async function ProductDetailPage({ params }: Props) {
   const hasCategory = product.category.trim().length > 0; // kategorisiz ürün: benzer ürün / kategori yolu / kategori alanı yok
   const similar = hasCategory ? await getProductsCached({ active: true, variations: { some: { stock: { gt: 0 } } }, category: product.category, id: { not: product.id } }, 4).catch(() => []) : [];
 
+  // "Bununla birlikte alın": bağ yoksa boş (bölüm hiç çizilmez); okunamazsa sayfa yine açılır
+  const complements = await getProductComplements(product.id).catch(() => ({ suggestions: [], count: null }));
+
   const userSession = await getUserSession();
   const eligibility: ReviewEligibility | "guest" = userSession?.uid ? await reviewEligibility(userSession.uid, product.id) : "guest";
   const reviews = product.reviews.map((r) => {
@@ -187,6 +192,8 @@ export default async function ProductDetailPage({ params }: Props) {
 
         {/* İstemci Tarafı İnteraktif Detay Bileşeni */}
         <ProductDetailClient product={product} ladderCtx={ladderCtx} categoryHref={categoryHref} lowStock={await getLowStockSetting()} />
+
+        <ProductPageComplements suggestions={complements.suggestions} count={complements.count} />
 
         {similar.length > 0 && (
           <section aria-labelledby="benzer" className="mt-10">

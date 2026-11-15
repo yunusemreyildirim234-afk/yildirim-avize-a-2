@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Plus } from "lucide-react";
 import { toastHref } from "@/lib/toast-link";
 import { useCart } from "@/context/CartContext";
-import { defaultSuggestionVariation, suggestionPrice, type Suggestion } from "@/lib/complements";
+import { defaultSuggestionVariation, suggestionPrice, visibleSuggestions, type Suggestion } from "@/lib/complements";
 import { displayTitle } from "@/lib/title-display";
 import { productPath } from "@/lib/product-url";
 import { smallImage } from "@/lib/img";
@@ -30,6 +30,13 @@ export default function ComplementSuggestions({ suggestions, heading = "Bununla 
       </ul>
     </section>
   );
+}
+
+/** Ürün sayfası: sunucudan gelen sıralı öneriler; sepetteki ürünler gizlenir ve sayıya girmez, kart sayısı ayardan. Liste boşsa hiçbir şey çizilmez. */
+export function ProductPageComplements({ suggestions, count }: { suggestions: Suggestion[]; count: number | null }) {
+  const { cart } = useCart();
+  if (suggestions.length === 0) return null;
+  return <ComplementSuggestions suggestions={visibleSuggestions(suggestions, new Set(cart.map((i) => i.productId)), count)} />;
 }
 
 function SuggestionCard({ s }: { s: Suggestion }) {
