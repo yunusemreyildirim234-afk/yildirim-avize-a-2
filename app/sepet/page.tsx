@@ -36,6 +36,9 @@ import { forgetCardOrder, previousCardOrderId, rememberCardOrder } from "@/lib/p
 import { smallImage } from "@/lib/img";
 import { displayTitle } from "@/lib/title-display";
 import { productPath } from "@/lib/product-url";
+import ComplementSuggestions from "@/components/ComplementSuggestions";
+import type { Suggestion } from "@/lib/complements";
+import { bundleLineView, lostBundleTitles, type BundleInfo } from "@/lib/cart-bundle";
 
 interface LocationItem {
   id: number;
@@ -226,7 +229,7 @@ export default function CartPage() {
 
   // Sunucu fiyat teklifi (/api/cart/quote, salt okunur): gösterilen tutar buradan gelir
   interface Quote {
-    lines: { variationId: string; available: boolean; message?: string; stockShort?: boolean; title?: string; variationName?: string; price?: number; unitPrice?: number; bulk?: BulkRule[]; rules?: ItemRules; capInfo?: CapInfo | null; ladder?: LadderStep[] }[];
+    lines: { variationId: string; available: boolean; bundle?: BundleInfo | null; message?: string; stockShort?: boolean; title?: string; variationName?: string; price?: number; unitPrice?: number; bulk?: BulkRule[]; rules?: ItemRules; capInfo?: CapInfo | null; ladder?: LadderStep[] }[];
     totals: { itemsTotal: number; shipping: number; couponDiscount: number; pickupDiscount: number; bankDiscount: number; total: number };
     coupon: { ok: boolean; error?: string; limited?: boolean } | null;
     zeroTotal?: boolean; // indirimler sonrası ödenecek tutar 0 ₺: sipariş sunucuda reddedilir
@@ -261,7 +264,8 @@ export default function CartPage() {
     prevOrderId,
   });
   const [quote, setQuote] = useState<(Quote & { sig: string }) | null>(null);
-  const [priceNotice, setPriceNotice] = useState<{ from: number; to: number } | null>(null);
+  const [priceNotice, setPriceNotice] = useState<{ from: number; to: number; bundleLost?: string[] } | null>(null);
+  const lastQuoteRef = useRef<Quote | null>(null); // "birlikte alma indirimi kalktı" bildirimi için önceki teklif
   const [priceAcked, setPriceAcked] = useState(true);
   const [issues, setIssues] = useState<string[]>([]);
   // Girişte hesap sepetinden eklenen ürünler için tek seferlik kalıcı not
@@ -341,6 +345,14 @@ export default function CartPage() {
       setCapPct(q.maxTotalDiscountPct ?? null);
       setQuote({ ...q, sig: quoteSig });
       absorbQuote(q, localTotals.total);
+      // Ana ürün sepetten çıkınca tamamlayıcının indirimi kalkar: mevcut fiyat bildirimi (onaylı) bunu da söyler
+      const prev = lastQuoteRef.current;
+      const lost = lostBundleTitles(prev?.lines.map((l) => ({ variationId: l.variationId, title: l.title ? displayTitle(l.title).title : undefined, bundle: l.bundle })), q.lines);
+      lastQuoteRef.current = q;
+      if (prev && lost.length > 0) {
+        setPriceNotice({ from: prev.totals.total, to: q.totals.total, bundleLost: lost });
+        setPriceAcked(false);
+      }
     }, 300);
     return () => {
       clearTimeout(timer);
@@ -348,6 +360,22 @@ export default function CartPage() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quoteSig, quoteRetry]);
+
+  // "Bununla birlikte alın": istek YALNIZ sepetteki ürün kümesi değişince bir kez atılır (adet/varyasyon/kupon/ödeme değişimi tetiklemez)
+  const productSetKey = [...new Set(cart.map((i) => i.productId))].sort().join(",");
+  const [suggestions, setSuggestions] = useState<{ key: string; list: Suggestion[] }>({ key: "", list: [] });
+  useEffect(() => {
+    if (!productSetKey) return;
+    const ctrl = new AbortController();
+    fetch(`/api/cart/complements?ids=${encodeURIComponent(productSetKey)}`, { signal: ctrl.signal })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { suggestions?: Suggestion[] } | null) => {
+        if (!ctrl.signal.aborted && d && Array.isArray(d.suggestions)) setSuggestions({ key: productSetKey, list: d.suggestions });
+      })
+      .catch(() => {});
+    return () => ctrl.abort();
+  }, [productSetKey]);
+  const shownSuggestions = suggestions.key === productSetKey ? suggestions.list : [];
 
   const fresh = quote !== null && quote.sig === quoteSig && cart.length > 0;
   // Uyarılar yalnızca sunucu teklifinden gelir (yerel/bayat sepet verisi metni belirlemez)
@@ -659,6 +687,11 @@ export default function CartPage() {
               <strong>Bazı fiyatlar güncellendi.</strong> Önceki tutar {priceNotice.from.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺ idi; güncel ödenecek tutar{" "}
               <strong>{priceNotice.to.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</strong>.
             </p>
+            {priceNotice.bundleLost && priceNotice.bundleLost.length > 0 && (
+              <p>
+                <strong>Birlikte alma indirimi kalktı:</strong> {priceNotice.bundleLost.join(", ")} için ana ürün sepetten çıktığından indirim artık uygulanmıyor.
+              </p>
+            )}
             {!priceAcked && (
               <button type="button" onClick={() => setPriceAcked(true)} className="bg-neutral-900 hover:bg-amber-600 text-white text-xs font-semibold px-4 py-2 rounded-xl transition-colors">
                 Güncel tutarı gördüm
@@ -747,6 +780,14 @@ export default function CartPage() {
                         <strong className="text-neutral-900">{pricedOf(item.variationId)!.lineTotal.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</strong>
                       </p>
                     )}
+                    {(() => {
+                      const b = bundleLineView(pricedOf(item.variationId)?.bundle, pricedOf(item.variationId)?.unitPrice ?? item.price);
+                      return b ? (
+                        <p data-testid="birlikte-alma-indirimi" className="text-[11px] font-medium text-emerald-800 mt-1 tabular-nums">
+                          {b.text}
+                        </p>
+                      ) : null;
+                    })()}
                     {fresh && <PriceLadder steps={quote.lines.find((l) => l.variationId === item.variationId)?.ladder ?? []} size="sm" hints={false} itemsTotal={itemsShown} />}
                     {item.bulk?.map((t) => (
                       <p key={t.minQty} className="text-[11px] text-emerald-800 mt-1">
@@ -799,6 +840,8 @@ export default function CartPage() {
                 </div>
               ))}
             </div>
+
+            <ComplementSuggestions suggestions={shownSuggestions} className="" />
 
             {/* KUPON KODU GİRİŞ KUTUSU */}
             <div className="bg-white rounded-3xl border border-neutral-200 p-4 sm:p-6 shadow-sm space-y-3">

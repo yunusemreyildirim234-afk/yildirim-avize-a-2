@@ -14,10 +14,10 @@ import { smallImage } from "@/lib/img";
 const tl = (n: number) => n.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 /** "Bununla birlikte alın" kartları (ürün sayfası ve sepet ortak). Liste boşsa hiçbir şey çizilmez. */
-export default function ComplementSuggestions({ suggestions, heading = "Bununla birlikte alın" }: { suggestions: Suggestion[]; heading?: string }) {
+export default function ComplementSuggestions({ suggestions, heading = "Bununla birlikte alın", className = "mt-10" }: { suggestions: Suggestion[]; heading?: string; className?: string }) {
   if (suggestions.length === 0) return null;
   return (
-    <section aria-labelledby="birlikte-alin" data-testid="birlikte-alin" className="mt-10">
+    <section aria-labelledby="birlikte-alin" data-testid="birlikte-alin" className={className}>
       <h2 id="birlikte-alin" className="text-lg font-serif font-bold text-neutral-900 mb-4">
         {heading}
       </h2>
