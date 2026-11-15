@@ -332,7 +332,7 @@ export default function AdminComplementDialog({ mainIds, products, onClose, onCh
           </section>
 
           <div aria-live="polite" className="min-h-5">
-            {msg && <p role={msg.ok ? "status" : "alert"} className={`text-xs font-semibold ${msg.ok ? "text-green-800" : "text-red-700"}`}>{msg.text}</p>}
+            {msg && <p role={msg.ok ? "status" : "alert"} className={`text-xs font-semibold ${msg.ok ? "text-emerald-800" : "text-red-700"}`}>{msg.text}</p>}
           </div>
         </div>
       </div>

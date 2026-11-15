@@ -176,7 +176,7 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
           <section className={card} aria-labelledby="odeme">
             <h2 id="odeme" className={h}>Ödeme</h2>
             <p className="text-sm font-semibold text-neutral-900">{paymentMethodLabel(order.paymentMethod)}</p>
-            {order.status === "AWAITING_PAYMENT" && <p className="mt-1 text-xs text-yellow-800">Ödeme tamamlanmadı (sipariş denemesi).</p>}
+            {order.status === "AWAITING_PAYMENT" && <p className="mt-1 text-xs text-amber-800">Ödeme tamamlanmadı (sipariş denemesi).</p>}
             {order.status === "PAYMENT_FAILED" && <p className="mt-1 text-xs text-red-700">Ödeme başarısız.</p>}
             {order.paymentMethod === "BANK_TRANSFER" && (
               <div className="mt-2 space-y-1 text-xs text-neutral-700">

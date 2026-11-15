@@ -356,15 +356,15 @@ export default function AdminTrendyolSync({
                   <button type="button" aria-expanded={open === u.mainId} onClick={() => setOpen(open === u.mainId ? null : u.mainId)} className="flex-1 min-w-0 text-left truncate font-medium text-neutral-900">
                     {u.title}
                   </button>
-                  {u.yeni && <span className="px-1.5 py-0.5 rounded bg-sky-100 text-sky-800 font-bold">YENİ</span>}
+                  {u.yeni && <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 font-bold">YENİ</span>}
                   {u.kalkan && <span className="px-1.5 py-0.5 rounded bg-neutral-200 text-neutral-800 font-bold">TRENDYOL&apos;DA YOK</span>}
                 </div>
                 {open === u.mainId && (
                   <ul className="mt-2 ml-6 space-y-1">
-                    {u.yeni && <li className="text-[11px] text-sky-800">Yeni ürün oluşturulacak ({u.yeniVaryasyon} varyasyon).</li>}
+                    {u.yeni && <li className="text-[11px] text-blue-800">Yeni ürün oluşturulacak ({u.yeniVaryasyon} varyasyon).</li>}
                     {detail(u.fields)}
                     {u.variations.map((v) => detail(v.fields, v.barcode, preview?.bekleyen?.[v.barcode] ?? 0))}
-                    {u.yeniVaryasyon > 0 && !u.yeni && <li className="text-[11px] text-sky-800">{u.yeniVaryasyon} yeni varyasyon eklenecek.</li>}
+                    {u.yeniVaryasyon > 0 && !u.yeni && <li className="text-[11px] text-blue-800">{u.yeniVaryasyon} yeni varyasyon eklenecek.</li>}
                     {u.kalkanVaryasyon > 0 && <li className="text-[11px] text-neutral-500">{u.kalkanVaryasyon} varyasyon Trendyol&apos;da yok (silinmez).</li>}
                   </ul>
                 )}
