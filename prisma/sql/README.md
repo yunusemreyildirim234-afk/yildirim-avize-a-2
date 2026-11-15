@@ -11,7 +11,7 @@ Bu klasör, veritabanı şemasının **gerçek geçmişidir**. Şema değişikli
 ## Dosyalar
 | Dosya | Ne yapar |
 |---|---|
-| `00-tam-sema.sql` | **Boş** bir veritabanında tüm şemayı sıfırdan kurar (21 tablo + Prisma'da görünmeyen CHECK ve kısmi benzersiz indeks). Dolu veritabanında çalıştırmayın. Şema değiştikçe yeniden üretilir (komut dosyanın başında). |
+| `00-tam-sema.sql` | **Boş** bir veritabanında tüm şemayı sıfırdan kurar (22 tablo + Prisma'da görünmeyen CHECK ve kısmi benzersiz indeks). Dolu veritabanında çalıştırmayın. Şema değiştikçe yeniden üretilir (komut dosyanın başında). |
 | `adres-defteri-ekle.sql` | `Address` tablosu |
 | `alici-adi-ekle.sql` | `Order.recipientName` |
 | `siparis-kalemi-ad-ekle.sql` | `OrderItem.productTitle` ve `variationLabel` (sipariş anındaki ad/renk), ikinci bölümde geriye dönük doldurma |
@@ -20,8 +20,10 @@ Bu klasör, veritabanı şemasının **gerçek geçmişidir**. Şema değişikli
 | `ebat-ekle.sql` | `Product.ebat` |
 | `variation-index-ekle.sql` | `ProductVariation.productId` indeksi |
 | `account-deletion.sql` | `AccountDeletionRequest` tablosu, `User.lastLoginAt`, durum CHECK kuralı ve kullanıcı başına tek bekleyen talep kısmi benzersiz indeksi |
+| `tamamlayici-tablo-ekle.sql` | `ProductComplement` tablosu (ana ürün ↔ tamamlayıcı ürün bağı; FK CASCADE, UNIQUE, CHECK, indeks) |
+| `tamamlayici-siparis-kalemi-ve-ayar-ekle.sql` | `OrderItem.bundleMainProductId` ve `bundleDiscount`, kısmi indeks; `SiteConfig.complementSuggestCount` (+ CHECK 0-12) |
 
-`00-tam-sema.sql` içindeki son bölüm, `account-deletion.sql`'deki Prisma şemasında görünmeyen kuralları (CHECK ve kısmi benzersiz indeks) içerir.
+`00-tam-sema.sql` içindeki son bölüm, `account-deletion.sql` ve tamamlayıcı ürün SQL'lerindeki Prisma şemasında görünmeyen kuralları (CHECK ve kısmi benzersiz indeks) içerir.
 
 ## 00-tam-sema.sql'i yeniden üretmek
 Gerçek bağlantı gerekmez; geçici bir yapılandırma dosyasına **sahte** adres verilir (`.env` okunmaz):

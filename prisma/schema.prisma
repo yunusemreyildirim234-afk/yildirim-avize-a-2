@@ -76,6 +76,8 @@ model Product {
   reviews          Review[]
   favorites        Favorite[]
   messages         ContactMessage[]
+  complementsAsMain       ProductComplement[] @relation("ComplementMain")
+  complementsAsComplement ProductComplement[] @relation("ComplementItem")
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
 
@@ -187,9 +189,28 @@ model OrderItem {
   unitPrice   Float // Sipariş anındaki birim fiyat
   productTitle   String? // Sipariş anındaki ürün adı; boşsa (eski siparişler) canlı kayıt
   variationLabel String? // Sipariş anındaki seçenek adı (örn. "Gold"); boşsa canlı kayıt
+  bundleMainProductId String? // Birlikte alma indirimini sağlayan ana ürün (FK yok); boş: indirim yok
+  bundleDiscount Float? // Bu kalemin toplam TL birlikte alma indirimi (birim indirim × adet)
 
   @@index([orderId])
   @@index([variationId])
+}
+
+// Tamamlayıcı ürün bağı: ana ürün sepetteyken tamamlayıcı ürün indirimli satılır (ürün düzeyi)
+model ProductComplement {
+  id                  String   @id @default(uuid())
+  mainProductId       String
+  mainProduct         Product  @relation("ComplementMain", fields: [mainProductId], references: [id], onDelete: Cascade)
+  complementProductId String
+  complementProduct   Product  @relation("ComplementItem", fields: [complementProductId], references: [id], onDelete: Cascade)
+  discountType        String // "PERCENT" | "FIXED"
+  discountValue       Float
+  position            Int      @default(0)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@unique([mainProductId, complementProductId])
+  @@index([complementProductId])
 }
 
 // Müşteri Yorumları (yalnızca giriş yapmış müşteriler yazabilir)
@@ -234,6 +255,7 @@ model SiteConfig {
   etbisUrl            String?  @default("https://www.eticaret.gov.tr")
   etbisQrImage        String? // ETBİS karekod görseli (data URL veya bağlantı)
   maxTotalDiscountPct Float? // Toplam indirim üst sınırı % (boş: sınırsız)
+  complementSuggestCount Int? // Öneri kartı sayısı (boş: 4, 0: kapalı, en çok 12)
   adminSessionVersion Int @default(0) // Artınca tüm eski yönetici oturum çerezleri geçersiz olur
   homepageConfig      Json? // Ana sayfa bölümleri: { featured|discounted|bestsellers: { count, pinnedIds[] } } (boş: varsayılan)
   showcaseCouponId    String? // Kartlarda/sepette gösterilen vitrin kuponunun Coupon.id değeri (boş: eski varsayılan kod YILDIRIM5)

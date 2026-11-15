@@ -160,6 +160,8 @@ CREATE TABLE "OrderItem" (
     "unitPrice" DOUBLE PRECISION NOT NULL,
     "productTitle" TEXT,
     "variationLabel" TEXT,
+    "bundleMainProductId" TEXT,
+    "bundleDiscount" DOUBLE PRECISION,
 
     CONSTRAINT "OrderItem_pkey" PRIMARY KEY ("id")
 );
@@ -202,6 +204,7 @@ CREATE TABLE "SiteConfig" (
     "etbisUrl" TEXT DEFAULT 'https://www.eticaret.gov.tr',
     "etbisQrImage" TEXT,
     "maxTotalDiscountPct" DOUBLE PRECISION,
+    "complementSuggestCount" INTEGER,
     "adminSessionVersion" INTEGER NOT NULL DEFAULT 0,
     "homepageConfig" JSONB,
     "showcaseCouponId" TEXT,
@@ -248,6 +251,20 @@ CREATE TABLE "Favorite" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Favorite_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ProductComplement" (
+    "id" TEXT NOT NULL,
+    "mainProductId" TEXT NOT NULL,
+    "complementProductId" TEXT NOT NULL,
+    "discountType" TEXT NOT NULL,
+    "discountValue" DOUBLE PRECISION NOT NULL,
+    "position" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ProductComplement_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -441,6 +458,12 @@ CREATE INDEX "Favorite_userId_idx" ON "Favorite"("userId");
 CREATE UNIQUE INDEX "Favorite_userId_productId_key" ON "Favorite"("userId", "productId");
 
 -- CreateIndex
+CREATE INDEX "ProductComplement_complementProductId_idx" ON "ProductComplement"("complementProductId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ProductComplement_mainProductId_complementProductId_key" ON "ProductComplement"("mainProductId", "complementProductId");
+
+-- CreateIndex
 CREATE INDEX "ContactMessage_email_idx" ON "ContactMessage"("email");
 
 -- CreateIndex
@@ -519,6 +542,12 @@ ALTER TABLE "Favorite" ADD CONSTRAINT "Favorite_userId_fkey" FOREIGN KEY ("userI
 ALTER TABLE "Favorite" ADD CONSTRAINT "Favorite_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "ProductComplement" ADD CONSTRAINT "ProductComplement_mainProductId_fkey" FOREIGN KEY ("mainProductId") REFERENCES "Product"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ProductComplement" ADD CONSTRAINT "ProductComplement_complementProductId_fkey" FOREIGN KEY ("complementProductId") REFERENCES "Product"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "ContactMessage" ADD CONSTRAINT "ContactMessage_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -542,3 +571,10 @@ ALTER TABLE "AccountDeletionRequest" ADD CONSTRAINT "AccountDeletionRequest_stat
 
 -- Kullanıcı başına en fazla BİR bekleyen talep (çift tıklama / yarış durumunda ikinci kayıt reddedilir). Kısmi (partial) indeks.
 CREATE UNIQUE INDEX IF NOT EXISTS "AccountDeletionRequest_one_pending_per_user" ON "AccountDeletionRequest"("userId") WHERE "status" = 'PENDING';
+
+-- Tamamlayıcı ürün kuralları (prisma/sql/tamamlayici-tablo-ekle.sql ve tamamlayici-siparis-kalemi-ve-ayar-ekle.sql ile aynı)
+ALTER TABLE "ProductComplement" ADD CONSTRAINT "ProductComplement_type_check" CHECK ("discountType" IN ('PERCENT', 'FIXED'));
+ALTER TABLE "ProductComplement" ADD CONSTRAINT "ProductComplement_value_check" CHECK ("discountValue" > 0 AND ("discountType" <> 'PERCENT' OR "discountValue" < 100));
+ALTER TABLE "ProductComplement" ADD CONSTRAINT "ProductComplement_distinct_check" CHECK ("mainProductId" <> "complementProductId");
+ALTER TABLE "SiteConfig" ADD CONSTRAINT "SiteConfig_complementSuggestCount_check" CHECK ("complementSuggestCount" IS NULL OR "complementSuggestCount" BETWEEN 0 AND 12);
+CREATE INDEX IF NOT EXISTS "OrderItem_bundleMainProductId_idx" ON "OrderItem" ("bundleMainProductId") WHERE "bundleMainProductId" IS NOT NULL;
