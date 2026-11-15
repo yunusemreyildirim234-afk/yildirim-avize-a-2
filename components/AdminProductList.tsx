@@ -25,6 +25,7 @@ import { QUICK_FILTER_LABELS, isQuickFilterKey, quickFilterTest, type QuickFilte
 
 const NONE_KEY = "__kategorisiz__"; // "Kategorisiz (N)" çipi
 import { mergeImages, rowCover, type ProductImagesDetail } from "@/lib/admin-product-list";
+import { productPath } from "@/lib/product-url";
 
 interface Variation {
   id: string;
@@ -629,7 +630,7 @@ Yine de geri alınsın mı?`)) break;
                 className="w-4 h-4 accent-amber-600 shrink-0"
               />
               <a
-                href={`/urun/${product.id}`}
+                href={productPath(product)}
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={`${product.title} sayfasını yeni sekmede aç`}
@@ -646,7 +647,7 @@ Yine de geri alınsın mı?`)) break;
                   {product.category}
                 </span>
                 <h3 className="font-serif font-bold text-neutral-900 text-sm mt-0.5">
-                  <a href={`/urun/${product.id}`} target="_blank" rel="noopener noreferrer" className="hover:text-amber-700 hover:underline">
+                  <a href={productPath(product)} target="_blank" rel="noopener noreferrer" className="hover:text-amber-700 hover:underline">
                     {product.title}
                   </a>
                 </h3>
@@ -722,7 +723,7 @@ Yine de geri alınsın mı?`)) break;
             {/* Sağ: Düzenle ve Sil */}
             <div className="flex flex-wrap items-center gap-1 self-end md:self-center md:shrink-0">
             <a
-              href={`/urun/${product.id}`}
+              href={productPath(product)}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex min-h-10 items-center gap-1 text-neutral-600 hover:text-amber-700 text-xs font-medium px-3 rounded-lg hover:bg-amber-50 transition-colors"

@@ -1,3 +1,5 @@
+import { productPath } from "@/lib/product-url";
+
 // Admin sipariş listesinde kalemin ürün adı/fotoğrafı/bağlantısı. Ürün silinmiş olsa da çökmez.
 type ProductLike = {
   id?: string | null;
@@ -13,6 +15,6 @@ export function orderItemProductView(product: ProductLike): {
 } {
   const title = product?.title?.trim() || null;
   const image = product?.imageUrl?.trim() || product?.images?.[0]?.trim() || null;
-  const href = product?.id ? `/urun/${encodeURIComponent(product.id)}` : null;
+  const href = product?.id ? productPath({ id: product.id, title: product.title }) : null;
   return { title, image, href };
 }

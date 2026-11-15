@@ -4,6 +4,7 @@ import { Star } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { initials, REVIEW_STATUS } from "@/lib/reviews";
 import { getGalleryPhotoCount } from "@/lib/customer-gallery";
+import { productPath } from "@/lib/product-url";
 
 export const revalidate = 60;
 
@@ -70,7 +71,7 @@ export default async function CustomerGalleryPage() {
                   <p className="text-sm text-neutral-700 leading-relaxed whitespace-pre-line">{r.comment}</p>
                   <div className="flex items-center justify-between gap-3 pt-2 border-t border-neutral-100 text-xs">
                     <span className="font-semibold text-neutral-900">{initials(r.user.name)}</span>
-                    <Link href={`/urun/${r.product.id}`} className="text-amber-700 hover:underline text-right line-clamp-1">
+                    <Link href={productPath(r.product)} className="text-amber-700 hover:underline text-right line-clamp-1">
                       {r.product.title}
                     </Link>
                   </div>

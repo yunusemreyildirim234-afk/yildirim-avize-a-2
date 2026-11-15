@@ -12,6 +12,7 @@ import { track } from "@/lib/track";
 import { MAX_SEARCH_LEN } from "@/lib/product-search";
 import { CartStepper, FavoriteButton, type QuickProduct } from "@/components/ProductQuickActions";
 import { smallImage } from "@/lib/img";
+import { productPath } from "@/lib/product-url";
 
 type Result = QuickProduct;
 
@@ -69,7 +70,7 @@ function Results({
     <ul role="listbox" aria-label="Arama sonuçları" className="divide-y divide-zinc-100 max-h-[70vh] overflow-y-auto">
       {results.map((p) => (
         <li key={p.id} className="flex items-start gap-2 px-3 py-2.5 hover:bg-amber-50/60 transition-colors">
-          <Link href={`/urun/${p.id}`} onClick={onPick} className="flex-1 min-w-0 flex items-center gap-3">
+          <Link href={productPath(p)} onClick={onPick} className="flex-1 min-w-0 flex items-center gap-3">
             <span className="w-12 h-12 rounded-lg bg-zinc-900 overflow-hidden shrink-0 border border-zinc-200 flex items-center justify-center">
               {p.imageUrl && <img src={smallImage(p.imageUrl)} alt="" width={48} height={48} loading="lazy" decoding="async" className="w-full h-full object-cover" />}
             </span>

@@ -35,6 +35,7 @@ import { EMAIL_COMMIT_DELAY_MS, isCommittableEmail, quoteSignature } from "@/lib
 import { forgetCardOrder, previousCardOrderId, rememberCardOrder } from "@/lib/pending-card-order";
 import { smallImage } from "@/lib/img";
 import { displayTitle } from "@/lib/title-display";
+import { productPath } from "@/lib/product-url";
 
 interface LocationItem {
   id: number;
@@ -696,7 +697,7 @@ export default function CartPage() {
                 >
                   <div className="flex items-center gap-4 min-w-0">
                     <Link
-                      href={`/urun/${item.productId}`}
+                      href={productPath({ id: item.productId, title: item.title })}
                       aria-label={`${item.title} ürün sayfası`}
                       className="w-[72px] h-[72px] rounded-xl bg-neutral-100 overflow-hidden shrink-0 border border-neutral-200 flex items-center justify-center"
                     >
@@ -706,7 +707,7 @@ export default function CartPage() {
                     </Link>
                     <div className="min-w-0">
                     <h3 className="font-serif font-bold text-neutral-900 text-base">
-                      <Link href={`/urun/${item.productId}`} className="hover:text-amber-700 hover:underline">
+                      <Link href={productPath({ id: item.productId, title: item.title })} className="hover:text-amber-700 hover:underline">
                         {displayTitle(item.title).title}
                       </Link>
                     </h3>

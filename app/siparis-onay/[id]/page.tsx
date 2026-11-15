@@ -22,6 +22,7 @@ import { smallImage } from "@/lib/img";
 import { titleCaseTr } from "@/lib/display-case";
 import { discountLabel } from "@/lib/order-discount-label";
 import { displayTitle } from "@/lib/title-display";
+import { productPath } from "@/lib/product-url";
 
 export const metadata: Metadata = {
   title: "Siparişiniz Alındı",
@@ -141,7 +142,7 @@ export default async function OrderConfirmationPage({ params }: { params: Promis
             {order.items.map((item) => (
               <li key={item.id} className="text-neutral-700 flex items-center gap-3">
                 <Link
-                  href={`/urun/${item.variation.product.id}`}
+                  href={productPath(item.variation.product)}
                   aria-label={`${item.variation.product.title} ürün sayfası`}
                   className="w-[72px] h-[72px] rounded-xl bg-neutral-100 overflow-hidden shrink-0 border border-neutral-200 flex items-center justify-center"
                 >
@@ -151,7 +152,7 @@ export default async function OrderConfirmationPage({ params }: { params: Promis
                 </Link>
                 <span>
                   {item.quantity}x{" "}
-                  <Link href={`/urun/${item.variation.product.id}`} className="hover:text-amber-700 hover:underline">
+                  <Link href={productPath(item.variation.product)} className="hover:text-amber-700 hover:underline">
                     <strong>{displayTitle(item.variation.product.title).title}</strong>
                   </Link>{" "}
                   – {item.variation.variationValue}

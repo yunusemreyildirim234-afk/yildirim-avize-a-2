@@ -11,6 +11,7 @@ import { useWishlist } from "@/context/WishlistContext";
 import { pickDefaultOption } from "@/lib/default-variation";
 import type { BulkRule } from "@/lib/bulk-pricing";
 import type { LadderStep } from "@/lib/price-ladder";
+import { productPath } from "@/lib/product-url";
 
 export interface QuickProduct {
   id: string;
@@ -107,7 +108,7 @@ export function CartStepper({ product, inlineToast = false }: { product: QuickPr
   const increase = () => {
     // Seçenekli (renk/boyut) ürün: seçenek seçilmeden sepete eklenmez, ürün sayfasına gidilir
     if (!inCart && product.variations.length > 1) {
-      router.push(`/urun/${product.id}`);
+      router.push(productPath(product));
       return;
     }
     if (quantity >= variation.stock) return;

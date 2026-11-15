@@ -1,6 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { orderItemProductView } from "../lib/order-item-product.ts";
+import "./_alias.mjs";
+
+const { orderItemProductView } = await import("../lib/order-item-product.ts");
 
 test("ürün yoksa (silinmiş) çökmez, boş görünüm döner", () => {
   assert.deepEqual(orderItemProductView(null), { title: null, image: null, href: null });
@@ -16,5 +18,6 @@ test("görsel sırası: imageUrl, yoksa images[0]", () => {
 test("ad ve bağlantı", () => {
   const v = orderItemProductView({ id: "p1", title: "  Kristal Avize ", images: [] });
   assert.equal(v.title, "Kristal Avize");
-  assert.equal(v.href, "/urun/p1");
+  assert.equal(v.href, "/urun/kristal-avize-p1"); // okunur adres: ad + kimliğin ilk 8 karakteri
+  assert.equal(orderItemProductView({ id: "p1", title: "", images: [] }).href, "/urun/p1"); // başlık yoksa eski adres (308 ile düzelir)
 });

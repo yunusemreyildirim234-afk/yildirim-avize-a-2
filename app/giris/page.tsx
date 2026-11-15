@@ -24,6 +24,7 @@ import { titleCaseTr } from "@/lib/display-case";
 import { MarketingPermissions } from "@/components/MarketingPrefs";
 import { smallImage } from "@/lib/img";
 import { displayTitle } from "@/lib/title-display";
+import { productPath } from "@/lib/product-url";
 
 interface OrderItem {
   id: string;
@@ -246,7 +247,7 @@ export default function AuthPage() {
                           <span className="flex items-center gap-2.5 min-w-0">
                             {item.variation.product && (
                               <Link
-                                href={`/urun/${item.variation.product.id}`}
+                                href={productPath(item.variation.product)}
                                 aria-label={`${item.variation.product.title} ürün sayfası`}
                                 className="w-16 h-16 rounded-xl bg-neutral-100 overflow-hidden shrink-0 border border-neutral-200 flex items-center justify-center"
                               >
@@ -258,7 +259,7 @@ export default function AuthPage() {
                             <span className="min-w-0">
                               {item.quantity}x{" "}
                               {item.variation.product ? (
-                                <Link href={`/urun/${item.variation.product.id}`} className="font-semibold hover:text-amber-700 hover:underline">
+                                <Link href={productPath(item.variation.product)} className="font-semibold hover:text-amber-700 hover:underline">
                                   {displayTitle(item.variation.product.title).title}
                                 </Link>
                               ) : null}{" "}
@@ -271,7 +272,7 @@ export default function AuthPage() {
                             </span>
                             {item.variation.product && ["PENDING", "READY_FOR_PICKUP", "SHIPPED", "DELIVERED"].includes(order.status) && (
                               <Link
-                                href={`/urun/${item.variation.product.id}#yorumlar`}
+                                href={`${productPath(item.variation.product)}#yorumlar`}
                                 className="text-[11px] font-semibold text-amber-800 bg-amber-50 border border-amber-200 hover:bg-amber-100 px-2.5 py-1 rounded-lg transition-colors"
                               >
                                 ★ Yorum Yap / Fotoğraf Ekle

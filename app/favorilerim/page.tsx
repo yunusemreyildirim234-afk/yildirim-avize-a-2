@@ -8,6 +8,7 @@ import { useWishlist } from "@/context/WishlistContext";
 import { FavoritesMarketingStrip } from "@/components/MarketingPrefs";
 import { smallImage } from "@/lib/img";
 import { displayTitle } from "@/lib/title-display";
+import { productPath } from "@/lib/product-url";
 
 export default function FavorilerimPage() {
   const { favorites, removeFavoriteUndoable, clearFavorites } = useWishlist();
@@ -78,7 +79,7 @@ export default function FavorilerimPage() {
               className="bg-white rounded-2xl border border-neutral-200 overflow-hidden shadow-sm flex flex-col justify-between group"
             >
               <div className="h-60 bg-neutral-900 relative overflow-hidden">
-                <Link href={`/urun/${product.id}`} aria-label={`${product.title} ürün sayfası`} className="block w-full h-full">
+                <Link href={productPath(product)} aria-label={`${product.title} ürün sayfası`} className="block w-full h-full">
                   {product.imageUrl ? (
                     <img
                       src={smallImage(product.imageUrl)}
@@ -114,7 +115,7 @@ export default function FavorilerimPage() {
 
               <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
                 <h3 className="font-serif font-bold text-neutral-900 text-base">
-                  <Link href={`/urun/${product.id}`} className="hover:text-amber-700 hover:underline">
+                  <Link href={productPath(product)} className="hover:text-amber-700 hover:underline">
                     {displayTitle(product.title).title}
                   </Link>
                 </h3>
@@ -128,7 +129,7 @@ export default function FavorilerimPage() {
                   </span>
 
                   <Link
-                    href={`/urun/${product.id}`}
+                    href={productPath(product)}
                     className="bg-neutral-900 hover:bg-amber-600 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors"
                   >
                     İncele →

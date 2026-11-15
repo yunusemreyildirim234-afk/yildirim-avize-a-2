@@ -4,6 +4,7 @@ import { adminGuard } from "@/lib/admin-guard";
 import { prisma } from "@/lib/db";
 import { notifyCustomer } from "@/lib/notifications";
 import { REVIEW_STATUS } from "@/lib/reviews";
+import { productPath } from "@/lib/product-url";
 
 // Yorum onay/ret ve silme (yalnızca yönetici — proxy.ts /api/admin altını korur)
 async function PATCHHandler(req: Request) {
@@ -25,7 +26,7 @@ async function PATCHHandler(req: Request) {
         title: "Yorumunuz yayınlandı",
         message: `${review.product.title} için yorumunuz yayınlandı. Teşekkür ederiz!`,
         type: "SYSTEM",
-        link: `/urun/${review.product.id}#yorumlar`,
+        link: `${productPath(review.product)}#yorumlar`,
       }
     ).catch(() => {});
   }

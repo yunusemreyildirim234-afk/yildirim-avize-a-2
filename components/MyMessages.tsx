@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { productPath } from "@/lib/product-url";
 
 interface Message {
   id: string;
@@ -51,7 +52,7 @@ export default function MyMessages() {
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="text-neutral-500">
                     {m.product ? (
-                      <Link href={`/urun/${m.product.id}`} className="font-semibold text-neutral-900 hover:text-amber-700">
+                      <Link href={productPath(m.product)} className="font-semibold text-neutral-900 hover:text-amber-700">
                         {m.product.title}
                       </Link>
                     ) : (

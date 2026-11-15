@@ -11,6 +11,7 @@ import { MAX_SEARCH_LEN } from "@/lib/product-search";
 import PriceLadder from "@/components/PriceLadder";
 import { CartStepper, FavoriteButton, type QuickProduct } from "@/components/ProductQuickActions";
 import { smallImage } from "@/lib/img";
+import { productPath } from "@/lib/product-url";
 
 type Product = QuickProduct;
 
@@ -164,7 +165,7 @@ export default function SearchBar() {
               </div>
               {results.map((product) => (
                 <div key={product.id} className="p-3 flex items-start gap-2 hover:bg-amber-50/50 transition-colors">
-                  <Link href={`/urun/${product.id}`} onClick={() => { remember(query); setIsOpen(false); }} className="flex-1 min-w-0 flex items-start gap-2.5">
+                  <Link href={productPath(product)} onClick={() => { remember(query); setIsOpen(false); }} className="flex-1 min-w-0 flex items-start gap-2.5">
                     <span className="w-12 h-12 rounded-lg bg-neutral-900 overflow-hidden shrink-0 border border-neutral-200">
                       {product.imageUrl && (
                         // eslint-disable-next-line @next/next/no-img-element

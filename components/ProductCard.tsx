@@ -11,6 +11,7 @@ import { isPurchasablePrice } from "@/lib/purchasable";
 import { displayTitle } from "@/lib/title-display";
 import { lowStockLabel } from "@/lib/low-stock";
 import { getLowStockSetting } from "@/lib/low-stock-setting";
+import { productPath } from "@/lib/product-url";
 
 export default async function ProductCard({
   product,
@@ -63,7 +64,7 @@ export default async function ProductCard({
         dark ? "bg-zinc-900 border-zinc-700 text-zinc-100" : "bg-white border-zinc-200/80 text-zinc-900 shadow-[0_1px_2px_rgba(24,24,27,0.05)]"
       }`}
     >
-      <Link href={`/urun/${product.id}`} className={`flex flex-col flex-1 ${totalStock === 0 ? "[&_img]:opacity-60" : ""}`}>
+      <Link href={productPath(product)} className={`flex flex-col flex-1 ${totalStock === 0 ? "[&_img]:opacity-60" : ""}`}>
         <CardImages images={gallery} alt={product.title} priority={priority}>
           {discount > 0 && (
             <span className="absolute top-3 left-3 bg-red-600 text-white text-[11px] font-bold px-2 py-1 rounded-md">

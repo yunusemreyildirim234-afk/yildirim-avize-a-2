@@ -6,6 +6,7 @@ import { IMAGE_MIMES, validateUpload } from "@/lib/uploads";
 import { notifyAdmins, notifyCustomer } from "@/lib/notifications";
 import { sendReviewAdminEmail } from "@/lib/email";
 import { rateLimit, tooMany } from "@/lib/rate-limit";
+import { productPath } from "@/lib/product-url";
 
 // Yorum yalnızca giriş yapmış ve ürünü satın almış müşteriye açıktır; ürün başına tek yorum yazılabilir.
 export async function POST(req: Request) {
@@ -70,7 +71,7 @@ export async function POST(req: Request) {
     notifyAdmins({ title: `Onay Bekleyen Yorum${upload?.ok ? " + Fotoğraf" : ""}: ${product.title} - ${stars} Yıldız`, message: `${author?.name ?? "Müşteri"}: ${text.slice(0, 120)}`, type: "SYSTEM", link }),
     notifyCustomer(
       { userId: session.uid },
-      { title: "Değerlendirmeniz için teşekkür ederiz!", message: `Yorumunuz incelendikten sonra yayınlanacaktır: ${product.title}`, type: "SYSTEM", link: `/urun/${product.id}` }
+      { title: "Değerlendirmeniz için teşekkür ederiz!", message: `Yorumunuz incelendikten sonra yayınlanacaktır: ${product.title}`, type: "SYSTEM", link: productPath(product) }
     ),
     sendReviewAdminEmail({ productTitle: product.title, productId: product.id, rating: stars, comment: text, name: author?.name ?? "Müşteri", email: author?.email ?? "" }),
   ]);

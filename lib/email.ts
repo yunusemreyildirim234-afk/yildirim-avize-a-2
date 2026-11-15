@@ -33,6 +33,7 @@ import { adminOrderHref } from "@/lib/admin-order-detail";
 import { recipientDiffers } from "@/lib/recipient";
 import { buildQuestionReceivedHtml } from "@/lib/contact-confirm";
 import { buildCampaignFooter, unsubscribeHeaders } from "@/lib/marketing";
+import { productPath } from "@/lib/product-url";
 
 const DEFAULT_FROM = "Yıldırım Avize <siparis@yildirimavize.com.tr>";
 const ONBOARDING_FROM = "Yıldırım Avize <onboarding@resend.dev>";
@@ -370,7 +371,7 @@ export async function sendReviewAdminEmail(data: { productTitle: string; product
     subject: `Yeni Ürün Yorumu: ${data.productTitle} - ${data.rating} Yıldız`,
     html: `<p><strong>${esc(data.name)}</strong> (${esc(data.email)}) <strong>${esc(data.productTitle)}</strong> ürününe ${"★".repeat(data.rating)}${"☆".repeat(5 - data.rating)} verdi.</p>
       <p>${multiline(data.comment)}</p>
-      <p><a href="${SITE_URL}/urun/${data.productId}#yorumlar">Ürün sayfasında gör</a></p>`,
+      <p><a href="${SITE_URL}${productPath({ id: data.productId, title: data.productTitle })}#yorumlar">Ürün sayfasında gör</a></p>`,
   });
 }
 
@@ -602,7 +603,7 @@ export async function sendPriceDropEmail(data: { to: string; name: string; produ
   const footerHtml = await buildCampaignFooter(data.to);
   if (!footerHtml) return false; // çıkış bağlantısı üretilemiyorsa kampanya e-postası gönderilmez
   const tl = (n: number) => `${n.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺`;
-  const url = `${SITE_URL}/urun/${data.productId}`;
+  const url = `${SITE_URL}${productPath({ id: data.productId, title: data.title })}`;
   return sendViaResend(process.env.RESEND_API_KEY, {
     to: [data.to],
     headers: unsubscribeHeaders(data.to),
