@@ -59,15 +59,17 @@ export async function GET(req: Request) {
     }
 
     // 3. Veritabanımızda Bu Kullanıcıyı Bul veya Sıfırdan Güvenle Kaydet
+    // E-posta küçük harfe çevrilir: yeni hesap küçük harfle kaydedilir, mevcut hesap büyük/küçük harf fark etmeden bulunur
+    const email = String(googleUser.email).trim().toLowerCase();
     let user = await prisma.user.findFirst({
-      where: { email: { equals: googleUser.email, mode: "insensitive" } },
+      where: { email: { equals: email, mode: "insensitive" } },
     });
 
     if (!user) {
       user = await prisma.user.create({
         data: {
-          name: googleUser.name || googleUser.email.split("@")[0],
-          email: googleUser.email,
+          name: googleUser.name || email.split("@")[0],
+          email,
           password: "google_oauth",
           role: "USER",
         },
