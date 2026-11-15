@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { activeConfirmMessage, resultMessage } from "@/lib/bulk-plan";
 import { useRouter } from "next/navigation";
+import { refreshAdminNow } from "@/lib/admin-refresh";
 import { COLLECTION_OPTIONS } from "@/lib/site";
 import { categoryKey } from "@/lib/categories";
 
@@ -125,7 +126,7 @@ export default function AdminBulkBar({ ids, scopes, onApplied, extraCategories, 
       alert(`✓ ${resultMessage(data.updated ?? 0, data.skipped ?? 0)}${zeroedNote ? `
 ⚠ ${zeroedNote}` : ""}${hiddenNote ? `
 ⚠ ${hiddenNote}` : ""}`);
-      router.refresh();
+      refreshAdminNow(router); // toplu işlem: hemen (bekleyen uzlaştırma varsa tek yenilemede birleşir)
       onDone();
     } catch {
       alert("Bağlantı hatası oluştu.");

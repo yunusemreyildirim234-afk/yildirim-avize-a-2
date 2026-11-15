@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { refreshAdminNow, scheduleAdminRefresh } from "@/lib/admin-refresh";
 import ImagePicker from "@/components/ImagePicker";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { itemsFromUrls, newKey, uploadFile, type PickerItem } from "@/lib/client-upload";
@@ -136,7 +137,7 @@ export default function AdminProductEditor({ product, onSaved, onDirtyChange, on
     try {
       await fn();
       if (okMsg) alert(okMsg);
-      router.refresh();
+      refreshAdminNow(router); // renk ekle/sil/ad: yeni kimlik ve sıra yalnız sunucuda var; tahmin yerine hemen yenile
     } catch (err) {
       alert((err as Error).message);
     } finally {
@@ -177,7 +178,10 @@ export default function AdminProductEditor({ product, onSaved, onDirtyChange, on
     setErrors(errs);
     setResult({ ok: failed.length === 0, text: `${resultSummary(ok, failed)}${snapshots.length ? " Alttaki çubuktan geri alabilirsiniz." : ""}` });
     if (snapshots.length) onSaved?.(snapshots); // kayıt sırasıyla; Geri Al ters sırayla uygular
-    router.refresh(); // başarısız olsa da: güncel stok satırda görünsün
+    // Başarılı parçalar sunucu kabulünden sonra tabana işlendi (form değeri görünür kalır); tam sayfa verisi sakin kalınca tek seferde gelir.
+    // Bir parça başarısızsa (ör. 409 stok değişti) güncel stok satırda görünsün diye hemen yenile.
+    if (failed.length > 0) refreshAdminNow(router);
+    else scheduleAdminRefresh(router);
     setBusy(false);
   };
 
