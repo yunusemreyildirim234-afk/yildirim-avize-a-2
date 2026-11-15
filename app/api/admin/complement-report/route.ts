@@ -51,7 +51,10 @@ export async function GET(req: Request) {
   const ids = new Set<string>();
   for (const g of [...report.byMain, ...report.byComplement]) {
     ids.add(g.id);
-    for (const it of g.items) (ids.add(it.mainId), ids.add(it.complementId));
+    for (const it of g.items) {
+      ids.add(it.mainId);
+      ids.add(it.complementId);
+    }
   }
   const products = ids.size ? await prisma.product.findMany({ where: { id: { in: [...ids] } }, select: { id: true, title: true } }) : [];
   const names: Record<string, string> = Object.fromEntries(products.map((p) => [p.id, p.title]));
