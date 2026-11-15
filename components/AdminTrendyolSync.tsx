@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Decision, Group, Mode, Settings, Val } from "@/lib/trendyol-plan";
-import type { KalkanSonuc } from "@/lib/trendyol-kalkan";
+import type { KalkanSonuc, KalkanVaryasyon, SifirlaAtlanan, SifirlaSatir } from "@/lib/trendyol-kalkan";
 import { DEFAULT_SYNC_MODES, overwriteGroups, type SyncModes } from "@/lib/trendyol-modes";
 import { pendingWarning } from "@/lib/trendyol-bekleyen";
 import AdminImageCopy from "@/components/AdminImageCopy";
@@ -43,10 +43,11 @@ interface Preview {
   urunler: ProductView[];
   /** barkod → sitede bekleyen (stoğu düşülmüş, açık) sipariş adedi; yalnız uyarı için */
   bekleyen?: Record<string, number>;
-  /** Trendyol'da kapanan/kalkan renkler; YALNIZ bilgi (bu ekran stok yazmaz) */
+  /** Trendyol'da kapanan/kalkan renkler; satır bazlı onayla stok 0 yapılabilir (varsayılan işaretsiz) */
   kalkanVaryasyonlar?: KalkanSonuc;
 }
-interface Result { guncellenenUrun: number; yeniUrun: number; yeniVaryasyon: number; stokGuncellenen: number; atlanan: number; hata: number; hataliUrunler?: { id: string; baslik: string }[] }
+interface Sifirlama { sifirlanan: SifirlaSatir[]; atlanan: SifirlaAtlanan[]; hata: number }
+interface Result { guncellenenUrun: number; yeniUrun: number; yeniVaryasyon: number; stokGuncellenen: number; atlanan: number; hata: number; hataliUrunler?: { id: string; baslik: string }[]; sifirlama?: Sifirlama }
 
 const show = (v: Val) => (v === null ? "—" : Array.isArray(v) ? `${v.length} görsel` : String(v));
 const badge: Record<Decision, string> = {
@@ -104,6 +105,8 @@ export default function AdminTrendyolSync({
   const [copying, setCopying] = useState(false); // görsel kopyalama sürüyor: eşitleme düğmeleri kilitli
   const [error, setError] = useState("");
   const [result, setResult] = useState<Result | null>(null);
+  // Stoğu 0 yapılacak kapalı renkler: varyasyonId -> önizlemedeki stok. HİÇBİRİ varsayılan işaretli değildir.
+  const [sifirla, setSifirla] = useState<Map<string, number>>(new Map());
 
   const stale = preview !== null && JSON.stringify(previewSettings) !== JSON.stringify(settings);
 
@@ -117,6 +120,7 @@ export default function AdminTrendyolSync({
       setPreview(p);
       setPreviewSettings(settings);
       setChecked(new Set(p.urunler.map((u) => u.mainId)));
+      setSifirla(new Map());
       setIncludeHidden(false);
       setOpen(null);
     } catch (e) {
@@ -155,11 +159,12 @@ export default function AdminTrendyolSync({
     }
     const pendingCount = preview.urunler.filter((u) => checked.has(u.mainId)).reduce((n, u) => n + u.variations.filter((v) => (preview.bekleyen?.[v.barcode] ?? 0) > 0).length, 0);
     if (pendingCount > 0) msg += `\n\nUyarı: ${pendingCount} varyasyonda sitede bekleyen sipariş var. Bu satışların Trendyol'da düşüldüğünden emin olun; aksi halde stok eski sayıya dönebilir.`;
+    if (sifirla.size > 0) msg += `\n\n${sifirla.size} rengin stoğu 0 yapılacak (satır silinmez; sitede "Tükendi" görünür). Eski stoklar tamamlanma ekranında listelenir.`;
     if (!window.confirm(msg)) return;
     setBusy("apply");
     setError("");
     try {
-      const data = await call({ ayarlar: settings, dryRun: false, seciliUrunler: everything ? undefined : [...checked] });
+      const data = await call({ ayarlar: settings, dryRun: false, seciliUrunler: everything ? undefined : [...checked], sifirlaVaryasyonlar: [...sifirla].map(([varyasyonId, stok]) => ({ varyasyonId, stok })) });
       setResult(data.sonuc);
       setPreview(null);
       router.refresh();
@@ -177,6 +182,38 @@ export default function AdminTrendyolSync({
       else next.add(id);
       return next;
     });
+
+  const toggleSifirla = (v: KalkanVaryasyon) =>
+    setSifirla((prev) => {
+      const next = new Map(prev);
+      if (next.has(v.varyasyonId)) next.delete(v.varyasyonId);
+      else next.set(v.varyasyonId, v.mevcutStok);
+      return next;
+    });
+
+  const kalkanSatiri = (v: KalkanVaryasyon) => (
+    <li key={v.varyasyonId} className="text-[11px] text-neutral-700">
+      <label className="flex items-start gap-2">
+        <input
+          type="checkbox"
+          aria-label={`${v.deger} stoğunu 0 yap`}
+          data-testid="kalkan-sifirla"
+          checked={sifirla.has(v.varyasyonId)}
+          disabled={v.elleDegisti || stale}
+          onChange={() => toggleSifirla(v)}
+          className="w-4 h-4 mt-0.5 accent-amber-600 shrink-0"
+        />
+        <span>
+          <span className="font-semibold">{v.deger}</span> — mevcut stok {v.mevcutStok} → 0 (satır silinmez, sitede Tükendi görünür)
+          {v.rozetler.map((r) => (
+            <span key={r} className="ml-1.5 px-1.5 py-0.5 rounded bg-stone-200 text-stone-800 font-bold">{r}</span>
+          ))}
+          {v.elleDegisti && <span className="block text-amber-800">Elle değişmiş görünüyor (stok eşitleme kaydından fazla): bu satıra dokunulmaz.</span>}
+          {v.olasiYeniBarkod && <span className="block text-neutral-500">Olası yeni barkod: {v.olasiYeniBarkod}</span>}
+        </span>
+      </label>
+    </li>
+  );
 
   const detail = (fs: FieldView[], label?: string, pending = 0) =>
     fs.map((f) => (
@@ -265,6 +302,17 @@ export default function AdminTrendyolSync({
             <p className="text-emerald-800 font-semibold">
               Tamamlandı: {result.guncellenenUrun} ürün güncellendi, {result.yeniUrun} yeni ürün, {result.yeniVaryasyon} yeni varyasyon, {result.stokGuncellenen} stok yazıldı, {result.atlanan} atlandı, {result.hata} hata.
             </p>
+            {result.sifirlama && (
+              <div data-testid="sifirlama-sonuc" className="mt-1 text-neutral-800">
+                <p className="font-semibold">
+                  {result.sifirlama.sifirlanan.length} renk Tükendi yapıldı, {result.sifirlama.atlanan.length} atlandı{result.sifirlama.hata ? `, ${result.sifirlama.hata} hata` : ""}. Eski stoklar (gerekirse elle geri yazın):
+                </p>
+                <ul className="list-disc ml-5">
+                  {result.sifirlama.sifirlanan.map((r) => <li key={r.varyasyonId}>{r.baslik} · {r.deger}: {r.eskiStok} → 0</li>)}
+                </ul>
+                {result.sifirlama.atlanan.length > 0 && <p className="text-neutral-600">Atlananlar: önizlemeden beri stoğu değişen, elle değişmiş veya listeden çıkan renkler.</p>}
+              </div>
+            )}
             {!!result.hataliUrunler?.length && (
               <p className="mt-1 text-red-700 font-semibold">
                 {result.hataliUrunler.length} ürün eşitlenemedi{result.hataliUrunler.length >= 20 ? " (ilk 20)" : ""}: {result.hataliUrunler.map((u) => u.baslik).join(", ")}
@@ -329,33 +377,38 @@ export default function AdminTrendyolSync({
               <h3 className="font-semibold text-neutral-900">
                 {preview.kalkanVaryasyonlar.toplam} renk/varyasyon Trendyol&apos;da kapalı veya listede yok
               </h3>
-              <p className="text-neutral-600">Yalnızca bilgi: bu eşitleme bu renklerin stoğuna dokunmaz; sitede satılmaya devam ederler.</p>
+              <p className="text-neutral-600">Hiçbiri işaretli gelmez. İşaretlediğiniz renklerin stoğu &quot;Seçilenleri uygula&quot; ile 0 yapılır; renk silinmez. Mağazada fiziksel stoğu olan rengi işaretlemeyin. İşaretsizler eskisi gibi satılmaya devam eder.</p>
               {preview.kalkanVaryasyonlar.genelUyari && (
                 <p className="font-semibold text-amber-900 bg-amber-50 border border-amber-300 rounded-lg p-2">
                   Çok sayıda varyasyon birden görünmüyor; Trendyol listesi eksik olabilir. Birkaç dakika sonra önizlemeyi yeniden alın.
                 </p>
               )}
-              <ul className="max-h-60 overflow-y-auto divide-y divide-neutral-100">
-                {preview.kalkanVaryasyonlar.urunler.map((u) => (
-                  <li key={u.mainId} className="py-1.5">
-                    <div className="font-medium text-neutral-900">
-                      {u.baslik}
-                      {u.suphe && <span className="ml-2 px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 font-bold">ŞÜPHELİ</span>}
-                    </div>
-                    <ul className="mt-1 ml-3 space-y-1">
-                      {u.varyasyonlar.map((v) => (
-                        <li key={v.varyasyonId} className="text-[11px] text-neutral-700">
-                          <span className="font-semibold">{v.deger}</span> — {v.metin} (stok {v.mevcutStok} → 0)
-                          {v.rozetler.map((r) => (
-                            <span key={r} className="ml-1.5 px-1.5 py-0.5 rounded bg-stone-200 text-stone-800 font-bold">{r}</span>
-                          ))}
-                          {v.olasiYeniBarkod && <span className="block text-neutral-500">Olası yeni barkod: {v.olasiYeniBarkod}</span>}
+              {([
+                ["KESIN", "Trendyol'da kapalı veya satışta değil"],
+                ["ZAYIF", "Listede yok (emin değil: geçici Trendyol eksikliği olabilir)"],
+              ] as const).map(([guven, baslik]) => {
+                const urunler = preview.kalkanVaryasyonlar!.urunler
+                  .map((u) => ({ ...u, varyasyonlar: u.varyasyonlar.filter((v) => v.guven === guven) }))
+                  .filter((u) => u.varyasyonlar.length > 0);
+                if (urunler.length === 0) return null;
+                return (
+                  <div key={guven} data-testid={`kalkan-${guven}`}>
+                    <h4 className="font-semibold text-neutral-800">{baslik}</h4>
+                    <ul className="max-h-60 overflow-y-auto divide-y divide-neutral-100">
+                      {urunler.map((u) => (
+                        <li key={u.mainId} className="py-1.5">
+                          <div className="font-medium text-neutral-900">
+                            {u.baslik}
+                            {u.suphe && <span className="ml-2 px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 font-bold">ŞÜPHELİ</span>}
+                          </div>
+                          <ul className="mt-1 ml-3 space-y-1">{u.varyasyonlar.map(kalkanSatiri)}</ul>
                         </li>
                       ))}
                     </ul>
-                  </li>
-                ))}
-              </ul>
+                  </div>
+                );
+              })}
+              <p data-testid="kalkan-ozet" className="font-semibold text-neutral-800">{sifirla.size} renk işaretli (stoğu 0 yapılacak).</p>
             </section>
           )}
 
@@ -369,7 +422,7 @@ export default function AdminTrendyolSync({
           )}
 
           <div className="flex flex-wrap items-center gap-3">
-            <button type="button" onClick={onApply} disabled={busy !== "" || copying || stale || (checked.size === 0 && !(includeHidden && preview.listelenmeyen > 0))} className="min-h-11 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white px-5 rounded-xl transition-colors disabled:opacity-50">
+            <button type="button" onClick={onApply} disabled={busy !== "" || copying || stale || (checked.size === 0 && sifirla.size === 0 && !(includeHidden && preview.listelenmeyen > 0))} className="min-h-11 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white px-5 rounded-xl transition-colors disabled:opacity-50">
               {busy === "apply" ? "Uygulanıyor..." : "Seçilenleri uygula"}
             </button>
             <span className="text-xs font-semibold text-red-900">Uygulananlar geri alınamaz.</span>
