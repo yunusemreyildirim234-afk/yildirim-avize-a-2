@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { parseVariations, parseImageUrls, uploadedIdsOf, pickDefaultVariation, coverImageOf, colorKey, uploadedImageId } from "../lib/variation-input.ts";
+import { MAX_VARIATION_IMAGES, parseVariations, parseImageUrls, uploadedIdsOf, pickDefaultVariation, coverImageOf, colorKey, uploadedImageId } from "../lib/variation-input.ts";
 
 const row = (o = {}) => ({ name: "Gold", stock: 10, extraPrice: 0, images: [], ...o });
 const UUID = "123e4567-e89b-42d3-a456-426614174000";
@@ -36,10 +36,24 @@ test("fiyat farkı: varsayılan 0, makul sınır", () => {
   assert.equal(parseVariations([row({ extraPrice: 250.5 })]).ok, true);
   for (const extraPrice of [-1, 10_000_001, "x", Infinity]) assert.equal(parseVariations([row({ extraPrice })]).ok, false, String(extraPrice));
 });
-test("renk başına en fazla 5 fotoğraf; renk sayısı sınırı", () => {
+test("renk başına en fazla 30 fotoğraf (tek sabit); aşılınca açık Türkçe hata; renk sayısı sınırı", () => {
   const imgs = (n) => Array.from({ length: n }, (_, i) => `https://cdn.example.com/${i}.jpg`);
+  assert.equal(MAX_VARIATION_IMAGES, 30);
   assert.equal(parseVariations([row({ images: imgs(5) })]).ok, true);
-  assert.equal(parseVariations([row({ images: imgs(6) })]).ok, false);
+  assert.equal(parseVariations([row({ images: imgs(6) })]).ok, true, "eski 5 sınırı kalktı");
+  assert.equal(parseVariations([row({ images: imgs(30) })]).ok, true);
+  const over = parseVariations([row({ images: imgs(31) })]);
+  assert.equal(over.ok, false);
+  assert.equal(over.error, '"Gold" fotoğrafları en fazla 30 olabilir.');
+  const one = parseImageUrls(imgs(31), MAX_VARIATION_IMAGES, "Renk fotoğrafları");
+  assert.equal(one.ok, false);
+  assert.equal(one.error, "Renk fotoğrafları en fazla 30 olabilir.");
+  // Sunucu ve arayüz sabitin sayısını elle yazmaz: hepsi MAX_VARIATION_IMAGES kullanır
+  const rd = (p) => readFileSync(new URL(p, import.meta.url), "utf8");
+  assert.match(rd("../app/api/admin/product/variation/route.ts"), /parseImageUrls\(body\.images, MAX_VARIATION_IMAGES,/);
+  const ed = rd("../components/AdminProductEditor.tsx");
+  assert.equal((ed.match(/max=\{MAX_VARIATION_IMAGES\}/g) ?? []).length >= 2, true);
+  assert.doesNotMatch(ed, /en fazla 5\b/);
   assert.equal(parseVariations(Array.from({ length: 31 }, (_, i) => row({ name: `c${i}` }))).ok, false);
 });
 test("ürün fotoğrafı: en fazla 10, yalnız https veya /yol, tekil", () => {

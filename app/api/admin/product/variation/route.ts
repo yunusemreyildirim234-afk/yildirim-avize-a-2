@@ -24,7 +24,7 @@ async function POSTHandler(req: Request) {
     const body = await req.json().catch(() => ({}));
     const productId = typeof body.productId === "string" ? body.productId : "";
     if (!productId) return NextResponse.json({ error: "Renk adı zorunludur." }, { status: 400 });
-    // Aynı doğrulama kuralları (ad boş/uzun olamaz, stok 0-99999 tam sayı, fark sınırı, en fazla 5 fotoğraf)
+    // Aynı doğrulama kuralları (ad boş/uzun olamaz, stok 0-99999 tam sayı, fark sınırı, en fazla MAX_VARIATION_IMAGES fotoğraf)
     const parsed = parseVariations([{ name: body.variationValue, stock: body.stock ?? 0, extraPrice: body.extraPrice ?? 0, images: body.images }]);
     if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: 400 });
     const v = parsed.value[0];

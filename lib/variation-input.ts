@@ -3,7 +3,8 @@ import { MAX_PRICE } from "./price-input.ts";
 import { parseSize,secenekColorName, titleTr, variationAttrs, type VariationAttrs } from "./listing-core.ts";
 
 export const MAX_PRODUCT_IMAGES = 10;
-export const MAX_VARIATION_IMAGES = 5;
+/** Renk (varyasyon) başına fotoğraf üst sınırı: arayüz, sunucu doğrulaması ve yüklemeler bu tek sabiti kullanır (sınırsız değil: Blob kotası ve istek boyutu). */
+export const MAX_VARIATION_IMAGES = 30;
 /** Düzenleme / geri alma sırasında bir üründeki toplam genel görsel üst sınırı (Trendyol ürünlerinde 20'yi aşabilir). */
 export const MAX_EDIT_IMAGES = 30;
 export const MAX_VARIATIONS = 30;
@@ -52,7 +53,7 @@ function intIn(raw: unknown, min: number, max: number): number | null {
   return Number.isInteger(n) && n >= min && n <= max ? n : null;
 }
 
-/** Varyasyon listesi: en az 1 renk; ad boş olamaz, büyük/küçük harf duyarsız tekil; stok tam sayı 0-99999; fark 0-1.000.000; renk başına en fazla 5 görsel. */
+/** Varyasyon listesi: en az 1 renk; ad boş olamaz, büyük/küçük harf duyarsız tekil; stok tam sayı 0-99999; fark 0-1.000.000; renk başına en fazla MAX_VARIATION_IMAGES görsel. */
 export function parseVariations(raw: unknown): Parsed<VariationInput[]> {
   if (!Array.isArray(raw) || raw.length === 0) return { ok: false, error: "En az bir renk girilmelidir." };
   if (raw.length > MAX_VARIATIONS) return { ok: false, error: `En fazla ${MAX_VARIATIONS} renk eklenebilir.` };
