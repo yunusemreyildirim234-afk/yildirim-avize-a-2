@@ -10,6 +10,7 @@
     "kopyala": "node kopyala.mjs",
     "yaz": "node yaz.mjs",
     "geri-al": "node geri-al.mjs",
+    "yetim": "node yetim.mjs",
     "test": "node --test \"test/*.test.mjs\""
   },
   "dependencies": {
