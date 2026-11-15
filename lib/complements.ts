@@ -173,3 +173,19 @@ export function suggestionPrice(s: Pick<Suggestion, "basePrice" | "rules">, extr
 export function defaultSuggestionVariation(s: Pick<Suggestion, "variations">): SuggestionVariation | null {
   return pickDefaultOption(s.variations);
 }
+
+export const MAX_CART_PRODUCT_IDS = 50;
+const ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
+
+/** `?ids=a,b,c` → tekil ürün kimlikleri. Biçim bozuksa veya en çok 50'yi aşarsa null (400). Boş → []. */
+export function parseCartProductIds(raw: string | null): string[] | null {
+  if (raw === null || raw.trim() === "") return [];
+  const ids = [...new Set(raw.split(",").map((s) => s.trim()).filter((s) => s !== ""))];
+  if (ids.length > MAX_CART_PRODUCT_IDS || ids.some((id) => !ID_RE.test(id))) return null;
+  return ids.sort(); // sıralı: aynı sepet aynı adres, önbellek tek kayıt
+}
+
+/** Sunucudan sıralı gelen önerilerden sepettekileri çıkarıp ayar kadarını gösterir (ürün sayfası: sepet yalnız istemcide bilinir). */
+export function visibleSuggestions<T extends { productId: string }>(list: T[], cartProductIds: ReadonlySet<string>, stored: number | null | undefined): T[] {
+  return list.filter((s) => !cartProductIds.has(s.productId)).slice(0, resolveSuggestCount(stored));
+}

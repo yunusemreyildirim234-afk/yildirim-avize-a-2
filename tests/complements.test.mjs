@@ -116,3 +116,10 @@ test("suggestionPrice: yüzde ve TL indirimi; varsayılan seçenek stoklu en ucu
   const multi = { variations: [v("a", { stock: 0, extraPrice: 0 }), v("b", { extraPrice: 20 }), v("c", { extraPrice: 5 })] };
   assert.equal(m.defaultSuggestionVariation(multi).id, "c");
 });
+
+test("visibleSuggestions: sepettekiler çıkar, ayar kadar kalır (ürün sayfası istemci süzgeci)", () => {
+  const list = ["a", "b", "c", "d", "e"].map((productId) => ({ productId }));
+  assert.deepEqual(m.visibleSuggestions(list, new Set(["a"]), null).map((x) => x.productId), ["b", "c", "d", "e"]);
+  assert.deepEqual(m.visibleSuggestions(list, new Set(["a", "b"]), 2).map((x) => x.productId), ["c", "d"]);
+  assert.deepEqual(m.visibleSuggestions(list, new Set(), 0), []);
+});
