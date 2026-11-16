@@ -6,11 +6,13 @@ import { loadSimilar } from "@/app/similar-more";
 import { mergeUnique, nearEnd } from "@/lib/similar-strip";
 
 type Item = { id: string; node: ReactNode };
+/** Sonraki sayfayı getiren işlev (sunucu eylemi sonucu): `cursor` önceki yanıtın cursor değeridir. */
+export type StripLoader = (cursor: number) => Promise<{ ok: true; items: Item[]; cursor: number; hasMore: boolean } | { ok: false; limited?: boolean }>;
 
 /**
  * Yatay kaydırmalı ürün şeridi ("Benzer Avize Modelleri"). İlk ürünler sunucuda hazır gelir; sona yaklaşılınca (kaydırma ya da ok) sonraki 8 ürün getirilir.
  * Dokunmatikte parmakla kaydırma (scroll-snap), masaüstünde sağ/sol ok düğmeleri. Aynı anda tek istek; liste bitince sağ ok kaybolur, kaydırılmışsa sol ok görünür.
- * Kartlar sunucuda üretilir (ProductCard). Kategori ve kendi ürün kimliği yalnızca sunucu eylemine iletilir.
+ * Kartlar sunucuda üretilir (ProductCard). Sonraki sayfa `load` ile gelir; verilmezse ürün sayfası eylemi (kategori + kendi ürün kimliği) kullanılır.
  */
 export default function ProductStrip({
   initial,
@@ -18,13 +20,17 @@ export default function ProductStrip({
   initialHasMore,
   category,
   excludeId,
+  load: loadProp,
   label,
 }: {
   initial: Item[];
   initialCursor: number;
   initialHasMore: boolean;
-  category: string;
-  excludeId: string;
+  /** Ürün sayfası kullanımı: `load` yoksa gerekir */
+  category?: string;
+  excludeId?: string;
+  /** Verilirse sonraki sayfayı bu işlev getirir (örn. sepet şeridi); verilmezse loadSimilar(category, excludeId, cursor) */
+  load?: StripLoader;
   /** Şerit bölgesinin ekran okuyucu adı */
   label: string;
 }) {
@@ -44,7 +50,7 @@ export default function ProductStrip({
     setLoading(true);
     setError("");
     try {
-      const res = await loadSimilar(category, excludeId, cursor);
+      const res = await (loadProp ?? ((c: number) => loadSimilar(category ?? "", excludeId ?? "", c)))(cursor);
       if (!res.ok) throw new Error(res.limited ? "limited" : "fail");
       setItems((prev) => mergeUnique(prev, res.items));
       setCursor(res.cursor);
@@ -55,7 +61,7 @@ export default function ProductStrip({
       busy.current = false;
       setLoading(false);
     }
-  }, [category, excludeId, cursor, hasMore]);
+  }, [loadProp, category, excludeId, cursor, hasMore]);
 
   const sync = useCallback(() => {
     const el = ref.current;
