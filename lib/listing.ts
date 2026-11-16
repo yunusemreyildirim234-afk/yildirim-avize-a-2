@@ -92,7 +92,7 @@ async function loadRows(where: Prisma.ProductWhereInput, cap: number, visible: (
 // Boş sonuç önbelleğe yazılmaz. Görünürlük ayarı okunamazsa yedek sonuç önbelleğe girmez, bu istek için önbelleksiz okunur.
 const loadRowsCached = (where: Prisma.ProductWhereInput, cap: number) =>
   cacheNonEmpty(["sf-listing-rows", ROWS_CACHE_VERSION, productsCacheKey(where, cap)], storefrontTags(where), () => loadRows(where, cap, getVisibleWhereStrict), LISTING_ROWS_CACHE_SECONDS).catch(() => loadRows(where, cap));
-const catalogRows = () => loadRowsCached({}, LISTING_ROW_CAP);
+export const catalogRows = () => loadRowsCached({}, LISTING_ROW_CAP);
 
 /** Koşullu taban (kategori/koleksiyon): tanınan koşul katalogdan bellekte süzülür (sıra aynı: updatedAt azalan, id); tanınmayan koşul eski yoldan veritabanından okunur. */
 async function rowsForWhere(where: Prisma.ProductWhereInput, cap: number, cached: boolean): Promise<ListingRow[]> {
