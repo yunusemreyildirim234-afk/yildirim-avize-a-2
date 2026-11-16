@@ -1,46 +1,52 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Check, Copy, X } from "lucide-react";
+import { AVANTAJ_ACMA_OLAYI, AVANTAJ_DEGISTI_OLAYI, AVANTAJ_KAYIT_ANAHTARI, avantajGorunsunMu, kaydiCoz, type AvantajKaydi } from "@/lib/promo-dismiss";
 
-const STORAGE_KEY = "ya-promo-closed";
-const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
-
-/** Avantaj şeridini kapatılabilir yapar; tercih 7 gün saklanır (kart kümesi değişirse şerit yeniden görünür). Depolama yoksa/hata verirse şerit açık kalır. */
-export function DismissibleStrip({ sig, children }: { sig: string; children: React.ReactNode }) {
-  const [hidden, setHidden] = useState(false);
+/** Avantaj şeridini gizlenebilir yapar. Karar mantığı lib/promo-dismiss.ts içinde (24 saat + içerik sürümü). Depolama yoksa/hata verirse şerit açık kalır. */
+export function DismissibleStrip({ surum, children }: { surum: string; children: React.ReactNode }) {
+  // null: henüz okunmadı. İlk render'da içerik sunucuyla aynı (yer kaplar, görünmez); okununca ya görünür ya kalkar (yanıp sönme yok).
+  const [visible, setVisible] = useState<boolean | null>(null);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return;
-      const saved = JSON.parse(raw) as { sig?: string; until?: number };
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- istemci depolaması ilk render sonrası okunur (hydration uyumu)
-      if (saved.sig === sig && typeof saved.until === "number" && saved.until > Date.now()) setHidden(true);
-    } catch {
-      /* depolama kapalı/bozuk: şerit açık kalır */
-    }
-  }, [sig]);
+    const oku = () => {
+      let kayit = null;
+      try {
+        kayit = kaydiCoz(localStorage.getItem(AVANTAJ_KAYIT_ANAHTARI));
+      } catch {
+        /* depolama kapalı: şerit açık kalır */
+      }
+      setVisible(avantajGorunsunMu({ kayit, guncelSurum: surum, simdi: Date.now() }));
+    };
+    oku();
+    window.addEventListener(AVANTAJ_ACMA_OLAYI, oku);
+    return () => window.removeEventListener(AVANTAJ_ACMA_OLAYI, oku);
+  }, [surum]);
 
-  const close = () => {
-    setHidden(true);
+  const hide = () => {
+    setVisible(false);
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ sig, until: Date.now() + WEEK_MS }));
+      const kayit: AvantajKaydi = { surum, gizlenmeZamani: Date.now() };
+      localStorage.setItem(AVANTAJ_KAYIT_ANAHTARI, JSON.stringify(kayit));
     } catch {
       /* yoksay */
     }
+    window.dispatchEvent(new Event(AVANTAJ_DEGISTI_OLAYI));
   };
 
-  if (hidden) return null;
+  if (visible === false) return null;
   return (
-    <section aria-label="Avantajlar" className="relative bg-zinc-50 border-b border-zinc-200">
+    <section id="avantajlar" aria-label="Avantajlar" className={`relative bg-zinc-50 border-b border-zinc-200 scroll-mt-20 ${visible === null ? "invisible" : ""}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-5">
         <div className="flex items-center justify-between gap-3 mb-3">
           <h2 className="text-xs uppercase tracking-widest font-semibold text-zinc-700">Avantajlar</h2>
           <button
             type="button"
-            onClick={close}
-            aria-label="Avantajlar bölümünü kapat"
+            onClick={hide}
+            aria-label="Gizle"
+            title="Gizle"
             className="shrink-0 inline-flex items-center justify-center w-11 h-11 -my-2 -mr-2 rounded-full text-zinc-600 hover:bg-zinc-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600"
           >
             <X aria-hidden="true" className="w-4 h-4" />
@@ -49,6 +55,54 @@ export function DismissibleStrip({ sig, children }: { sig: string; children: Rea
         {children}
       </div>
     </section>
+  );
+}
+
+/** Altbilgideki "Avantajlar" bağlantısı: yalnızca kart gizliyken (geçerli kayıt varken) görünür; tıklanınca kaydı siler ve kartı açar. */
+export function AvantajlarAcLink({ className }: { className: string }) {
+  const router = useRouter();
+  const [gizli, setGizli] = useState(false);
+
+  useEffect(() => {
+    const oku = () => {
+      let kayit = null;
+      try {
+        kayit = kaydiCoz(localStorage.getItem(AVANTAJ_KAYIT_ANAHTARI));
+      } catch {
+        /* yoksay */
+      }
+      // Sürüm burada bilinmez; süresi dolmamış kayıt = gizli sayılır (sürüm farklıysa kart zaten açıktır, bağlantı yalnızca ona kaydırır).
+      setGizli(!!kayit && avantajGorunsunMu({ kayit: { ...kayit, surum: "" }, guncelSurum: "", simdi: Date.now() }) === false);
+    };
+    oku();
+    window.addEventListener(AVANTAJ_DEGISTI_OLAYI, oku);
+    window.addEventListener("storage", oku);
+    return () => {
+      window.removeEventListener(AVANTAJ_DEGISTI_OLAYI, oku);
+      window.removeEventListener("storage", oku);
+    };
+  }, []);
+
+  if (!gizli) return null;
+  const ac = () => {
+    try {
+      localStorage.removeItem(AVANTAJ_KAYIT_ANAHTARI);
+    } catch {
+      /* yoksay */
+    }
+    setGizli(false);
+    window.dispatchEvent(new Event(AVANTAJ_DEGISTI_OLAYI));
+    window.dispatchEvent(new Event(AVANTAJ_ACMA_OLAYI));
+    if (window.location.pathname === "/") {
+      requestAnimationFrame(() => document.getElementById("avantajlar")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+    } else {
+      router.push("/#avantajlar");
+    }
+  };
+  return (
+    <button type="button" onClick={ac} className={className}>
+      Avantajlar
+    </button>
   );
 }
 

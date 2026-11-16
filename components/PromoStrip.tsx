@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, MapPin, Tag, Truck } from "lucide-react";
 import { CopyCode, DismissibleStrip } from "@/components/PromoStripClient";
+import { avantajSurumu } from "@/lib/promo-dismiss";
 import { getPromoViews } from "@/lib/promo-data";
 import type { PromoTheme, PromoView } from "@/lib/promo-cards";
 
@@ -54,13 +55,13 @@ function Card({ v }: { v: PromoView }) {
   );
 }
 
-/** Hero'nun altındaki "Avantajlar" şeridi. Sunucu bileşeni; yalnızca kopyala ve kapat düğmeleri istemci adasıdır. Görünür kart yoksa hiçbir şey çizilmez. */
+/** Hero'nun altındaki "Avantajlar" şeridi. Sunucu bileşeni; yalnızca kopyala ve gizle düğmeleri istemci adasıdır. Görünür kart yoksa hiçbir şey çizilmez. */
 export default async function PromoStrip() {
   const views = await getPromoViews();
   if (views.length === 0) return null;
-  const sig = views.map((v) => `${v.id}:${v.code ?? ""}:${v.title}`).join("|");
+  const surum = avantajSurumu(views);
   return (
-    <DismissibleStrip sig={sig}>
+    <DismissibleStrip surum={surum}>
       <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-1 -mx-1 px-1 sm:mx-0 sm:px-0 sm:overflow-visible sm:grid sm:grid-cols-2 lg:grid-cols-3">
         {views.map((v) => (
           <Card key={v.id} v={v} />

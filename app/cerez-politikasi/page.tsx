@@ -27,7 +27,7 @@ export default function Page() {
             "ya-pending-card-order (oturum depolaması): Kartlı ödeme ekranını kapatıp geri döndüğünüzde yarım kalan siparişinizi bulmak için sipariş numarasını tutar.",
             "ya_cart_merge_note (oturum depolaması): Giriş sonrası misafir sepetinizin hesabınıza eklendiğini bildiren notu bir kez göstermek için kullanılır.",
             "ya_recent_searches (yerel depolama): Son aramalarınızı arama kutusunda önermek için tarayıcınızda saklar.",
-            "ya-promo-closed (yerel depolama): Kapattığınız duyuru şeridinin bir hafta boyunca yeniden gösterilmemesi için tercihi tutar.",
+            "ya-avantaj-gizle (yerel depolama): Gizlediğiniz Avantajlar bölümünün bir gün boyunca (içerik değişmedikçe) yeniden gösterilmemesi için tercihi tutar.",
             "ya_sid (yerel depolama): Sitenin kendi kullanım kaydı için rastgele bir ziyaretçi kimliğidir; sepete ekleme, arama ve ödeme adımı gibi olayları aynı ziyaretçiye bağlar. Bu olay kayıtları 3 gün sonra silinir. Çerez çubuğundaki tercihinizden bağımsız çalışır.",
             "ya_email (yerel depolama): Eski sürümlerden kalmış olabilecek bir kayıttır; site artık e-posta adresinizi bu şekilde saklamaz ve eski değeri otomatik siler.",
             "ya-gtm-purchase-* (yerel depolama): Bir siparişin satın alma ölçümünün yalnızca bir kez gönderilmesi için sipariş başına işaret koyar; ölçüm ancak 'Kabul Et' dediyseniz yapılır.",

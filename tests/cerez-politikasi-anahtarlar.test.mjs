@@ -17,7 +17,7 @@ function walk(dir, out = []) {
 }
 
 // window olay adları (depolama anahtarı değil)
-const EVENT_NAMES = new Set(["ya-auth", "ya-cart-merged"]);
+const EVENT_NAMES = new Set(["ya-auth", "ya-cart-merged", "ya-avantaj-ac", "ya-avantaj-degisti"]);
 
 test("koddaki her ya* / yildirim_* depolama ve çerez anahtarı çerez politikasında geçer", () => {
   const files = ["app", "lib", "components", "context"].flatMap((d) => walk(d));

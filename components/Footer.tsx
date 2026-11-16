@@ -1,6 +1,7 @@
 import Link from "next/link";
 import CompanyInfo from "@/components/CompanyInfo";
 import FooterMap from "@/components/FooterMap";
+import { AvantajlarAcLink } from "@/components/PromoStripClient";
 import { ADDRESS_LINE, CATEGORIES, MAP_EMBED_SRC, MAP_LINK, PHONE_DISPLAY, PHONE_TEL } from "@/lib/site";
 
 const MAP_SRC = MAP_EMBED_SRC;
@@ -107,6 +108,9 @@ export default function Footer({ extraCategories = [], fixedOverrides = {}, show
               <Link href="/#sss-baslik" className="block py-1.5 hover:text-amber-400 transition-colors">
                 Sık Sorulan Sorular
               </Link>
+            </li>
+            <li>
+              <AvantajlarAcLink className="block py-1.5 text-left hover:text-amber-400 transition-colors" />
             </li>
           </ul>
         </div>
