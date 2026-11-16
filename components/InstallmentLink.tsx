@@ -19,27 +19,30 @@ function Dialog({ onClose }: { onClose: () => void }) {
             <X aria-hidden="true" className="w-5 h-5 text-neutral-600" />
           </button>
         </div>
-        <div className="overflow-y-auto px-5 py-4 text-xs text-neutral-700">
+        <div className="overflow-y-auto px-3 sm:px-5 py-4 text-xs text-neutral-700">
           <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Taksit oranları tablosu">
-            <table className="w-full min-w-[420px] border-collapse text-left">
+            <table className="w-full border-collapse text-left text-[11px] sm:text-xs">
               <caption className="sr-only">Bankalara göre taksit sayısı ve komisyon oranı</caption>
               <thead>
                 <tr className="border-b border-neutral-200 text-neutral-600">
-                  <th scope="col" className="py-2 pr-3 font-semibold">Kart</th>
+                  <th scope="col" className="py-2 pr-2 font-semibold">Kart</th>
                   {INSTALLMENT_COUNTS.map((n) => (
-                    <th key={n} scope="col" className="py-2 px-2 font-semibold whitespace-nowrap">{n} Taksit</th>
+                    <th key={n} scope="col" className="py-2 px-1 sm:px-2 font-semibold text-center leading-tight">
+                      <span className="block text-neutral-900">{n}</span>
+                      <span className="block font-normal">taksit</span>
+                    </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {INSTALLMENT_BANKS.map((b) => (
                   <tr key={b.id} className="border-b border-neutral-100">
-                    <th scope="row" className="py-2 pr-3 font-semibold text-neutral-900">
-                      <BankLogo id={b.id} fallbackName={b.name} />
+                    <th scope="row" className="py-1.5 pr-2 font-semibold text-neutral-900">
+                      <BankLogo id={b.id} fallbackName={b.name} imgClassName="max-w-[76px] sm:max-w-[110px]" />
                       <span className="sr-only">{b.name}</span>
                     </th>
                     {INSTALLMENT_COUNTS.map((n) => (
-                      <td key={n} className="py-2 px-2 tabular-nums whitespace-nowrap text-neutral-900">{formatRate(b.rates[n])}</td>
+                      <td key={n} className="py-1.5 px-1 sm:px-2 text-center tabular-nums whitespace-nowrap text-neutral-900">{formatRate(b.rates[n])}</td>
                     ))}
                   </tr>
                 ))}
