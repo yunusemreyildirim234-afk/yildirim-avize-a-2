@@ -6,9 +6,11 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import ProductReviews from "@/components/ProductReviews";
 import ProductQuestionForm from "@/components/ProductQuestionForm";
 import ProductCard from "@/components/ProductCard";
+import ProductStrip from "@/components/ProductStrip";
+import { loadSimilarProducts } from "@/lib/similar-products";
 import { ProductPageComplements } from "@/components/ComplementSuggestions";
 import { getProductComplements } from "@/lib/complement-suggestions";
-import { getLiveStocks, getProductDetail, getProductIdsByShort, getProductsCached } from "@/lib/products";
+import { getLiveStocks, getProductDetail, getProductIdsByShort } from "@/lib/products";
 import { parseProductParam, productPath } from "@/lib/product-url";
 import { applyLiveStock } from "@/lib/stock-freshness";
 import { getUserSession } from "@/lib/account";
@@ -106,7 +108,8 @@ export default async function ProductDetailPage({ params }: Props) {
   if (`/urun/${requested}` !== canonicalPath) permanentRedirect(canonicalPath);
 
   const hasCategory = product.category.trim().length > 0; // kategorisiz ürün: benzer ürün / kategori yolu / kategori alanı yok
-  const similar = hasCategory ? await getProductsCached({ active: true, variations: { some: { stock: { gt: 0 } } }, category: product.category, id: { not: product.id } }, 4).catch(() => []) : [];
+  // Benzer ürünler: aynı kategori, aktif ve stoklu (kendi ürün hariç); paylaşılan katalog önbelleğinden, ilk 8 sunucuda hazır, kalanı şeritte kaydırdıkça gelir
+  const similar = hasCategory ? await loadSimilarProducts(product.category, product.id, 0).catch(() => null) : null;
 
   // "Bununla birlikte alın": bağ yoksa boş (bölüm hiç çizilmez); okunamazsa sayfa yine açılır
   const complements = await getProductComplements(product.id).catch(() => ({ suggestions: [], count: null }));
@@ -195,17 +198,20 @@ export default async function ProductDetailPage({ params }: Props) {
 
         <ProductPageComplements suggestions={complements.suggestions} count={complements.count} />
 
-        {similar.length > 0 && (
+        {similar && similar.items.length > 0 && (
           <section aria-labelledby="benzer" className="mt-10">
             {/* Aksesuarlarda (avize taşı vb.) "Benzer Avize Modelleri" başlığı görünmez; ekran okuyucu için bölüm adı kalır */}
             <h2 id="benzer" className={isAccessoryCategory(product.category) ? "sr-only" : "text-lg font-serif font-bold text-neutral-900 mb-4"}>
               {isAccessoryCategory(product.category) ? "Benzer Ürünler" : "Benzer Avize Modelleri"}
             </h2>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              {similar.map((p) => (
-                <ProductCard key={p.id} product={p} />
-              ))}
-            </div>
+            <ProductStrip
+              initial={similar.items.map((p) => ({ id: p.id, node: <ProductCard key={p.id} product={p} /> }))}
+              initialCursor={similar.cursor}
+              initialHasMore={similar.hasMore}
+              category={product.category}
+              excludeId={product.id}
+              label={isAccessoryCategory(product.category) ? "Benzer ürünler" : "Benzer avize modelleri"}
+            />
           </section>
         )}
 
