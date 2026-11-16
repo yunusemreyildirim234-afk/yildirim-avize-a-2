@@ -46,7 +46,7 @@ export default function BankTransferCard({ orderId, amount }: { orderId?: string
         <dt className="text-neutral-500">Banka</dt>
         <dd className="font-semibold text-neutral-900 flex flex-wrap items-center gap-2">
           {BANK_INFO.bank}
-          {isKuveytTurk(BANK_INFO.bank) && <BankLogo id="kuveytturk" height={18} />}
+          {isKuveytTurk(BANK_INFO.bank) && <BankLogo id="kuveytturk" compact imgClassName="max-w-[90px]" />}
         </dd>
         <dt className="text-neutral-500">Alıcı Adı</dt>
         <dd className="font-semibold text-neutral-900 flex flex-wrap items-center gap-2">

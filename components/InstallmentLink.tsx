@@ -35,7 +35,7 @@ function Dialog({ onClose }: { onClose: () => void }) {
                 {INSTALLMENT_BANKS.map((b) => (
                   <tr key={b.id} className="border-b border-neutral-100">
                     <th scope="row" className="py-2 pr-3 font-semibold text-neutral-900">
-                      <BankLogo id={b.id} fallbackName={b.name} height={22} className="max-w-28" />
+                      <BankLogo id={b.id} fallbackName={b.name} />
                       <span className="sr-only">{b.name}</span>
                     </th>
                     {INSTALLMENT_COUNTS.map((n) => (
