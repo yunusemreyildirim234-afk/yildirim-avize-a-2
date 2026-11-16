@@ -38,6 +38,7 @@ import { smallImage } from "@/lib/img";
 import { displayTitle } from "@/lib/title-display";
 import { productPath } from "@/lib/product-url";
 import ComplementSuggestions from "@/components/ComplementSuggestions";
+import CartMoreStrip from "@/components/CartMoreStrip";
 import type { Suggestion } from "@/lib/complements";
 import { bundleLineView, lostBundleTitles, type BundleInfo } from "@/lib/cart-bundle";
 
@@ -1406,6 +1407,7 @@ export default function CartPage() {
             </div>
           </div>
         </div>
+        <CartMoreStrip />
       </div>
       {contract && (
         <ContractModal
