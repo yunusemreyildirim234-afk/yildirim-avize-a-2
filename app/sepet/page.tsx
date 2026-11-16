@@ -19,6 +19,7 @@ import { lineNotices } from "@/lib/cart-notices";
 import PriceLadder from "@/components/PriceLadder";
 import type { LadderStep } from "@/lib/price-ladder";
 import BankTransferCard from "@/components/BankTransferCard";
+import InstallmentLink from "@/components/InstallmentLink";
 import ContractModal from "@/components/ContractModal";
 import { invoiceError, shippingFormError } from "@/lib/validation";
 import { ADDRESS_LINE } from "@/lib/site";
@@ -1242,6 +1243,7 @@ export default function CartPage() {
                     &ldquo;Ödemeye Geç&rdquo; dediğinizde kart bilgilerinizi PayTR&apos;nin güvenli ödeme formuna girersiniz.
                     Kart bilgileriniz sitemizde saklanmaz veya görüntülenmez. Taksit seçenekleri kartınıza göre formda listelenir.
                   </p>
+                  <InstallmentLink />
                 </div>
               ) : (
                 <div className="space-y-3">
