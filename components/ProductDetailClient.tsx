@@ -25,6 +25,7 @@ import { smallImage } from "@/lib/img";
 import { displayTitle } from "@/lib/title-display";
 import { pickDefaultOption } from "@/lib/default-variation";
 import InstallmentLink from "@/components/InstallmentLink";
+import ProductShareButton from "@/components/ProductShareButton";
 
 interface Variation {
   id: string;
@@ -287,14 +288,24 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
             <h1 className="min-w-0 flex-1 break-words text-2xl sm:text-3xl font-serif font-bold leading-tight tracking-tight text-neutral-900">
               {shownTitle.title}
             </h1>
-            {!soldOut && (
-              <div className="relative shrink-0 w-11 h-11">
-                <FavoriteButton
-                  product={{ id: product.id, title: product.title, category: product.category, basePrice: product.basePrice, imageUrl: coverImageOf(product), variations: product.variations }}
-                  className="absolute right-0 top-0 z-10 sm:[&>button]:w-11 sm:[&>button]:h-11 [&>button]:border [&>button]:border-neutral-300"
-                />
-              </div>
-            )}
+            <div className="flex items-center gap-2 shrink-0">
+              {!soldOut && (
+                <div className="relative shrink-0 w-11 h-11">
+                  <FavoriteButton
+                    product={{ id: product.id, title: product.title, category: product.category, basePrice: product.basePrice, imageUrl: coverImageOf(product), variations: product.variations }}
+                    className="absolute right-0 top-0 z-10 sm:[&>button]:w-11 sm:[&>button]:h-11 [&>button]:border [&>button]:border-neutral-300"
+                  />
+                </div>
+              )}
+              <ProductShareButton
+                product={{
+                  id: product.id,
+                  title: product.title,
+                  category: product.category,
+                  price: isPurchasablePrice(currentPrice) ? currentPrice : null,
+                }}
+              />
+            </div>
           </div>
           {shownTitle.assembled && (
             <span className="inline-block text-[11px] font-semibold text-neutral-700 border border-neutral-300 rounded-md px-2 py-0.5">Montajlı</span>
