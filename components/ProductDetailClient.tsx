@@ -24,6 +24,7 @@ import { bulbNoteFor, isAccessoryCategory } from "@/lib/bulb-note";
 import { smallImage } from "@/lib/img";
 import { displayTitle } from "@/lib/title-display";
 import { pickDefaultOption } from "@/lib/default-variation";
+import InstallmentLink from "@/components/InstallmentLink";
 
 interface Variation {
   id: string;
@@ -314,6 +315,9 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
                 {lowStockText}
               </span>
             )}
+            <div className="mt-2">
+              <InstallmentLink />
+            </div>
             {bulk.length > 0 && (
               <ul className="mt-2 space-y-1">
                 {bulk.map((t) => (
