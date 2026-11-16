@@ -4,6 +4,8 @@ import { toast } from "sonner";
 import { useState } from "react";
 import { Check, Copy, Landmark } from "lucide-react";
 import { BANK_INFO } from "@/lib/site";
+import { isKuveytTurk } from "@/lib/installments";
+import BankLogo from "@/components/BankLogo";
 import { formatTl, orderCode } from "@/lib/order-display";
 import CopyCodeButton from "@/components/CopyCodeButton";
 
@@ -42,7 +44,10 @@ export default function BankTransferCard({ orderId, amount }: { orderId?: string
 
       <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5">
         <dt className="text-neutral-500">Banka</dt>
-        <dd className="font-semibold text-neutral-900">{BANK_INFO.bank}</dd>
+        <dd className="font-semibold text-neutral-900 flex flex-wrap items-center gap-2">
+          {BANK_INFO.bank}
+          {isKuveytTurk(BANK_INFO.bank) && <BankLogo id="kuveytturk" height={18} />}
+        </dd>
         <dt className="text-neutral-500">Alıcı Adı</dt>
         <dd className="font-semibold text-neutral-900 flex flex-wrap items-center gap-2">
           {BANK_INFO.holder}
