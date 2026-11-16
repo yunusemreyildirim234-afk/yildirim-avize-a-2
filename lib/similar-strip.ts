@@ -23,9 +23,10 @@ export function similarList(rows: SimilarRow[], category: string): string[] {
 }
 
 /** Pencere okunur: kimlik sırası korunur, bulunamayanlar ve kendi ürün atlanır. */
-function ordered<T extends { id: string }>(ids: string[], found: T[], excludeId: string): T[] {
+function ordered<T extends { id: string }>(ids: string[], found: T[], exclude: string | ReadonlySet<string>): T[] {
   const byId = new Map(found.map((p) => [p.id, p]));
-  return ids.flatMap((id) => (id !== excludeId && byId.has(id) ? [byId.get(id)!] : []));
+  const skip = (id: string) => (typeof exclude === "string" ? id === exclude : exclude.has(id));
+  return ids.flatMap((id) => (!skip(id) && byId.has(id) ? [byId.get(id)!] : []));
 }
 
 export interface SimilarPage<T> {
@@ -42,7 +43,7 @@ export interface SimilarPage<T> {
  */
 export async function collectPage<T extends { id: string }>(
   list: string[],
-  excludeId: string,
+  excludeId: string | ReadonlySet<string>, // tek ürün (ürün sayfası) ya da bir küme (sepet); pencere kimliklerini ETKİLEMEZ, bellekte atılır
   cursor: number,
   size: number,
   fetchWindow: (ids: string[]) => Promise<T[]>
