@@ -57,7 +57,7 @@ export const metadata: Metadata = {
     card: "summary",
     title: "Yıldırım Avize",
     description: DESCRIPTION,
-    images: ["/logo-kare-v2.png"],
+    images: ["/logo-kare-yazili-v3.png"],
   },
 };
 
