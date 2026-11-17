@@ -327,7 +327,7 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
               </span>
             )}
             <div className="mt-2">
-              <InstallmentLink />
+              <InstallmentLink amount={lineNow} />
             </div>
             {bulk.length > 0 && (
               <ul className="mt-2 space-y-1">

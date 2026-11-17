@@ -4,61 +4,183 @@ import { useRef, useState } from "react";
 import { X } from "lucide-react";
 import { useFocusTrap } from "@/components/useFocusTrap";
 import BankLogo from "@/components/BankLogo";
-import { formatRate, INSTALLMENT_BANKS, INSTALLMENT_COUNTS } from "@/lib/installments";
+import {
+  calculateBankInstallment,
+  formatRate,
+  formatTl,
+  INSTALLMENT_BANKS,
+  INSTALLMENT_COUNTS,
+  type InstallmentCount,
+} from "@/lib/installments";
 
-function Dialog({ onClose }: { onClose: () => void }) {
+function Dialog({ amount, onClose }: { amount?: number; onClose: () => void }) {
   const boxRef = useRef<HTMLDivElement>(null);
   useFocusTrap(true, boxRef, { onEscape: onClose });
+
+  const [selectedBankId, setSelectedBankId] = useState<string>(INSTALLMENT_BANKS[0].id);
+  const [selectedCount, setSelectedCount] = useState<InstallmentCount>(3);
+
+  const selectedBank = INSTALLMENT_BANKS.find((b) => b.id === selectedBankId) ?? INSTALLMENT_BANKS[0];
+  const selectedRate = selectedBank.rates[selectedCount];
+  const calc = typeof amount === "number" ? calculateBankInstallment(amount, selectedBank.id, selectedCount) : null;
+
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby="taksit-baslik" className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6">
-      <button type="button" tabIndex={-1} aria-label="Kapat" onClick={onClose} className="absolute inset-0 bg-zinc-950/60" />
-      <div ref={boxRef} className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[88vh] flex flex-col">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 shrink-0">
-          <h2 id="taksit-baslik" className="text-base font-serif font-bold text-neutral-900">Taksit Seçenekleri</h2>
-          <button type="button" onClick={onClose} aria-label="Kapat" className="rounded-full p-1.5 hover:bg-neutral-100 focus-visible:outline-2 focus-visible:outline-amber-600">
+    <div role="dialog" aria-modal="true" aria-labelledby="taksit-baslik" className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-6">
+      <button type="button" tabIndex={-1} aria-label="Kapat" onClick={onClose} className="absolute inset-0 bg-neutral-950/60" />
+      <div ref={boxRef} className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-neutral-200 overflow-hidden">
+        <div className="flex items-center justify-between px-3.5 sm:px-5 py-3 sm:py-4 border-b border-neutral-200 shrink-0">
+          <div>
+            <h2 id="taksit-baslik" className="text-base font-serif font-bold text-neutral-900">
+              Taksit Seçenekleri
+            </h2>
+            <p className="text-[11px] text-neutral-600 mt-0.5">
+              Taksit tutarını hesaplamak için tablodan bir oran seçin.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Kapat"
+            className="rounded-full p-1.5 hover:bg-neutral-100 focus-visible:outline-2 focus-visible:outline-amber-600"
+          >
             <X aria-hidden="true" className="w-5 h-5 text-neutral-600" />
           </button>
         </div>
-        <div className="overflow-y-auto px-3 sm:px-5 py-4 text-xs text-neutral-700">
-          <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Taksit oranları tablosu">
-            <table className="w-full border-collapse text-left text-[11px] sm:text-xs">
+
+        <div className="overflow-y-auto px-2 sm:px-5 py-2.5 sm:py-4 text-xs text-neutral-700">
+          <div className="overflow-x-auto" role="region" aria-label="Taksit oranları tablosu">
+            <table className="w-full border-collapse text-left text-[10.5px] sm:text-xs">
               <caption className="sr-only">Bankalara göre taksit sayısı ve komisyon oranı</caption>
               <thead>
                 <tr className="border-b border-neutral-200 text-neutral-600">
-                  <th scope="col" className="py-2 pr-2 font-semibold">Kart</th>
+                  <th scope="col" className="py-1.5 pr-0.5 sm:pr-2 font-semibold">
+                    Kart
+                  </th>
                   {INSTALLMENT_COUNTS.map((n) => (
-                    <th key={n} scope="col" className="py-2 px-1 sm:px-2 font-semibold text-center leading-tight">
+                    <th
+                      key={n}
+                      scope="col"
+                      className={`py-1.5 px-0.5 sm:px-2 font-semibold text-center leading-tight ${
+                        selectedCount === n ? "text-amber-800" : ""
+                      }`}
+                    >
                       <span className="block text-neutral-900">{n}</span>
-                      <span className="block font-normal">taksit</span>
+                      <span className="block font-normal text-[10px] sm:text-xs">taksit</span>
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {INSTALLMENT_BANKS.map((b) => (
-                  <tr key={b.id} className="border-b border-neutral-100">
-                    <th scope="row" className="py-1.5 pr-2 font-semibold text-neutral-900">
-                      <BankLogo id={b.id} fallbackName={b.name} imgClassName="max-w-[76px] sm:max-w-[110px]" />
-                      <span className="sr-only">{b.name}</span>
-                    </th>
-                    {INSTALLMENT_COUNTS.map((n) => (
-                      <td key={n} className="py-1.5 px-1 sm:px-2 text-center tabular-nums whitespace-nowrap text-neutral-900">{formatRate(b.rates[n])}</td>
-                    ))}
-                  </tr>
-                ))}
+                {INSTALLMENT_BANKS.map((b) => {
+                  const isBankRow = selectedBank.id === b.id;
+                  return (
+                    <tr
+                      key={b.id}
+                      className={`border-b border-neutral-100 transition-colors ${
+                        isBankRow ? "bg-amber-50/40" : ""
+                      }`}
+                    >
+                      <th scope="row" className="py-1 pr-0.5 sm:py-1.5 sm:pr-2 font-semibold text-neutral-900">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedBankId(b.id)}
+                          aria-label={`${b.name} seç`}
+                          className="inline-flex items-center rounded-md text-left focus-visible:outline-2 focus-visible:outline-amber-600"
+                        >
+                          <BankLogo
+                            id={b.id}
+                            fallbackName={b.name}
+                            className="max-sm:dark:px-1 max-sm:dark:py-0.5"
+                            imgClassName="max-h-4 sm:max-h-7 max-w-[44px] sm:max-w-[100px]"
+                          />
+                          <span className="sr-only">{b.name}</span>
+                        </button>
+                      </th>
+                      {INSTALLMENT_COUNTS.map((n) => {
+                        const isSelected = isBankRow && selectedCount === n;
+                        return (
+                          <td key={n} className="p-px sm:p-1 text-center">
+                            <button
+                              type="button"
+                              data-testid={`taksit-hucre-${b.id}-${n}`}
+                              aria-pressed={isSelected}
+                              aria-label={`${b.name} ${n} taksit ${formatRate(b.rates[n])}`}
+                              onClick={() => {
+                                setSelectedBankId(b.id);
+                                setSelectedCount(n);
+                              }}
+                              className={`w-full rounded-lg py-1.5 px-0.5 sm:px-2 text-center tabular-nums whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-amber-600 ${
+                                isSelected
+                                  ? "bg-amber-100 text-amber-950 border border-amber-500 font-bold shadow-xs"
+                                  : "text-neutral-900 border border-transparent hover:bg-neutral-100 hover:border-neutral-300 font-medium"
+                              }`}
+                            >
+                              {formatRate(b.rates[n])}
+                            </button>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
-          <p className="mt-3 text-neutral-600">Tablodaki oranlar taksit sayısına göre komisyon yüzdesidir.</p>
-          <p className="mt-1 font-semibold text-neutral-900">Kesin tutar ödeme adımında kartınıza göre gösterilir.</p>
+        </div>
+
+        <div
+          data-testid="taksit-hesaplama"
+          aria-live="polite"
+          className="shrink-0 border-t border-neutral-200 bg-neutral-50 px-3 sm:px-5 py-3 text-xs"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-1.5">
+            <span className="font-bold text-neutral-900">Tahmini Taksit Hesaplama</span>
+            <span
+              data-testid="taksit-secili-ozet"
+              className="inline-flex items-center gap-1 rounded-full bg-amber-100 border border-amber-300 px-2.5 py-0.5 text-[11px] font-semibold text-amber-950"
+            >
+              {selectedBank.name} • {selectedCount} Taksit ({formatRate(selectedRate)})
+            </span>
+          </div>
+
+          {calc ? (
+            <div className="mt-2 grid grid-cols-2 gap-2 sm:gap-3">
+              <div className="rounded-xl bg-white border border-neutral-200 px-3 py-2">
+                <span className="block text-[11px] text-neutral-600">Aylık Taksit</span>
+                <span data-testid="taksit-aylik" className="block text-sm sm:text-base font-bold text-amber-800 tabular-nums mt-0.5">
+                  {formatTl(calc.monthly)}
+                </span>
+                <span className="block text-[10px] text-neutral-500 tabular-nums">
+                  {calc.count} × {formatTl(calc.monthly)}
+                </span>
+              </div>
+              <div className="rounded-xl bg-white border border-neutral-200 px-3 py-2">
+                <span className="block text-[11px] text-neutral-600">Toplam Ödeme</span>
+                <span data-testid="taksit-toplam" className="block text-sm sm:text-base font-bold text-neutral-900 tabular-nums mt-0.5">
+                  {formatTl(calc.total)}
+                </span>
+                <span className="block text-[10px] text-neutral-500 tabular-nums">
+                  Peşin: {formatTl(calc.baseAmount)}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <p className="mt-1.5 text-neutral-600">
+              Seçili komisyon oranı: <strong className="text-neutral-900">{formatRate(selectedRate)}</strong>
+            </p>
+          )}
+
+          <p className="mt-2 text-[11px] text-neutral-600">
+            Kesin tutar PayTR ödeme adımında kartınıza göre belirlenir.
+          </p>
         </div>
       </div>
     </div>
   );
 }
 
-/** "Taksit seçeneklerini gör" bağlantısı + oran tablosu penceresi. Hesap yapmaz; yalnızca oranları gösterir. */
-export default function InstallmentLink({ className = "" }: { className?: string }) {
+/** "Taksit seçeneklerini gör" bağlantısı + seçilebilir oran tablosu ve tahmini taksit hesaplama penceresi. */
+export default function InstallmentLink({ amount, className = "" }: { amount?: number; className?: string }) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -70,7 +192,7 @@ export default function InstallmentLink({ className = "" }: { className?: string
       >
         Taksit seçeneklerini gör
       </button>
-      {open && <Dialog onClose={() => setOpen(false)} />}
+      {open && <Dialog amount={amount} onClose={() => setOpen(false)} />}
     </>
   );
 }

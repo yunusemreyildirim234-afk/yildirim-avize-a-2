@@ -1244,7 +1244,7 @@ export default function CartPage() {
                     &ldquo;Ödemeye Geç&rdquo; dediğinizde kart bilgilerinizi PayTR&apos;nin güvenli ödeme formuna girersiniz.
                     Kart bilgileriniz sitemizde saklanmaz veya görüntülenmez. Taksit seçenekleri kartınıza göre formda listelenir.
                   </p>
-                  <InstallmentLink />
+                  <InstallmentLink amount={finalTotal} />
                 </div>
               ) : (
                 <div className="space-y-3">
