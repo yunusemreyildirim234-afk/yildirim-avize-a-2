@@ -52,13 +52,13 @@ export default function CardImages({
       fill
       priority={priority}
       sizes={SIZES}
-      className="object-cover transition-transform duration-500 group-hover:scale-105"
+      className="object-cover transition-transform duration-500 motion-safe:group-hover:scale-[1.03]"
     />
   );
 
   if (!multi) {
     return (
-      <div className="relative aspect-square bg-zinc-100 overflow-hidden rounded-t-2xl">
+      <div className="relative aspect-square bg-zinc-100 overflow-hidden rounded-t-xl">
         {images.length === 1 ? first : (
           <div className="absolute inset-0 flex items-center justify-center text-3xl" aria-hidden="true">
             💡
@@ -74,7 +74,7 @@ export default function CardImages({
 
   return (
     <div
-      className="relative aspect-square bg-zinc-100 overflow-hidden rounded-t-2xl"
+      className="relative aspect-square bg-zinc-100 overflow-hidden rounded-t-xl"
       onPointerEnter={arm}
       onTouchStart={arm}
       onFocusCapture={arm}

@@ -60,9 +60,7 @@ export default async function ProductCard({
   return (
     <div
       data-soldout={totalStock === 0 ? "true" : undefined}
-      className={`group relative flex flex-col rounded-2xl border transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_-12px_rgba(24,24,27,0.35)] focus-within:shadow-[0_8px_24px_-12px_rgba(24,24,27,0.35)] ${
-        dark ? "bg-zinc-900 border-zinc-700 text-zinc-100" : "bg-white border-zinc-200/80 text-zinc-900 shadow-[0_1px_2px_rgba(24,24,27,0.05)]"
-      }`}
+      className={`group relative flex flex-col rounded-xl ${dark ? "bg-zinc-900 text-zinc-100" : "bg-surface text-ink"}`}
     >
       <Link href={productPath(product)} className={`flex flex-col flex-1 ${totalStock === 0 ? "[&_img]:opacity-60" : ""}`}>
         <CardImages images={gallery} alt={product.title} priority={priority}>
