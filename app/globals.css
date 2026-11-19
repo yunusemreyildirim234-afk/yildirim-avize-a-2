@@ -2,12 +2,50 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/*
+ * Anlamsal renk jetonları (--ya-*): açık ve koyu değerler ayrı tanımlanır; aşağıdaki .dark ölçek ters çevirmesi bunlara dokunmaz.
+ * Kontrastlar: docs/kod-denetimi/ui-yenileme-plani.md Bölüm 4.3. bronze (#A27B5C) yalnız dekor; yazı/düğme için bronze-ink.
+ * night ve bronze-soft tema-bağımsızdır (.keep-theme içindeki koyu alanlar için).
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --ya-canvas: #faf9f6;
+  --ya-surface: #f4f2ee;
+  --ya-raised: #ffffff;
+  --ya-photo: #f4f2ee;
+  --ya-ink: #1c1c1c;
+  --ya-ink-muted: #5c5853;
+  --ya-ink-subtle: #6b6660;
+  --ya-line: #e4dfd7;
+  --ya-line-strong: #8a847c;
+  --ya-bronze: #a27b5c;
+  --ya-bronze-ink: #7c5a3e;
+  --ya-bronze-deep: #6b4d35;
+  --ya-on-bronze: #ffffff;
+  --ya-sale: #b91c1c;
+  --ya-focus: #7c5a3e;
+  --ya-night: #1c1c1c;
+  --ya-bronze-soft: #c9a27e;
+  --background: var(--ya-canvas);
+  --foreground: var(--ya-ink);
 }
 
 @theme inline {
+  --color-canvas: var(--ya-canvas);
+  --color-surface: var(--ya-surface);
+  --color-raised: var(--ya-raised);
+  --color-photo: var(--ya-photo);
+  --color-ink: var(--ya-ink);
+  --color-ink-muted: var(--ya-ink-muted);
+  --color-ink-subtle: var(--ya-ink-subtle);
+  --color-line: var(--ya-line);
+  --color-line-strong: var(--ya-line-strong);
+  --color-bronze: var(--ya-bronze);
+  --color-bronze-ink: var(--ya-bronze-ink);
+  --color-bronze-deep: var(--ya-bronze-deep);
+  --color-on-bronze: var(--ya-on-bronze);
+  --color-sale: var(--ya-sale);
+  --color-night: var(--ya-night);
+  --color-bronze-soft: var(--ya-bronze-soft);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
@@ -35,8 +73,21 @@ body {
  */
 .dark {
   color-scheme: dark;
-  --background: #0a0a0a;
-  --foreground: #ededed;
+  --ya-canvas: #141311;
+  --ya-surface: #1d1b18;
+  --ya-raised: #24221e;
+  --ya-photo: #ffffff;
+  --ya-ink: #edeae4;
+  --ya-ink-muted: #a8a39b;
+  --ya-ink-subtle: #8f8a82;
+  --ya-line: #3a3631;
+  --ya-line-strong: #6b6660;
+  --ya-bronze: #c9a27e;
+  --ya-bronze-ink: #c9a27e;
+  --ya-bronze-deep: #d9c2a7;
+  --ya-on-bronze: #141311;
+  --ya-sale: #f87171;
+  --ya-focus: #c9a27e;
   --color-white: oklch(20.5% 0 none);
   --color-neutral-50: oklch(14.5% 0 none);
   --color-neutral-100: oklch(20.5% 0 none);
@@ -286,7 +337,7 @@ body {
 /* Klavye gezinmesi: tüm etkileşimli öğelerde görünür odak halkası */
 @layer base {
   :focus-visible {
-    outline: 2px solid #b45309;
+    outline: 2px solid var(--ya-focus);
     outline-offset: 2px;
   }
   html,
