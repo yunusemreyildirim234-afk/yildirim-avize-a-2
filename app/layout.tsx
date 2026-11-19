@@ -62,7 +62,11 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#d97706",
+  // Tarayıcı çubuğu: sistem temasına göre (kullanıcının site içi tema seçimini bilemez; kabul edilen sınır)
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#FAF9F6" },
+    { media: "(prefers-color-scheme: dark)", color: "#141311" },
+  ],
   width: "device-width",
   initialScale: 1,
 };
@@ -78,15 +82,15 @@ export default async function RootLayout({
   return (
     <html lang="tr" suppressHydrationWarning>
       <head>
-        {/* Kayıtlı tema tercihini ilk boyamadan önce uygular (yanıp sönmeyi önler) */}
+        {/* Kayıtlı tema tercihini ilk boyamadan önce uygular (yanıp sönmeyi önler). Varsayılan açık; yalnız kullanıcı koyuyu seçtiyse koyu (ThemeSync ile aynı kural) */}
         <script
           dangerouslySetInnerHTML={{
             __html:
-              'try{var t=localStorage.getItem("ya-theme");if(t==="dark"||(!t&&matchMedia("(prefers-color-scheme: dark)").matches))document.documentElement.classList.add("dark")}catch(e){}',
+              'try{if(localStorage.getItem("ya-theme")==="dark")document.documentElement.classList.add("dark")}catch(e){}',
           }}
         />
       </head>
-      <body className={`${inter.className} bg-gray-50 text-gray-900 antialiased`}>
+      <body className={`${inter.className} bg-canvas text-ink antialiased`}>
         <SkipLink />
         <AuthProvider>
         <CartProvider>
