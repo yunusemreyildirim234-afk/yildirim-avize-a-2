@@ -61,6 +61,6 @@ test("mağaza satırı ve indirimli fiyat rozetle (bg-red-600) aynı ölçek ren
   const src = (f) => import("node:fs").then((fs) => fs.readFileSync(new URL(f, import.meta.url), "utf8"));
   return Promise.all([src("../components/PriceLadder.tsx"), src("../components/ProductCard.tsx")]).then(([ladder, card]) => {
     assert.match(ladder, /pickup: "text-red-600", sale: "text-red-600"/);
-    assert.match(card, /bg-red-600/);
+    assert.match(card, /bg-sale/);
   });
 });
