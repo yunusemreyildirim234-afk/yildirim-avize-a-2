@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Lamp } from "lucide-react";
 import { isBlobImage, smallImage } from "@/lib/img";
 
 const DRAG_THRESHOLD = 8; // px: bunu aşan hareket sürükleme sayılır, bırakınca bağlantı tıklaması bastırılır
@@ -52,16 +52,16 @@ export default function CardImages({
       fill
       priority={priority}
       sizes={SIZES}
-      className="object-cover transition-transform duration-500 motion-safe:group-hover:scale-[1.03]"
+      className="object-contain mix-blend-multiply dark:mix-blend-normal transition-transform duration-500 motion-safe:group-hover:scale-[1.03]"
     />
   );
 
   if (!multi) {
     return (
-      <div className="relative aspect-square bg-zinc-100 overflow-hidden rounded-t-xl">
+      <div className="relative aspect-[4/5] bg-photo overflow-hidden rounded-t-xl">
         {images.length === 1 ? first : (
-          <div className="absolute inset-0 flex items-center justify-center text-3xl" aria-hidden="true">
-            💡
+          <div className="absolute inset-0 flex items-center justify-center" aria-hidden="true">
+            <Lamp className="w-8 h-8 text-ink-subtle" />
           </div>
         )}
         {children}
@@ -70,11 +70,11 @@ export default function CardImages({
   }
 
   const arrow =
-    "hidden md:flex absolute top-1/2 -translate-y-1/2 z-[5] w-8 h-8 items-center justify-center rounded-full bg-white/90 text-zinc-900 shadow opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-600 transition-opacity";
+    "hidden md:flex absolute top-1/2 -translate-y-1/2 z-[5] w-8 h-8 items-center justify-center rounded-full bg-raised/90 text-ink shadow opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-bronze-ink transition-opacity";
 
   return (
     <div
-      className="relative aspect-square bg-zinc-100 overflow-hidden rounded-t-xl"
+      className="relative aspect-[4/5] bg-photo overflow-hidden rounded-t-xl"
       onPointerEnter={arm}
       onTouchStart={arm}
       onFocusCapture={arm}
@@ -114,7 +114,7 @@ export default function CardImages({
                 loading="lazy"
                 decoding="async"
                 sizes={SIZES}
-                className="object-cover"
+                className="object-contain mix-blend-multiply dark:mix-blend-normal"
               />
             )}
           </div>
@@ -133,7 +133,7 @@ export default function CardImages({
       )}
       <div data-testid="card-dots" aria-hidden="true" className="absolute bottom-1.5 inset-x-0 z-[5] flex justify-center gap-1 pointer-events-none">
         {images.map((_, i) => (
-          <span key={i} className={`h-1.5 w-1.5 rounded-full ${i === index ? "bg-white shadow" : "bg-white/50"}`} />
+          <span key={i} className={`h-1.5 w-1.5 rounded-full ${i === index ? "bg-ink dark:bg-canvas" : "bg-ink/30 dark:bg-canvas/30"}`} />
         ))}
       </div>
       {children}
