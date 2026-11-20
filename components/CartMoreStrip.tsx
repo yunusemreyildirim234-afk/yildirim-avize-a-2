@@ -76,17 +76,17 @@ export default function CartMoreStrip() {
 
   return (
     <section ref={rootRef} aria-labelledby="sepet-serit" data-testid="sepet-serit" className="max-w-6xl mx-auto mt-10">
-      <h2 id="sepet-serit" className="text-lg font-serif font-bold text-neutral-900 mb-4">
+      <h2 id="sepet-serit" className="text-lg font-serif font-bold text-ink mb-4">
         Sepetinize uygun diğer ürünler
       </h2>
       {state === "ready" && start && frozen && <ProductStrip initial={start.items} initialCursor={start.cursor} initialHasMore={start.hasMore} load={load} label="Sepetinize uygun diğer ürünler" />}
       {(state === "idle" || state === "loading") && (
         <div aria-hidden="true" className="flex gap-4 overflow-hidden">
           {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="shrink-0 w-[70%] sm:w-[calc((100%-1rem)/2)] md:w-[calc((100%-2rem)/3)] lg:w-[calc((100%-3rem)/4)] rounded-2xl border border-neutral-200 bg-white p-3 animate-pulse">
-              <div className="aspect-square rounded-xl bg-neutral-200" />
-              <div className="mt-3 h-3 w-3/4 rounded bg-neutral-200" />
-              <div className="mt-2 h-3 w-1/3 rounded bg-neutral-200" />
+            <div key={i} className="shrink-0 w-[70%] sm:w-[calc((100%-1rem)/2)] md:w-[calc((100%-2rem)/3)] lg:w-[calc((100%-3rem)/4)] rounded-2xl border border-line bg-raised p-3 animate-pulse">
+              <div className="aspect-square rounded-xl bg-line" />
+              <div className="mt-3 h-3 w-3/4 rounded bg-line" />
+              <div className="mt-2 h-3 w-1/3 rounded bg-line" />
             </div>
           ))}
         </div>
@@ -95,7 +95,7 @@ export default function CartMoreStrip() {
       {state === "error" && (
         <p role="alert" className="text-center text-xs text-red-700">
           Ürünler şu an getirilemedi.{" "}
-          <button type="button" onClick={() => void run()} className="font-semibold underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-amber-600">
+          <button type="button" onClick={() => void run()} className="font-semibold underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-bronze-ink">
             Tekrar dene
           </button>
         </p>
