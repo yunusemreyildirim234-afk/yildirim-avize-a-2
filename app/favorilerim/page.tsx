@@ -26,21 +26,21 @@ export default function FavorilerimPage() {
 
   if (favorites.length === 0) {
     return (
-      <main className="min-h-screen bg-neutral-50 py-20 px-4 text-center">
+      <main className="min-h-screen bg-canvas py-20 px-4 text-center">
         <div className="text-left">
           <FavoritesMarketingStrip />
         </div>
         <div className="max-w-md mx-auto space-y-4">
           <span className="text-5xl block">♡</span>
-          <h1 className="text-2xl font-serif font-bold text-neutral-900">
+          <h1 className="text-2xl font-serif font-bold text-ink">
             Favori Listeniz Boş
           </h1>
-          <p className="text-sm text-neutral-500">
+          <p className="text-sm text-ink-muted">
             Beğendiğiniz avizeleri daha sonra incelemek ve karşılaştırmak için favorilerinize ekleyebilirsiniz.
           </p>
           <Link
             href="/"
-            className="inline-block bg-neutral-900 hover:bg-amber-600 text-white text-xs font-semibold px-6 py-3 rounded-xl transition-colors mt-4"
+            className="inline-block bg-ink hover:bg-bronze-ink text-canvas text-xs font-semibold px-6 py-3 rounded-xl transition-colors mt-4"
           >
             Koleksiyonu Keşfet →
           </Link>
@@ -50,23 +50,23 @@ export default function FavorilerimPage() {
   }
 
   return (
-    <main className="min-h-screen bg-neutral-50 py-12 px-4 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-canvas py-12 px-4 sm:px-6 lg:px-8">
       <FavoritesMarketingStrip />
       <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-between border-b border-neutral-200 pb-5 mb-8">
+        <div className="flex items-center justify-between border-b border-line pb-5 mb-8">
           <div>
-            <span className="text-xs uppercase tracking-widest text-amber-600 font-bold block mb-1">
+            <span className="text-xs uppercase tracking-widest text-bronze-ink font-bold block mb-1">
               Kaydettiğiniz Avizeler
             </span>
-            <h1 className="text-3xl font-serif font-bold text-neutral-900">
+            <h1 className="text-3xl font-serif font-bold text-ink">
               Favorilerim
             </h1>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-xs font-medium text-neutral-500">
+            <span className="text-xs font-medium text-ink-muted">
               Toplam {favorites.length} avize kaydedildi
             </span>
-            <button type="button" onClick={clearFavorites} className="text-xs font-semibold text-neutral-500 hover:text-red-600 underline underline-offset-2">
+            <button type="button" onClick={clearFavorites} className="text-xs font-semibold text-ink-muted hover:text-red-600 underline underline-offset-2">
               Tümünü Temizle
             </button>
           </div>
@@ -76,9 +76,9 @@ export default function FavorilerimPage() {
           {favorites.map((product) => (
             <div
               key={product.id}
-              className="bg-white rounded-2xl border border-neutral-200 overflow-hidden shadow-sm flex flex-col justify-between group"
+              className="bg-raised rounded-2xl border border-line overflow-hidden shadow-sm flex flex-col justify-between group"
             >
-              <div className="h-60 bg-neutral-900 relative overflow-hidden">
+              <div className="h-60 bg-photo relative overflow-hidden">
                 <Link href={productPath(product)} aria-label={`${product.title} ürün sayfası`} className="block w-full h-full">
                   {product.imageUrl ? (
                     <img
@@ -91,7 +91,7 @@ export default function FavorilerimPage() {
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-neutral-950 text-neutral-500 text-xs">
+                    <div className="w-full h-full flex items-center justify-center bg-surface text-ink-subtle text-xs">
                       Yıldırım Avize
                     </div>
                   )}
@@ -114,8 +114,8 @@ export default function FavorilerimPage() {
               </div>
 
               <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
-                <h3 className="font-serif font-bold text-neutral-900 text-base">
-                  <Link href={productPath(product)} className="hover:text-amber-700 hover:underline">
+                <h3 className="font-serif font-bold text-ink text-base">
+                  <Link href={productPath(product)} className="hover:text-bronze-ink hover:underline">
                     {displayTitle(product.title).title}
                   </Link>
                 </h3>
@@ -123,14 +123,14 @@ export default function FavorilerimPage() {
                 <InCartBadge productId={product.id} />
                 {quick[product.id] && <CartStepper product={quick[product.id]} />}
 
-                <div className="pt-3 border-t border-neutral-100 flex items-center justify-between">
-                  <span className="text-base font-bold text-neutral-900">
+                <div className="pt-3 border-t border-line flex items-center justify-between">
+                  <span className="text-base font-bold text-ink">
                     {product.basePrice.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺
                   </span>
 
                   <Link
                     href={productPath(product)}
-                    className="bg-neutral-900 hover:bg-amber-600 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors"
+                    className="bg-ink hover:bg-bronze-ink text-canvas text-xs font-semibold px-4 py-2 rounded-lg transition-colors"
                   >
                     İncele →
                   </Link>

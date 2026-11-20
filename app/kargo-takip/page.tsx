@@ -73,26 +73,26 @@ async function OrderResult({ code, verify }: { code: string; verify?: string }) 
   const awaitsBankPayment = paymentMethod === "BANK_TRANSFER" && order.status === "PENDING_NEW";
 
   return (
-    <div className="bg-white rounded-2xl border border-neutral-200 p-6 text-xs space-y-3 shadow-sm">
+    <div className="bg-raised rounded-2xl border border-line p-6 text-xs space-y-3 shadow-sm">
       {id === code && (
-        <div className="pb-3 border-b border-neutral-100">
-          <span className="text-neutral-400">Sipariş Kodu</span>
-          <p className="font-mono font-bold text-neutral-800 break-all">{orderCode(id)}</p>
+        <div className="pb-3 border-b border-line">
+          <span className="text-ink-subtle">Sipariş Kodu</span>
+          <p className="font-mono font-bold text-ink break-all">{orderCode(id)}</p>
         </div>
       )}
       <div>
-        <span className="text-neutral-400">Alıcı</span>
-        <p className="font-semibold text-neutral-800">{maskName(recipientOf(order))}</p>
+        <span className="text-ink-subtle">Alıcı</span>
+        <p className="font-semibold text-ink">{maskName(recipientOf(order))}</p>
       </div>
-      <div className="pt-3 border-t border-neutral-100">
-        <span className="text-neutral-400 block mb-2">Sipariş Durumu</span>
+      <div className="pt-3 border-t border-line">
+        <span className="text-ink-subtle block mb-2">Sipariş Durumu</span>
         {awaitsBankPayment ? (
           <div>
             <p className="text-sm font-bold text-amber-800">Ödeme bekleniyor</p>
-            <p className="text-neutral-600 mt-1">Havale/EFT ödemeniz onaylandığında siparişiniz hazırlanmaya başlayacaktır.</p>
+            <p className="text-ink-muted mt-1">Havale/EFT ödemeniz onaylandığında siparişiniz hazırlanmaya başlayacaktır.</p>
             {/* Sipariş numarasını zaten bilen sorgu için: erişim kuralları onay sayfasında uygulanır */}
             {id === code && (
-              <Link href={`/siparis-onay/${id}`} className="inline-block mt-2 font-semibold text-amber-800 underline underline-offset-2">
+              <Link href={`/siparis-onay/${id}`} className="inline-block mt-2 font-semibold text-bronze-ink underline underline-offset-2">
                 Havale bilgileri ve dekont yükleme →
               </Link>
             )}
@@ -102,19 +102,19 @@ async function OrderResult({ code, verify }: { code: string; verify?: string }) 
         )}
       </div>
       {order.kargonomiShipmentId && (
-        <div className="pt-3 border-t border-neutral-100 space-y-1">
-          <span className="text-neutral-400">Kargo Firması</span>
+        <div className="pt-3 border-t border-line space-y-1">
+          <span className="text-ink-subtle">Kargo Firması</span>
           <p className="text-sm font-bold text-orange-700">{order.shippingProviderName || "Aras Kargo"}</p>
-          <p className="font-semibold text-neutral-900">
+          <p className="font-semibold text-ink">
             {order.shippingTrackingCode || order.shippingBarcode ? order.kargonomiStatusLabel || "Kargo kaydı oluşturuldu" : "Kargo bilgileriniz hazırlanıyor"}
           </p>
           {order.shippingTrackingCode && (
-            <p className="text-neutral-600">
+            <p className="text-ink-muted">
               Takip kodu: <span className="font-mono">{order.shippingTrackingCode}</span>
             </p>
           )}
           {order.shippingBarcode && (
-            <p className="text-neutral-600">
+            <p className="text-ink-muted">
               Barkod: <span className="font-mono">{order.shippingBarcode}</span>
             </p>
           )}
@@ -140,14 +140,14 @@ export default async function TrackingPage({ searchParams }: { searchParams: Pro
   const verify = sp.dogrulama === "hata" || sp.dogrulama === "sinir" ? sp.dogrulama : undefined;
 
   return (
-    <main className="min-h-screen bg-neutral-50 py-12 px-4 sm:px-6">
+    <main className="min-h-screen bg-canvas py-12 px-4 sm:px-6">
       <div className="max-w-2xl mx-auto space-y-6">
         <div className="text-center space-y-2">
-          <span className="text-xs uppercase tracking-widest text-amber-600 font-semibold">Takip</span>
-          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-neutral-900">Kargo & Sipariş Takibi</h1>
-          <p className="text-sm text-neutral-600">
+          <span className="text-xs uppercase tracking-widest text-bronze-ink font-semibold">Takip</span>
+          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-ink">Kargo & Sipariş Takibi</h1>
+          <p className="text-sm text-ink-muted">
             Kargoya verildiğinde e-postayla gelen takip kodunu yazın ya da 8 haneli sipariş kodunuzla birlikte siparişteki e-posta adresini girin; üyeyseniz{" "}
-            <Link href="/giris#siparisler" className="font-semibold text-amber-800 underline underline-offset-2">Siparişlerim</Link>
+            <Link href="/giris#siparisler" className="font-semibold text-bronze-ink underline underline-offset-2">Siparişlerim</Link>
             &apos;den de takip edebilirsiniz.
           </p>
         </div>
@@ -157,7 +157,7 @@ export default async function TrackingPage({ searchParams }: { searchParams: Pro
         {code && (
           <Suspense
             fallback={
-              <div role="status" aria-busy="true" className="h-40 rounded-2xl bg-neutral-200/70 motion-safe:animate-pulse">
+              <div role="status" aria-busy="true" className="h-40 rounded-2xl bg-line/70 motion-safe:animate-pulse">
                 <span className="sr-only">Sipariş sorgulanıyor…</span>
               </div>
             }

@@ -82,11 +82,11 @@ export default async function SearchPage({ searchParams }: Props) {
   const categories = products.length === 0 ? withVisibleProducts(await getCategoryList().catch(() => [])).slice(0, 8).map((c) => (c.fixed ? { ...c, title: categoryDisplayTitle(categorySettings, c.key, c.title) } : c)) : [];
 
   const emptyBlock = (
-        <div className="bg-zinc-50 rounded-3xl border border-zinc-200 p-8 sm:p-12 text-center max-w-xl mx-auto space-y-4">
-          <h2 className="font-serif font-bold text-zinc-900 text-lg">
+        <div className="bg-surface rounded-3xl border border-line p-8 sm:p-12 text-center max-w-xl mx-auto space-y-4">
+          <h2 className="font-serif font-bold text-ink text-lg">
             {!q ? "Aramak için bir ifade yazın" : limited ? "Çok fazla arama yapıldı" : failed ? "Arama şu an yapılamadı" : "Aradığınız ürün bulunamadı"}
           </h2>
-          <p className="text-sm text-zinc-600">
+          <p className="text-sm text-ink-muted">
             {!q
               ? "Ürün adı, model kodu veya stok kodu ile arayabilirsiniz."
               : limited
@@ -96,9 +96,9 @@ export default async function SearchPage({ searchParams }: Props) {
                   : "Yazımı kontrol edin veya aşağıdaki kategorilere göz atın."}
           </p>
           {suggestion && (
-            <p className="text-sm text-zinc-800">
+            <p className="text-sm text-ink">
               Bunu mu demek istediniz:{" "}
-              <Link href={`/arama?q=${encodeURIComponent(suggestion)}`} className="font-semibold text-amber-800 underline underline-offset-2">
+              <Link href={`/arama?q=${encodeURIComponent(suggestion)}`} className="font-semibold text-bronze-ink underline underline-offset-2">
                 {suggestion}
               </Link>
               ?
@@ -112,9 +112,9 @@ export default async function SearchPage({ searchParams }: Props) {
               maxLength={80}
               aria-label="Ürün adı, model kodu veya stok kodu ile ara"
               placeholder="Ürün adı, model kodu..."
-              className="flex-1 min-w-0 text-base sm:text-sm px-4 py-2.5 rounded-xl border border-zinc-300 bg-white text-zinc-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-600"
+              className="flex-1 min-w-0 text-base sm:text-sm px-4 py-2.5 rounded-xl border border-line-strong bg-raised text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-bronze-ink"
             />
-            <button type="submit" className="bg-zinc-900 hover:bg-amber-600 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors">
+            <button type="submit" className="bg-ink hover:bg-bronze-ink text-canvas text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors">
               Ara
             </button>
           </form>
@@ -122,13 +122,13 @@ export default async function SearchPage({ searchParams }: Props) {
             <ul className="flex flex-wrap justify-center gap-2 pt-2">
               {categories.map((c) => (
                 <li key={c.slug}>
-                  <Link href={`/kategori/${c.slug}`} className="inline-block text-xs font-medium text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-3 py-1.5 rounded-full">
+                  <Link href={`/kategori/${c.slug}`} className="inline-block text-xs font-medium text-bronze-ink bg-surface hover:bg-line border border-line px-3 py-1.5 rounded-full">
                     {c.title}
                   </Link>
                 </li>
               ))}
               <li>
-                <Link href="/kategori/tum" className="inline-block text-xs font-semibold text-zinc-900 underline underline-offset-2 px-2 py-1.5">
+                <Link href="/kategori/tum" className="inline-block text-xs font-semibold text-ink underline underline-offset-2 px-2 py-1.5">
                   Tüm ürünler →
                 </Link>
               </li>
@@ -138,14 +138,14 @@ export default async function SearchPage({ searchParams }: Props) {
   );
 
   return (
-    <main className="min-h-screen bg-white pb-20">
-      <section className="bg-zinc-50 border-b border-zinc-200 py-8 sm:py-12 px-4 text-center">
+    <main className="min-h-screen bg-canvas pb-20">
+      <section className="bg-surface border-b border-line py-8 sm:py-12 px-4 text-center">
         <div className="max-w-3xl mx-auto space-y-3">
-          <Breadcrumbs className="text-zinc-500 mb-2 flex justify-center" items={[{ name: "Ana Sayfa", href: "/" }, { name: "Arama", href: "/arama" }]} />
-          <h1 className="text-3xl sm:text-4xl font-serif font-bold text-zinc-900">Arama Sonuçları</h1>
+          <Breadcrumbs className="text-ink-muted mb-2 flex justify-center" items={[{ name: "Ana Sayfa", href: "/" }, { name: "Arama", href: "/arama" }]} />
+          <h1 className="text-3xl sm:text-4xl font-serif font-bold text-ink">Arama Sonuçları</h1>
           {q && (
-            <p className="text-sm text-zinc-600 break-words">
-              <span className="font-semibold text-zinc-900">&ldquo;{corrected ?? q}&rdquo;</span> için {total} sonuç
+            <p className="text-sm text-ink-muted break-words">
+              <span className="font-semibold text-ink">&ldquo;{corrected ?? q}&rdquo;</span> için {total} sonuç
               {total >= MAX_SEARCH_RESULTS ? " (ilk " + MAX_SEARCH_RESULTS + " ürün gösterilir)" : ""}
             </p>
           )}
@@ -154,9 +154,9 @@ export default async function SearchPage({ searchParams }: Props) {
 
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-10">
         {corrected && (
-          <p role="status" data-testid="arama-duzeltme" className="mb-6 text-sm text-zinc-700 text-center break-words">
-            &ldquo;{q}&rdquo; için sonuç bulunamadı. <strong className="text-zinc-900">&ldquo;{corrected}&rdquo;</strong> sonuçları gösteriliyor.{" "}
-            <Link href={`/arama?q=${encodeURIComponent(q)}&tam=1`} className="font-semibold text-amber-800 underline underline-offset-2">
+          <p role="status" data-testid="arama-duzeltme" className="mb-6 text-sm text-ink-muted text-center break-words">
+            &ldquo;{q}&rdquo; için sonuç bulunamadı. <strong className="text-ink">&ldquo;{corrected}&rdquo;</strong> sonuçları gösteriliyor.{" "}
+            <Link href={`/arama?q=${encodeURIComponent(q)}&tam=1`} className="font-semibold text-bronze-ink underline underline-offset-2">
               Yine de &ldquo;{q}&rdquo; ara
             </Link>
           </p>

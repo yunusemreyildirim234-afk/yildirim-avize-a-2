@@ -111,15 +111,15 @@ export default async function CategoryPage({ params, searchParams }: Props) {
   const products = await listing.fetchPage(page, size);
 
   return (
-    <main className="min-h-screen bg-white pb-20">
-      <section className="bg-zinc-50 border-b border-zinc-200 py-8 sm:py-12 px-4 text-center">
+    <main className="min-h-screen bg-canvas pb-20">
+      <section className="bg-surface border-b border-line py-8 sm:py-12 px-4 text-center">
         <div className="max-w-3xl mx-auto space-y-3">
           <Breadcrumbs
-            className="text-zinc-500 mb-2 flex justify-center"
+            className="text-ink-muted mb-2 flex justify-center"
             items={[{ name: "Ana Sayfa", href: "/" }, { name: current.title, href: `/kategori/${slug}` }]}
           />
-          <h1 className="text-3xl sm:text-4xl font-serif font-bold text-zinc-900">{current.title}</h1>
-          <p className="text-sm text-zinc-600 max-w-xl mx-auto">{current.desc}</p>
+          <h1 className="text-3xl sm:text-4xl font-serif font-bold text-ink">{current.title}</h1>
+          <p className="text-sm text-ink-muted max-w-xl mx-auto">{current.desc}</p>
         </div>
       </section>
 
@@ -131,14 +131,14 @@ export default async function CategoryPage({ params, searchParams }: Props) {
           page={page}
           adet={adet}
           size={size}
-          note={<span className="text-amber-700 font-medium hidden xl:inline">📍 Beyoğlu Mağazasında Sergilenen Modeller</span>}
+          note={<span className="text-bronze-ink font-medium hidden xl:inline">📍 Beyoğlu Mağazasında Sergilenen Modeller</span>}
           empty={
-            <div className="bg-zinc-50 rounded-3xl border border-zinc-200 p-12 text-center max-w-md mx-auto space-y-3">
+            <div className="bg-surface rounded-3xl border border-line p-12 text-center max-w-md mx-auto space-y-3">
               <span className="text-3xl block" aria-hidden="true">💡</span>
-              <h2 className="font-serif font-bold text-zinc-900 text-base">Bu listede henüz ürün yok</h2>
+              <h2 className="font-serif font-bold text-ink text-base">Bu listede henüz ürün yok</h2>
               <Link
                 href="/kategori/tum"
-                className="inline-block bg-zinc-900 hover:bg-amber-600 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition-colors mt-2"
+                className="inline-block bg-ink hover:bg-bronze-ink text-canvas text-xs font-semibold px-5 py-2.5 rounded-xl transition-colors mt-2"
               >
                 Tüm Ürünleri Gör
               </Link>
