@@ -24,13 +24,13 @@ export default function PageSizeLinks({
 }) {
   return (
     <div className="flex items-center gap-2">
-      <span id="sayfa-basina" className="text-zinc-500">
+      <span id="sayfa-basina" className="text-ink-muted">
         Sayfa başına:
       </span>
       <div role="group" aria-labelledby="sayfa-basina" className="flex items-center gap-1">
         {OPTIONS.map((o) =>
           o.adet === current ? (
-            <span key={o.adet} aria-current="true" className="inline-flex h-10 min-w-10 sm:h-8 sm:min-w-8 items-center justify-center rounded-lg border border-zinc-900 bg-zinc-900 px-2.5 font-semibold text-white">
+            <span key={o.adet} aria-current="true" className="inline-flex h-10 min-w-10 sm:h-8 sm:min-w-8 items-center justify-center rounded-lg border border-ink bg-ink px-2.5 font-semibold text-canvas">
               {o.label}
             </span>
           ) : (
@@ -38,7 +38,7 @@ export default function PageSizeLinks({
               key={o.adet}
               href={adetHref(path, o.adet, page, size, params)}
               rel="nofollow"
-              className="inline-flex h-10 min-w-10 sm:h-8 sm:min-w-8 items-center justify-center rounded-lg border border-zinc-200 bg-white px-2.5 font-medium text-zinc-700 hover:border-amber-600 hover:text-amber-800 focus-visible:outline-2 focus-visible:outline-amber-600"
+              className="inline-flex h-10 min-w-10 sm:h-8 sm:min-w-8 items-center justify-center rounded-lg border border-line bg-raised px-2.5 font-medium text-ink-muted hover:border-bronze-ink hover:text-bronze-ink focus-visible:outline-2 focus-visible:outline-bronze-ink"
             >
               {o.label}
             </Link>

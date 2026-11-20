@@ -113,10 +113,10 @@ export default function SearchBar() {
             setQuery(e.target.value);
             setShowRecent(!e.target.value.trim());
           }}
-          className="w-full text-neutral-800 placeholder-neutral-400 rounded-full focus:outline-none focus:ring-2 focus:ring-amber-500/30 border transition-all bg-white text-base pl-12 pr-12 py-4 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.25)] border-zinc-200 focus:border-amber-400"
+          className="w-full text-ink placeholder-ink-subtle rounded-full focus:outline-none focus:ring-2 focus:ring-bronze-ink/30 border transition-all bg-raised text-base pl-12 pr-12 py-4 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.25)] border-line focus:border-bronze-ink"
         />
         {/* Arama İkonu */}
-        <button type="submit" aria-label="Ara" className="absolute text-neutral-400 hover:text-amber-700 left-0 top-0 h-full w-14 flex items-center justify-center rounded-l-full text-base">
+        <button type="submit" aria-label="Ara" className="absolute text-ink-subtle hover:text-bronze-ink left-0 top-0 h-full w-14 flex items-center justify-center rounded-l-full text-base">
           <span aria-hidden="true">🔍</span>
         </button>
 
@@ -129,7 +129,7 @@ export default function SearchBar() {
               setQuery("");
               setIsOpen(false);
             }}
-            className="absolute text-neutral-400 hover:text-neutral-600 right-5 top-4 text-sm"
+            className="absolute text-ink-subtle hover:text-ink-muted right-5 top-4 text-sm"
           >
             ✕
           </button>
@@ -137,7 +137,7 @@ export default function SearchBar() {
       </form>
 
       {showRecent && !query.trim() && recent.length > 0 && (
-        <div className="absolute top-16 text-left left-0 right-0 bg-white rounded-2xl border border-neutral-200 shadow-xl overflow-hidden z-50">
+        <div className="absolute top-16 text-left left-0 right-0 bg-raised rounded-2xl border border-line shadow-xl overflow-hidden z-50">
           <RecentSearches
             items={recent}
             onPick={(t) => {
@@ -153,34 +153,34 @@ export default function SearchBar() {
 
       {/* Açılır Canlı Sonuç Kutusu */}
       {isOpen && (
-        <div className={`absolute top-16 text-left left-0 right-0 bg-white rounded-2xl border border-neutral-200 shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-150`}>
+        <div className={`absolute top-16 text-left left-0 right-0 bg-raised rounded-2xl border border-line shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-150`}>
           {loading ? (
-            <div className="p-4 text-center text-xs text-neutral-400">
+            <div className="p-4 text-center text-xs text-ink-subtle">
               Aranıyor...
             </div>
           ) : results.length > 0 ? (
-            <div className="divide-y divide-neutral-100 max-h-72 overflow-y-auto">
-              <div className="p-2.5 bg-neutral-50 text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+            <div className="divide-y divide-line max-h-72 overflow-y-auto">
+              <div className="p-2.5 bg-surface text-[10px] font-bold text-ink-subtle uppercase tracking-wider">
                 Eşleşen Ürünler ({results.length})
               </div>
               {results.map((product) => (
-                <div key={product.id} className="p-3 flex items-start gap-2 hover:bg-amber-50/50 transition-colors">
+                <div key={product.id} className="p-3 flex items-start gap-2 hover:bg-surface transition-colors">
                   <Link href={productPath(product)} onClick={() => { remember(query); setIsOpen(false); }} className="flex-1 min-w-0 flex items-start gap-2.5">
-                    <span className="w-12 h-12 rounded-lg bg-neutral-900 overflow-hidden shrink-0 border border-neutral-200">
+                    <span className="w-12 h-12 rounded-lg bg-photo overflow-hidden shrink-0 border border-line">
                       {product.imageUrl && (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={smallImage(product.imageUrl)} alt="" loading="lazy" decoding="async" width={48} height={48} className="w-full h-full object-cover" />
                       )}
                     </span>
                     <span className="min-w-0">
-                    <span className="block text-xs font-serif font-bold text-neutral-900">
+                    <span className="block text-xs font-serif font-bold text-ink">
                       {product.title}
                     </span>
                     <span className="text-[10px] text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full font-medium inline-block mt-0.5">
                       {product.category}
                     </span>
-                    {product.modelCode && <span className="ml-1.5 text-[10px] font-mono text-neutral-500">Model {product.modelCode}</span>}
-                    <span className="block text-xs font-bold text-neutral-800 mt-1">
+                    {product.modelCode && <span className="ml-1.5 text-[10px] font-mono text-ink-muted">Model {product.modelCode}</span>}
+                    <span className="block text-xs font-bold text-ink mt-1">
                       {product.basePrice.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺
                     </span>
                     {product.ladder && <PriceLadder steps={product.ladder} size="sm" itemsTotal={product.basePrice} />}
@@ -196,9 +196,9 @@ export default function SearchBar() {
               ))}
             </div>
           ) : (
-            <div className="p-5 text-center text-xs text-neutral-600 space-y-2">
+            <div className="p-5 text-center text-xs text-ink-muted space-y-2">
               <p>&ldquo;{query}&rdquo; ile eşleşen bir ürün bulunamadı.</p>
-              <Link href="/kategori/tum" className="inline-block font-semibold text-amber-800 underline underline-offset-2">Tüm koleksiyona göz atın →</Link>
+              <Link href="/kategori/tum" className="inline-block font-semibold text-bronze-ink underline underline-offset-2">Tüm koleksiyona göz atın →</Link>
             </div>
           )}
         </div>

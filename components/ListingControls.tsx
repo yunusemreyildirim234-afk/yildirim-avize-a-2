@@ -32,7 +32,7 @@ const hiddenFields = (fixed: Fixed, adet?: string) => (
 );
 
 const field =
-  "w-full rounded-xl border border-zinc-300 bg-white text-zinc-900 text-base lg:text-sm px-3 py-2.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-600";
+  "w-full rounded-xl border border-line-strong bg-raised text-ink text-base lg:text-sm px-3 py-2.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-bronze-ink";
 
 /** Masaüstü araç çubuğundaki "Sırala" menüsü: GET formu (JS yoksa Uygula düğmesi), JS varsa seçince hemen uygulanır. Süzgeçler ve adet korunur, sayfa 1'e döner. */
 export function ListingSort({ path, fixed, params, adet, current }: { path: string; fixed: Fixed; params: Record<string, string>; adet?: string; current: Sort }) {
@@ -52,7 +52,7 @@ export function ListingSort({ path, fixed, params, adet, current }: { path: stri
       }}
     >
       {hiddenFields({ ...fixed, ...rest }, adet)}
-      <label htmlFor="siralama-ust" className="text-zinc-500">
+      <label htmlFor="siralama-ust" className="text-ink-muted">
         Sırala:
       </label>
       <select
@@ -60,7 +60,7 @@ export function ListingSort({ path, fixed, params, adet, current }: { path: stri
         name="siralama"
         defaultValue={current}
         onChange={(e) => e.currentTarget.form?.requestSubmit()}
-        className="h-8 rounded-lg border border-zinc-300 bg-white px-2 text-xs font-medium text-zinc-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-600"
+        className="h-8 rounded-lg border border-line-strong bg-raised px-2 text-xs font-medium text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-bronze-ink"
       >
         {SORTS.map((s) => (
           <option key={s} value={s}>
@@ -69,7 +69,7 @@ export function ListingSort({ path, fixed, params, adet, current }: { path: stri
         ))}
       </select>
       <noscript>
-        <button type="submit" className="h-8 rounded-lg border border-zinc-300 px-2 text-xs">
+        <button type="submit" className="h-8 rounded-lg border border-line-strong px-2 text-xs">
           Uygula
         </button>
       </noscript>
@@ -167,15 +167,15 @@ export default function ListingFilters({
   };
   const desktop = () => window.matchMedia("(min-width: 1024px)").matches;
 
-  const legend = "text-xs font-semibold uppercase tracking-[0.08em] text-zinc-900 mb-2";
-  const row = "flex items-center gap-3 min-h-10 lg:min-h-8 py-1 cursor-pointer text-sm text-zinc-700 hover:text-zinc-900";
-  const box = "h-5 w-5 lg:h-4 lg:w-4 shrink-0 accent-amber-600";
+  const legend = "text-xs font-semibold uppercase tracking-[0.08em] text-ink mb-2";
+  const row = "flex items-center gap-3 min-h-10 lg:min-h-8 py-1 cursor-pointer text-sm text-ink-muted hover:text-ink";
+  const box = "h-5 w-5 lg:h-4 lg:w-4 shrink-0 accent-bronze-ink";
   const nCats = facets.categories.length;
 
   return (
     <>
       {/* Mobil: yapışkan "Filtrele ve Sırala" düğmesi (>=44 px) */}
-      <div className="lg:hidden sticky z-30 -mx-4 sm:-mx-6 px-4 sm:px-6 py-2 bg-white/95 border-b border-zinc-200" style={{ top }}>
+      <div className="lg:hidden sticky z-30 -mx-4 sm:-mx-6 px-4 sm:px-6 py-2 bg-raised/95 border-b border-line" style={{ top }}>
         <a
           ref={opener}
           href="#filtre-paneli"
@@ -184,11 +184,11 @@ export default function ListingFilters({
             setOpen(true);
           }}
           data-testid="filtre-ac"
-          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-zinc-300 bg-white text-sm font-semibold text-zinc-900 hover:border-amber-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-600"
+          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-line-strong bg-raised text-sm font-semibold text-ink hover:border-bronze-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-bronze-ink"
         >
           <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
           Filtrele ve Sırala
-          {filtered && <span className="ml-1 rounded-full bg-amber-600 px-2 py-0.5 text-[11px] text-white">Aktif</span>}
+          {filtered && <span className="ml-1 rounded-full bg-bronze-ink px-2 py-0.5 text-[11px] text-on-bronze">Aktif</span>}
         </a>
       </div>
 
@@ -206,16 +206,16 @@ export default function ListingFilters({
           role={open ? "dialog" : undefined}
           aria-modal={open ? true : undefined}
           aria-label="Filtrele ve Sırala"
-          className="relative max-lg:max-h-[88vh] max-lg:overflow-y-auto max-lg:rounded-t-3xl max-lg:bg-white max-lg:p-5 max-lg:pb-24 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:pr-2"
+          className="relative max-lg:max-h-[88vh] max-lg:overflow-y-auto max-lg:rounded-t-3xl max-lg:bg-raised max-lg:p-5 max-lg:pb-24 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:pr-2"
         >
           <div className="flex items-center justify-between lg:hidden mb-3">
-            <h2 className="font-serif text-lg font-bold text-zinc-900">Filtrele ve Sırala</h2>
+            <h2 className="font-serif text-lg font-bold text-ink">Filtrele ve Sırala</h2>
             <button
               ref={closeBtn}
               type="button"
               onClick={() => setOpen(false)}
               aria-label="Kapat"
-              className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-zinc-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-600"
+              className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-bronze-ink"
             >
               <X className="h-5 w-5" aria-hidden="true" />
             </button>
@@ -266,7 +266,7 @@ export default function ListingFilters({
                       <label className={row}>
                         <input type="checkbox" name="kategori" value={c.slug} defaultChecked={selectedCats.has(c.slug)} className={box} />
                         <span className="flex-1">{c.title}</span>
-                        <span className="text-xs tabular-nums text-zinc-500">({c.count})</span>
+                        <span className="text-xs tabular-nums text-ink-muted">({c.count})</span>
                       </label>
                     </li>
                   ))}
@@ -286,11 +286,11 @@ export default function ListingFilters({
                           <input type="checkbox" name="renk" value={c.key} defaultChecked={selectedColors.has(c.key)} className={box} />
                           <span
                             aria-hidden="true"
-                            className="h-4 w-4 shrink-0 rounded-full border border-zinc-300"
+                            className="h-4 w-4 shrink-0 rounded-full border border-line-strong"
                             style={hex ? { backgroundColor: hex } : { backgroundImage: "linear-gradient(135deg,#fff 45%,#d4d4d8 45%,#d4d4d8 55%,#fff 55%)" }}
                           />
                           <span className="flex-1">{c.name}</span>
-                          <span className="text-xs tabular-nums text-zinc-500">({c.count})</span>
+                          <span className="text-xs tabular-nums text-ink-muted">({c.count})</span>
                         </label>
                       </li>
                     );
@@ -302,7 +302,7 @@ export default function ListingFilters({
                     onClick={() => setAllColors((v) => !v)}
                     aria-expanded={allColors}
                     data-testid="renk-tumu"
-                    className="mt-1 min-h-10 lg:min-h-8 text-sm font-medium text-amber-700 underline underline-offset-2 hover:text-amber-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-600"
+                    className="mt-1 min-h-10 lg:min-h-8 text-sm font-medium text-bronze-ink underline underline-offset-2 hover:text-bronze-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-bronze-ink"
                   >
                     {allColors ? "Daha az göster" : `Tümünü göster (${facets.colors.length})`}
                   </button>
@@ -319,7 +319,7 @@ export default function ListingFilters({
                       <label className={row}>
                         <input type="checkbox" name="ebat" value={z.key} defaultChecked={selectedSizes.has(z.key)} className={box} />
                         <span className="flex-1 tabular-nums">{z.name}</span>
-                        <span className="text-xs tabular-nums text-zinc-500">({z.count})</span>
+                        <span className="text-xs tabular-nums text-ink-muted">({z.count})</span>
                       </label>
                     </li>
                   ))}
@@ -330,7 +330,7 @@ export default function ListingFilters({
                     onClick={() => setAllSizes((v) => !v)}
                     aria-expanded={allSizes}
                     data-testid="ebat-tumu"
-                    className="mt-1 min-h-10 lg:min-h-8 text-sm font-medium text-amber-700 underline underline-offset-2 hover:text-amber-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-600"
+                    className="mt-1 min-h-10 lg:min-h-8 text-sm font-medium text-bronze-ink underline underline-offset-2 hover:text-bronze-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-bronze-ink"
                   >
                     {allSizes ? "Daha az göster" : `Tümünü göster (${facets.sizes.length})`}
                   </button>
@@ -346,7 +346,7 @@ export default function ListingFilters({
                     <span className="sr-only">En düşük fiyat</span>
                     <input type="number" inputMode="numeric" min={0} name="fiyat_min" defaultValue={params.fiyat_min ?? ""} placeholder={String(facets.price.min)} className={field} />
                   </label>
-                  <span aria-hidden="true" className="text-zinc-400">
+                  <span aria-hidden="true" className="text-ink-subtle">
                     –
                   </span>
                   <label className="flex-1">
@@ -357,12 +357,12 @@ export default function ListingFilters({
               </fieldset>
             )}
 
-            <div className="flex items-center gap-3 max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 max-lg:border-t max-lg:border-zinc-200 max-lg:bg-white max-lg:p-4">
-              <button type="submit" className="min-h-11 lg:min-h-10 flex-1 rounded-xl bg-zinc-900 px-5 text-sm font-semibold text-white hover:bg-amber-600 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600">
+            <div className="flex items-center gap-3 max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 max-lg:border-t max-lg:border-line max-lg:bg-raised max-lg:p-4">
+              <button type="submit" className="min-h-11 lg:min-h-10 flex-1 rounded-xl bg-ink px-5 text-sm font-semibold text-canvas hover:bg-bronze-ink transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze-ink">
                 Uygula{open ? ` (${total} ürün)` : ""}
               </button>
               {filtered && (
-                <Link href={clearHref} onClick={() => setOpen(false)} rel="nofollow" className="inline-flex min-h-11 lg:min-h-10 items-center rounded-xl border border-zinc-300 px-4 text-sm font-medium text-zinc-800 hover:border-amber-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-600">
+                <Link href={clearHref} onClick={() => setOpen(false)} rel="nofollow" className="inline-flex min-h-11 lg:min-h-10 items-center rounded-xl border border-line-strong px-4 text-sm font-medium text-ink hover:border-bronze-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-bronze-ink">
                   Temizle
                 </Link>
               )}

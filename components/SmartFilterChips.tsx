@@ -30,9 +30,9 @@ export default function SmartFilterChips({
   onChange: (next: string[]) => void;
   allLabel?: string;
 }) {
-  const chip = "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600";
-  const on = "bg-neutral-900 border-neutral-900 text-white";
-  const off = "bg-white border-neutral-300 text-neutral-600 hover:border-neutral-500";
+  const chip = "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze-ink";
+  const on = "bg-ink border-ink text-canvas";
+  const off = "bg-raised border-line-strong text-ink-muted hover:border-ink-muted";
   const allActive = selected.length === 0;
 
   return (
