@@ -226,7 +226,7 @@ export default function CartPage() {
   const [capPct, setCapPct] = useState<number | null>(null); // sunucudaki toplam indirim üst sınırı (teklifle gelir)
   const localTotals = priceCart({ lines: cartPriceLines(cart), shippingType, paymentMethod, coupon: appliedCoupon, maxTotalDiscountPct: capPct });
   const applied = discountsApplied({ lines: cartPriceLines(cart), coupon: appliedCoupon, maxTotalDiscountPct: capPct });
-  const notApplied = <span className="font-medium text-neutral-500"> (bu sepette uygulanmaz)</span>;
+  const notApplied = <span className="font-medium text-ink-muted"> (bu sepette uygulanmaz)</span>;
   const pricedOf = (variationId: string) => localTotals.lines.find((l) => l.variationId === variationId);
 
   // Sunucu fiyat teklifi (/api/cart/quote, salt okunur): gösterilen tutar buradan gelir
@@ -619,14 +619,14 @@ export default function CartPage() {
 
   if (paytrToken) {
     return (
-      <main className="min-h-screen bg-neutral-50 py-10 px-4">
-        <div className="max-w-3xl mx-auto bg-white rounded-3xl border border-neutral-200 p-4 sm:p-8 shadow-sm space-y-4">
+      <main className="min-h-screen bg-canvas py-10 px-4">
+        <div className="max-w-3xl mx-auto bg-raised rounded-3xl border border-line p-4 sm:p-8 shadow-sm space-y-4">
           <div className="flex items-center justify-between gap-3">
-            <h1 className="text-lg font-serif font-bold text-neutral-900">Güvenli Ödeme</h1>
+            <h1 className="text-lg font-serif font-bold text-ink">Güvenli Ödeme</h1>
             <button
               type="button"
               onClick={() => setPaytrToken(null)}
-              className="text-xs font-semibold text-neutral-500 hover:text-amber-700"
+              className="text-xs font-semibold text-ink-muted hover:text-bronze-ink"
             >
               ← Sepete Dön
             </button>
@@ -641,7 +641,7 @@ export default function CartPage() {
           <Script src="https://www.paytr.com/js/iframeResizer.min.js" strategy="afterInteractive" onLoad={() => {
             (window as unknown as { iFrameResize?: (o: object, s: string) => void }).iFrameResize?.({}, "#paytriframe");
           }} />
-          <p className="text-[11px] text-neutral-400 text-center">
+          <p className="text-[11px] text-ink-subtle text-center">
             Ödeme tamamlandığında siparişiniz onaylanır ve e-posta ile bilgilendirilirsiniz.
           </p>
         </div>
@@ -651,18 +651,18 @@ export default function CartPage() {
 
   if (cart.length === 0) {
     return (
-      <main className="min-h-screen bg-neutral-50 py-20 px-4 text-center">
+      <main className="min-h-screen bg-canvas py-20 px-4 text-center">
         <div className="max-w-md mx-auto space-y-4">
-          <span aria-hidden="true" className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-500"><ShoppingBag className="h-7 w-7" /></span>
-          <h1 className="text-2xl font-serif font-bold text-neutral-900">
+          <span aria-hidden="true" className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-line bg-raised text-ink-muted"><ShoppingBag className="h-7 w-7" /></span>
+          <h1 className="text-2xl font-serif font-bold text-ink">
             Sepetiniz Henüz Boş
           </h1>
-          <p className="text-sm text-neutral-500">
+          <p className="text-sm text-ink-muted">
             Beyoğlu koleksiyonumuzun kristal ve modern avizelerini keşfedin; ilk parçanız sizi bekliyor.
           </p>
           <Link
             href="/"
-            className="inline-block bg-neutral-900 hover:bg-amber-600 text-white text-xs font-semibold px-6 py-3 rounded-xl transition-colors mt-4"
+            className="inline-block bg-ink hover:bg-bronze-ink text-canvas text-xs font-semibold px-6 py-3 rounded-xl transition-colors mt-4"
           >
             Koleksiyonu İncele →
           </Link>
@@ -672,14 +672,14 @@ export default function CartPage() {
   }
 
   return (
-    <main className="min-h-screen bg-neutral-50 pt-6 sm:pt-12 pb-24 sm:pb-12 px-4 sm:px-6 lg:px-8 sm:pr-16 2xl:pr-8">
+    <main className="min-h-screen bg-canvas pt-6 sm:pt-12 pb-24 sm:pb-12 px-4 sm:px-6 lg:px-8 sm:pr-16 2xl:pr-8">
       {paymentFailed && (
         <div role="alert" className="max-w-6xl mx-auto mb-6 rounded-2xl border border-red-200 bg-red-50 text-red-700 text-xs p-4">
           Ödeme tamamlanamadı. Sepetiniz korunuyor; tekrar deneyebilir veya Havale/EFT seçebilirsiniz.
         </div>
       )}
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-2xl sm:text-3xl font-serif font-bold text-neutral-900 mb-5 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-serif font-bold text-ink mb-5 sm:mb-8">
           Alışveriş Sepeti & Güvenli Ödeme
         </h1>
 
@@ -695,7 +695,7 @@ export default function CartPage() {
               </p>
             )}
             {!priceAcked && (
-              <button type="button" onClick={() => setPriceAcked(true)} className="bg-neutral-900 hover:bg-amber-600 text-white text-xs font-semibold px-4 py-2 rounded-xl transition-colors">
+              <button type="button" onClick={() => setPriceAcked(true)} className="bg-ink hover:bg-bronze-ink text-canvas text-xs font-semibold px-4 py-2 rounded-xl transition-colors">
                 Güncel tutarı gördüm
               </button>
             )}
@@ -721,28 +721,28 @@ export default function CartPage() {
             {/* Ürün Listesi */}
             <div className="space-y-4">
               <div className="flex justify-end">
-                <button type="button" onClick={emptyCart} className="inline-flex min-h-10 items-center px-2 text-xs font-semibold text-neutral-500 hover:text-red-600 underline underline-offset-2">
+                <button type="button" onClick={emptyCart} className="inline-flex min-h-10 items-center px-2 text-xs font-semibold text-ink-muted hover:text-red-600 underline underline-offset-2">
                   Sepeti Boşalt
                 </button>
               </div>
               {cart.map((item) => (
                 <div
                   key={item.variationId}
-                  className="bg-white rounded-2xl border border-neutral-200 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm"
+                  className="bg-raised rounded-2xl border border-line p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm"
                 >
                   <div className="flex items-center gap-4 min-w-0">
                     <Link
                       href={productPath({ id: item.productId, title: item.title })}
                       aria-label={`${item.title} ürün sayfası`}
-                      className="w-[72px] h-[72px] rounded-xl bg-neutral-100 overflow-hidden shrink-0 border border-neutral-200 flex items-center justify-center"
+                      className="w-[72px] h-[72px] rounded-xl bg-surface overflow-hidden shrink-0 border border-line flex items-center justify-center"
                     >
                       {(item.imageUrl || images[item.productId]) && (
                         <img src={smallImage(item.imageUrl || images[item.productId])} alt={item.title} width={80} height={80} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                       )}
                     </Link>
                     <div className="min-w-0">
-                    <h3 className="font-serif font-bold text-neutral-900 text-base">
-                      <Link href={productPath({ id: item.productId, title: item.title })} className="hover:text-amber-700 hover:underline">
+                    <h3 className="font-serif font-bold text-ink text-base">
+                      <Link href={productPath({ id: item.productId, title: item.title })} className="hover:text-bronze-ink hover:underline">
                         {displayTitle(item.title).title}
                       </Link>
                     </h3>
@@ -765,21 +765,21 @@ export default function CartPage() {
                         </span>
                       </span>
                     )}
-                    <div className="text-sm font-bold text-neutral-900 mt-2">
+                    <div className="text-sm font-bold text-ink mt-2">
                       {(pricedOf(item.variationId)?.unitPrice ?? item.price).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺
                       {(pricedOf(item.variationId)?.unitPrice ?? item.price) < referenceUnit(item) && (
-                        <span className="ml-2 text-xs font-medium text-neutral-400 line-through">{referenceUnit(item).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
+                        <span className="ml-2 text-xs font-medium text-ink-subtle line-through">{referenceUnit(item).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
                       )}
                     </div>
                     {lineSavings(item, pricedOf(item.variationId)?.unitPrice ?? item.price) > 0 && (
-                      <p data-testid="satir-indirimi" className="text-[11px] text-neutral-500 mt-0.5 tabular-nums">
+                      <p data-testid="satir-indirimi" className="text-[11px] text-ink-muted mt-0.5 tabular-nums">
                         {lineSavings(item, pricedOf(item.variationId)?.unitPrice ?? item.price).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺ indirim
                       </p>
                     )}
                     {item.quantity > 1 && pricedOf(item.variationId) && (
-                      <p data-testid="satir-toplami" className="text-xs text-neutral-700 mt-1 tabular-nums">
+                      <p data-testid="satir-toplami" className="text-xs text-ink-muted mt-1 tabular-nums">
                         {item.quantity} × {pricedOf(item.variationId)!.unitPrice.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺ ={" "}
-                        <strong className="text-neutral-900">{pricedOf(item.variationId)!.lineTotal.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</strong>
+                        <strong className="text-ink">{pricedOf(item.variationId)!.lineTotal.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</strong>
                       </p>
                     )}
                     {(() => {
@@ -797,7 +797,7 @@ export default function CartPage() {
                         {bulkLabel(t)}
                       </p>
                     ))}
-                    {item.bulk && item.bulk.length > 0 && <p className="text-[11px] text-neutral-500 mt-0.5">Aynı ürünün farklı renkleri toplam adede sayılır.</p>}
+                    {item.bulk && item.bulk.length > 0 && <p className="text-[11px] text-ink-muted mt-0.5">Aynı ürünün farklı renkleri toplam adede sayılır.</p>}
                     {noticesOf(item.variationId).map((n) => (
                       <p key={n} className="text-[11px] text-amber-900 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1 mt-1.5 leading-snug w-fit max-w-full">
                         {n}
@@ -807,23 +807,23 @@ export default function CartPage() {
                   </div>
 
                   <div className="flex items-center gap-4 self-end sm:self-center">
-                    <div className="flex items-center border border-neutral-300 rounded-lg overflow-hidden bg-neutral-50">
+                    <div className="flex items-center border border-line-strong rounded-lg overflow-hidden bg-surface">
                       <button
                         type="button"
                         onClick={() => updateQuantity(item.variationId, item.quantity - 1)}
                         aria-label={`Adedi azalt: ${item.title}`}
-                        className="min-w-11 min-h-11 sm:min-w-0 sm:min-h-0 px-2.5 py-1 text-sm sm:text-xs font-bold hover:bg-neutral-200"
+                        className="min-w-11 min-h-11 sm:min-w-0 sm:min-h-0 px-2.5 py-1 text-sm sm:text-xs font-bold hover:bg-line"
                       >
                         -
                       </button>
-                      <span className="min-w-8 text-center px-3 py-1 text-sm sm:text-xs font-bold text-neutral-800">
+                      <span className="min-w-8 text-center px-3 py-1 text-sm sm:text-xs font-bold text-ink">
                         {item.quantity}
                       </span>
                       <button
                         type="button"
                         onClick={() => updateQuantity(item.variationId, item.quantity + 1)}
                         aria-label={`Adedi artır: ${item.title}`}
-                        className="min-w-11 min-h-11 sm:min-w-0 sm:min-h-0 px-2.5 py-1 text-sm sm:text-xs font-bold hover:bg-neutral-200"
+                        className="min-w-11 min-h-11 sm:min-w-0 sm:min-h-0 px-2.5 py-1 text-sm sm:text-xs font-bold hover:bg-line"
                       >
                         +
                       </button>
@@ -832,7 +832,7 @@ export default function CartPage() {
                     <button
                       type="button"
                       onClick={() => removeFromCart(item.variationId)}
-                      className="text-neutral-400 hover:text-red-600 transition-colors p-1 text-sm min-w-11 min-h-11 sm:min-w-0 sm:min-h-0 flex items-center justify-center"
+                      className="text-ink-subtle hover:text-red-600 transition-colors p-1 text-sm min-w-11 min-h-11 sm:min-w-0 sm:min-h-0 flex items-center justify-center"
                       title="Kaldır"
                       aria-label={`Kaldır: ${item.title}`}
                     >
@@ -846,8 +846,8 @@ export default function CartPage() {
             <ComplementSuggestions suggestions={shownSuggestions} className="" />
 
             {/* KUPON KODU GİRİŞ KUTUSU */}
-            <div className="bg-white rounded-3xl border border-neutral-200 p-4 sm:p-6 shadow-sm space-y-3">
-              <label htmlFor="kupon-kodu" className="text-xs font-bold text-neutral-700 uppercase tracking-wider block">
+            <div className="bg-raised rounded-3xl border border-line p-4 sm:p-6 shadow-sm space-y-3">
+              <label htmlFor="kupon-kodu" className="text-xs font-bold text-ink-muted uppercase tracking-wider block">
                 İndirim / Kupon Kodu:
               </label>
 
@@ -877,12 +877,12 @@ export default function CartPage() {
                     placeholder={couponPlaceholder(quote?.showcaseCode)}
                     value={couponInput}
                     onChange={(e) => setCouponInput(e.target.value)}
-                    className="w-full sm:flex-1 min-w-0 text-base sm:text-xs p-3 rounded-xl border border-neutral-300 font-mono uppercase placeholder:font-sans placeholder:normal-case focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600"
+                    className="w-full sm:flex-1 min-w-0 text-base sm:text-xs p-3 rounded-xl border border-line-strong font-mono uppercase placeholder:font-sans placeholder:normal-case focus:border-bronze-ink focus-visible:outline-2 focus-visible:outline-bronze-ink"
                   />
                   <button
                     type="submit"
                     disabled={couponLoading}
-                    className="w-full sm:w-auto bg-neutral-900 hover:bg-amber-600 disabled:opacity-60 text-white text-xs font-semibold px-5 py-3 rounded-xl transition-colors shrink-0"
+                    className="w-full sm:w-auto bg-ink hover:bg-bronze-ink disabled:opacity-60 text-canvas text-xs font-semibold px-5 py-3 rounded-xl transition-colors shrink-0"
                   >
                     Kuponu Uygula
                   </button>
@@ -893,7 +893,7 @@ export default function CartPage() {
                 <p className="text-xs text-red-600 font-medium">{couponError}</p>
               )}
               {couponUnverifiable && (
-                <button type="button" onClick={handleSkipCoupon} className="text-xs font-semibold text-amber-800 underline underline-offset-2">
+                <button type="button" onClick={handleSkipCoupon} className="text-xs font-semibold text-bronze-ink underline underline-offset-2">
                   Kuponsuz devam et
                 </button>
               )}
@@ -901,17 +901,17 @@ export default function CartPage() {
                 <p role="alert" className="text-xs text-red-600 font-medium">{ZERO_TOTAL_ERROR}</p>
               )}
               {couponSkipped && !appliedCoupon && (
-                <p className="text-xs text-neutral-600">Kupon olmadan devam ediyorsunuz; tutar kuponsuz hesaplanır.</p>
+                <p className="text-xs text-ink-muted">Kupon olmadan devam ediyorsunuz; tutar kuponsuz hesaplanır.</p>
               )}
 
               {codeRows.length > 0 && (
-                <section aria-label="Kullanabileceğiniz kodlar" className="border-t border-neutral-200 pt-3 space-y-2">
-                  <h2 className="text-xs font-bold text-neutral-700 uppercase tracking-wider">Kullanabileceğiniz kodlar</h2>
+                <section aria-label="Kullanabileceğiniz kodlar" className="border-t border-line pt-3 space-y-2">
+                  <h2 className="text-xs font-bold text-ink-muted uppercase tracking-wider">Kullanabileceğiniz kodlar</h2>
                   {codeRows.map((row) => (
-                    <div key={row.code} className="flex items-center justify-between gap-3 rounded-2xl border border-neutral-200 p-3">
+                    <div key={row.code} className="flex items-center justify-between gap-3 rounded-2xl border border-line p-3">
                       <div className="min-w-0">
-                        <p className="font-mono font-bold text-sm text-neutral-900 break-all">{row.code}</p>
-                        <p className="text-xs text-neutral-600">{row.note}</p>
+                        <p className="font-mono font-bold text-sm text-ink break-all">{row.code}</p>
+                        <p className="text-xs text-ink-muted">{row.note}</p>
                       </div>
                       {appliedCoupon?.code === row.code ? (
                         <span className="shrink-0 inline-flex items-center min-h-11 px-3 text-xs font-semibold text-emerald-800">Uygulandı</span>
@@ -924,7 +924,7 @@ export default function CartPage() {
                             void applyCouponCode(row.code);
                           }}
                           aria-label={`${row.code} kodunu uygula`}
-                          className="shrink-0 min-h-11 min-w-11 bg-neutral-900 hover:bg-amber-600 disabled:opacity-60 text-white text-xs font-semibold px-4 rounded-xl transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600"
+                          className="shrink-0 min-h-11 min-w-11 bg-ink hover:bg-bronze-ink disabled:opacity-60 text-canvas text-xs font-semibold px-4 rounded-xl transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze-ink"
                         >
                           Uygula
                         </button>
@@ -936,44 +936,44 @@ export default function CartPage() {
             </div>
 
             {/* Teslimat Tercihi */}
-            <fieldset className="bg-white rounded-3xl border border-neutral-200 p-4 sm:p-6 space-y-3 shadow-sm min-w-0">
-              <legend className="float-left w-full text-xs font-bold text-neutral-700 uppercase tracking-wider">
+            <fieldset className="bg-raised rounded-3xl border border-line p-4 sm:p-6 space-y-3 shadow-sm min-w-0">
+              <legend className="float-left w-full text-xs font-bold text-ink-muted uppercase tracking-wider">
                 Teslimat Yöntemini Seçin:
               </legend>
 
               <div className="clear-both grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <label
-                  className={`block p-4 rounded-2xl border cursor-pointer transition-all has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-amber-600 ${
+                  className={`block p-4 rounded-2xl border cursor-pointer transition-all has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-bronze-ink ${
                     shippingType === "BEYOGLU_MAGAZA_TESLIM"
-                      ? "border-amber-600 bg-amber-50/60 ring-2 ring-amber-600/20"
-                      : "border-neutral-200 hover:border-neutral-300"
+                      ? "border-bronze-ink bg-amber-50/60 ring-2 ring-bronze-ink/20"
+                      : "border-line hover:border-line-strong"
                   }`}
                 >
                   <input type="radio" name="teslimat-yontemi" value="BEYOGLU_MAGAZA_TESLIM" checked={shippingType === "BEYOGLU_MAGAZA_TESLIM"} onChange={() => chooseShipping("BEYOGLU_MAGAZA_TESLIM")} className="sr-only" />
-                  <div className="flex items-center justify-between text-xs font-semibold text-neutral-900">
+                  <div className="flex items-center justify-between text-xs font-semibold text-ink">
                     <span>📍 Mağazadan Teslim</span>
                     <span className="text-emerald-600 font-bold">Ücretsiz • %3 İndirim{!applied.pickup && notApplied}</span>
                   </div>
-                  <p className="text-[11px] text-neutral-500 mt-1">
+                  <p className="text-[11px] text-ink-muted mt-1">
                     Şişhane merkezimizden görerek teslimat. Sepet tutarına ekstra %3 indirim uygulanır{!applied.pickup ? " (bu sepette uygulanmaz)" : ""}.
                   </p>
                 </label>
 
                 <label
-                  className={`block p-4 rounded-2xl border cursor-pointer transition-all has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-amber-600 ${
+                  className={`block p-4 rounded-2xl border cursor-pointer transition-all has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-bronze-ink ${
                     shippingType === "STANDART_KARGO"
-                      ? "border-amber-600 bg-amber-50/60 ring-2 ring-amber-600/20"
-                      : "border-neutral-200 hover:border-neutral-300"
+                      ? "border-bronze-ink bg-amber-50/60 ring-2 ring-bronze-ink/20"
+                      : "border-line hover:border-line-strong"
                   }`}
                 >
                   <input type="radio" name="teslimat-yontemi" value="STANDART_KARGO" checked={shippingType === "STANDART_KARGO"} onChange={() => chooseShipping("STANDART_KARGO")} className="sr-only" />
-                  <div className="flex items-center justify-between text-xs font-semibold text-neutral-900">
+                  <div className="flex items-center justify-between text-xs font-semibold text-ink">
                     <span>📦 Adrese Teslim</span>
-                    <span className="text-neutral-700 font-bold">
+                    <span className="text-ink-muted font-bold">
                       {itemsShown >= FREE_SHIPPING_THRESHOLD ? "Ücretsiz" : `${SHIPPING_COST.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺`}
                     </span>
                   </div>
-                  <p className="text-[11px] text-neutral-500 mt-1">
+                  <p className="text-[11px] text-ink-muted mt-1">
                     {FREE_SHIPPING_THRESHOLD} ₺ ve üzeri siparişlerde kargo ücretsiz.
                   </p>
                 </label>
@@ -981,12 +981,12 @@ export default function CartPage() {
             </fieldset>
 
             {/* Teslimat Bilgileri: adres + fatura (form, özet kutusundaki düğmeyle form="odeme-formu" üzerinden gönderilir) */}
-            <div className="bg-white rounded-3xl border border-neutral-200 p-4 sm:p-6 shadow-sm space-y-3">
-              <h2 className="text-lg font-serif font-bold text-neutral-900 pb-3 border-b border-neutral-100">Teslimat Bilgileri</h2>
+            <div className="bg-raised rounded-3xl border border-line p-4 sm:p-6 shadow-sm space-y-3">
+              <h2 className="text-lg font-serif font-bold text-ink pb-3 border-b border-line">Teslimat Bilgileri</h2>
               <form id="odeme-formu" onSubmit={handleCheckout} className="space-y-3">
               {!isPickup && savedAddresses.length > 0 && (
                 <div>
-                  <label htmlFor="co-saved" className="text-[11px] font-semibold text-neutral-700 block mb-1">Kayıtlı adres seç</label>
+                  <label htmlFor="co-saved" className="text-[11px] font-semibold text-ink-muted block mb-1">Kayıtlı adres seç</label>
                   <select
                     id="co-saved"
                     value={selectedAddrId}
@@ -994,7 +994,7 @@ export default function CartPage() {
                       const a = savedAddresses.find((x) => x.id === e.target.value);
                       if (a) applyAddress(a);
                     }}
-                    className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 bg-white focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600"
+                    className="w-full text-base sm:text-xs p-3 rounded-xl border border-line-strong bg-raised focus:border-bronze-ink focus-visible:outline-2 focus-visible:outline-bronze-ink"
                   >
                     <option value="">Kayıtlı adres seçin</option>
                     {savedAddresses.map((a) => (
@@ -1007,7 +1007,7 @@ export default function CartPage() {
               )}
 
               <div>
-              <label htmlFor="co-name" className="text-[11px] font-semibold text-neutral-700 block mb-1">Adınız Soyadınız</label>
+              <label htmlFor="co-name" className="text-[11px] font-semibold text-ink-muted block mb-1">Adınız Soyadınız</label>
               <input id="co-name"
                 autoComplete="name"
                 required
@@ -1015,11 +1015,11 @@ export default function CartPage() {
                 placeholder="Adınız Soyadınız (En az 2 kelime)"
                 value={name}
                 onChange={(e) => { formTouched.current = true; setSelectedAddrId(""); setName(e.target.value); }}
-                className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600"
+                className="w-full text-base sm:text-xs p-3 rounded-xl border border-line-strong focus:border-bronze-ink focus-visible:outline-2 focus-visible:outline-bronze-ink"
               />
               </div>
               <div>
-              <label htmlFor="co-email" className="text-[11px] font-semibold text-neutral-700 block mb-1">E-posta Adresiniz</label>
+              <label htmlFor="co-email" className="text-[11px] font-semibold text-ink-muted block mb-1">E-posta Adresiniz</label>
               <input id="co-email"
                 autoComplete="email"
                 required
@@ -1029,30 +1029,30 @@ export default function CartPage() {
                 readOnly={Boolean(accountEmail)}
                 onChange={(e) => setEmail(e.target.value)}
                 onBlur={() => setCommittedEmail(email)}
-                className={`w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600 ${accountEmail ? "bg-neutral-100 text-neutral-600" : ""}`}
+                className={`w-full text-base sm:text-xs p-3 rounded-xl border border-line-strong focus:border-bronze-ink focus-visible:outline-2 focus-visible:outline-bronze-ink ${accountEmail ? "bg-surface text-ink-muted" : ""}`}
               />
-              {accountEmail && <p className="mt-1 text-[11px] text-neutral-500">Hesap e-postanız. Farklı bir e-posta için önce çıkış yapın.</p>}
+              {accountEmail && <p className="mt-1 text-[11px] text-ink-muted">Hesap e-postanız. Farklı bir e-posta için önce çıkış yapın.</p>}
               </div>
-              <div className="text-[11px] text-neutral-600">
+              <div className="text-[11px] text-ink-muted">
                 <label className="flex items-start gap-2 cursor-pointer max-sm:py-2.5 max-sm:min-h-11">
                   <input
                     type="checkbox"
                     checked={marketingOptIn}
                     onChange={(e) => setMarketingOptIn(e.target.checked)}
-                    className="mt-0.5 w-5 h-5 sm:w-4 sm:h-4 accent-amber-600 shrink-0"
+                    className="mt-0.5 w-5 h-5 sm:w-4 sm:h-4 accent-bronze-ink shrink-0"
                   />
-                  <span className="font-medium text-neutral-800">Kampanya, indirim ve fırsat e-postaları almak istiyorum. (İsteğe bağlı)</span>
+                  <span className="font-medium text-ink">Kampanya, indirim ve fırsat e-postaları almak istiyorum. (İsteğe bağlı)</span>
                 </label>
-                <p className="mt-1 ml-6 text-neutral-500 leading-relaxed">
+                <p className="mt-1 ml-6 text-ink-muted leading-relaxed">
                   Onayınızı dilediğiniz zaman e-postalardaki bağlantıdan geri alabilirsiniz. Kişisel verileriniz{" "}
-                  <a href="/aydinlatma-metni" target="_blank" rel="noopener noreferrer" className="text-amber-700 underline">
+                  <a href="/aydinlatma-metni" target="_blank" rel="noopener noreferrer" className="text-bronze-ink underline">
                     Aydınlatma Metni
                   </a>{" "}
                   kapsamında işlenir.
                 </p>
               </div>
               <div>
-              <label htmlFor="co-phone" className="text-[11px] font-semibold text-neutral-700 block mb-1">Telefon Numaranız</label>
+              <label htmlFor="co-phone" className="text-[11px] font-semibold text-ink-muted block mb-1">Telefon Numaranız</label>
               <input id="co-phone"
                 autoComplete="tel"
                 required
@@ -1065,12 +1065,12 @@ export default function CartPage() {
                   formTouched.current = true; setSelectedAddrId("");
                   setPhone(e.target.value);
                 }}
-                className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600"
+                className="w-full text-base sm:text-xs p-3 rounded-xl border border-line-strong focus:border-bronze-ink focus-visible:outline-2 focus-visible:outline-bronze-ink"
               />
               </div>
 
               {isPickup && (
-                <p className="text-xs text-neutral-600 bg-neutral-50 border border-neutral-200 rounded-xl p-3">
+                <p className="text-xs text-ink-muted bg-surface border border-line rounded-xl p-3">
                   📍 Siparişiniz mağazamızdan teslim alınacaktır: <strong>{ADDRESS_LINE}</strong>
                 </p>
               )}
@@ -1080,7 +1080,7 @@ export default function CartPage() {
               <>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label htmlFor="co-state" className="text-[11px] font-semibold text-neutral-700 block mb-1">
+                  <label htmlFor="co-state" className="text-[11px] font-semibold text-ink-muted block mb-1">
                     İl (Şehir)
                   </label>
                   <select
@@ -1088,7 +1088,7 @@ export default function CartPage() {
                     autoComplete="address-level1"
                     value={buyerStateId}
                     onChange={(e) => { formTouched.current = true; setSelectedAddrId(""); pendingCityId.current = null; setBuyerStateId(Number(e.target.value)); setBuyerCityId(0); }}
-                    className="w-full text-base sm:text-xs p-2.5 rounded-xl border border-neutral-300 bg-white focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600"
+                    className="w-full text-base sm:text-xs p-2.5 rounded-xl border border-line-strong bg-raised focus:border-bronze-ink focus-visible:outline-2 focus-visible:outline-bronze-ink"
                   >
                     {sortedStates.map((st) => (
                       <option key={st.id} value={st.id}>
@@ -1099,7 +1099,7 @@ export default function CartPage() {
                 </div>
 
                 <div>
-                  <label htmlFor="co-city" className="text-[11px] font-semibold text-neutral-700 block mb-1">
+                  <label htmlFor="co-city" className="text-[11px] font-semibold text-ink-muted block mb-1">
                     İlçe
                   </label>
                   <select
@@ -1107,7 +1107,7 @@ export default function CartPage() {
                     autoComplete="address-level2"
                     value={buyerCityId}
                     onChange={(e) => { formTouched.current = true; setSelectedAddrId(""); setBuyerCityId(Number(e.target.value)); }}
-                    className="w-full text-base sm:text-xs p-2.5 rounded-xl border border-neutral-300 bg-white focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600"
+                    className="w-full text-base sm:text-xs p-2.5 rounded-xl border border-line-strong bg-raised focus:border-bronze-ink focus-visible:outline-2 focus-visible:outline-bronze-ink"
                   >
                     <option value={0}>İlçe seçin</option>
                     {cities.map((ct) => (
@@ -1120,7 +1120,7 @@ export default function CartPage() {
               </div>
 
               <div>
-              <label htmlFor="co-address" className="text-[11px] font-semibold text-neutral-700 block mb-1">Açık Teslimat Adresiniz</label>
+              <label htmlFor="co-address" className="text-[11px] font-semibold text-ink-muted block mb-1">Açık Teslimat Adresiniz</label>
               <textarea id="co-address"
                 autoComplete="street-address"
                 required
@@ -1128,22 +1128,22 @@ export default function CartPage() {
                 placeholder="Açık Teslimat Adresiniz (Mahalle, Sokak, Bina ve Daire No)"
                 value={address}
                 onChange={(e) => { formTouched.current = true; setSelectedAddrId(""); setAddress(e.target.value); }}
-                className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600"
+                className="w-full text-base sm:text-xs p-3 rounded-xl border border-line-strong focus:border-bronze-ink focus-visible:outline-2 focus-visible:outline-bronze-ink"
               />
               </div>
               </>
               )}
 
               {/* Fatura Bilgileri */}
-              <fieldset className="space-y-2 pt-3 border-t border-neutral-100">
-                <legend className="text-xs font-bold text-neutral-700 uppercase tracking-wider mb-1">Fatura Bilgileri</legend>
+              <fieldset className="space-y-2 pt-3 border-t border-line">
+                <legend className="text-xs font-bold text-ink-muted uppercase tracking-wider mb-1">Fatura Bilgileri</legend>
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   {([["INDIVIDUAL", "Bireysel Fatura"], ["CORPORATE", "Kurumsal Fatura"]] as const).map(([val, label]) => (
                     <label
                       key={val}
-                      className={`flex items-center gap-2 rounded-xl border p-2.5 max-sm:min-h-11 cursor-pointer ${invoiceType === val ? "border-amber-600 bg-amber-50" : "border-neutral-300"}`}
+                      className={`flex items-center gap-2 rounded-xl border p-2.5 max-sm:min-h-11 cursor-pointer ${invoiceType === val ? "border-bronze-ink bg-amber-50" : "border-line-strong"}`}
                     >
-                      <input type="radio" name="invoiceType" checked={invoiceType === val} onChange={() => setInvoiceType(val)} className="accent-amber-600 w-5 h-5 sm:w-4 sm:h-4" />
+                      <input type="radio" name="invoiceType" checked={invoiceType === val} onChange={() => setInvoiceType(val)} className="accent-bronze-ink w-5 h-5 sm:w-4 sm:h-4" />
                       {label}
                     </label>
                   ))}
@@ -1156,14 +1156,14 @@ export default function CartPage() {
                     placeholder="T.C. Kimlik Numarası (isteğe bağlı)"
                     value={taxNumber}
                     onChange={(e) => setTaxNumber(e.target.value.replace(/\D/g, ""))}
-                    className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600"
+                    className="w-full text-base sm:text-xs p-3 rounded-xl border border-line-strong focus:border-bronze-ink focus-visible:outline-2 focus-visible:outline-bronze-ink"
                   />
                 ) : (
                   <>
-                    <input aria-label="Şirket / Firma Unvanı" required placeholder="Şirket / Firma Unvanı" value={companyTitle} onChange={(e) => setCompanyTitle(e.target.value)} className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600" />
+                    <input aria-label="Şirket / Firma Unvanı" required placeholder="Şirket / Firma Unvanı" value={companyTitle} onChange={(e) => setCompanyTitle(e.target.value)} className="w-full text-base sm:text-xs p-3 rounded-xl border border-line-strong focus:border-bronze-ink focus-visible:outline-2 focus-visible:outline-bronze-ink" />
                     <div className="grid grid-cols-2 gap-2">
-                      <input aria-label="Vergi Dairesi" required placeholder="Vergi Dairesi" value={taxOffice} onChange={(e) => setTaxOffice(e.target.value)} className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600" />
-                      <input aria-label="Vergi Kimlik No (VKN)" required inputMode="numeric" maxLength={10} placeholder="VKN (10 hane)" value={taxNumber} onChange={(e) => setTaxNumber(e.target.value.replace(/\D/g, ""))} className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600" />
+                      <input aria-label="Vergi Dairesi" required placeholder="Vergi Dairesi" value={taxOffice} onChange={(e) => setTaxOffice(e.target.value)} className="w-full text-base sm:text-xs p-3 rounded-xl border border-line-strong focus:border-bronze-ink focus-visible:outline-2 focus-visible:outline-bronze-ink" />
+                      <input aria-label="Vergi Kimlik No (VKN)" required inputMode="numeric" maxLength={10} placeholder="VKN (10 hane)" value={taxNumber} onChange={(e) => setTaxNumber(e.target.value.replace(/\D/g, ""))} className="w-full text-base sm:text-xs p-3 rounded-xl border border-line-strong focus:border-bronze-ink focus-visible:outline-2 focus-visible:outline-bronze-ink" />
                     </div>
                   </>
                 )}
@@ -1186,25 +1186,25 @@ export default function CartPage() {
                 value={orderNote}
                 onChange={(e) => setOrderNote(e.target.value)}
                 placeholder="Örn: Tavan yüksekliğim 280 cm, zincir boyu 60 cm olsun."
-                className="w-full text-base sm:text-xs p-3 rounded-xl border border-amber-300 bg-white focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600"
+                className="w-full text-base sm:text-xs p-3 rounded-xl border border-amber-300 bg-raised focus:border-bronze-ink focus-visible:outline-2 focus-visible:outline-bronze-ink"
               />
             </div>
 
             {/* Ödeme Bilgileri */}
-            <div className="bg-white rounded-3xl border border-neutral-200 p-4 sm:p-8 space-y-6 shadow-sm">
-              <div className="flex items-center justify-between border-b border-neutral-100 pb-4">
+            <div className="bg-raised rounded-3xl border border-line p-4 sm:p-8 space-y-6 shadow-sm">
+              <div className="flex items-center justify-between border-b border-line pb-4">
                 <div>
-                  <h2 className="text-lg font-serif font-bold text-neutral-900">
+                  <h2 className="text-lg font-serif font-bold text-ink">
                     Ödeme Bilgileri
                   </h2>
-                  <p className="text-xs text-neutral-500">
+                  <p className="text-xs text-ink-muted">
                     256-Bit SSL ve 3D Secure korumalı güvenli ödeme
                   </p>
                 </div>
-                <div className="flex items-center gap-2 text-xs font-bold text-neutral-400">
-                  <span className="bg-neutral-100 px-2 py-1 rounded text-[10px] text-neutral-600">troy</span>
-                  <span className="bg-neutral-100 px-2 py-1 rounded text-[10px] text-neutral-600">VISA</span>
-                  <span className="bg-neutral-100 px-2 py-1 rounded text-[10px] text-neutral-600">mastercard</span>
+                <div className="flex items-center gap-2 text-xs font-bold text-ink-subtle">
+                  <span className="bg-surface px-2 py-1 rounded text-[10px] text-ink-muted">troy</span>
+                  <span className="bg-surface px-2 py-1 rounded text-[10px] text-ink-muted">VISA</span>
+                  <span className="bg-surface px-2 py-1 rounded text-[10px] text-ink-muted">mastercard</span>
                 </div>
               </div>
 
@@ -1216,8 +1216,8 @@ export default function CartPage() {
                   onClick={() => setPaymentMethod("CREDIT_CARD")}
                   className={`p-3 rounded-xl border text-xs font-semibold transition-all ${
                     paymentMethod === "CREDIT_CARD"
-                      ? "border-amber-600 bg-amber-50/60 text-amber-950 ring-2 ring-amber-600/20"
-                      : "border-neutral-200 text-neutral-600 hover:border-neutral-300"
+                      ? "border-bronze-ink bg-amber-50/60 text-amber-950 ring-2 ring-bronze-ink/20"
+                      : "border-line text-ink-muted hover:border-line-strong"
                   }`}
                 >
                   💳 Kredi / Banka Kartı
@@ -1229,8 +1229,8 @@ export default function CartPage() {
                   onClick={() => setPaymentMethod("BANK_TRANSFER")}
                   className={`p-3 rounded-xl border text-xs font-semibold transition-all ${
                     paymentMethod === "BANK_TRANSFER"
-                      ? "border-amber-600 bg-amber-50/60 text-amber-950 ring-2 ring-amber-600/20"
-                      : "border-neutral-200 text-neutral-600 hover:border-neutral-300"
+                      ? "border-bronze-ink bg-amber-50/60 text-amber-950 ring-2 ring-bronze-ink/20"
+                      : "border-line text-ink-muted hover:border-line-strong"
                   }`}
                 >
                   🏦 Havale / EFT (%5 İndirimli){!applied.transfer && notApplied}
@@ -1238,9 +1238,9 @@ export default function CartPage() {
               </div>
 
               {paymentMethod === "CREDIT_CARD" ? (
-                <div className="p-4 bg-neutral-50 border border-neutral-200 rounded-2xl text-xs text-neutral-700 space-y-1.5">
+                <div className="p-4 bg-surface border border-line rounded-2xl text-xs text-ink-muted space-y-1.5">
                   <div className="font-bold">🔒 PayTR Güvenli Ödeme</div>
-                  <p className="text-neutral-600">
+                  <p className="text-ink-muted">
                     &ldquo;Ödemeye Geç&rdquo; dediğinizde kart bilgilerinizi PayTR&apos;nin güvenli ödeme formuna girersiniz.
                     Kart bilgileriniz sitemizde saklanmaz veya görüntülenmez. Taksit seçenekleri kartınıza göre formda listelenir.
                   </p>
@@ -1259,8 +1259,8 @@ export default function CartPage() {
 
 
           {/* Sağ Kolon: Özet (masaüstünde yapışkan) */}
-          <div id="siparis-ozeti" className="bg-white rounded-3xl border border-neutral-200 p-4 sm:p-8 space-y-6 shadow-sm h-fit lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
-            <h2 className="text-lg font-serif font-bold text-neutral-900 pb-3 border-b border-neutral-100">
+          <div id="siparis-ozeti" className="bg-raised rounded-3xl border border-line p-4 sm:p-8 space-y-6 shadow-sm h-fit lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
+            <h2 className="text-lg font-serif font-bold text-ink pb-3 border-b border-line">
               Sipariş Özeti
             </h2>
 
@@ -1288,10 +1288,10 @@ export default function CartPage() {
               )}
 
               {/* Fiyat Dökümü */}
-              <div className="space-y-2 pt-4 border-t border-neutral-100 text-xs">
+              <div className="space-y-2 pt-4 border-t border-line text-xs">
                 {productDiscount > 0 ? (
                   <>
-                    <div className="flex justify-between text-neutral-600">
+                    <div className="flex justify-between text-ink-muted">
                       <span>Liste Fiyatı Toplamı</span>
                       <span>{listTotalOf(cart).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
                     </div>
@@ -1301,12 +1301,12 @@ export default function CartPage() {
                     </div>
                   </>
                 ) : (
-                  <div className="flex justify-between text-neutral-600">
+                  <div className="flex justify-between text-ink-muted">
                     <span>Ürünler Toplamı</span>
                     <span>{itemsShown.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
                   </div>
                 )}
-                <div className="flex justify-between text-neutral-600">
+                <div className="flex justify-between text-ink-muted">
                   <span>Kargo / Teslimat</span>
                   <span>{shippingCost === 0 ? "Ücretsiz" : `${shippingCost.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺`}</span>
                 </div>
@@ -1335,9 +1335,9 @@ export default function CartPage() {
                   </div>
                 )}
 
-                <div className="flex justify-between text-sm font-bold text-neutral-900 pt-2 border-t border-neutral-200">
+                <div className="flex justify-between text-sm font-bold text-ink pt-2 border-t border-line">
                   <span>Toplam Tutar</span>
-                  <span className="text-amber-600 text-base">{finalTotal.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
+                  <span className="text-bronze-ink text-base">{finalTotal.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
                 </div>
                 {savings > 0 && (
                   <p data-testid="toplam-kazanc" className="flex justify-between text-emerald-700 font-semibold text-xs">
@@ -1348,23 +1348,23 @@ export default function CartPage() {
 
               </div>
 
-              <div className="space-y-2 pt-3 text-[11px] text-neutral-700">
+              <div className="space-y-2 pt-3 text-[11px] text-ink-muted">
                 <label className="flex items-start gap-2 cursor-pointer max-sm:py-2.5 max-sm:min-h-11">
-                  <input type="checkbox" checked={agreePre} onChange={(e) => setAgreePre(e.target.checked)} className="mt-0.5 w-5 h-5 sm:w-4 sm:h-4 accent-amber-600 shrink-0" />
+                  <input type="checkbox" checked={agreePre} onChange={(e) => setAgreePre(e.target.checked)} className="mt-0.5 w-5 h-5 sm:w-4 sm:h-4 accent-bronze-ink shrink-0" />
                   <span>
-                    <button type="button" onClick={() => setContract("pre")} className="text-amber-700 underline font-semibold">Ön Bilgilendirme Koşulları&apos;nı</button> okudum ve kabul ediyorum.
+                    <button type="button" onClick={() => setContract("pre")} className="text-bronze-ink underline font-semibold">Ön Bilgilendirme Koşulları&apos;nı</button> okudum ve kabul ediyorum.
                   </span>
                 </label>
                 <label className="flex items-start gap-2 cursor-pointer max-sm:py-2.5 max-sm:min-h-11">
-                  <input type="checkbox" checked={agreeSales} onChange={(e) => setAgreeSales(e.target.checked)} className="mt-0.5 w-5 h-5 sm:w-4 sm:h-4 accent-amber-600 shrink-0" />
+                  <input type="checkbox" checked={agreeSales} onChange={(e) => setAgreeSales(e.target.checked)} className="mt-0.5 w-5 h-5 sm:w-4 sm:h-4 accent-bronze-ink shrink-0" />
                   <span>
-                    <button type="button" onClick={() => setContract("sales")} className="text-amber-700 underline font-semibold">Mesafeli Satış Sözleşmesi&apos;ni</button> okudum ve kabul ediyorum.
+                    <button type="button" onClick={() => setContract("sales")} className="text-bronze-ink underline font-semibold">Mesafeli Satış Sözleşmesi&apos;ni</button> okudum ve kabul ediyorum.
                   </span>
                 </label>
               </div>
 
               {disabledReason && (
-                <p id="odeme-pasif-neden" data-testid="odeme-pasif-neden" className="text-xs text-neutral-700 text-center mt-4">
+                <p id="odeme-pasif-neden" data-testid="odeme-pasif-neden" className="text-xs text-ink-muted text-center mt-4">
                   {disabledReason}
                 </p>
               )}
@@ -1374,7 +1374,7 @@ export default function CartPage() {
                 form="odeme-formu"
                 disabled={loading || !fresh || !agreePre || !agreeSales || (priceNotice !== null && !priceAcked)}
                 aria-describedby={disabledReason ? "odeme-pasif-neden" : undefined}
-                className="w-full bg-neutral-900 hover:bg-amber-600 text-white py-3.5 px-4 rounded-xl transition-colors text-xs font-semibold shadow-sm mt-3 disabled:opacity-50"
+                className="w-full bg-ink hover:bg-bronze-ink text-canvas py-3.5 px-4 rounded-xl transition-colors text-xs font-semibold shadow-sm mt-3 disabled:opacity-50"
               >
                 {loading
                   ? "Hazırlanıyor..."
@@ -1384,11 +1384,11 @@ export default function CartPage() {
               </button>
 
 
-              <ul className="mt-3 space-y-1 text-[11px] text-neutral-600 text-center">
+              <ul className="mt-3 space-y-1 text-[11px] text-ink-muted text-center">
                 <li>Siparişler ödeme onayından sonra 1-3 iş günü içinde kargoya verilir.</li>
                 <li>
                   14 gün içinde iade hakkı:{" "}
-                  <Link href="/iptal-iade-cayma" className="text-amber-700 underline font-semibold">İade Koşulları</Link>
+                  <Link href="/iptal-iade-cayma" className="text-bronze-ink underline font-semibold">İade Koşulları</Link>
                 </li>
               </ul>
 
@@ -1401,7 +1401,7 @@ export default function CartPage() {
                 </p>
               )}
 
-              <div className="text-center pt-2 text-[10px] text-neutral-400">
+              <div className="text-center pt-2 text-[10px] text-ink-subtle">
                 🔒 256-Bit SSL{isPickup ? "" : " & Aras Kargo ile Gönderim"}
               </div>
             </div>
