@@ -88,3 +88,13 @@ test("indirimli fiyat ve kart indirim rozeti aynı jeton (sale); rozet yazısı 
   assert.ok(ratio(1, hexLum(light.sale)) >= 4.5, "açık rozet");
   assert.ok(ratio(oklchLum(20.5, 0, 0), hexLum(dark.sale)) >= 4.5, "koyu rozet");
 });
+
+test("tutarların hepsi sale kırmızısı, etiketler ink; alt açıklama ink-muted ve ≥ 4.5:1", () => {
+  for (const k of KEYS) assert.equal(amountTone[k], "sale", `${k} tutarı`);
+  for (const k of ["coupon", "bank", "pickup"]) assert.equal(labelTone[k], "ink", `${k} etiketi`);
+  assert.match(ladder, /: "text-ink-muted"\}`\}>\{s\.hint\}/);
+  for (const [theme, t] of [["açık", light], ["koyu", dark]]) for (const bg of ["canvas", "surface", "raised"]) {
+    const r = ratio(hexLum(t["ink-muted"]), hexLum(t[bg]));
+    assert.ok(r >= 4.5, `${theme} ink-muted / ${bg}: ${r.toFixed(2)}`);
+  }
+});
