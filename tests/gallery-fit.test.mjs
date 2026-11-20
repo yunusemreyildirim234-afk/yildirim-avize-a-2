@@ -33,3 +33,11 @@ test("ürün kartı görsel alanı kare (aspect-square), object-contain; 4:5 de�
   assert.ok(!card.includes("aspect-[4/5]"));
   assert.ok(!card.includes("object-cover"));
 });
+
+test("kart hover büyümesi tüm slaytlarda ortak sınıfla (motion-safe), slayt kutusu kırpar", () => {
+  const card = readFileSync(new URL("../components/CardImages.tsx", import.meta.url), "utf8");
+  assert.match(card, /const IMG = ".*motion-safe:group-hover:scale-\[1\.03\]"/);
+  assert.equal((card.match(/className=\{IMG\}/g) ?? []).length, 3); // tek görsel/ilk slayt + sonraki slaytlar
+  assert.ok(!/group-hover:scale-\[1\.03\]/.test(card.replace(/const IMG = .*\n/, "")), "büyüme sınıfı tek yerde tanımlı");
+  assert.ok((card.match(/snap-center overflow-hidden/g) ?? []).length >= 2);
+});

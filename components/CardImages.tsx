@@ -7,6 +7,8 @@ import { isBlobImage, smallImage } from "@/lib/img";
 
 const DRAG_THRESHOLD = 8; // px: bunu aşan hareket sürükleme sayılır, bırakınca bağlantı tıklaması bastırılır
 const SIZES = "(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw";
+// Tüm slaytlarda aynı: sığdır, açık temada çarp, hover'da %3 büyüt (hareket azaltma tercihinde büyütme yok)
+const IMG = "object-contain mix-blend-multiply dark:mix-blend-normal transition-transform duration-500 motion-safe:group-hover:scale-[1.03]";
 
 /**
  * Ürün kartı görseli. Tek görselde eski çıktı AYNEN (ek öğe yok). 2+ görselde: yatay scroll-snap, masaüstünde ok, altta noktalar.
@@ -52,7 +54,7 @@ export default function CardImages({
       fill
       priority={priority}
       sizes={SIZES}
-      className="object-contain mix-blend-multiply dark:mix-blend-normal transition-transform duration-500 motion-safe:group-hover:scale-[1.03]"
+      className={IMG}
     />
   );
 
@@ -102,9 +104,9 @@ export default function CardImages({
           start.current = null;
         }}
       >
-        <div className="relative shrink-0 w-full h-full snap-center">{first}</div>
+        <div className="relative shrink-0 w-full h-full snap-center overflow-hidden">{first}</div>
         {images.slice(1).map((src, i) => (
-          <div key={src} className="relative shrink-0 w-full h-full snap-center">
+          <div key={src} className="relative shrink-0 w-full h-full snap-center overflow-hidden">
             {armed && (
               <Image
                 src={smallImage(src)}
@@ -114,7 +116,7 @@ export default function CardImages({
                 loading="lazy"
                 decoding="async"
                 sizes={SIZES}
-                className="object-contain mix-blend-multiply dark:mix-blend-normal"
+                className={IMG}
               />
             )}
           </div>
