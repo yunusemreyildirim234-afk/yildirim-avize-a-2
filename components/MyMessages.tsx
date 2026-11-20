@@ -28,15 +28,15 @@ export default function MyMessages() {
   }, []);
 
   return (
-    <div id="mesajlar" className="bg-white rounded-3xl border border-neutral-200 p-8 shadow-sm space-y-6 scroll-mt-24">
-      <h2 className="text-lg font-serif font-bold text-neutral-900 border-b border-neutral-100 pb-3">
+    <div id="mesajlar" className="bg-raised rounded-3xl border border-line p-8 shadow-sm space-y-6 scroll-mt-24">
+      <h2 className="text-lg font-serif font-bold text-ink border-b border-line pb-3">
         Ürün Sorularım / Mesajlarım
       </h2>
 
       {messages === null ? (
-        <p className="text-center py-6 text-neutral-400 text-xs">Yükleniyor...</p>
+        <p className="text-center py-6 text-ink-subtle text-xs">Yükleniyor...</p>
       ) : messages.length === 0 ? (
-        <p className="text-center py-6 text-neutral-400 text-xs">
+        <p className="text-center py-6 text-ink-subtle text-xs">
           Henüz soru veya mesajınız yok. Ürün sayfalarından soru sorabilir ya da{" "}
           <Link href="/iletisim" className="underline">
             iletişim formunu
@@ -48,15 +48,15 @@ export default function MyMessages() {
           {messages.map((m) => {
             const answered = m.status === "ANSWERED";
             return (
-              <li key={m.id} className="border border-neutral-200 rounded-2xl p-5 space-y-3 bg-neutral-50/50 text-xs">
+              <li key={m.id} className="border border-line rounded-2xl p-5 space-y-3 bg-surface/50 text-xs">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="text-neutral-500">
+                  <div className="text-ink-muted">
                     {m.product ? (
-                      <Link href={productPath(m.product)} className="font-semibold text-neutral-900 hover:text-amber-700">
+                      <Link href={productPath(m.product)} className="font-semibold text-ink hover:text-bronze-ink">
                         {m.product.title}
                       </Link>
                     ) : (
-                      <span className="font-semibold text-neutral-900">{m.subject || "İletişim mesajı"}</span>
+                      <span className="font-semibold text-ink">{m.subject || "İletişim mesajı"}</span>
                     )}
                     <span className="block text-[11px]">{new Date(m.createdAt).toLocaleString("tr-TR")}</span>
                   </div>
@@ -69,15 +69,15 @@ export default function MyMessages() {
                   </span>
                 </div>
 
-                <p className="whitespace-pre-line text-neutral-800">{m.message}</p>
+                <p className="whitespace-pre-line text-ink">{m.message}</p>
 
                 {answered && m.reply && (
-                  <div className="border-l-4 border-amber-500 bg-white rounded-r-xl p-3">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700">
+                  <div className="border-l-4 border-amber-500 bg-raised rounded-r-xl p-3">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-bronze-ink">
                       Yıldırım Avize yanıtı
                       {m.repliedAt && ` • ${new Date(m.repliedAt).toLocaleDateString("tr-TR")}`}
                     </span>
-                    <p className="whitespace-pre-line text-neutral-800 mt-1">{m.reply}</p>
+                    <p className="whitespace-pre-line text-ink mt-1">{m.reply}</p>
                   </div>
                 )}
               </li>

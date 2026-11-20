@@ -48,24 +48,24 @@ export default function AccountDeletion() {
   const pending = latest?.status === "PENDING";
 
   return (
-    <section aria-labelledby="hesap-sil-baslik" className="bg-white rounded-3xl border border-neutral-200 p-6 sm:p-8 shadow-sm space-y-3">
-      <h2 id="hesap-sil-baslik" className="text-lg font-serif font-bold text-neutral-900">Hesabı Sil</h2>
+    <section aria-labelledby="hesap-sil-baslik" className="bg-raised rounded-3xl border border-line p-6 sm:p-8 shadow-sm space-y-3">
+      <h2 id="hesap-sil-baslik" className="text-lg font-serif font-bold text-ink">Hesabı Sil</h2>
       {pending ? (
         <>
-          <p className="text-sm text-neutral-800">Hesap silme talebiniz alındı ve inceleniyor. İşlem tamamlandığında e-posta ile bilgilendirileceksiniz.</p>
-          <button type="button" disabled={busy} onClick={() => void send("DELETE")} className="inline-flex min-h-11 items-center rounded-lg border border-neutral-300 bg-white px-4 text-xs font-semibold text-neutral-800 hover:border-amber-600 disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600">
+          <p className="text-sm text-ink">Hesap silme talebiniz alındı ve inceleniyor. İşlem tamamlandığında e-posta ile bilgilendirileceksiniz.</p>
+          <button type="button" disabled={busy} onClick={() => void send("DELETE")} className="inline-flex min-h-11 items-center rounded-lg border border-line-strong bg-raised px-4 text-xs font-semibold text-ink hover:border-bronze-ink disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze-ink">
             Talebi geri çek
           </button>
         </>
       ) : (
         <>
-          <p className="text-xs leading-relaxed text-neutral-600">
+          <p className="text-xs leading-relaxed text-ink-muted">
             Hesabınızı silmek için talep oluşturabilirsiniz. Onaylanınca adresleriniz, favorileriniz, sepetiniz, yorumlarınız ve mesajlarınız silinir. Siparişleriniz ve faturalarınız yasal saklama süresince anonimleştirilmiş hesapla tutulur. Tamamlanmamış siparişiniz varsa silme işlemi bunlar kapandıktan sonra yapılabilir.
           </p>
           {latest?.status === "REJECTED" && (
             <p className="text-xs text-red-700">Önceki talebiniz karşılanamadı{latest.adminNote ? `: ${latest.adminNote}` : "."}</p>
           )}
-          <button type="button" disabled={busy} onClick={() => setAsk(true)} className="inline-flex min-h-11 items-center rounded-lg border border-red-300 bg-white px-4 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600">
+          <button type="button" disabled={busy} onClick={() => setAsk(true)} className="inline-flex min-h-11 items-center rounded-lg border border-red-300 bg-raised px-4 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze-ink">
             Hesabımı silmek istiyorum
           </button>
         </>

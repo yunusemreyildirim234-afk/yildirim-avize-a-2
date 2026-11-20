@@ -55,9 +55,9 @@ function Switch({ checked, busy, label, onChange }: { checked: boolean; busy: bo
       aria-label={label}
       disabled={busy}
       onClick={() => onChange(!checked)}
-      className={`relative shrink-0 w-12 h-7 rounded-full transition-colors disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600 ${checked ? "bg-emerald-700" : "bg-zinc-400"}`}
+      className={`relative shrink-0 w-12 h-7 rounded-full transition-colors disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze-ink ${checked ? "bg-emerald-700" : "bg-line-strong"}`}
     >
-      <span className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-white shadow transition-transform ${checked ? "translate-x-5" : ""}`} />
+      <span className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-raised shadow transition-transform ${checked ? "translate-x-5" : ""}`} />
     </button>
   );
 }
@@ -67,15 +67,15 @@ export function MarketingPermissions() {
   const { state, busy, set } = useMarketingConsent("hesabim");
   if (state.status === "anon") return null;
   return (
-    <section aria-labelledby="izinler-baslik" className="bg-white rounded-3xl border border-neutral-200 p-6 sm:p-8 shadow-sm space-y-3">
-      <h2 id="izinler-baslik" className="text-lg font-serif font-bold text-neutral-900">İzinler</h2>
-      {state.status === "loading" && <p className="text-xs text-neutral-500">Yükleniyor...</p>}
+    <section aria-labelledby="izinler-baslik" className="bg-raised rounded-3xl border border-line p-6 sm:p-8 shadow-sm space-y-3">
+      <h2 id="izinler-baslik" className="text-lg font-serif font-bold text-ink">İzinler</h2>
+      {state.status === "loading" && <p className="text-xs text-ink-muted">Yükleniyor...</p>}
       {state.status === "error" && <p className="text-xs text-red-700">İzin durumunuz şu anda okunamadı.</p>}
       {state.status === "ready" && (
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-neutral-900">Kampanya, indirim, fırsat ve favori fiyat düşüşü e-postaları</p>
-            <p className="text-xs text-neutral-600 mt-1 leading-relaxed">
+            <p className="text-sm font-semibold text-ink">Kampanya, indirim, fırsat ve favori fiyat düşüşü e-postaları</p>
+            <p className="text-xs text-ink-muted mt-1 leading-relaxed">
               {state.enabled ? "Açık: bu e-postaları almak için onay verdiniz." : "Kapalı: size bu türde e-posta göndermiyoruz."} Sipariş ve kargo bilgilendirmeleri bu ayardan etkilenmez.
             </p>
           </div>
@@ -90,12 +90,12 @@ export function MarketingPermissions() {
 export function FavoritesMarketingStrip() {
   const { state, busy, set } = useMarketingConsent("favoriler");
   if (state.status === "loading" || state.status === "error") return null;
-  const box = "max-w-6xl mx-auto mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm text-neutral-900";
+  const box = "max-w-6xl mx-auto mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm text-ink";
   if (state.status === "anon") {
     return (
       <div className={box}>
         <span>Fiyat düşüşü bildirimi için giriş yapın.</span>
-        <Link href="/giris" className="font-semibold text-amber-900 underline underline-offset-2 min-h-11 sm:min-h-0 inline-flex items-center">
+        <Link href="/giris" className="font-semibold text-bronze-ink underline underline-offset-2 min-h-11 sm:min-h-0 inline-flex items-center">
           Giriş yap →
         </Link>
       </div>
@@ -104,7 +104,7 @@ export function FavoritesMarketingStrip() {
   return state.enabled ? (
     <div className={box}>
       <span>E-posta bildirimleri açık.</span>
-      <button type="button" disabled={busy} onClick={() => set(false)} className="font-semibold text-amber-900 underline underline-offset-2 min-h-11 sm:min-h-0 text-left disabled:opacity-60">
+      <button type="button" disabled={busy} onClick={() => set(false)} className="font-semibold text-bronze-ink underline underline-offset-2 min-h-11 sm:min-h-0 text-left disabled:opacity-60">
         Kapat
       </button>
     </div>

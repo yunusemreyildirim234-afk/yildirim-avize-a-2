@@ -31,9 +31,9 @@ export default function ProfileName({ name, onChanged }: { name: string; onChang
   };
 
   return (
-    <form onSubmit={save} className="bg-white rounded-3xl border border-neutral-200 p-6 shadow-sm space-y-3">
-      <h2 className="text-lg font-serif font-bold text-neutral-900">Hesap Bilgilerim</h2>
-      <label htmlFor="profile-name" className="block text-xs font-semibold text-neutral-700">
+    <form onSubmit={save} className="bg-raised rounded-3xl border border-line p-6 shadow-sm space-y-3">
+      <h2 className="text-lg font-serif font-bold text-ink">Hesap Bilgilerim</h2>
+      <label htmlFor="profile-name" className="block text-xs font-semibold text-ink-muted">
         Ad Soyad / Kullanıcı Adı
       </label>
       <div className="flex flex-col sm:flex-row gap-2">
@@ -44,13 +44,13 @@ export default function ProfileName({ name, onChanged }: { name: string; onChang
           onChange={(e) => setValue(e.target.value)}
           aria-invalid={dirty && !valid}
           aria-describedby="profile-name-hint"
-          className="flex-1 p-3 rounded-xl border border-neutral-300 text-sm focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600"
+          className="flex-1 p-3 rounded-xl border border-line-strong text-sm focus:border-bronze-ink focus-visible:outline-2 focus-visible:outline-bronze-ink"
         />
-        <button type="submit" disabled={busy || !dirty || !valid} className="bg-neutral-900 hover:bg-amber-600 disabled:opacity-50 text-white text-sm font-semibold px-5 py-3 rounded-xl transition-colors">
+        <button type="submit" disabled={busy || !dirty || !valid} className="bg-ink hover:bg-bronze-ink disabled:opacity-50 text-canvas text-sm font-semibold px-5 py-3 rounded-xl transition-colors">
           {busy ? "Kaydediliyor..." : "Kaydet"}
         </button>
       </div>
-      <p id="profile-name-hint" className={`text-[11px] ${dirty && !valid ? "text-red-700" : "text-neutral-500"}`}>
+      <p id="profile-name-hint" className={`text-[11px] ${dirty && !valid ? "text-red-700" : "text-ink-muted"}`}>
         2-60 karakter. Siparişlerde ve üst menüde bu ad görünür.
       </p>
     </form>

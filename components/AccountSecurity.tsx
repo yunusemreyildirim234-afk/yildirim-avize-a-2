@@ -87,16 +87,16 @@ export default function AccountSecurity({ email, twoFactorEnabled, onChanged }: 
   };
 
   return (
-    <div id="guvenlik" className="bg-white rounded-3xl border border-neutral-200 p-8 shadow-sm space-y-6 scroll-mt-24">
-      <h2 className="text-lg font-serif font-bold text-neutral-900 border-b border-neutral-100 pb-3 flex items-center gap-2">
-        <ShieldCheck aria-hidden="true" className="w-5 h-5 text-amber-600" /> Hesap Güvenliği
+    <div id="guvenlik" className="bg-raised rounded-3xl border border-line p-8 shadow-sm space-y-6 scroll-mt-24">
+      <h2 className="text-lg font-serif font-bold text-ink border-b border-line pb-3 flex items-center gap-2">
+        <ShieldCheck aria-hidden="true" className="w-5 h-5 text-bronze-ink" /> Hesap Güvenliği
       </h2>
 
       {/* 2FA */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="text-xs">
-          <p className="font-bold text-neutral-900 text-sm">İki Aşamalı Doğrulama (E-posta ile Güvenlik)</p>
-          <p className="text-neutral-500 mt-0.5">Girişte şifrenize ek olarak e-postanıza gönderilen 6 haneli kod istenir. Google ile girişte ek kod istenmez.</p>
+          <p className="font-bold text-ink text-sm">İki Aşamalı Doğrulama (E-posta ile Güvenlik)</p>
+          <p className="text-ink-muted mt-0.5">Girişte şifrenize ek olarak e-postanıza gönderilen 6 haneli kod istenir. Google ile girişte ek kod istenmez.</p>
         </div>
         <button
           type="button"
@@ -105,19 +105,19 @@ export default function AccountSecurity({ email, twoFactorEnabled, onChanged }: 
           aria-label="İki aşamalı doğrulama"
           disabled={busy || flow === "2fa-code" || flow === "2fa-off-code"}
           onClick={() => (twoFactorEnabled ? start("TWO_FACTOR_DISABLE", "2fa-off-code") : start("TWO_FACTOR_ENABLE", "2fa-code"))}
-          className={`shrink-0 w-12 h-7 rounded-full transition-colors relative disabled:opacity-60 ${twoFactorEnabled ? "bg-emerald-500" : "bg-neutral-300"}`}
+          className={`shrink-0 w-12 h-7 rounded-full transition-colors relative disabled:opacity-60 ${twoFactorEnabled ? "bg-emerald-500" : "bg-line-strong"}`}
         >
-          <span className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow transition-all ${twoFactorEnabled ? "left-6" : "left-1"}`} />
+          <span className={`absolute top-1 w-5 h-5 rounded-full bg-raised shadow transition-all ${twoFactorEnabled ? "left-6" : "left-1"}`} />
         </button>
       </div>
       {!twoFactorEnabled && flow !== "2fa-code" && (
-        <button type="button" disabled={busy} onClick={() => start("TWO_FACTOR_ENABLE", "2fa-code")} className="text-xs font-semibold bg-neutral-900 hover:bg-amber-600 text-white px-4 py-2 rounded-xl transition-colors">
+        <button type="button" disabled={busy} onClick={() => start("TWO_FACTOR_ENABLE", "2fa-code")} className="text-xs font-semibold bg-ink hover:bg-bronze-ink text-canvas px-4 py-2 rounded-xl transition-colors">
           Etkinleştir
         </button>
       )}
       {flow === "2fa-off-code" && (
         <div className="max-w-sm">
-          <p className="text-xs text-neutral-600 mb-2">İki aşamalı doğrulamayı kapatmak için e-postanıza gönderilen kodu girin.</p>
+          <p className="text-xs text-ink-muted mb-2">İki aşamalı doğrulamayı kapatmak için e-postanıza gönderilen kodu girin.</p>
           <CodeStep email={email} busy={busy} onSubmit={verify2faOff} onResend={() => start("TWO_FACTOR_DISABLE", "2fa-off-code")} submitLabel="Kapatmayı Onayla" />
         </div>
       )}
@@ -128,10 +128,10 @@ export default function AccountSecurity({ email, twoFactorEnabled, onChanged }: 
       )}
 
       {/* Şifre değiştir */}
-      <div className="border-t border-neutral-100 pt-6 space-y-3">
-        <p className="font-bold text-neutral-900 text-sm">Şifre Değiştir</p>
+      <div className="border-t border-line pt-6 space-y-3">
+        <p className="font-bold text-ink text-sm">Şifre Değiştir</p>
         {flow === null || flow === "2fa-code" || flow === "2fa-off-code" ? (
-          <button type="button" disabled={busy} onClick={() => start("CHANGE_PASSWORD", "pw-code")} className="text-xs font-semibold border border-neutral-300 hover:bg-neutral-50 text-neutral-800 px-4 py-2 rounded-xl transition-colors">
+          <button type="button" disabled={busy} onClick={() => start("CHANGE_PASSWORD", "pw-code")} className="text-xs font-semibold border border-line-strong hover:bg-surface text-ink px-4 py-2 rounded-xl transition-colors">
             E-posta ile Kod Gönder
           </button>
         ) : flow === "pw-code" ? (
@@ -141,7 +141,7 @@ export default function AccountSecurity({ email, twoFactorEnabled, onChanged }: 
         ) : (
           <form onSubmit={savePw} className="max-w-sm space-y-4 text-xs">
             <PasswordFields password={password} confirm={confirm} onPassword={setPassword} onConfirm={setConfirm} label="Yeni Şifre" />
-            <button type="submit" disabled={busy || !passwordsOk(password, confirm)} className="bg-neutral-900 hover:bg-amber-600 text-white font-semibold px-5 py-3 rounded-xl transition-colors disabled:opacity-50">
+            <button type="submit" disabled={busy || !passwordsOk(password, confirm)} className="bg-ink hover:bg-bronze-ink text-canvas font-semibold px-5 py-3 rounded-xl transition-colors disabled:opacity-50">
               {busy ? "Kaydediliyor..." : "Şifreyi Güncelle"}
             </button>
           </form>
