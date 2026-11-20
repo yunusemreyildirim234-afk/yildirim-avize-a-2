@@ -92,7 +92,7 @@ export default function OrderRequestBox({ order, onChanged }: Props) {
 
   return (
     <form onSubmit={submit} className="space-y-2 text-xs w-full">
-      <p className="text-neutral-700">{intro}</p>
+      <p className="text-ink-muted">{intro}</p>
       <textarea
         aria-label="Talep nedeni"
         value={reason}
@@ -100,7 +100,7 @@ export default function OrderRequestBox({ order, onChanged }: Props) {
         rows={2}
         maxLength={1000}
         placeholder="Nedeninizi kısaca yazın (opsiyonel)"
-        className="w-full p-2.5 rounded-xl border border-neutral-300 focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600"
+        className="w-full p-2.5 rounded-xl border border-line-strong focus:border-bronze-ink focus-visible:outline-2 focus-visible:outline-bronze-ink"
       />
       {error && <p className="text-red-600 font-medium">{error}</p>}
       <div className="flex gap-2">
@@ -111,7 +111,7 @@ export default function OrderRequestBox({ order, onChanged }: Props) {
         >
           {loading ? "Gönderiliyor..." : "Talebi Gönder"}
         </button>
-        <button type="button" onClick={() => setOpen(false)} className="text-neutral-600 font-semibold px-3 py-2">
+        <button type="button" onClick={() => setOpen(false)} className="text-ink-muted font-semibold px-3 py-2">
           Vazgeç
         </button>
       </div>

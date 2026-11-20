@@ -121,7 +121,7 @@ export default function OrderStatusSelector({ orderId, initialStatus, shippingTy
         <option value="RETURNED" disabled={!canTransition(status, "RETURNED")}>↩ İade Edildi</option>
       </select>
 
-      {loading && <span className="text-[10px] text-neutral-400 animate-spin">⌛</span>}
+      {loading && <span className="text-[10px] text-ink-subtle animate-spin">⌛</span>}
     </div>
   );
 }

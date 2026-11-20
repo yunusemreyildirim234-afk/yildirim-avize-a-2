@@ -82,12 +82,12 @@ export default function ReceiptUpload({
     <form onSubmit={submit} className="space-y-3 rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4 text-left text-xs">
       <p className="font-bold text-emerald-950">Havale Bildirimi</p>
       {amount !== undefined && (
-        <p className="rounded-xl bg-white/70 border border-emerald-200 px-3 py-2 text-neutral-800 leading-relaxed">
+        <p className="rounded-xl bg-white/70 border border-emerald-200 px-3 py-2 text-ink leading-relaxed">
           <strong>{formatTl(amount)}</strong> tutarını <span className="font-mono font-bold break-all">{BANK_INFO.iban}</span> IBAN&apos;ına gönderin; açıklamaya <span className="font-mono font-bold">{orderCode(orderId)}</span> yazın.
         </p>
       )}
       <div>
-        <label htmlFor={`${uid}-sender`} className="font-semibold text-neutral-700 block mb-1">Gönderici Ad-Soyadı</label>
+        <label htmlFor={`${uid}-sender`} className="font-semibold text-ink-muted block mb-1">Gönderici Ad-Soyadı</label>
         <input
           id={`${uid}-sender`}
           required
@@ -96,11 +96,11 @@ export default function ReceiptUpload({
           value={sender}
           onChange={(e) => setSender(e.target.value)}
           placeholder="Havaleyi yapan kişinin adı soyadı"
-          className="w-full p-2.5 rounded-xl border border-neutral-300 bg-white focus:border-emerald-600 focus-visible:outline-2 focus-visible:outline-emerald-600"
+          className="w-full p-2.5 rounded-xl border border-line-strong bg-raised focus:border-emerald-600 focus-visible:outline-2 focus-visible:outline-emerald-600"
         />
       </div>
       <div>
-        <label htmlFor={`${uid}-file`} className="font-semibold text-neutral-700 block mb-1">Dekont Dosyası (Görsel veya PDF, en çok 20 MB, otomatik küçültülür)</label>
+        <label htmlFor={`${uid}-file`} className="font-semibold text-ink-muted block mb-1">Dekont Dosyası (Görsel veya PDF, en çok 20 MB, otomatik küçültülür)</label>
         <input
           id={`${uid}-file`}
           required
@@ -126,16 +126,16 @@ export default function ReceiptUpload({
             }
             setFile(out);
           }}
-          className="w-full text-xs file:mr-3 file:rounded-lg file:border-0 file:bg-neutral-900 file:text-white file:px-3 file:py-2 file:font-semibold"
+          className="w-full text-xs file:mr-3 file:rounded-lg file:border-0 file:bg-ink file:text-canvas file:px-3 file:py-2 file:font-semibold"
         />
-        {optimizing && <p className="mt-1 text-[11px] text-amber-700">Görsel optimize ediliyor...</p>}
+        {optimizing && <p className="mt-1 text-[11px] text-bronze-ink">Görsel optimize ediliyor...</p>}
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <button type="submit" disabled={busy || optimizing || !file} className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-bold px-5 py-2.5 rounded-xl">
           {optimizing ? "Görsel optimize ediliyor..." : busy ? "Yükleniyor..." : "Gönder"}
         </button>
-        {!file && !optimizing && <span className="text-[11px] text-neutral-500">Dosya seçince etkinleşir</span>}
-        <button type="button" onClick={() => setOpen(false)} className="text-neutral-600 font-semibold px-3 py-2.5">
+        {!file && !optimizing && <span className="text-[11px] text-ink-muted">Dosya seçince etkinleşir</span>}
+        <button type="button" onClick={() => setOpen(false)} className="text-ink-muted font-semibold px-3 py-2.5">
           Vazgeç
         </button>
       </div>

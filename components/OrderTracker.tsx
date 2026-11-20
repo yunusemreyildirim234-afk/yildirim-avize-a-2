@@ -64,7 +64,7 @@ export default function OrderTracker({ order }: Props) {
           <li key={label} aria-current={active ? "step" : undefined} className="relative flex flex-col items-center text-center">
             {/* Adımlar arası bağlantı çizgisi */}
             {i < labels.length - 1 && (
-              <span aria-hidden="true" className="absolute top-5 left-1/2 w-full h-1 -translate-y-1/2 rounded-full bg-neutral-200 overflow-hidden">
+              <span aria-hidden="true" className="absolute top-5 left-1/2 w-full h-1 -translate-y-1/2 rounded-full bg-line overflow-hidden">
                 {done && <span className="ya-fill ya-shimmer block h-full w-full rounded-full" />}
                 {active && (
                   <span
@@ -83,7 +83,7 @@ export default function OrderTracker({ order }: Props) {
                 className={`relative flex items-center justify-center w-10 h-10 rounded-full border-2 transition-colors duration-500 ${
                   reached
                     ? "bg-gradient-to-br from-amber-400 to-amber-600 border-amber-500 text-white shadow-md shadow-amber-500/30"
-                    : "bg-neutral-100 border-neutral-200 text-neutral-400"
+                    : "bg-surface border-line text-ink-subtle"
                 }`}
               >
                 <Icon aria-hidden="true" className="w-[18px] h-[18px]" />
@@ -91,10 +91,10 @@ export default function OrderTracker({ order }: Props) {
             </span>
 
             {/* Dar ekranda yalnızca etkin adımın etiketi görünür (beş etiket yan yana değiyordu); sr-only ile okuyucuya hepsi açık kalır */}
-            <span className={`mt-2 px-0.5 text-[10px] sm:text-[11px] leading-tight font-semibold ${reached ? "text-neutral-900" : "text-neutral-400"} ${active ? "w-24 sm:w-auto" : "sr-only sm:not-sr-only"}`}>
+            <span className={`mt-2 px-0.5 text-[10px] sm:text-[11px] leading-tight font-semibold ${reached ? "text-ink" : "text-ink-subtle"} ${active ? "w-24 sm:w-auto" : "sr-only sm:not-sr-only"}`}>
               {label}
             </span>
-            {date && <span className={`mt-0.5 px-0.5 text-[9px] sm:text-[10px] text-neutral-500 leading-tight ${active ? "w-24 sm:w-auto" : "sr-only sm:not-sr-only"}`}>{date}</span>}
+            {date && <span className={`mt-0.5 px-0.5 text-[9px] sm:text-[10px] text-ink-muted leading-tight ${active ? "w-24 sm:w-auto" : "sr-only sm:not-sr-only"}`}>{date}</span>}
           </li>
         );
       })}

@@ -47,21 +47,21 @@ export default function ContractModal({ kind, data, onClose }: { kind: "pre" | "
 
   const title = kind === "pre" ? "Ön Bilgilendirme Formu" : "Mesafeli Satış Sözleşmesi";
   const today = new Date().toLocaleDateString("tr-TR");
-  const h = "text-xs font-bold text-neutral-900 mt-4 mb-1";
+  const h = "text-xs font-bold text-ink mt-4 mb-1";
 
   return (
     <div role="dialog" aria-modal="true" aria-label={title} className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6">
       <button type="button" aria-label="Kapat" onClick={onClose} className="absolute inset-0 bg-zinc-950/60" />
-      <div ref={boxRef} className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[88vh] flex flex-col">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 shrink-0">
-          <h2 className="text-base font-serif font-bold text-neutral-900">{title}</h2>
-          <button type="button" onClick={onClose} aria-label="Kapat" className="rounded-full p-1.5 hover:bg-neutral-100">
-            <X aria-hidden="true" className="w-5 h-5 text-neutral-600" />
+      <div ref={boxRef} className="relative bg-raised rounded-2xl shadow-2xl w-full max-w-2xl max-h-[88vh] flex flex-col">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-line shrink-0">
+          <h2 className="text-base font-serif font-bold text-ink">{title}</h2>
+          <button type="button" onClick={onClose} aria-label="Kapat" className="rounded-full p-1.5 hover:bg-surface">
+            <X aria-hidden="true" className="w-5 h-5 text-ink-muted" />
           </button>
         </div>
 
-        <div className="overflow-y-auto px-5 py-4 text-xs text-neutral-700 leading-relaxed">
-          <p className="text-neutral-500">Tarih: {today}</p>
+        <div className="overflow-y-auto px-5 py-4 text-xs text-ink-muted leading-relaxed">
+          <p className="text-ink-muted">Tarih: {today}</p>
 
           <h3 className={h}>1. SATICI</h3>
           <p>
@@ -94,7 +94,7 @@ export default function ContractModal({ kind, data, onClose }: { kind: "pre" | "
           <h3 className={h}>3. SÖZLEŞME KONUSU ÜRÜNLER</h3>
           <table className="w-full border-collapse mt-1">
             <thead>
-              <tr className="text-left text-neutral-500 border-b border-neutral-200">
+              <tr className="text-left text-ink-muted border-b border-line">
                 <th className="py-1.5 font-semibold">Ürün</th>
                 <th className="py-1.5 font-semibold text-center">Adet</th>
                 <th className="py-1.5 font-semibold text-right">Tutar</th>
@@ -102,9 +102,9 @@ export default function ContractModal({ kind, data, onClose }: { kind: "pre" | "
             </thead>
             <tbody>
               {data.items.map((i, idx) => (
-                <tr key={idx} className="border-b border-neutral-100">
+                <tr key={idx} className="border-b border-line">
                   <td className="py-1.5 pr-2">
-                    {i.title} <span className="text-neutral-400">({i.variation})</span>
+                    {i.title} <span className="text-ink-subtle">({i.variation})</span>
                   </td>
                   <td className="py-1.5 text-center">{i.quantity}</td>
                   <td className="py-1.5 text-right whitespace-nowrap">{tl(i.price * i.quantity)}</td>
@@ -118,8 +118,8 @@ export default function ContractModal({ kind, data, onClose }: { kind: "pre" | "
               Teslimat ({data.shippingLabel}): {data.shippingCost === 0 ? "Ücretsiz" : tl(data.shippingCost)}
             </p>
             {data.discount > 0 && <p className="text-emerald-700">İndirimler: -{tl(data.discount)}</p>}
-            <p className="text-sm font-bold text-neutral-900">Toplam (KDV dahil): {tl(data.total)}</p>
-            <p className="text-neutral-500">Ödeme yöntemi: {data.paymentLabel}</p>
+            <p className="text-sm font-bold text-ink">Toplam (KDV dahil): {tl(data.total)}</p>
+            <p className="text-ink-muted">Ödeme yöntemi: {data.paymentLabel}</p>
           </div>
 
           {kind === "pre" ? (
@@ -152,17 +152,17 @@ export default function ContractModal({ kind, data, onClose }: { kind: "pre" | "
             </>
           )}
 
-          <p className="mt-4 text-neutral-500">
+          <p className="mt-4 text-ink-muted">
             Tam metin için{" "}
-            <a href="/mesafeli-satis-sozlesmesi" target="_blank" rel="noopener noreferrer" className="text-amber-700 underline">
+            <a href="/mesafeli-satis-sozlesmesi" target="_blank" rel="noopener noreferrer" className="text-bronze-ink underline">
               Mesafeli Satış Sözleşmesi sayfasına
             </a>{" "}
             bakabilirsiniz.
           </p>
         </div>
 
-        <div className="px-5 py-3 border-t border-neutral-100 shrink-0 text-right">
-          <button type="button" onClick={onClose} className="bg-neutral-900 hover:bg-amber-600 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition-colors">
+        <div className="px-5 py-3 border-t border-line shrink-0 text-right">
+          <button type="button" onClick={onClose} className="bg-ink hover:bg-bronze-ink text-canvas text-xs font-semibold px-5 py-2.5 rounded-xl transition-colors">
             Kapat
           </button>
         </div>
