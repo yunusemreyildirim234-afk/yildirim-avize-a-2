@@ -63,7 +63,7 @@ export default function IletisimPage() {
   ];
 
   return (
-    <main className="min-h-screen bg-neutral-50 pb-20">
+    <main className="min-h-screen bg-canvas pb-20">
       {/* Üst Hero Başlık */}
       <section className="bg-canvas text-ink py-16 px-4 text-center border-b border-line">
         <div className="max-w-3xl mx-auto space-y-3">
@@ -83,8 +83,8 @@ export default function IletisimPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
           {/* Sol Kolon: Resmi Mağaza Bilgileri */}
           <div className="space-y-6">
-            <div className="bg-white rounded-3xl border border-neutral-200 p-8 shadow-sm space-y-6">
-              <h2 className="text-xl font-serif font-bold text-neutral-900 border-b border-neutral-100 pb-4">
+            <div className="bg-raised rounded-3xl border border-line p-8 shadow-sm space-y-6">
+              <h2 className="text-xl font-serif font-bold text-ink border-b border-line pb-4">
                 Mağaza & Atölye
               </h2>
 
@@ -93,35 +93,35 @@ export default function IletisimPage() {
                 <div className="flex items-start gap-3">
                   <span className="text-xl shrink-0">📍</span>
                   <div>
-                    <strong className="text-neutral-900 block font-semibold">Açık Adres:</strong>
-                    <p className="text-neutral-600 mt-1 leading-relaxed">
+                    <strong className="text-ink block font-semibold">Açık Adres:</strong>
+                    <p className="text-ink-muted mt-1 leading-relaxed">
                       Emekyemez Mah. İskender Cad, Nazlı Hanım Sk. No:6 D:11, 34420 Beyoğlu / İstanbul
                     </p>
                   </div>
                 </div>
 
                 {/* Telefonlar */}
-                <div className="flex items-start gap-3 pt-3 border-t border-neutral-100">
+                <div className="flex items-start gap-3 pt-3 border-t border-line">
                   <span className="text-xl shrink-0">📞</span>
                   <div>
-                    <strong className="text-neutral-900 block font-semibold">Telefon & WhatsApp:</strong>
-                    <a href="tel:05372114223" className="text-amber-700 hover:underline block mt-1 font-mono font-medium">
+                    <strong className="text-ink block font-semibold">Telefon & WhatsApp:</strong>
+                    <a href="tel:05372114223" className="text-bronze-ink hover:underline block mt-1 font-mono font-medium">
                       0537 211 42 23
                     </a>
                   </div>
                 </div>
 
                 {/* Çalışma Saatleri */}
-                <div className="flex items-start gap-3 pt-3 border-t border-neutral-100">
+                <div className="flex items-start gap-3 pt-3 border-t border-line">
                   <span className="text-xl shrink-0">🕒</span>
                   <div className="w-full">
-                    <strong className="text-neutral-900 block font-semibold mb-1">Çalışma Saatleri:</strong>
-                    <div className="space-y-1 text-neutral-600 text-[11px]">
+                    <strong className="text-ink block font-semibold mb-1">Çalışma Saatleri:</strong>
+                    <div className="space-y-1 text-ink-muted text-[11px]">
                       <div className="flex justify-between">
                         <span>Pazartesi - Cuma:</span>
-                        <span className="font-semibold text-neutral-900">09:00 – 18:00</span>
+                        <span className="font-semibold text-ink">09:00 – 18:00</span>
                       </div>
-                      <div className="flex justify-between text-neutral-400">
+                      <div className="flex justify-between text-ink-subtle">
                         <span>Cumartesi - Pazar:</span>
                         <span>Kapalı</span>
                       </div>
@@ -130,8 +130,8 @@ export default function IletisimPage() {
                 </div>
 
                 {/* Resmi Pazaryeri ve Sosyal Medya Bağlantıları */}
-                <div className="pt-4 border-t border-neutral-100 space-y-2">
-                  <strong className="text-neutral-900 block font-semibold text-[11px] uppercase tracking-wider">
+                <div className="pt-4 border-t border-line space-y-2">
+                  <strong className="text-ink block font-semibold text-[11px] uppercase tracking-wider">
                     Resmi Kanallarımız:
                   </strong>
                   <div className="flex flex-col gap-2 pt-1">
@@ -139,7 +139,7 @@ export default function IletisimPage() {
                       href="https://www.instagram.com/yildirimavize/"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-2 p-2.5 rounded-xl bg-neutral-50 hover:bg-neutral-100 text-neutral-800 transition-colors font-medium"
+                      className="flex items-center gap-2 p-2.5 rounded-xl bg-surface hover:bg-surface text-ink transition-colors font-medium"
                     >
                       <span>📸</span>
                       <span>Instagram: @yildirimavize</span>
@@ -148,7 +148,7 @@ export default function IletisimPage() {
                       href="https://www.facebook.com/y.ld.r.m.avize/"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-2 p-2.5 rounded-xl bg-neutral-50 hover:bg-neutral-100 text-neutral-800 transition-colors font-medium"
+                      className="flex items-center gap-2 p-2.5 rounded-xl bg-surface hover:bg-surface text-ink transition-colors font-medium"
                     >
                       <span>📘</span>
                       <span>Facebook: Yıldırım Avize</span>
@@ -182,7 +182,7 @@ export default function IletisimPage() {
                 <span>📍</span>
                 <span>Click & Collect (Mağazadan Teslim)</span>
               </div>
-              <p className="text-neutral-600 leading-relaxed">
+              <p className="text-ink-muted leading-relaxed">
                 İnternet sitemizden sipariş verirken Şişhane merkezimizden görerek teslim alma seçeneğini işaretleyerek ürünlerinizi usta kontrolleri yapılmış halde bizzat teslim alabilirsiniz.
               </p>
             </div>
@@ -190,15 +190,15 @@ export default function IletisimPage() {
 
           {/* Sağ Kolon: Mesaj ve Mimari Talep Formu */}
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-3xl border border-neutral-200 p-8 sm:p-12 shadow-sm space-y-6">
+            <div className="bg-raised rounded-3xl border border-line p-8 sm:p-12 shadow-sm space-y-6">
               <div>
-                <span className="text-xs uppercase tracking-widest text-amber-600 font-bold">
+                <span className="text-xs uppercase tracking-widest text-bronze-ink font-bold">
                   Bize Yazın
                 </span>
-                <h2 className="text-2xl font-serif font-bold text-neutral-900 mt-1">
+                <h2 className="text-2xl font-serif font-bold text-ink mt-1">
                   Özel Proje, Keşif veya Soru İletin
                 </h2>
-                <p className="text-xs text-neutral-500 mt-1">
+                <p className="text-xs text-ink-muted mt-1">
                   Mekanınıza uygun avize seçimi ve mimari danışmanlık için ustalarımız size yardımcı olmaktan mutluluk duyar.
                 </p>
               </div>
@@ -214,7 +214,7 @@ export default function IletisimPage() {
                   </p>
                   <button
                     onClick={() => setSent(false)}
-                    className="text-xs font-semibold text-neutral-700 underline pt-2 block mx-auto"
+                    className="text-xs font-semibold text-ink-muted underline pt-2 block mx-auto"
                   >
                     Yeni Bir Mesaj Gönder
                   </button>
@@ -223,49 +223,49 @@ export default function IletisimPage() {
                 <form onSubmit={handleSubmit} className="space-y-4 text-xs">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label htmlFor="iletisim-ad" className="font-semibold text-neutral-700 block mb-1">Adınız Soyadınız *</label>
+                      <label htmlFor="iletisim-ad" className="font-semibold text-ink-muted block mb-1">Adınız Soyadınız *</label>
                       <input id="iletisim-ad" autoComplete="name"
                         required
                         type="text"
                         placeholder="Örn: Yunus Emre Yıldırım"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        className="w-full p-3 rounded-xl border border-neutral-300 focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600"
+                        className="w-full p-3 rounded-xl border border-line-strong focus:border-bronze-ink focus-visible:outline-2 focus-visible:outline-bronze-ink"
                       />
                     </div>
 
                     <div>
-                      <label htmlFor="iletisim-eposta" className="font-semibold text-neutral-700 block mb-1">E-posta Adresiniz *</label>
+                      <label htmlFor="iletisim-eposta" className="font-semibold text-ink-muted block mb-1">E-posta Adresiniz *</label>
                       <input id="iletisim-eposta" autoComplete="email"
                         required
                         type="email"
                         placeholder="ornek@mail.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="w-full p-3 rounded-xl border border-neutral-300 focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600"
+                        className="w-full p-3 rounded-xl border border-line-strong focus:border-bronze-ink focus-visible:outline-2 focus-visible:outline-bronze-ink"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label htmlFor="iletisim-telefon" className="font-semibold text-neutral-700 block mb-1">Telefon Numaranız</label>
+                      <label htmlFor="iletisim-telefon" className="font-semibold text-ink-muted block mb-1">Telefon Numaranız</label>
                       <input id="iletisim-telefon" autoComplete="tel"
                         type="tel"
                         placeholder="05XX XXX XX XX"
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
-                        className="w-full p-3 rounded-xl border border-neutral-300 focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600"
+                        className="w-full p-3 rounded-xl border border-line-strong focus:border-bronze-ink focus-visible:outline-2 focus-visible:outline-bronze-ink"
                       />
                     </div>
 
                     <div>
-                      <label htmlFor="iletisim-konu" className="font-semibold text-neutral-700 block mb-1">Konu Başlığı</label>
+                      <label htmlFor="iletisim-konu" className="font-semibold text-ink-muted block mb-1">Konu Başlığı</label>
                       <select
                         id="iletisim-konu"
                         value={subject}
                         onChange={(e) => setSubject(e.target.value)}
-                        className="w-full p-3 rounded-xl border border-neutral-300 focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600 bg-white"
+                        className="w-full p-3 rounded-xl border border-line-strong focus:border-bronze-ink focus-visible:outline-2 focus-visible:outline-bronze-ink bg-raised"
                       >
                         <option value="Özel Avize Tasarımı">Özel Avize Tasarımı / Üretim</option>
                         <option value="Mimari Proje & Keşif">Mimari Proje (Villa / Otel / Restoran)</option>
@@ -277,27 +277,27 @@ export default function IletisimPage() {
                   </div>
 
                   <div>
-                    <label htmlFor="iletisim-mesaj" className="font-semibold text-neutral-700 block mb-1">Mesajınız veya Proje Detayları *</label>
+                    <label htmlFor="iletisim-mesaj" className="font-semibold text-ink-muted block mb-1">Mesajınız veya Proje Detayları *</label>
                     <textarea id="iletisim-mesaj"
                       required
                       rows={4}
                       placeholder="Mekanınızın tavan yüksekliği, istediğiniz avize stili veya sormak istediğiniz sorular..."
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
-                      className="w-full p-3 rounded-xl border border-neutral-300 focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600"
+                      className="w-full p-3 rounded-xl border border-line-strong focus:border-bronze-ink focus-visible:outline-2 focus-visible:outline-bronze-ink"
                     />
                   </div>
 
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full sm:w-auto bg-neutral-900 hover:bg-amber-600 text-white font-semibold py-3.5 px-8 rounded-xl transition-colors shadow-sm disabled:opacity-50 text-xs"
+                    className="w-full sm:w-auto bg-ink hover:bg-bronze-ink text-canvas font-semibold py-3.5 px-8 rounded-xl transition-colors shadow-sm disabled:opacity-50 text-xs"
                   >
                     {loading ? "Gönderiliyor..." : "Mesajı İlet →"}
                   </button>
-                  <p className="text-[11px] text-neutral-500">
+                  <p className="text-[11px] text-ink-muted">
                     Kişisel verileriniz{" "}
-                    <Link href="/aydinlatma-metni" className="font-semibold text-amber-800 underline underline-offset-2">aydınlatma metni</Link>{" "}
+                    <Link href="/aydinlatma-metni" className="font-semibold text-bronze-ink underline underline-offset-2">aydınlatma metni</Link>{" "}
                     kapsamında işlenir.
                   </p>
                 </form>
@@ -307,23 +307,23 @@ export default function IletisimPage() {
         </div>
 
         {/* SSS Alanı */}
-        <div className="mt-20 border-t border-neutral-200 pt-16">
+        <div className="mt-20 border-t border-line pt-16">
           <div className="text-center max-w-2xl mx-auto mb-10">
-            <span className="text-xs uppercase tracking-widest text-amber-600 font-bold block mb-1">
+            <span className="text-xs uppercase tracking-widest text-bronze-ink font-bold block mb-1">
               Merak Edilenler
             </span>
-            <h2 className="text-3xl font-serif font-bold text-neutral-900">
+            <h2 className="text-3xl font-serif font-bold text-ink">
               Sıkça Sorulan Sorular
             </h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
             {faqs.map((faq, i) => (
-              <div key={i} className="bg-white rounded-2xl border border-neutral-200 p-6 space-y-2 shadow-2xs">
-                <h3 className="font-serif font-bold text-neutral-900 text-sm">
+              <div key={i} className="bg-raised rounded-2xl border border-line p-6 space-y-2 shadow-2xs">
+                <h3 className="font-serif font-bold text-ink text-sm">
                   {faq.q}
                 </h3>
-                <p className="text-xs text-neutral-600 leading-relaxed">
+                <p className="text-xs text-ink-muted leading-relaxed">
                   {faq.a}
                 </p>
               </div>

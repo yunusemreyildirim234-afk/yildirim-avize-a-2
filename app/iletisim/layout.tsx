@@ -11,7 +11,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <>
       {children}
-      <div className="bg-neutral-50 px-4 sm:px-6 lg:px-8 pb-16">
+      <div className="bg-surface px-4 sm:px-6 lg:px-8 pb-16">
         <div className="max-w-7xl mx-auto">
           <CompanyInfo variant="light" />
         </div>
