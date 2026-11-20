@@ -8,6 +8,8 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   Camera,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Heart,
   LayoutDashboard,
   LogIn,
@@ -63,6 +65,84 @@ const CORPORATE_LINKS = [
 
 const itemClass =
   "flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-ink-muted hover:bg-surface hover:text-ink transition-colors w-full text-left";
+
+/** Masaüstü ikinci satır: sığmazsa yatay kayar; yalnızca taşma varken ve o yönde yer kalmışken ‹ › düğmeleri ve kenar solması görünür */
+function CategoryRow({ links, pathname }: { links: { href: string; label: string }[]; pathname: string }) {
+  const listRef = useRef<HTMLUListElement>(null);
+  const [edge, setEdge] = useState({ left: false, right: false });
+
+  useEffect(() => {
+    const el = listRef.current;
+    if (!el) return;
+    const update = () => setEdge({ left: el.scrollLeft > 1, right: el.scrollLeft + el.clientWidth < el.scrollWidth - 1 });
+    update();
+    el.addEventListener("scroll", update, { passive: true });
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener("scroll", update);
+      ro.disconnect();
+    };
+  }, [links]);
+
+  const scrollBySide = (dir: 1 | -1) => {
+    const el = listRef.current;
+    if (!el) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    el.scrollBy({ left: dir * el.clientWidth * 0.8, behavior: reduce ? "auto" : "smooth" });
+  };
+
+  const arrow =
+    "absolute top-0 bottom-0 z-10 flex w-10 items-center text-ink-muted hover:text-ink focus-visible:text-ink";
+  return (
+    <nav aria-label="Kategoriler" className="hidden md:block border-t border-line">
+      <div className="relative max-w-7xl mx-auto">
+        <ul
+          ref={listRef}
+          onFocus={(e) => e.target.scrollIntoView({ inline: "center", block: "nearest" })}
+          className="flex items-center gap-x-5 lg:gap-x-6 px-4 sm:px-6 lg:px-8 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {links.map((l) => {
+            const active = pathname === l.href;
+            return (
+              <li key={l.href} className="shrink-0">
+                <Link
+                  href={l.href}
+                  aria-current={active ? "page" : undefined}
+                  className={`block py-3 text-[11px] font-semibold uppercase tracking-[0.1em] whitespace-nowrap border-b-2 transition-colors hover:text-ink hover:border-bronze ${
+                    active ? "text-ink border-bronze" : "text-ink-muted border-transparent"
+                  }`}
+                >
+                  {l.label}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+        {edge.left && (
+          <button
+            type="button"
+            aria-label="Önceki kategoriler"
+            onClick={() => scrollBySide(-1)}
+            className={`${arrow} left-0 justify-start pl-1 bg-gradient-to-r from-canvas from-60% to-transparent`}
+          >
+            <ChevronLeft aria-hidden="true" className="w-5 h-5" />
+          </button>
+        )}
+        {edge.right && (
+          <button
+            type="button"
+            aria-label="Sonraki kategoriler"
+            onClick={() => scrollBySide(1)}
+            className={`${arrow} right-0 justify-end pr-1 bg-gradient-to-l from-canvas from-60% to-transparent`}
+          >
+            <ChevronRight aria-hidden="true" className="w-5 h-5" />
+          </button>
+        )}
+      </div>
+    </nav>
+  );
+}
 
 export default function Navbar({ extraCategories = [], fixedOverrides = {}, showGallery = true }: { extraCategories?: { href: string; label: string }[]; fixedOverrides?: Record<string, { title?: string; hidden?: boolean }>; showGallery?: boolean }) {
   // Yayınlanmış müşteri fotoğrafı yokken "Müşterilerimizden Gelenler" menüde görünmez
@@ -272,26 +352,7 @@ export default function Navbar({ extraCategories = [], fixedOverrides = {}, show
       </div>
 
       {/* Masaüstü: ince ikinci satır, kategori bağlantıları */}
-      <nav aria-label="Kategoriler" className="hidden md:block border-t border-line">
-        <ul className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-x-7 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {categoryLinks.map((l) => {
-            const active = pathname === l.href;
-            return (
-              <li key={l.href} className="shrink-0">
-                <Link
-                  href={l.href}
-                  aria-current={active ? "page" : undefined}
-                  className={`block py-3 text-[11px] font-semibold uppercase tracking-[0.14em] border-b-2 transition-colors hover:text-ink hover:border-bronze ${
-                    active ? "text-ink border-bronze" : "text-ink-muted border-transparent"
-                  }`}
-                >
-                  {l.label}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
+      <CategoryRow links={categoryLinks} pathname={pathname} />
 
       {/* Mobil: kaydırılabilir koleksiyon hapları */}
       <nav aria-label="Koleksiyonlar" className="md:hidden border-t border-line flex gap-2 overflow-x-auto px-4 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
