@@ -44,6 +44,6 @@ test("müşteri formlarında odak çerçevesi görünür (focus:outline-none + y
   for (const f of ["components/AddressBook.tsx", "components/AuthForms.tsx", "components/CodeStep.tsx", "components/PasswordFields.tsx", "app/giris/page.tsx", "app/iletisim/page.tsx", "app/sepet/page.tsx"]) {
     const s = read(f);
     assert.doesNotMatch(s, /focus:outline-none focus:border-/, f);
-    assert.match(s, /focus-visible:outline-2 focus-visible:outline-amber-600/, f);
+    assert.match(s, /focus-visible:outline-2 focus-visible:outline-(?:amber-600|bronze-ink)/, f);
   }
 });

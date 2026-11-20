@@ -160,9 +160,9 @@ export default function NotificationBell() {
           if (!open) loadList(null);
           setOpen((o) => !o);
         }}
-        className="relative rounded-full p-2 sm:p-2.5 hover:bg-zinc-100 transition-colors"
+        className="relative rounded-full p-2 sm:p-2.5 hover:bg-surface transition-colors"
       >
-        <Bell aria-hidden="true" className="w-5 h-5 text-zinc-800" />
+        <Bell aria-hidden="true" className="w-5 h-5 text-ink" />
         {unread > 0 && (
           <span className="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-orange-600 text-[10px] font-bold text-white flex items-center justify-center">
             {unread > 9 ? "9+" : unread}
@@ -174,38 +174,38 @@ export default function NotificationBell() {
         <div
           role="dialog"
           aria-label="Bildirimler"
-          className="bell-panel fixed left-2 right-2 top-[4.25rem] md:absolute md:left-auto md:right-0 md:top-full md:mt-2 md:w-96 bg-white rounded-2xl border border-zinc-200 shadow-xl overflow-hidden z-[70]"
+          className="bell-panel fixed left-2 right-2 top-[4.25rem] md:absolute md:left-auto md:right-0 md:top-full md:mt-2 md:w-96 bg-raised rounded-2xl border border-line shadow-xl overflow-hidden z-[70]"
         >
-          <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-100">
-            <h2 className="text-sm font-bold text-zinc-900">Bildirimler</h2>
+          <div className="flex items-center justify-between px-4 py-3 border-b border-line">
+            <h2 className="text-sm font-bold text-ink">Bildirimler</h2>
             <div className="flex items-center gap-3">
               {unread > 0 && (
-                <button type="button" onClick={readAll} className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 hover:underline">
+                <button type="button" onClick={readAll} className="inline-flex items-center gap-1 text-[11px] font-semibold text-bronze-ink hover:underline">
                   <CheckCheck aria-hidden="true" className="w-3.5 h-3.5" /> Tümünü Okundu İşaretle
                 </button>
               )}
             </div>
           </div>
           {items.length === 0 ? (
-            <p className="p-8 text-center text-xs text-zinc-400">Henüz bildiriminiz yok.</p>
+            <p className="p-8 text-center text-xs text-ink-subtle">Henüz bildiriminiz yok.</p>
           ) : (
-            <ul className="max-h-[60vh] overflow-y-auto divide-y divide-zinc-100">
+            <ul className="max-h-[60vh] overflow-y-auto divide-y divide-line">
               {items.map((n) => {
                 const Icon = ICONS[n.type] ?? Bell;
                 const body = (
                   <>
-                    <span className={`mt-0.5 w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${n.read ? "bg-zinc-100 text-zinc-400" : "bg-amber-100 text-amber-700"}`}>
+                    <span className={`mt-0.5 w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${n.read ? "bg-surface text-ink-subtle" : "bg-amber-100 text-amber-700"}`}>
                       <Icon aria-hidden="true" className="w-4 h-4" />
                     </span>
                     <span className="flex-1 min-w-0">
-                      <span className={`block text-xs ${n.read ? "font-medium text-zinc-700" : "font-bold text-zinc-900"}`}>{n.title}</span>
-                      <span className="block text-[11px] text-zinc-500 mt-0.5 break-words">{n.message}</span>
-                      <span className="block text-[10px] text-zinc-400 mt-1">{fmt(n.createdAt)}</span>
+                      <span className={`block text-xs ${n.read ? "font-medium text-ink-muted" : "font-bold text-ink"}`}>{n.title}</span>
+                      <span className="block text-[11px] text-ink-muted mt-0.5 break-words">{n.message}</span>
+                      <span className="block text-[10px] text-ink-subtle mt-1">{fmt(n.createdAt)}</span>
                     </span>
                     {!n.read && <span aria-hidden="true" className="mt-1.5 w-2 h-2 rounded-full bg-orange-600 shrink-0" />}
                   </>
                 );
-                const cls = "flex items-start gap-3 px-4 py-3 hover:bg-amber-50/50 transition-colors text-left w-full";
+                const cls = "flex items-start gap-3 px-4 py-3 hover:bg-surface transition-colors text-left w-full";
                 return (
                   <li key={n.id}>
                     {n.link ? (
@@ -235,17 +235,17 @@ export default function NotificationBell() {
             </ul>
           )}
           {items.length > 0 && (
-            <div className="flex flex-wrap items-center justify-end gap-3 border-t border-zinc-100 px-4 py-2.5 text-[11px]">
+            <div className="flex flex-wrap items-center justify-end gap-3 border-t border-line px-4 py-2.5 text-[11px]">
               {askClear ? (
                 <>
-                  <span className="font-semibold text-zinc-800">Tüm bildirimler silinsin mi?</span>
-                  <button type="button" onClick={() => setAskClear(false)} className="font-semibold text-zinc-600 hover:underline">Vazgeç</button>
+                  <span className="font-semibold text-ink">Tüm bildirimler silinsin mi?</span>
+                  <button type="button" onClick={() => setAskClear(false)} className="font-semibold text-ink-muted hover:underline">Vazgeç</button>
                   <button type="button" onClick={clearAll} className="inline-flex items-center gap-1 rounded-md bg-red-700 px-2.5 py-1 font-bold text-white hover:bg-red-800">
                     <Trash2 aria-hidden="true" className="w-3.5 h-3.5" /> Evet, temizle
                   </button>
                 </>
               ) : (
-                <button type="button" onClick={() => setAskClear(true)} className="inline-flex items-center gap-1 font-semibold text-zinc-500 hover:text-red-700 hover:underline">
+                <button type="button" onClick={() => setAskClear(true)} className="inline-flex items-center gap-1 font-semibold text-ink-muted hover:text-red-700 hover:underline">
                   <Trash2 aria-hidden="true" className="w-3.5 h-3.5" /> Tümünü Temizle
                 </button>
               )}

@@ -46,10 +46,10 @@ export default function ProductQuestionForm({ productId, productTitle }: { produ
   };
 
   return (
-    <section className="bg-white rounded-3xl border border-neutral-200 p-6 sm:p-8 shadow-sm space-y-4">
+    <section className="bg-raised rounded-3xl border border-line p-6 sm:p-8 shadow-sm space-y-4">
       <div>
-        <h2 className="text-lg font-serif font-bold text-neutral-900">Bu Ürün Hakkında Soru Sorun</h2>
-        <p className="text-xs text-neutral-500 mt-0.5">Ekibimiz sorunuzu yanıtlar; yanıt e-postanıza gelir.</p>
+        <h2 className="text-lg font-serif font-bold text-ink">Bu Ürün Hakkında Soru Sorun</h2>
+        <p className="text-xs text-ink-muted mt-0.5">Ekibimiz sorunuzu yanıtlar; yanıt e-postanıza gelir.</p>
       </div>
 
       {done ? (
@@ -75,7 +75,7 @@ export default function ProductQuestionForm({ productId, productTitle }: { produ
               placeholder="Adınız Soyadınız"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full p-3 rounded-xl border border-neutral-300 focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600"
+              className="w-full p-3 rounded-xl border border-line-strong focus:border-bronze-ink focus-visible:outline-2 focus-visible:outline-bronze-ink"
             />
             <input
               aria-label="E-posta adresiniz"
@@ -84,7 +84,7 @@ export default function ProductQuestionForm({ productId, productTitle }: { produ
               placeholder="E-posta adresiniz"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full p-3 rounded-xl border border-neutral-300 focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600"
+              className="w-full p-3 rounded-xl border border-line-strong focus:border-bronze-ink focus-visible:outline-2 focus-visible:outline-bronze-ink"
             />
           </div>
           <textarea
@@ -94,7 +94,7 @@ export default function ProductQuestionForm({ productId, productTitle }: { produ
             placeholder="Sorunuzu yazın (ölçü, duy sayısı, montaj vb.)"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            className="w-full p-3 rounded-xl border border-neutral-300 focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600"
+            className="w-full p-3 rounded-xl border border-line-strong focus:border-bronze-ink focus-visible:outline-2 focus-visible:outline-bronze-ink"
           />
           {error && (
             <p role="alert" className="text-red-600">
@@ -104,13 +104,13 @@ export default function ProductQuestionForm({ productId, productTitle }: { produ
           <button
             type="submit"
             disabled={loading}
-            className="bg-neutral-900 hover:bg-amber-600 text-white font-semibold px-5 py-2.5 rounded-xl transition-colors disabled:opacity-50"
+            className="bg-ink hover:bg-bronze-ink text-canvas font-semibold px-5 py-2.5 rounded-xl transition-colors disabled:opacity-50"
           >
             {loading ? "Gönderiliyor..." : "Soruyu Gönder"}
           </button>
-          <p className="text-[11px] text-neutral-500">
+          <p className="text-[11px] text-ink-muted">
             Kişisel verileriniz{" "}
-            <Link href="/aydinlatma-metni" className="font-semibold text-amber-800 underline underline-offset-2">aydınlatma metni</Link>{" "}
+            <Link href="/aydinlatma-metni" className="font-semibold text-bronze-ink underline underline-offset-2">aydınlatma metni</Link>{" "}
             kapsamında işlenir.
           </p>
         </form>
