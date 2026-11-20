@@ -54,7 +54,7 @@ interface Product {
 }
 
 const galleryArrow =
-  "hidden md:flex absolute top-1/2 -translate-y-1/2 z-10 w-11 h-11 items-center justify-center rounded-full bg-white/90 text-zinc-900 shadow-lg opacity-0 group-hover/gal:opacity-100 focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-500 transition-opacity";
+  "hidden md:flex absolute top-1/2 -translate-y-1/2 z-10 w-11 h-11 items-center justify-center rounded-full bg-white/90 text-zinc-900 shadow-lg opacity-0 group-hover/gal:opacity-100 focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-bronze-ink transition-opacity";
 
 const reducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -164,10 +164,10 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
   };
 
   return (
-    <div className="bg-white rounded-3xl border border-neutral-200 overflow-clip shadow-sm grid grid-cols-1 lg:grid-cols-2 lg:items-start">
+    <div className="bg-raised rounded-3xl border border-line overflow-clip shadow-sm grid grid-cols-1 lg:grid-cols-2 lg:items-start">
       {/* Sol: Büyük Boy Gerçek Avize Fotoğraf Alanı */}
       <div className="flex flex-col bg-neutral-900 lg:sticky lg:top-24 lg:rounded-3xl lg:overflow-hidden">
-      <div className="group/gal relative aspect-square w-full overflow-hidden flex items-center justify-center bg-white">
+      <div className="group/gal relative aspect-square w-full overflow-hidden flex items-center justify-center bg-photo">
         {gallery.length > 0 ? (
           <div
             key={gallery.join("|")}
@@ -191,7 +191,7 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
               const i = Math.round(el.scrollLeft / el.clientWidth);
               if (i !== activeImage && i >= 0 && i < gallery.length) setActiveImage(i);
             }}
-            className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-amber-500"
+            className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-bronze-ink"
           >
             {gallery.map((src, i) => (
               <div key={src} className="relative shrink-0 w-full h-full snap-center">
@@ -202,7 +202,7 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
         ) : (
           <div className="text-amber-400/80 p-8 text-center">
             <span className="text-4xl block mb-2">💡</span>
-            <span className="text-xs uppercase tracking-widest text-neutral-400">Yıldırım Avize</span>
+            <span className="text-xs uppercase tracking-widest text-ink-subtle">Yıldırım Avize</span>
           </div>
         )}
 
@@ -264,18 +264,18 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
               <Link
                 href={categoryHref}
                 data-testid="product-category-link"
-                className="inline-block text-xs font-semibold text-amber-600 uppercase tracking-wider hover:text-amber-700 hover:underline underline-offset-2 rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600"
+                className="inline-block text-xs font-semibold text-bronze-ink uppercase tracking-wider hover:text-bronze-ink hover:underline underline-offset-2 rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze-ink"
               >
                 {product.category} Serisi
               </Link>
             ) : (
-              <span className="text-xs font-semibold text-amber-600 uppercase tracking-wider">
+              <span className="text-xs font-semibold text-bronze-ink uppercase tracking-wider">
                 {product.category} Serisi
               </span>
             )
           )}
           {product.modelCode && (
-            <span className="inline-block text-[11px] font-mono font-semibold text-neutral-700 bg-neutral-100 border border-neutral-200 px-2.5 py-1 rounded-md">
+            <span className="inline-block text-[11px] font-mono font-semibold text-ink-muted bg-surface border border-line px-2.5 py-1 rounded-md">
               Model Kodu: #{product.modelCode}
             </span>
           )}
@@ -285,7 +285,7 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
             </span>
           )}
           <div className="flex items-start gap-3">
-            <h1 className="min-w-0 flex-1 break-words text-2xl sm:text-3xl font-serif font-bold leading-tight tracking-tight text-neutral-900">
+            <h1 className="min-w-0 flex-1 break-words text-2xl sm:text-3xl font-serif font-bold leading-tight tracking-tight text-ink">
               {shownTitle.title}
             </h1>
             <div className="flex items-center gap-2 shrink-0">
@@ -293,7 +293,7 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
                 <div className="relative shrink-0 w-11 h-11">
                   <FavoriteButton
                     product={{ id: product.id, title: product.title, category: product.category, basePrice: product.basePrice, imageUrl: coverImageOf(product), variations: product.variations }}
-                    className="absolute right-0 top-0 z-10 sm:[&>button]:w-11 sm:[&>button]:h-11 [&>button]:border [&>button]:border-neutral-300"
+                    className="absolute right-0 top-0 z-10 sm:[&>button]:w-11 sm:[&>button]:h-11 [&>button]:border [&>button]:border-line-strong"
                   />
                 </div>
               )}
@@ -308,17 +308,17 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
             </div>
           </div>
           {shownTitle.assembled && (
-            <span className="inline-block text-[11px] font-semibold text-neutral-700 border border-neutral-300 rounded-md px-2 py-0.5">Montajlı</span>
+            <span className="inline-block text-[11px] font-semibold text-ink-muted border border-line-strong rounded-md px-2 py-0.5">Montajlı</span>
           )}
           <div className="pt-4">
-            <span className="text-xs text-neutral-500 block mb-1">{quantity > 1 ? "Toplam Tutar" : "Fiyat"}</span>
+            <span className="text-xs text-ink-muted block mb-1">{quantity > 1 ? "Toplam Tutar" : "Fiyat"}</span>
             {listShown && listShown > currentPrice && (
-              <span className="block text-xs text-neutral-500"><span>Liste fiyatı: </span><span className="line-through">{(listShown * quantity).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span></span>
+              <span className="block text-xs text-ink-muted"><span>Liste fiyatı: </span><span className="line-through">{(listShown * quantity).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span></span>
             )}
             {unitNow < currentPrice && (
-              <span className="block text-xs text-neutral-500"><span>İndirimsiz fiyat: </span><span className="line-through">{(currentPrice * quantity).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span></span>
+              <span className="block text-xs text-ink-muted"><span>İndirimsiz fiyat: </span><span className="line-through">{(currentPrice * quantity).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span></span>
             )}
-            <span className={`text-3xl font-bold tabular-nums ${hasDiscount ? priceTone(false).sale : "text-neutral-900"}`}>
+            <span className={`text-3xl font-bold tabular-nums ${hasDiscount ? priceTone(false).sale : "text-ink"}`}>
               {lineNow.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺
             </span>
             {lowStockText && (
@@ -337,20 +337,20 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
                     {bulkLabel(t)}
                   </li>
                 ))}
-                <li className="text-[11px] text-neutral-500">Aynı ürünün farklı renkleri toplam adede sayılır.</li>
+                <li className="text-[11px] text-ink-muted">Aynı ürünün farklı renkleri toplam adede sayılır.</li>
                 {maxTotalDiscountPct != null && (
-                  <li className="text-[11px] text-neutral-500">
+                  <li className="text-[11px] text-ink-muted">
                     Adet indirimi uygulanan ürünlerde kupon, mağazadan teslim ve Havale indirimleri, bir üründe toplam indirim en fazla %{maxTotalDiscountPct.toLocaleString("tr-TR")} olacak şekilde sınırlandırılır.
                   </li>
                 )}
               </ul>
             )}
-            {quantity > 1 && <p className="mt-3 text-[11px] font-semibold text-neutral-600">Aşağıdaki indirimli fiyatlar 1 adet (birim) içindir.</p>}
+            {quantity > 1 && <p className="mt-3 text-[11px] font-semibold text-ink-muted">Aşağıdaki indirimli fiyatlar 1 adet (birim) içindir.</p>}
             <PriceLadder steps={priceLadder(product, ladderCtx, currentPrice)} itemsTotal={currentPrice} />
             {notes.length > 0 && (
               <ul className="mt-2 space-y-0.5">
                 {notes.map((n) => (
-                  <li key={n} className="text-[11px] text-neutral-600">
+                  <li key={n} className="text-[11px] text-ink-muted">
                     {n}
                   </li>
                 ))}
@@ -366,8 +366,8 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
 
         {/* Varyasyon Seçimi */}
         {product.variations.length > 0 && (
-          <div className="space-y-3 pt-6 border-t border-neutral-100">
-            <span id="varyasyon-etiketi" className="text-xs font-bold text-neutral-700 uppercase tracking-wider block">
+          <div className="space-y-3 pt-6 border-t border-line">
+            <span id="varyasyon-etiketi" className="text-xs font-bold text-ink-muted uppercase tracking-wider block">
               Seçenek Belirleyin:
             </span>
             <div role="radiogroup" aria-labelledby="varyasyon-etiketi" className="grid grid-cols-1 min-[420px]:grid-cols-2 gap-3">
@@ -388,14 +388,14 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
                     }}
                     className={`min-h-[56px] p-3 rounded-xl border text-left transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
                       isSelected
-                        ? "border-amber-600 bg-amber-50/50 ring-2 ring-amber-600/20"
-                        : "border-neutral-200 hover:border-neutral-300 bg-white"
+                        ? "border-amber-600 bg-amber-50/50 ring-2 ring-bronze-ink/20"
+                        : "border-line hover:border-line-strong bg-raised"
                     }`}
                   >
-                    <div className="text-xs font-semibold text-neutral-900">
+                    <div className="text-xs font-semibold text-ink">
                       {v.variationValue}
                     </div>
-                    <div className="text-[11px] text-neutral-500 mt-0.5">
+                    <div className="text-[11px] text-ink-muted mt-0.5">
                       {v.extraPrice > 0 ? `+${v.extraPrice.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺` : "Ek ücret yok"}
                     </div>
                     <div className={`text-[11px] mt-1 font-medium ${v.stock > 0 ? "text-emerald-700" : "text-red-700"}`}>
@@ -409,10 +409,10 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
         )}
 
         {/* Adet ve Sepete Ekleme (tükenmiş üründe: stok sorma + favori) */}
-        <div className="space-y-4 pt-6 border-t border-neutral-100">
+        <div className="space-y-4 pt-6 border-t border-line">
           {soldOut ? (
             <div data-testid="stok-yok-bolumu" className="space-y-3">
-              <p className="text-sm font-semibold text-neutral-900">Bu ürün şu an stokta yok</p>
+              <p className="text-sm font-semibold text-ink">Bu ürün şu an stokta yok</p>
               <a
                 href={waUrl}
                 data-testid="stok-sor"
@@ -427,7 +427,7 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
                 data-testid="favori-ekle"
                 aria-pressed={fav}
                 onClick={() => toggleFavorite({ id: product.id, title: product.title, category: product.category, basePrice: product.basePrice, imageUrl: coverImageOf(product) })}
-                className="flex items-center justify-center gap-2 w-full min-h-11 rounded-xl border border-neutral-300 text-neutral-800 hover:border-amber-600 text-sm font-semibold py-2.5 transition-colors"
+                className="flex items-center justify-center gap-2 w-full min-h-11 rounded-xl border border-line-strong text-ink hover:border-bronze-ink text-sm font-semibold py-2.5 transition-colors"
               >
                 <Heart aria-hidden="true" className={`w-4 h-4 ${fav ? "fill-red-500 text-red-500" : ""}`} /> {fav ? "Favorilerde" : "Favorilere ekle"}
               </button>
@@ -446,16 +446,16 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
             </a>
           ) : (
           <div className="flex items-center gap-4">
-              <div className="flex items-center border border-neutral-300 rounded-xl overflow-hidden bg-neutral-50">
+              <div className="flex items-center border border-line-strong rounded-xl overflow-hidden bg-surface">
                 <button
                   type="button"
                   onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                   aria-label="Adedi azalt"
-                  className="min-w-11 min-h-11 px-3.5 hover:bg-neutral-200 text-sm font-semibold transition-colors"
+                  className="min-w-11 min-h-11 px-3.5 hover:bg-line text-sm font-semibold transition-colors"
                 >
                   -
                 </button>
-                <span aria-live="polite" className="min-w-8 text-center text-sm font-bold text-neutral-800">
+                <span aria-live="polite" className="min-w-8 text-center text-sm font-bold text-ink">
                   {quantity}
                 </span>
                 <button
@@ -463,7 +463,7 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
                   onClick={() => setQuantity((q) => Math.min(maxQty, q + 1))}
                   disabled={quantity >= maxQty}
                   aria-label="Adedi artır"
-                  className="min-w-11 min-h-11 px-3.5 hover:bg-neutral-200 text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="min-w-11 min-h-11 px-3.5 hover:bg-line text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   +
                 </button>
@@ -473,7 +473,7 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
                 type="button"
                 onClick={handleAddToCart}
                 disabled={outOfStock}
-                className="flex-1 min-h-11 bg-neutral-900 hover:bg-amber-600 text-white font-medium py-3 px-4 sm:px-6 rounded-xl transition-colors shadow-sm text-sm disabled:opacity-50 disabled:hover:bg-neutral-900 disabled:cursor-not-allowed"
+                className="flex-1 min-h-11 bg-ink hover:bg-bronze-ink text-canvas font-medium py-3 px-4 sm:px-6 rounded-xl transition-colors shadow-sm text-sm disabled:opacity-50 disabled:hover:bg-ink disabled:cursor-not-allowed"
               >
                 {outOfStock ? "Stokta Yok" : addedToCart ? "✓ Sepete Eklendi!" : "Sepete Ekle"}
               </button>
@@ -503,10 +503,10 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
         </div>
 
         {/* Açıklama ve notlar: satın alma bloğunun altında; uzun metin kısaltılır */}
-        <div className="space-y-4 pt-6 border-t border-neutral-100">
+        <div className="space-y-4 pt-6 border-t border-line">
           {product.description && (
             <div>
-              <p id="urun-aciklama" className={`text-sm text-neutral-700 leading-7 whitespace-pre-line ${longDesc && !descOpen ? "line-clamp-5" : ""}`}>
+              <p id="urun-aciklama" className={`text-sm text-ink-muted leading-7 whitespace-pre-line ${longDesc && !descOpen ? "line-clamp-5" : ""}`}>
                 {product.description}
               </p>
               {longDesc && (
@@ -515,7 +515,7 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
                   aria-expanded={descOpen}
                   aria-controls="urun-aciklama"
                   onClick={() => setDescOpen((o) => !o)}
-                  className="mt-1 min-h-11 text-sm font-semibold text-amber-800 underline underline-offset-2 hover:text-amber-900 rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600"
+                  className="mt-1 min-h-11 text-sm font-semibold text-bronze-ink underline underline-offset-2 hover:text-bronze-ink rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze-ink"
                 >
                   {descOpen ? "Daha az göster" : "Devamını göster"}
                 </button>
@@ -541,11 +541,11 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
               </li>
             )}
             {!isAccessoryCategory(product.category) && (
-            <li className="flex items-start gap-2.5 rounded-xl border border-neutral-200 bg-neutral-50 px-3.5 py-2.5 text-neutral-800">
+            <li className="flex items-start gap-2.5 rounded-xl border border-line bg-surface px-3.5 py-2.5 text-ink">
               <span aria-hidden="true">📏</span>
               <span>
                 <strong>Ölçü &amp; Tavan Uyumu:</strong> Özel ölçü ve tavan yükseklik talepleriniz için{" "}
-                <a href="/iletisim" className="text-amber-700 underline font-semibold">İletişim</a> bölümünden bize ulaşabilir veya sipariş notunda zincir/bakla payını belirtebilirsiniz.
+                <a href="/iletisim" className="text-bronze-ink underline font-semibold">İletişim</a> bölümünden bize ulaşabilir veya sipariş notunda zincir/bakla payını belirtebilirsiniz.
               </span>
             </li>
             )}
@@ -559,11 +559,11 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
       {!priceOnRequest && (
         <div
           data-testid="mobil-satin-alma-cubugu"
-          className="md:hidden fixed inset-x-0 bottom-0 z-40 flex items-center gap-3 border-t border-neutral-200 bg-white pl-4 pr-28 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_16px_-8px_rgba(24,24,27,0.25)]"
+          className="md:hidden fixed inset-x-0 bottom-0 z-40 flex items-center gap-3 border-t border-line bg-raised pl-4 pr-28 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_16px_-8px_rgba(24,24,27,0.25)]"
         >
           <div className="min-w-0 shrink-0">
-            <span className="block text-[11px] text-neutral-600">{soldOut || outOfStock ? "Tükendi" : quantity > 1 ? "Toplam Tutar" : "Fiyat"}</span>
-            <span className={`block text-lg font-bold tabular-nums leading-tight ${hasDiscount ? priceTone(false).sale : "text-neutral-900"}`}>
+            <span className="block text-[11px] text-ink-muted">{soldOut || outOfStock ? "Tükendi" : quantity > 1 ? "Toplam Tutar" : "Fiyat"}</span>
+            <span className={`block text-lg font-bold tabular-nums leading-tight ${hasDiscount ? priceTone(false).sale : "text-ink"}`}>
               {lineNow.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺
             </span>
           </div>
@@ -571,7 +571,7 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
             type="button"
             onClick={handleAddToCart}
             disabled={soldOut || outOfStock}
-            className="flex-1 min-w-0 min-h-11 bg-neutral-900 hover:bg-amber-600 text-white font-medium py-2.5 px-3 rounded-xl transition-colors text-sm disabled:opacity-50 disabled:hover:bg-neutral-900 disabled:cursor-not-allowed focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600"
+            className="flex-1 min-w-0 min-h-11 bg-ink hover:bg-bronze-ink text-canvas font-medium py-2.5 px-3 rounded-xl transition-colors text-sm disabled:opacity-50 disabled:hover:bg-ink disabled:cursor-not-allowed focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze-ink"
           >
             {soldOut || outOfStock ? "Tükendi" : addedToCart ? "✓ Eklendi" : "Sepete Ekle"}
           </button>

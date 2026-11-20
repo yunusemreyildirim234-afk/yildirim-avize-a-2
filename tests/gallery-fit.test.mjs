@@ -13,7 +13,7 @@ test("ürün ana görseli ve büyüteç kesmez: object-contain, beyaz zemin", ()
 });
 
 test("ana fotoğraf kutusu kare (aspect-square), esnemez; sol sütun masaüstünde üste hizalı ve sticky", () => {
-  assert.match(detail, /relative aspect-square w-full overflow-hidden flex items-center justify-center bg-white/);
+  assert.match(detail, /relative aspect-square w-full overflow-hidden flex items-center justify-center bg-photo/);
   assert.ok(!detail.includes("flex-1 overflow-hidden flex items-center justify-center"), "kutu flex-1 ile esnememeli");
   assert.ok(!detail.includes("min-h-[320px] sm:min-h-[440px]"), "sabit min yükseklik kalmamalı");
   assert.match(detail, /grid grid-cols-1 lg:grid-cols-2 lg:items-start/); // sağ sütun uzasa da sol sütun uzamaz/ortalanmaz

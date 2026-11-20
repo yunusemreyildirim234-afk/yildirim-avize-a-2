@@ -145,7 +145,7 @@ export default function ProductShareButton({ product }: { product: ProductShareI
         aria-haspopup="dialog"
         aria-expanded={open}
         data-testid="urun-paylas-butonu"
-        className="w-11 h-11 rounded-full bg-white/90 hover:bg-white border border-neutral-300 shadow-md flex items-center justify-center text-neutral-700 hover:text-neutral-900 transition-transform active:scale-90"
+        className="w-11 h-11 rounded-full bg-raised/90 hover:bg-raised border border-line-strong shadow-md flex items-center justify-center text-ink-muted hover:text-ink transition-transform active:scale-90"
       >
         <Share2 aria-hidden="true" className="w-4 h-4" />
       </button>
@@ -155,7 +155,7 @@ export default function ProductShareButton({ product }: { product: ProductShareI
           role="dialog"
           aria-label="Paylaşım seçenekleri"
           data-testid="urun-paylas-menusu"
-          className="absolute right-0 top-full mt-2 z-30 w-56 max-w-[calc(100vw-2.5rem)] rounded-2xl border border-neutral-200 bg-white p-1.5 shadow-xl space-y-1"
+          className="absolute right-0 top-full mt-2 z-30 w-56 max-w-[calc(100vw-2.5rem)] rounded-2xl border border-line bg-raised p-1.5 shadow-xl space-y-1"
         >
           <button
             type="button"
@@ -164,18 +164,18 @@ export default function ProductShareButton({ product }: { product: ProductShareI
             className={`w-full min-h-10 flex items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-semibold transition-colors ${
               copied
                 ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-                : "text-neutral-800 hover:bg-neutral-100"
+                : "text-ink hover:bg-surface"
             }`}
           >
             {copied ? (
               <Check aria-hidden="true" className="w-4 h-4 shrink-0 text-emerald-600" />
             ) : (
-              <Copy aria-hidden="true" className="w-4 h-4 shrink-0 text-neutral-600" />
+              <Copy aria-hidden="true" className="w-4 h-4 shrink-0 text-ink-muted" />
             )}
             <span aria-live="polite">{copied ? "Kopyalandı" : "Bağlantıyı Kopyala"}</span>
           </button>
 
-          <div className="border-t border-neutral-100 my-1" />
+          <div className="border-t border-line my-1" />
 
           <a
             href={share.links.whatsapp}
@@ -183,7 +183,7 @@ export default function ProductShareButton({ product }: { product: ProductShareI
             rel="noopener noreferrer"
             data-testid="paylas-whatsapp"
             onClick={() => setOpen(false)}
-            className="w-full min-h-10 flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-neutral-800 hover:bg-emerald-50 hover:text-emerald-800 transition-colors"
+            className="w-full min-h-10 flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-ink hover:bg-emerald-50 hover:text-emerald-800 transition-colors"
           >
             <MessageCircle aria-hidden="true" className="w-4 h-4 shrink-0 text-emerald-600" />
             <span>WhatsApp</span>
@@ -195,7 +195,7 @@ export default function ProductShareButton({ product }: { product: ProductShareI
             rel="noopener noreferrer"
             data-testid="paylas-facebook"
             onClick={() => setOpen(false)}
-            className="w-full min-h-10 flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-neutral-800 hover:bg-blue-50 hover:text-blue-800 transition-colors"
+            className="w-full min-h-10 flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-ink hover:bg-blue-50 hover:text-blue-800 transition-colors"
           >
             <span aria-hidden="true" className="w-4 h-4 shrink-0 inline-flex items-center justify-center font-bold text-blue-600">
               f
@@ -209,9 +209,9 @@ export default function ProductShareButton({ product }: { product: ProductShareI
             rel="noopener noreferrer"
             data-testid="paylas-x"
             onClick={() => setOpen(false)}
-            className="w-full min-h-10 flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-neutral-800 hover:bg-neutral-100 hover:text-neutral-950 transition-colors"
+            className="w-full min-h-10 flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-ink hover:bg-surface hover:text-ink transition-colors"
           >
-            <span aria-hidden="true" className="w-4 h-4 shrink-0 inline-flex items-center justify-center font-bold text-neutral-800">
+            <span aria-hidden="true" className="w-4 h-4 shrink-0 inline-flex items-center justify-center font-bold text-ink">
               𝕏
             </span>
             <span>X</span>
@@ -221,9 +221,9 @@ export default function ProductShareButton({ product }: { product: ProductShareI
             href={share.links.email}
             data-testid="paylas-eposta"
             onClick={() => setOpen(false)}
-            className="w-full min-h-10 flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-neutral-800 hover:bg-amber-50 hover:text-amber-900 transition-colors"
+            className="w-full min-h-10 flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-ink hover:bg-amber-50 hover:text-bronze-ink transition-colors"
           >
-            <Mail aria-hidden="true" className="w-4 h-4 shrink-0 text-amber-600" />
+            <Mail aria-hidden="true" className="w-4 h-4 shrink-0 text-bronze-ink" />
             <span>E-posta</span>
           </a>
         </div>

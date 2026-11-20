@@ -175,13 +175,13 @@ export default async function ProductDetailPage({ params }: Props) {
   };
 
   return (
-    <main className="min-h-screen bg-neutral-50 py-12 px-4 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-canvas py-12 px-4 sm:px-6 lg:px-8">
       <meta property="og:type" content="product" />
       <div className="max-w-6xl mx-auto">
         <JsonLd data={productSchema} />
         <GtmEvent event={viewItemEvent([gaItem({ id: product.id, name: product.title, price: offer.price, category: product.category, brand: feedBrand(), variant: offer.variation?.variationValue })])} />
         <Breadcrumbs
-          className="text-neutral-500 mb-8"
+          className="text-ink-muted mb-8"
           items={[
             { name: "Ana Sayfa", href: "/" },
             ...(category
@@ -201,7 +201,7 @@ export default async function ProductDetailPage({ params }: Props) {
         {similar && similar.items.length > 0 && (
           <section aria-labelledby="benzer" className="mt-10">
             {/* Aksesuarlarda (avize taşı vb.) "Benzer Avize Modelleri" başlığı görünmez; ekran okuyucu için bölüm adı kalır */}
-            <h2 id="benzer" className={isAccessoryCategory(product.category) ? "sr-only" : "text-lg font-serif font-bold text-neutral-900 mb-4"}>
+            <h2 id="benzer" className={isAccessoryCategory(product.category) ? "sr-only" : "text-lg font-serif font-bold text-ink mb-4"}>
               {isAccessoryCategory(product.category) ? "Benzer Ürünler" : "Benzer Avize Modelleri"}
             </h2>
             <ProductStrip
