@@ -197,7 +197,7 @@ export default async function Home() {
       )}
 
       {/* 5. Antrasit -> siyah: SSS */}
-      <div className="keep-theme bg-gradient-to-b from-zinc-800 via-zinc-900 to-black">
+      <div className="bg-canvas">
         <FaqSection />
       </div>
     </main>

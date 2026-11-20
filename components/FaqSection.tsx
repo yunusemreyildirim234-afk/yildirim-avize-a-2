@@ -56,23 +56,23 @@ export default function FaqSection() {
     <section aria-labelledby="sss-baslik" className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
       <JsonLd data={schema} />
       <div className="text-center mb-8 space-y-2">
-        <span className="text-xs uppercase tracking-widest text-amber-400 font-semibold">Sık Sorulan Sorular</span>
-        <h2 id="sss-baslik" className="scroll-mt-32 text-2xl sm:text-3xl font-serif font-bold text-white">
+        <span className="text-xs uppercase tracking-widest text-bronze-ink font-semibold">Sık Sorulan Sorular</span>
+        <h2 id="sss-baslik" className="scroll-mt-32 text-2xl sm:text-3xl font-serif font-bold text-ink">
           Kargolama & Montaj
         </h2>
       </div>
       <div className="space-y-3">
         {FAQS.map((f) => (
-          <details key={f.q} className="group bg-white/5 border border-zinc-700 rounded-2xl px-5 py-4">
-            <summary className="cursor-pointer list-none flex items-center justify-between gap-4 text-sm font-semibold text-zinc-100">
+          <details key={f.q} className="group bg-surface border border-line rounded-2xl px-5 py-4">
+            <summary className="cursor-pointer list-none flex items-center justify-between gap-4 text-sm font-semibold text-ink">
               {f.q}
-              <span aria-hidden="true" className="text-amber-400 transition-transform group-open:rotate-45 text-lg leading-none">
+              <span aria-hidden="true" className="text-bronze-ink transition-transform group-open:rotate-45 text-lg leading-none">
                 +
               </span>
             </summary>
-            <p className="mt-3 text-xs text-zinc-300 leading-relaxed">{f.a}</p>
+            <p className="mt-3 text-xs text-ink-muted leading-relaxed">{f.a}</p>
             {f.link && (
-              <Link href={f.link.href} className="mt-2 inline-block text-xs text-amber-400 underline underline-offset-2 hover:text-amber-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400">
+              <Link href={f.link.href} className="mt-2 inline-block text-xs text-bronze-ink underline underline-offset-2 hover:text-bronze-deep focus-visible:outline focus-visible:outline-2 focus-visible:outline-bronze-ink">
                 {f.link.label}
               </Link>
             )}
