@@ -63,7 +63,6 @@ function Cell({ item }: { item: Item }) {
 export default async function PromoStrip() {
   const views = await getPromoViews();
   if (views.length === 0) return null;
-  const surum = avantajSurumu(views);
   const ctx = await getLadderContext();
 
   const ranked: { order: number; item: Item }[] = views.map((v) => ({ order: ORDER[v.kind], item: toItem(v) }));
@@ -80,6 +79,8 @@ export default async function PromoStrip() {
     .map((r, i) => ({ ...r, i }))
     .sort((a, b) => a.order - b.order || a.i - b.i)
     .map((r) => r.item);
+  // Sürüm: şeritte gösterilen tüm öğelerden (koddan üretilen Havale dahil); herhangi biri değişince gizlenmiş şerit yeniden açılır
+  const surum = avantajSurumu(items);
 
   return (
     <DismissibleStrip surum={surum}>
