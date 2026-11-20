@@ -211,7 +211,7 @@ export default function Navbar({ extraCategories = [], fixedOverrides = {}, show
               priority
               className="h-10 sm:h-11 w-auto"
             />
-            <span className="hidden md:block whitespace-nowrap font-serif font-black text-2xl tracking-tight text-ink leading-none">
+            <span className="hidden md:block whitespace-nowrap font-serif font-black text-2xl tracking-tight xl:uppercase xl:tracking-[0.06em] text-ink leading-none">
               Yıldırım Avize
             </span>
           </Link>
