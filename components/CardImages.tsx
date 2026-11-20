@@ -58,7 +58,7 @@ export default function CardImages({
 
   if (!multi) {
     return (
-      <div className="relative aspect-[4/5] bg-photo overflow-hidden rounded-t-xl">
+      <div className="relative aspect-square bg-photo overflow-hidden rounded-t-xl">
         {images.length === 1 ? first : (
           <div className="absolute inset-0 flex items-center justify-center" aria-hidden="true">
             <Lamp className="w-8 h-8 text-ink-subtle" />
@@ -74,7 +74,7 @@ export default function CardImages({
 
   return (
     <div
-      className="relative aspect-[4/5] bg-photo overflow-hidden rounded-t-xl"
+      className="relative aspect-square bg-photo overflow-hidden rounded-t-xl"
       onPointerEnter={arm}
       onTouchStart={arm}
       onFocusCapture={arm}

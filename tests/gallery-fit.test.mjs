@@ -26,3 +26,10 @@ test("küçük resim şeridi kare kutunun hemen altında", () => {
   const serit = detail.indexOf('role="tablist"');
   assert.ok(kutu > 0 && serit > kutu);
 });
+
+test("ürün kartı görsel alanı kare (aspect-square), object-contain; 4:5 değil", () => {
+  const card = readFileSync(new URL("../components/CardImages.tsx", import.meta.url), "utf8");
+  assert.equal((card.match(/relative aspect-square bg-photo/g) ?? []).length, 2); // tek ve çok görselli dal
+  assert.ok(!card.includes("aspect-[4/5]"));
+  assert.ok(!card.includes("object-cover"));
+});
