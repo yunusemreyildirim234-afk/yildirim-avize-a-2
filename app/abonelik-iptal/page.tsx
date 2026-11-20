@@ -34,27 +34,27 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ t
   const { t, s } = await searchParams;
   const v = await view(t, s);
   return (
-    <main className="min-h-screen bg-neutral-50 py-16 px-4">
-      <div className="max-w-md mx-auto bg-white rounded-3xl border border-neutral-200 p-8 shadow-sm text-center space-y-3">
+    <main className="min-h-screen bg-canvas py-16 px-4">
+      <div className="max-w-md mx-auto bg-raised rounded-3xl border border-line p-8 shadow-sm text-center space-y-3">
         {v === "confirm" ? (
           <>
-            <h1 className="text-xl font-serif font-bold text-neutral-900">E-posta bildirimlerinden çıkmak istiyor musunuz?</h1>
-            <p className="text-sm text-neutral-600 leading-relaxed">Onaylarsanız fiyat düşüşü ve kampanya e-postaları göndermeyeceğiz. Sipariş ve kargo bilgilendirmeleri etkilenmez.</p>
+            <h1 className="text-xl font-serif font-bold text-ink">E-posta bildirimlerinden çıkmak istiyor musunuz?</h1>
+            <p className="text-sm text-ink-muted leading-relaxed">Onaylarsanız fiyat düşüşü ve kampanya e-postaları göndermeyeceğiz. Sipariş ve kargo bilgilendirmeleri etkilenmez.</p>
             <form method="POST" action={`/api/unsubscribe?t=${encodeURIComponent((t ?? "").slice(0, 600))}`}>
-              <button type="submit" className="mt-2 bg-neutral-900 hover:bg-amber-700 text-white text-sm font-semibold px-6 py-3 rounded-xl transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-600">
+              <button type="submit" className="mt-2 bg-ink hover:bg-bronze-ink text-canvas text-sm font-semibold px-6 py-3 rounded-xl transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-bronze-ink">
                 Evet, bildirimleri kapat
               </button>
             </form>
           </>
         ) : (
           <>
-            <h1 role={v === "ok" ? "status" : "alert"} className="text-xl font-serif font-bold text-neutral-900">
+            <h1 role={v === "ok" ? "status" : "alert"} className="text-xl font-serif font-bold text-ink">
               {MESSAGES[v].title}
             </h1>
-            <p className="text-sm text-neutral-600 leading-relaxed">{MESSAGES[v].text}</p>
+            <p className="text-sm text-ink-muted leading-relaxed">{MESSAGES[v].text}</p>
           </>
         )}
-        <Link href="/" className="inline-block text-xs font-semibold text-amber-800 underline underline-offset-2 pt-2">
+        <Link href="/" className="inline-block text-xs font-semibold text-bronze-ink underline underline-offset-2 pt-2">
           Ana sayfaya dön
         </Link>
       </div>

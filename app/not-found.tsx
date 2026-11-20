@@ -14,14 +14,14 @@ export const metadata: Metadata = {
 export default async function NotFound() {
   // Altbilgi/menüyle aynı liste: sabit kategoriler (gizlenenler hariç) + yönetim panelinden eklenenler
   const [overrides, extraCategories] = await Promise.all([getFixedCategoryOverrides(), getExtraCategoryLinks()]);
-  const chipClass = "text-xs font-medium bg-white border border-neutral-300 text-neutral-700 px-4 py-2 rounded-xl hover:border-amber-500 hover:text-amber-700 transition-colors";
+  const chipClass = "text-xs font-medium bg-raised border border-line-strong text-ink-muted px-4 py-2 rounded-xl hover:border-bronze-ink hover:text-bronze-ink transition-colors";
   return (
-    <main className="min-h-[70vh] bg-neutral-50 flex items-center justify-center px-4 py-20">
+    <main className="min-h-[70vh] bg-canvas flex items-center justify-center px-4 py-20">
       <ThemeSync />
       <div className="max-w-md text-center space-y-6">
-        <span className="text-xs uppercase tracking-widest text-amber-600 font-semibold">Hata 404</span>
-        <h1 className="text-3xl sm:text-4xl font-serif font-bold text-neutral-900">Bu Işık Söndü</h1>
-        <p className="text-sm text-neutral-600 leading-relaxed">
+        <span className="text-xs uppercase tracking-widest text-bronze-ink font-semibold">Hata 404</span>
+        <h1 className="text-3xl sm:text-4xl font-serif font-bold text-ink">Bu Işık Söndü</h1>
+        <p className="text-sm text-ink-muted leading-relaxed">
           Aradığınız sayfa taşınmış ya da kaldırılmış olabilir. Koleksiyonlarımıza göz atabilir veya ana sayfaya
           dönebilirsiniz.
         </p>
@@ -42,7 +42,7 @@ export default async function NotFound() {
         </div>
         <Link
           href="/"
-          className="inline-block bg-neutral-900 hover:bg-amber-600 text-white text-xs font-semibold px-6 py-3 rounded-xl transition-colors"
+          className="inline-block bg-ink hover:bg-bronze-ink text-canvas text-xs font-semibold px-6 py-3 rounded-xl transition-colors"
         >
           Ana Sayfaya Dön →
         </Link>
