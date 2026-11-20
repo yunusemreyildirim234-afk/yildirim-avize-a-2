@@ -65,15 +65,15 @@ export default function IletisimPage() {
   return (
     <main className="min-h-screen bg-neutral-50 pb-20">
       {/* Üst Hero Başlık */}
-      <section className="keep-theme bg-neutral-950 text-white py-16 px-4 text-center border-b border-neutral-800">
+      <section className="bg-canvas text-ink py-16 px-4 text-center border-b border-line">
         <div className="max-w-3xl mx-auto space-y-3">
-          <span className="text-xs uppercase tracking-widest text-amber-400 font-semibold bg-amber-950/80 border border-amber-800/50 px-3 py-1 rounded-full">
+          <span className="block text-[11px] uppercase tracking-[0.18em] text-bronze-ink font-semibold">
             İletişim & Showroom
           </span>
-          <h1 className="text-3xl sm:text-5xl font-serif font-bold text-neutral-100">
+          <h1 className="text-3xl sm:text-5xl font-serif font-bold text-ink">
             Beyoğlu Atölye & Mağazamız
           </h1>
-          <p className="text-sm text-neutral-400 max-w-xl mx-auto font-light">
+          <p className="text-sm text-ink-muted max-w-xl mx-auto font-light">
             Işıltıyı yerinde incelemek, siparişinizi teslim almak veya özel mimari aydınlatma projeleriniz için bize ulaşın.
           </p>
         </div>
