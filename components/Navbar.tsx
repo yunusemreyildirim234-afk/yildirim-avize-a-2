@@ -138,7 +138,7 @@ export default function Navbar({ extraCategories = [], fixedOverrides = {}, show
           <div className="hidden md:block">
           <HoverMenu
             label="Koleksiyonlar menüsünü aç"
-            panelClassName="w-[min(92vw,34rem)]"
+            panelClassName="w-72"
             trigger={(open) => (
               <>
                 <span className="text-sm font-semibold text-ink">Koleksiyonlar</span>
@@ -150,25 +150,18 @@ export default function Navbar({ extraCategories = [], fixedOverrides = {}, show
             )}
           >
             {(close) => (
-              <div className="grid grid-cols-2 gap-4 p-1">
-                <div>
-                  <h2 className="px-3 pb-2 text-[11px] font-bold uppercase tracking-wider text-ink-subtle">Kategoriler</h2>
-                  <div className="max-h-[60vh] overflow-y-auto">
-                    {categoryLinks.map((l) => (
-                      <Link key={l.href} href={l.href} role="menuitem" onClick={close} className={itemClass}>
-                        {l.label}
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-                <div className="border-l border-line pl-4">
-                  <h2 className="px-3 pb-2 text-[11px] font-bold uppercase tracking-wider text-ink-subtle">Keşfet</h2>
-                  {discoverLinks.map(({ href, label, icon: Icon }) => (
-                    <Link key={href} href={href} role="menuitem" onClick={close} className={itemClass}>
-                      <Icon aria-hidden="true" className="w-4 h-4 text-bronze-ink shrink-0" />
-                      {label}
-                    </Link>
-                  ))}
+              <div className="p-1">
+                <h2 className="px-3 pb-2 text-[11px] font-bold uppercase tracking-wider text-ink-subtle">Keşfet</h2>
+                {discoverLinks.map(({ href, label, icon: Icon }) => (
+                  <Link key={href} href={href} role="menuitem" onClick={close} className={itemClass}>
+                    <Icon aria-hidden="true" className="w-4 h-4 text-bronze-ink shrink-0" />
+                    {label}
+                  </Link>
+                ))}
+                <div className="border-t border-line mt-1 pt-1">
+                  <Link href="/kategori/tum" role="menuitem" onClick={close} className={`${itemClass} font-semibold text-ink`}>
+                    Tüm koleksiyonlar
+                  </Link>
                 </div>
               </div>
             )}
@@ -276,6 +269,28 @@ export default function Navbar({ extraCategories = [], fixedOverrides = {}, show
           </HoverMenu>
         </div>
       </div>
+
+      {/* Masaüstü: ince ikinci satır, kategori bağlantıları */}
+      <nav aria-label="Kategoriler" className="hidden md:block border-t border-line">
+        <ul className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-x-7 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {categoryLinks.map((l) => {
+            const active = pathname === l.href;
+            return (
+              <li key={l.href} className="shrink-0">
+                <Link
+                  href={l.href}
+                  aria-current={active ? "page" : undefined}
+                  className={`block py-3 text-[11px] font-semibold uppercase tracking-[0.14em] border-b-2 transition-colors hover:text-ink hover:border-bronze ${
+                    active ? "text-ink border-bronze" : "text-ink-muted border-transparent"
+                  }`}
+                >
+                  {l.label}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
 
       {/* Mobil: kaydırılabilir koleksiyon hapları */}
       <nav aria-label="Koleksiyonlar" className="md:hidden border-t border-line flex gap-2 overflow-x-auto px-4 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
