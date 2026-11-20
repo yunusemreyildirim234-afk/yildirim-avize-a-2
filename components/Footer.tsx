@@ -16,21 +16,21 @@ const CHANNELS = [
 
 export default function Footer({ extraCategories = [], fixedOverrides = {}, showGallery = true }: { extraCategories?: { href: string; label: string }[]; fixedOverrides?: Record<string, { title?: string; hidden?: boolean }>; showGallery?: boolean }) {
   return (
-    <footer className="keep-theme bg-zinc-950 text-white pt-16 pb-32">
+    <footer className="keep-theme bg-night text-white pt-16 pb-32">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-10 pb-12 border-b border-zinc-800">
         <div className="space-y-4 md:col-span-2">
           <span className="text-2xl font-serif font-bold tracking-wider text-neutral-100">
-            YILDIRIM <span className="text-amber-500 font-sans font-light">AVİZE</span>
+            YILDIRIM <span className="text-bronze-soft font-sans font-light">AVİZE</span>
           </span>
           <p className="text-xs text-neutral-400 max-w-sm leading-relaxed">
             Beyoğlu Şişhane&apos;nin asırlık aydınlatma kültürünü, el işçiliği kristal avizeler ve modern mimari
             tasarımlarla evinize taşıyoruz.
           </p>
           <address className="not-italic text-xs text-neutral-400 space-y-1">
-            <p className="text-amber-400 font-medium">📍 {ADDRESS_LINE}</p>
+            <p className="text-bronze-soft font-medium">📍 {ADDRESS_LINE}</p>
             <p>
               📞{" "}
-              <a href={`tel:${PHONE_TEL}`} className="inline-block py-1 hover:text-amber-400 font-mono">
+              <a href={`tel:${PHONE_TEL}`} className="inline-block py-1 hover:text-bronze-soft font-mono">
                 {PHONE_DISPLAY}
               </a>
             </p>
@@ -43,7 +43,7 @@ export default function Footer({ extraCategories = [], fixedOverrides = {}, show
             href={DIRECTIONS}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-block text-xs font-semibold text-amber-400 hover:text-amber-300"
+            className="inline-block text-xs font-semibold text-bronze-soft hover:text-neutral-100"
           >
             Yol Tarifi Al →
           </a>
@@ -54,14 +54,14 @@ export default function Footer({ extraCategories = [], fixedOverrides = {}, show
           <ul className="text-xs text-neutral-400 space-y-1">
             {CATEGORIES.filter((c) => !fixedOverrides[c.slug]?.hidden).map((c) => (
               <li key={c.slug}>
-                <Link href={`/kategori/${c.slug}`} className="inline-block py-1.5 hover:text-amber-400">
+                <Link href={`/kategori/${c.slug}`} className="inline-block py-1.5 hover:text-bronze-soft">
                   {fixedOverrides[c.slug]?.title ?? c.title}
                 </Link>
               </li>
             ))}
             {extraCategories.map((c) => (
               <li key={c.href}>
-                <Link href={c.href} className="inline-block py-1.5 hover:text-amber-400">
+                <Link href={c.href} className="inline-block py-1.5 hover:text-bronze-soft">
                   {c.label}
                 </Link>
               </li>
@@ -79,7 +79,7 @@ export default function Footer({ extraCategories = [], fixedOverrides = {}, show
                   target="_blank"
                   rel="noopener noreferrer"
                   className={`transition-colors flex items-center gap-1.5 py-1.5 ${
-                    c.highlight ? "text-amber-400 hover:text-amber-300 font-semibold" : "hover:text-amber-400"
+                    c.highlight ? "text-bronze-soft hover:text-neutral-100 font-semibold" : "hover:text-bronze-soft"
                   }`}
                 >
                   <span aria-hidden="true">{c.icon}</span>
@@ -88,29 +88,29 @@ export default function Footer({ extraCategories = [], fixedOverrides = {}, show
               </li>
             ))}
             <li className="pt-2 border-t border-zinc-800">
-              <Link href="/iletisim" className="block py-1.5 hover:text-amber-400 transition-colors">
+              <Link href="/iletisim" className="block py-1.5 hover:text-bronze-soft transition-colors">
                 Mağaza Yol Tarifi & İletişim
               </Link>
             </li>
             {showGallery && (
               <li>
-                <Link href="/musterilerimizden-gelenler" className="block py-1.5 hover:text-amber-400 transition-colors">
+                <Link href="/musterilerimizden-gelenler" className="block py-1.5 hover:text-bronze-soft transition-colors">
                   Müşterilerimizden Gelenler
                 </Link>
               </li>
             )}
             <li>
-              <Link href="/kargo-takip" className="block py-1.5 hover:text-amber-400 transition-colors">
+              <Link href="/kargo-takip" className="block py-1.5 hover:text-bronze-soft transition-colors">
                 Kargo & Sipariş Takibi
               </Link>
             </li>
             <li>
-              <Link href="/#sss-baslik" className="block py-1.5 hover:text-amber-400 transition-colors">
+              <Link href="/#sss-baslik" className="block py-1.5 hover:text-bronze-soft transition-colors">
                 Sık Sorulan Sorular
               </Link>
             </li>
             <li>
-              <AvantajlarAcLink className="block py-1.5 text-left hover:text-amber-400 transition-colors" />
+              <AvantajlarAcLink className="block py-1.5 text-left hover:text-bronze-soft transition-colors" />
             </li>
           </ul>
         </div>

@@ -14,7 +14,7 @@ export default function FooterMap({ src, title }: { src: string; title: string }
       <button
         type="button"
         onClick={() => setShown(true)}
-        className="text-xs font-semibold text-zinc-950 bg-amber-500 hover:bg-amber-400 rounded-lg px-4 min-h-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
+        className="text-xs font-semibold text-night bg-bronze-soft hover:brightness-110 rounded-lg px-4 min-h-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze-soft"
       >
         Haritayı göster
       </button>

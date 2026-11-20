@@ -52,11 +52,11 @@ export default async function CompanyInfo({ variant }: { variant: "dark" | "ligh
             aria-label="ETBİS kaydını yeni sekmede doğrula"
             className={`shrink-0 inline-flex items-center gap-2 self-start rounded-xl border px-4 py-2.5 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600 ${
               dark
-                ? "border-zinc-700 text-neutral-200 hover:border-amber-500 hover:text-amber-400"
-                : "border-neutral-300 text-neutral-800 hover:border-amber-600 hover:text-amber-700"
+                ? "border-zinc-700 text-neutral-200 hover:border-bronze-soft hover:text-bronze-soft"
+                : "focus-visible:outline-amber-600 border-neutral-300 text-neutral-800 hover:border-amber-600 hover:text-amber-700"
             }`}
           >
-            <ShieldCheck aria-hidden="true" className="h-4 w-4 text-amber-600" />
+            <ShieldCheck aria-hidden="true" className={`h-4 w-4 ${dark ? "text-bronze-soft" : "text-amber-600"}`} />
             ETBİS Kayıt Doğrulama
           </a>
         )}
