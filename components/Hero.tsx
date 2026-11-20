@@ -1,49 +1,51 @@
 import Image from "next/image";
 import Link from "next/link";
-import SearchBar from "@/components/SearchBar";
+import { isBlobImage, smallImage } from "@/lib/img";
 
-// Kurumsal amblem: /logo-hero-4.png (şeffaf arka planlı, orijinal renkler; CSS filtresi yok). Dekoratif: marka adı h1'de yazılıdır.
-function LogoEmblem() {
+// Vitrin hero: metin + tek avize fotoğrafı. Fotoğraf, Öne Çıkan Ürünler'in ilk stoklu ürününün kapağıdır (app/page.tsx seçer; geçici).
+// Gerçek mağaza fotoğrafı gelince `image` yerine sabit bir görsel verilir. Fotoğraf yoksa tek sütun, ortalı düzen.
+// Arama ve kategori bağlantıları Navbar'dadır (masaüstü NavSearch + kategori satırı, mobil arama simgesi + kategori şeridi).
+export type HeroImage = { src: string; alt: string };
+
+const btnBase =
+  "inline-flex items-center justify-center min-h-11 px-6 rounded-full text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze-ink";
+
+export default function Hero({ image = null }: { image?: HeroImage | null }) {
   return (
-    <Image src="/logo-hero-4.png" alt="" width={640} height={298} priority className="mx-auto h-auto w-44 sm:w-56" />
-  );
-}
-
-export default function Hero({ categories = [] }: { categories?: { slug: string; title: string }[] }) {
-  return (
-    <section className="bg-canvas text-ink px-4 pt-6 pb-8 sm:pt-8 sm:pb-12">
-      <div className="max-w-3xl mx-auto text-center">
-        <LogoEmblem />
-        <h1 className="mt-1 font-serif font-black tracking-tight text-ink">
-          <span className="block text-4xl sm:text-6xl">Yıldırım Avize</span>
-          <span className="sr-only"> — </span>
-          <span className="mt-2 block text-base sm:text-xl font-bold tracking-normal text-ink-muted">Kristal, klasik ve modern avizeler</span>
-        </h1>
-        <Image src="/logo-uc-gen.png" alt="" width={128} height={65} className="mx-auto mt-1 h-auto w-12 sm:w-14" />
-
-        <div className="mt-5 sm:mt-6 max-w-2xl mx-auto">
-          <SearchBar />
-        </div>
-
-        {categories.length > 0 && (
-          <nav aria-label="Koleksiyon kategorileri" className="hidden md:block mt-3 max-w-3xl mx-auto">
-            <ul className="flex w-fit max-w-full mx-auto gap-2 overflow-x-auto px-1 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {categories.map((c) => (
-                <li key={c.slug} className="shrink-0">
-                  <Link
-                    href={`/kategori/${c.slug}`}
-                    className="inline-flex items-center rounded-full border border-line-strong bg-raised px-3 py-1.5 text-xs font-semibold text-ink-muted whitespace-nowrap hover:border-bronze hover:text-bronze-ink transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze-ink"
-                  >
-                    {c.title}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
+    <section className="bg-canvas text-ink px-4 sm:px-6 lg:px-8 py-10 sm:py-14 lg:min-h-[68vh] lg:flex lg:items-center">
+      <div className={`w-full mx-auto ${image ? "max-w-7xl grid gap-8 lg:grid-cols-2 lg:gap-14 items-center" : "max-w-3xl text-center"}`}>
+        {image && (
+          <div className="relative overflow-hidden rounded-2xl bg-photo border border-line aspect-[4/3] max-h-[38vh] w-full lg:order-2 lg:aspect-[4/5] lg:max-h-none">
+            <Image
+              src={smallImage(image.src)}
+              unoptimized={isBlobImage(image.src)}
+              alt={image.alt}
+              fill
+              priority
+              sizes="(min-width: 1024px) 40vw, 100vw"
+              className="object-contain mix-blend-multiply dark:mix-blend-normal"
+            />
+          </div>
         )}
 
-        <p className="mt-5 text-lg sm:text-xl font-serif font-bold tracking-[0.15em] text-bronze-ink">Avize &amp; Aydınlatma</p>
-        <p className="mt-2 text-xs sm:text-sm text-ink-muted">Beyoğlu Şişhane&apos;den Türkiye&apos;ye kristal, modern ve klasik avizeler</p>
+        <div className={image ? "text-center lg:text-left lg:order-1" : ""}>
+          <h1 className="font-serif text-ink">
+            <span className="block text-4xl sm:text-5xl lg:text-6xl font-black uppercase tracking-[0.12em]">Yıldırım Avize</span>
+            <span className="sr-only"> — </span>
+            <span className="mt-3 block text-lg sm:text-xl font-bold tracking-normal text-ink-muted">Kristal, klasik ve modern avizeler</span>
+          </h1>
+          <p className="mt-4 text-sm sm:text-base text-ink-muted max-w-xl mx-auto lg:mx-0">
+            Beyoğlu Şişhane&apos;den Türkiye&apos;ye kristal, modern ve klasik avizeler.
+          </p>
+          <div className={`mt-7 flex flex-col sm:flex-row gap-3 ${image ? "sm:justify-center lg:justify-start" : "sm:justify-center"}`}>
+            <Link href="/kategori/tum" className={`${btnBase} bg-ink text-canvas hover:bg-ink/90`}>
+              Tüm ürünleri gör
+            </Link>
+            <Link href="/iletisim" className={`${btnBase} border border-line-strong text-ink hover:border-bronze hover:text-bronze-ink`}>
+              Mağazayı ziyaret et
+            </Link>
+          </div>
+        </div>
       </div>
     </section>
   );
