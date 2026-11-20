@@ -13,7 +13,6 @@ import { getHomepageConfig, getSectionPools } from "@/lib/homepage";
 import MoreProducts from "@/components/MoreProducts";
 import { ADDRESS_LINE, LAT, LNG, PHONE_TEL, SITE_URL } from "@/lib/site";
 import { isBlobImage, smallImage } from "@/lib/img";
-import { coverImageOf } from "@/lib/variation-input";
 
 export const revalidate = 60; // Genel (kişiselleştirmesiz) sayfa: 60 sn önbellek; yönetici işlemleri revalidateStorefront() ile anında yeniler
 
@@ -66,16 +65,12 @@ export default async function Home() {
   const { shown: discounted, more: moreDiscounted } = composeSection(pools.discounted, config.discounted);
   const { shown: bestSellers, more: moreBestSellers } = composeSection(pools.bestsellers, config.bestsellers);
 
-  // Hero fotoğrafı (geçici): Öne Çıkanlar'ın sırasıyla ilk aktif, stokta olan ve kapak fotoğrafı olan ürünü; ek sorgu yok
-  const heroProduct = [...featured, ...moreFeatured].find((p) => p.variations.some((v) => v.stock > 0) && coverImageOf(p));
-  const heroCover = heroProduct ? coverImageOf(heroProduct) : null;
-
   return (
     <main>
       <JsonLd data={localBusiness} />
 
       {/* 1. Ferah beyaz zemin: merkezi marka + arama */}
-      <Hero image={heroProduct && heroCover ? { src: heroCover, alt: heroProduct.title } : null} />
+      <Hero />
 
       {/* Avantajlar: kupon, ücretsiz kargo, mağazadan teslim (yönetim panelinden düzenlenir) */}
       <PromoStrip />
