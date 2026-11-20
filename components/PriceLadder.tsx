@@ -6,19 +6,16 @@ const tl = (n: number) => `${n.toLocaleString("tr-TR", { minimumFractionDigits: 
 const tlShort = (n: number) => `${n.toLocaleString("tr-TR", { minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })} ₺`;
 
 /**
- * Fiyat renkleri TEK YERDE (--ya-* jetonları; açık/koyu değerleri globals.css'te). `themed` = etiket: koyu okunur metin (ink);
- * `themedAmount` = tutar: kupon, Havale ve mağaza tutarlarının hepsi sale kırmızısı (indirim rozetiyle aynı renk); mağaza satırı kalın.
- * Alt açıklama ink-muted.
- * `onDark`: açık temada bile koyu zeminli kart (zinc-900), keep-theme içinde ham ölçek kullanılır (etiket ve tutar aynı).
+ * Fiyat renkleri TEK YERDE. Kupondan mağazaya doğru giderek canlanan kırmızılar; "sale" = indirimli güncel fiyat.
+ * "pickup" ve "sale" indirim rozetiyle (bg-red-600) aynı kırmızıdır. Açık/koyu tema: tema ölçekleri .dark'ta otomatik ters çevrilir
+ * (red-900 → soluk, red-600 → parlak). `onDark`: açık temada bile koyu zeminli kart (zinc-900), keep-theme içinde ham ölçek kullanılır.
  * Kontrast oranları tests/price-contrast.test.mjs ile doğrulanır.
  */
 export const PRICE_TONE = {
-  themed: { coupon: "text-ink", bank: "text-ink", pickup: "text-ink", sale: "text-sale" },
-  themedAmount: { coupon: "text-sale", bank: "text-sale", pickup: "text-sale", sale: "text-sale" },
+  themed: { coupon: "text-red-900", bank: "text-red-700", pickup: "text-red-600", sale: "text-sale" },
   onDark: { coupon: "text-red-200", bank: "text-red-300", pickup: "text-red-400", sale: "text-red-400" },
 } as const;
 export const priceTone = (dark: boolean) => (dark ? PRICE_TONE.onDark : PRICE_TONE.themed);
-const amountTone = (dark: boolean) => (dark ? PRICE_TONE.onDark : PRICE_TONE.themedAmount);
 
 /**
  * Ana fiyatın altında adım adım düşen fiyatlar. Sunucu ve istemci bileşenlerinden kullanılabilir (durumsuz).
@@ -32,7 +29,6 @@ export default function PriceLadder({ steps, size = "md", dark = false, itemsTot
   const card = size === "card";
   const small = size !== "md";
   const tone = priceTone(dark);
-  const amount = amountTone(dark);
   return (
     <ul className={`${card ? "mt-1 space-y-0.5 sm:mt-1.5 sm:space-y-1" : small ? "mt-1.5 space-y-1" : "mt-3 space-y-1.5"} w-full`}>
       {steps.map((s) => (
@@ -49,9 +45,9 @@ export default function PriceLadder({ steps, size = "md", dark = false, itemsTot
               )}
             </span>
             {/* Açıklama: yalnızca dar kartta gizli; sm ve üstünde, sepette ve ürün sayfasında görünür */}
-            {hints && <span className={`${card ? "hidden sm:block" : "block"} text-[10px] ${dark ? "text-zinc-500" : "text-ink-muted"}`}>{s.hint}</span>}
+            {hints && <span className={`${card ? "hidden sm:block" : "block"} text-[10px] ${dark ? "text-zinc-500" : "text-neutral-500"}`}>{s.hint}</span>}
           </span>
-          <span className={`shrink-0 whitespace-nowrap tabular-nums ${s.key === "pickup" ? "font-bold" : "font-semibold"} ${amount[s.key]} ${card ? "text-[11px] sm:text-sm" : small ? "text-sm" : "text-base"}`}>
+          <span className={`shrink-0 whitespace-nowrap tabular-nums ${s.key === "pickup" ? "font-bold" : "font-semibold"} ${tone[s.key]} ${card ? "text-[11px] sm:text-sm" : small ? "text-sm" : "text-base"}`}>
             {card ? (
               <>
                 <span className="sm:hidden">{tlShort(s.price)}</span>
@@ -64,7 +60,7 @@ export default function PriceLadder({ steps, size = "md", dark = false, itemsTot
         </li>
       ))}
       {showNote && (
-        <li className={`text-[10px] leading-tight ${dark ? "text-zinc-500" : "text-ink-muted"}`}>Fiyatlar kargo hariçtir</li>
+        <li className={`text-[10px] leading-tight ${dark ? "text-zinc-500" : "text-neutral-500"}`}>Fiyatlar kargo hariçtir</li>
       )}
     </ul>
   );
