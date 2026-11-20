@@ -38,7 +38,7 @@ test("kart hover büyümesi tüm slaytlarda ortak sınıfla (motion-safe), slayt
   const card = readFileSync(new URL("../components/CardImages.tsx", import.meta.url), "utf8");
   assert.match(card, /const IMG = ".*motion-safe:group-hover:scale-\[1\.05\]"/);
   assert.equal((card.match(/className=\{IMG\}/g) ?? []).length, 2); // ilk görsel (tek/çok görselli) + sonraki slaytlar
-  assert.ok(!/group-hover:scale-\[1\.05\]/.test(card.replace(/const IMG = .*\n/, "")), "büyüme sınıfı tek yerde tanımlı");
+  assert.ok(!/group-hover:scale-\[1\.05\]/.test(card.replace(/const IMG = .*\r?\n/, "")), "büyüme sınıfı tek yerde tanımlı");
   assert.ok((card.match(/snap-center overflow-hidden/g) ?? []).length >= 2);
   assert.match(card, /const IMG = ".*scale-\[1\.02\] transition-transform/); // taban büyütme: ince üst/alt çizgiyi kapatır
   assert.equal((card.match(/aspect-square bg-photo overflow-hidden/g) ?? []).length, 2); // tek ve çok görselli kutu kırpar
