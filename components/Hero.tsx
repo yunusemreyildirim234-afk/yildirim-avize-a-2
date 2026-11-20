@@ -12,14 +12,14 @@ const btnBase =
 
 export default function Hero() {
   return (
-    <section className="relative overflow-hidden bg-night h-[78svh] min-h-[460px] md:h-[75vh] md:min-h-[520px] md:max-h-[780px]">
+    <section className="relative overflow-hidden bg-night h-[78svh] min-h-[460px] md:h-[82vh] md:min-h-[540px] md:max-h-[860px]">
       <Image
         src="/hero/salon-avize.webp"
         alt="Altın rengi avizenin aydınlattığı modern bir oturma odası"
         fill
         priority
         sizes="100vw"
-        className="object-cover object-[42%_30%] md:object-[50%_30%]"
+        className="object-cover object-[42%_30%] md:object-[50%_12%]"
       />
       <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-scrim/80 from-0% via-scrim/60 via-55% to-transparent" />
 
