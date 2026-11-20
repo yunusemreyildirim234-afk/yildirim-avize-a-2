@@ -39,11 +39,11 @@ export default async function CustomerGalleryPage() {
 
   return (
     <main className="min-h-screen bg-neutral-50 pb-20">
-      <section className="bg-neutral-950 text-white py-14 px-4 text-center border-b border-neutral-800">
+      <section className="bg-canvas text-ink py-14 px-4 text-center border-b border-line">
         <div className="max-w-2xl mx-auto space-y-3">
-          <span className="text-xs uppercase tracking-widest text-amber-400 font-semibold">Gerçek Müşteri Fotoğrafları</span>
-          <h1 className="text-3xl sm:text-4xl font-serif font-bold text-neutral-100">Müşterilerimizden Gelenler</h1>
-          <p className="text-sm text-neutral-400 font-light">
+          <span className="block text-[11px] uppercase tracking-[0.18em] text-bronze-ink font-semibold">Gerçek Müşteri Fotoğrafları</span>
+          <h1 className="text-3xl sm:text-4xl font-serif font-bold text-ink">Müşterilerimizden Gelenler</h1>
+          <p className="text-sm text-ink-muted font-light">
             Avizelerimizi satın alan müşterilerimizin kendi mekanlarından paylaştığı fotoğraflar ve yorumlar.
           </p>
         </div>
