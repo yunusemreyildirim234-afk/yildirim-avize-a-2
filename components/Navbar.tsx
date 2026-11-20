@@ -61,7 +61,7 @@ const CORPORATE_LINKS = [
 ];
 
 const itemClass =
-  "flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 transition-colors w-full text-left";
+  "flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-ink-muted hover:bg-surface hover:text-ink transition-colors w-full text-left";
 
 export default function Navbar({ extraCategories = [], fixedOverrides = {}, showGallery = true }: { extraCategories?: { href: string; label: string }[]; fixedOverrides?: Record<string, { title?: string; hidden?: boolean }>; showGallery?: boolean }) {
   // Yayınlanmış müşteri fotoğrafı yokken "Müşterilerimizden Gelenler" menüde görünmez
@@ -108,7 +108,7 @@ export default function Navbar({ extraCategories = [], fixedOverrides = {}, show
   const initial = user?.name?.trim().charAt(0).toUpperCase();
 
   return (
-    <header className="w-full bg-white border-b border-zinc-100 sticky top-0 z-50">
+    <header className="w-full bg-canvas border-b border-line sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-4">
         {/* SOL: Logo + Koleksiyonlar menüsü */}
         <div className="flex items-center gap-1 sm:gap-3 min-w-0">
@@ -117,9 +117,9 @@ export default function Navbar({ extraCategories = [], fixedOverrides = {}, show
             aria-label="Menüyü aç"
             aria-expanded={drawerOpen}
             onClick={() => setDrawerOpen(true)}
-            className="md:hidden -ml-2 rounded-full p-2 hover:bg-zinc-100 transition-colors"
+            className="md:hidden -ml-2 rounded-full p-2 hover:bg-surface transition-colors"
           >
-            <Menu aria-hidden="true" className="w-6 h-6 text-zinc-800" />
+            <Menu aria-hidden="true" className="w-6 h-6 text-ink" />
           </button>
           <Link href="/" aria-label="Yıldırım Avize ana sayfa" className="shrink-0 flex items-center gap-2.5">
             <Image
@@ -130,7 +130,7 @@ export default function Navbar({ extraCategories = [], fixedOverrides = {}, show
               priority
               className="h-10 sm:h-11 w-auto"
             />
-            <span className="hidden md:block whitespace-nowrap font-serif font-black text-2xl tracking-tight text-zinc-950 leading-none">
+            <span className="hidden md:block whitespace-nowrap font-serif font-black text-2xl tracking-tight text-ink leading-none">
               Yıldırım Avize
             </span>
           </Link>
@@ -141,10 +141,10 @@ export default function Navbar({ extraCategories = [], fixedOverrides = {}, show
             panelClassName="w-[min(92vw,34rem)]"
             trigger={(open) => (
               <>
-                <span className="text-sm font-semibold text-zinc-800">Koleksiyonlar</span>
+                <span className="text-sm font-semibold text-ink">Koleksiyonlar</span>
                 <ChevronDown
                   aria-hidden="true"
-                  className={`w-4 h-4 text-zinc-500 transition-transform ${open ? "rotate-180" : ""}`}
+                  className={`w-4 h-4 text-ink-subtle transition-transform ${open ? "rotate-180" : ""}`}
                 />
               </>
             )}
@@ -152,7 +152,7 @@ export default function Navbar({ extraCategories = [], fixedOverrides = {}, show
             {(close) => (
               <div className="grid grid-cols-2 gap-4 p-1">
                 <div>
-                  <h2 className="px-3 pb-2 text-[11px] font-bold uppercase tracking-wider text-zinc-400">Kategoriler</h2>
+                  <h2 className="px-3 pb-2 text-[11px] font-bold uppercase tracking-wider text-ink-subtle">Kategoriler</h2>
                   <div className="max-h-[60vh] overflow-y-auto">
                     {categoryLinks.map((l) => (
                       <Link key={l.href} href={l.href} role="menuitem" onClick={close} className={itemClass}>
@@ -161,11 +161,11 @@ export default function Navbar({ extraCategories = [], fixedOverrides = {}, show
                     ))}
                   </div>
                 </div>
-                <div className="border-l border-zinc-100 pl-4">
-                  <h2 className="px-3 pb-2 text-[11px] font-bold uppercase tracking-wider text-zinc-400">Keşfet</h2>
+                <div className="border-l border-line pl-4">
+                  <h2 className="px-3 pb-2 text-[11px] font-bold uppercase tracking-wider text-ink-subtle">Keşfet</h2>
                   {discoverLinks.map(({ href, label, icon: Icon }) => (
                     <Link key={href} href={href} role="menuitem" onClick={close} className={itemClass}>
-                      <Icon aria-hidden="true" className="w-4 h-4 text-amber-600 shrink-0" />
+                      <Icon aria-hidden="true" className="w-4 h-4 text-bronze-ink shrink-0" />
                       {label}
                     </Link>
                   ))}
@@ -182,12 +182,12 @@ export default function Navbar({ extraCategories = [], fixedOverrides = {}, show
           <Link
             href="/sepet"
             aria-label={`Sepetim, ${totalItems} ürün`}
-            className="relative flex items-center gap-2 rounded-full p-2 sm:px-3 sm:py-2 hover:bg-zinc-100 transition-colors"
+            className="relative flex items-center gap-2 rounded-full p-2 sm:px-3 sm:py-2 hover:bg-surface transition-colors"
           >
-            <ShoppingBag aria-hidden="true" className="w-5 h-5 text-zinc-800" />
-            <span className="hidden sm:inline text-sm font-semibold text-zinc-800">Sepet</span>
+            <ShoppingBag aria-hidden="true" className="w-5 h-5 text-ink" />
+            <span className="hidden sm:inline text-sm font-semibold text-ink">Sepet</span>
             {totalItems > 0 && (
-              <span className="absolute -top-0.5 left-6 sm:left-7 min-w-5 h-5 px-1 rounded-full bg-amber-500 text-[11px] font-bold text-zinc-950 flex items-center justify-center">
+              <span className="absolute -top-0.5 left-6 sm:left-7 min-w-5 h-5 px-1 rounded-full bg-bronze-ink text-[11px] font-bold text-on-bronze flex items-center justify-center">
                 {totalItems}
               </span>
             )}
@@ -199,7 +199,7 @@ export default function Navbar({ extraCategories = [], fixedOverrides = {}, show
 
           <Link
             href="/giris"
-            className="hidden md:inline-block rounded-full px-3 py-2 text-sm font-semibold text-zinc-800 hover:bg-zinc-100 transition-colors"
+            className="hidden md:inline-block rounded-full px-3 py-2 text-sm font-semibold text-ink hover:bg-surface transition-colors"
           >
             Hesabım
           </Link>
@@ -210,18 +210,18 @@ export default function Navbar({ extraCategories = [], fixedOverrides = {}, show
             panelClassName="w-60"
             trigger={(open) => (
               <>
-                <span className="w-9 h-9 rounded-full border border-zinc-200 bg-zinc-100 overflow-hidden flex items-center justify-center text-sm font-bold text-zinc-700">
+                <span className="w-9 h-9 rounded-full border border-line bg-surface overflow-hidden flex items-center justify-center text-sm font-bold text-ink-muted">
                   {user?.picture ? (
                     <Image src={user.picture} alt="Profil fotoğrafı" width={36} height={36} className="w-full h-full object-cover" />
                   ) : initial ? (
                     initial
                   ) : (
-                    <User aria-hidden="true" className="w-5 h-5 text-zinc-500" />
+                    <User aria-hidden="true" className="w-5 h-5 text-ink-subtle" />
                   )}
                 </span>
                 <ChevronDown
                   aria-hidden="true"
-                  className={`hidden sm:block w-4 h-4 text-zinc-500 transition-transform ${open ? "rotate-180" : ""}`}
+                  className={`hidden sm:block w-4 h-4 text-ink-subtle transition-transform ${open ? "rotate-180" : ""}`}
                 />
               </>
             )}
@@ -229,45 +229,45 @@ export default function Navbar({ extraCategories = [], fixedOverrides = {}, show
             {(close) => (
               <div className="space-y-0.5">
                 {user && (
-                  <div className="px-3 py-2 mb-1 border-b border-zinc-100">
-                    <p className="text-sm font-semibold text-zinc-900 truncate">{user.name}</p>
-                    <p className="text-xs text-zinc-500 truncate">{user.email}</p>
+                  <div className="px-3 py-2 mb-1 border-b border-line">
+                    <p className="text-sm font-semibold text-ink truncate">{user.name}</p>
+                    <p className="text-xs text-ink-subtle truncate">{user.email}</p>
                   </div>
                 )}
                 <Link href="/giris" role="menuitem" onClick={close} className={itemClass}>
-                  <User aria-hidden="true" className="w-4 h-4 text-zinc-500" /> Profilim
+                  <User aria-hidden="true" className="w-4 h-4 text-ink-subtle" /> Profilim
                 </Link>
                 <Link href="/giris#siparisler" role="menuitem" onClick={close} className={itemClass}>
-                  <Package aria-hidden="true" className="w-4 h-4 text-zinc-500" /> Siparişlerim
+                  <Package aria-hidden="true" className="w-4 h-4 text-ink-subtle" /> Siparişlerim
                 </Link>
                 <Link href="/giris#adresler" role="menuitem" onClick={close} className={itemClass}>
-                  <MapPin aria-hidden="true" className="w-4 h-4 text-zinc-500" /> Adreslerim
+                  <MapPin aria-hidden="true" className="w-4 h-4 text-ink-subtle" /> Adreslerim
                 </Link>
                 <Link href="/favorilerim" role="menuitem" onClick={close} className={itemClass}>
-                  <Heart aria-hidden="true" className="w-4 h-4 text-zinc-500" /> Favorilerim
+                  <Heart aria-hidden="true" className="w-4 h-4 text-ink-subtle" /> Favorilerim
                 </Link>
                 <Link href="/giris#kuponlar" role="menuitem" onClick={close} className={itemClass}>
-                  <Ticket aria-hidden="true" className="w-4 h-4 text-zinc-500" /> Kuponlarım
+                  <Ticket aria-hidden="true" className="w-4 h-4 text-ink-subtle" /> Kuponlarım
                 </Link>
                 <Link href="/giris#mesajlar" role="menuitem" onClick={close} className={itemClass}>
-                  <MessageSquare aria-hidden="true" className="w-4 h-4 text-zinc-500" /> Sorularım / Mesajlarım
+                  <MessageSquare aria-hidden="true" className="w-4 h-4 text-ink-subtle" /> Sorularım / Mesajlarım
                 </Link>
                 <Link href="/kargo-takip" role="menuitem" onClick={close} className={itemClass}>
-                  <Truck aria-hidden="true" className="w-4 h-4 text-zinc-500" /> Kargo Takip
+                  <Truck aria-hidden="true" className="w-4 h-4 text-ink-subtle" /> Kargo Takip
                 </Link>
                 {admin && (
-                  <Link href="/admin" role="menuitem" onClick={close} className={`${itemClass} text-amber-700 font-semibold`}>
+                  <Link href="/admin" role="menuitem" onClick={close} className={`${itemClass} text-bronze-ink font-semibold`}>
                     <LayoutDashboard aria-hidden="true" className="w-4 h-4" /> Yönetim Paneli
                   </Link>
                 )}
-                <div className="border-t border-zinc-100 mt-1 pt-1">
+                <div className="border-t border-line mt-1 pt-1">
                   {user || admin ? (
                     <button type="button" role="menuitem" onClick={() => logout(close)} className={itemClass}>
-                      <LogOut aria-hidden="true" className="w-4 h-4 text-zinc-500" /> Çıkış Yap
+                      <LogOut aria-hidden="true" className="w-4 h-4 text-ink-subtle" /> Çıkış Yap
                     </button>
                   ) : (
                     <Link href="/giris" role="menuitem" onClick={close} className={itemClass}>
-                      <LogIn aria-hidden="true" className="w-4 h-4 text-zinc-500" /> Giriş Yap
+                      <LogIn aria-hidden="true" className="w-4 h-4 text-ink-subtle" /> Giriş Yap
                     </Link>
                   )}
                 </div>
@@ -278,7 +278,7 @@ export default function Navbar({ extraCategories = [], fixedOverrides = {}, show
       </div>
 
       {/* Mobil: kaydırılabilir koleksiyon hapları */}
-      <nav aria-label="Koleksiyonlar" className="md:hidden border-t border-zinc-100 flex gap-2 overflow-x-auto px-4 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <nav aria-label="Koleksiyonlar" className="md:hidden border-t border-line flex gap-2 overflow-x-auto px-4 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {categoryLinks.map((l) => {
           const active = pathname === l.href;
           return (
@@ -287,7 +287,7 @@ export default function Navbar({ extraCategories = [], fixedOverrides = {}, show
               href={l.href}
               aria-current={active ? "page" : undefined}
               className={`shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-colors ${
-                active ? "bg-amber-600 border-amber-600 text-white" : "bg-zinc-50 border-zinc-200 text-zinc-700 hover:bg-zinc-100"
+                active ? "bg-ink border-ink text-canvas" : "bg-raised border-line text-ink-muted hover:bg-surface"
               }`}
             >
               {l.label}
@@ -299,19 +299,19 @@ export default function Navbar({ extraCategories = [], fixedOverrides = {}, show
       {/* Mobil: hamburger çekmecesi */}
       {drawerOpen && (
         <div className="md:hidden fixed inset-0 z-[60]" role="dialog" aria-modal="true" aria-label="Menü">
-          <button type="button" aria-label="Menüyü kapat" onClick={() => setDrawerOpen(false)} className="absolute inset-0 bg-zinc-950/50" />
-          <div ref={drawerRef} className="absolute left-0 top-0 bottom-0 w-[85vw] max-w-sm bg-white shadow-2xl flex flex-col">
-            <div className="flex items-center justify-between h-16 px-4 border-b border-zinc-100 shrink-0">
-              <span className="font-serif font-black text-xl tracking-tight text-zinc-950">
+          <button type="button" aria-label="Menüyü kapat" onClick={() => setDrawerOpen(false)} className="absolute inset-0 bg-night/50" />
+          <div ref={drawerRef} className="absolute left-0 top-0 bottom-0 w-[85vw] max-w-sm bg-canvas shadow-2xl flex flex-col">
+            <div className="flex items-center justify-between h-16 px-4 border-b border-line shrink-0">
+              <span className="font-serif font-black text-xl tracking-tight text-ink">
                 Yıldırım Avize
               </span>
-              <button type="button" aria-label="Menüyü kapat" onClick={() => setDrawerOpen(false)} className="rounded-full p-2 hover:bg-zinc-100">
-                <X aria-hidden="true" className="w-5 h-5 text-zinc-700" />
+              <button type="button" aria-label="Menüyü kapat" onClick={() => setDrawerOpen(false)} className="rounded-full p-2 hover:bg-surface">
+                <X aria-hidden="true" className="w-5 h-5 text-ink-muted" />
               </button>
             </div>
             <div className="flex-1 overflow-y-auto p-3 space-y-5">
               <div>
-                <h2 className="px-3 pb-1 text-[11px] font-bold uppercase tracking-wider text-zinc-400">Koleksiyonlar</h2>
+                <h2 className="px-3 pb-1 text-[11px] font-bold uppercase tracking-wider text-ink-subtle">Koleksiyonlar</h2>
                 {categoryLinks.map((l) => (
                   <Link key={l.href} href={l.href} onClick={() => setDrawerOpen(false)} className={itemClass}>
                     {l.label}
@@ -319,30 +319,30 @@ export default function Navbar({ extraCategories = [], fixedOverrides = {}, show
                 ))}
               </div>
               <div>
-                <h2 className="px-3 pb-1 text-[11px] font-bold uppercase tracking-wider text-zinc-400">Keşfet</h2>
+                <h2 className="px-3 pb-1 text-[11px] font-bold uppercase tracking-wider text-ink-subtle">Keşfet</h2>
                 {discoverLinks.map(({ href, label, icon: Icon }) => (
                   <Link key={href} href={href} onClick={() => setDrawerOpen(false)} className={itemClass}>
-                    <Icon aria-hidden="true" className="w-4 h-4 text-amber-600 shrink-0" />
+                    <Icon aria-hidden="true" className="w-4 h-4 text-bronze-ink shrink-0" />
                     {label}
                   </Link>
                 ))}
               </div>
               <div>
-                <h2 className="px-3 pb-1 text-[11px] font-bold uppercase tracking-wider text-zinc-400">Kurumsal</h2>
+                <h2 className="px-3 pb-1 text-[11px] font-bold uppercase tracking-wider text-ink-subtle">Kurumsal</h2>
                 {CORPORATE_LINKS.map((l) => (
                   <Link key={l.href} href={l.href} onClick={() => setDrawerOpen(false)} className={itemClass}>
-                    <Shield aria-hidden="true" className="w-4 h-4 text-zinc-400 shrink-0" />
+                    <Shield aria-hidden="true" className="w-4 h-4 text-ink-subtle shrink-0" />
                     {l.label}
                   </Link>
                 ))}
               </div>
               <div>
-                <h2 className="px-3 pb-1 text-[11px] font-bold uppercase tracking-wider text-zinc-400">İletişim</h2>
+                <h2 className="px-3 pb-1 text-[11px] font-bold uppercase tracking-wider text-ink-subtle">İletişim</h2>
                 <Link href="/iletisim" onClick={() => setDrawerOpen(false)} className={itemClass}>
-                  <MessageSquare aria-hidden="true" className="w-4 h-4 text-zinc-500 shrink-0" /> Bize Ulaşın
+                  <MessageSquare aria-hidden="true" className="w-4 h-4 text-ink-subtle shrink-0" /> Bize Ulaşın
                 </Link>
                 <a href={`tel:${PHONE_TEL}`} className={itemClass}>
-                  <Phone aria-hidden="true" className="w-4 h-4 text-zinc-500 shrink-0" /> {PHONE_DISPLAY}
+                  <Phone aria-hidden="true" className="w-4 h-4 text-ink-subtle shrink-0" /> {PHONE_DISPLAY}
                 </a>
               </div>
             </div>
