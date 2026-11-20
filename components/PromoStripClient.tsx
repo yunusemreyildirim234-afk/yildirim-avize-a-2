@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Copy, X } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Copy, X } from "lucide-react";
 import { AVANTAJ_ACMA_OLAYI, AVANTAJ_DEGISTI_OLAYI, AVANTAJ_KAYIT_ANAHTARI, avantajGorunsunMu, kaydiCoz, type AvantajKaydi } from "@/lib/promo-dismiss";
 
 /** Avantaj şeridini gizlenebilir yapar. Karar mantığı lib/promo-dismiss.ts içinde (24 saat + içerik sürümü). Depolama yoksa/hata verirse şerit açık kalır. */
@@ -168,6 +168,56 @@ export function CopyCode({ code, buttonClass, codeClass }: { code: string; butto
         {state === "copied" ? "Kupon kodu kopyalandı" : state === "selected" ? "Kod seçildi, kopyalamak için Ctrl+C kullanın" : ""}
       </span>
       {state === "selected" && <span aria-hidden="true" className="text-[11px]">Kod seçildi, Ctrl+C ile kopyalayın</span>}
+    </div>
+  );
+}
+
+/** Avantaj öğeleri için yatay kayan liste (scroll-snap, görünür çubuk yok). Yalnızca taşma varken ve o yönde yer kalmışken ‹ › düğmeleri ve kenar solması görünür; tüm öğeler sığıyorsa hiçbiri çıkmaz. Navbar'daki kategori satırıyla aynı mantık. */
+export function ScrollList({ children }: { children: React.ReactNode }) {
+  const listRef = useRef<HTMLUListElement>(null);
+  const [edge, setEdge] = useState({ left: false, right: false });
+
+  useEffect(() => {
+    const el = listRef.current;
+    if (!el) return;
+    const update = () => setEdge({ left: el.scrollLeft > 1, right: el.scrollLeft + el.clientWidth < el.scrollWidth - 1 });
+    update();
+    el.addEventListener("scroll", update, { passive: true });
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener("scroll", update);
+      ro.disconnect();
+    };
+  }, []);
+
+  const scrollBySide = (dir: 1 | -1) => {
+    const el = listRef.current;
+    if (!el) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    el.scrollBy({ left: dir * el.clientWidth, behavior: reduce ? "auto" : "smooth" });
+  };
+
+  const arrow = "absolute top-0 bottom-0 z-10 flex w-10 items-center text-ink-muted hover:text-ink focus-visible:text-ink focus-visible:outline-2 focus-visible:outline-bronze-ink";
+  return (
+    <div className="relative flex-1 min-w-0">
+      <ul
+        ref={listRef}
+        onFocus={(e) => e.target.scrollIntoView({ inline: "nearest", block: "nearest" })}
+        className="flex gap-4 overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {children}
+      </ul>
+      {edge.left && (
+        <button type="button" aria-label="Önceki avantajlar" onClick={() => scrollBySide(-1)} className={`${arrow} left-0 justify-start bg-gradient-to-r from-canvas from-60% to-transparent`}>
+          <ChevronLeft aria-hidden="true" className="w-5 h-5" />
+        </button>
+      )}
+      {edge.right && (
+        <button type="button" aria-label="Sonraki avantajlar" onClick={() => scrollBySide(1)} className={`${arrow} right-0 justify-end bg-gradient-to-l from-canvas from-60% to-transparent`}>
+          <ChevronRight aria-hidden="true" className="w-5 h-5" />
+        </button>
+      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Landmark, MapPin, Sparkles, Tag, Truck, type LucideIcon } from "lucide-react";
-import { CopyCode, DismissibleStrip } from "@/components/PromoStripClient";
+import { CopyCode, DismissibleStrip, ScrollList } from "@/components/PromoStripClient";
 import { avantajSurumu } from "@/lib/promo-dismiss";
 import { getPromoViews } from "@/lib/promo-data";
 import { getLadderContext } from "@/lib/showcase";
@@ -28,13 +28,13 @@ const linkCls = "inline-flex items-center min-h-6 text-xs font-medium text-bronz
 function Cell({ item }: { item: Item }) {
   const Icon = item.icon;
   return (
-    <li className="flex items-start gap-3 min-w-0">
+    <li className="snap-start shrink-0 basis-[calc(50%-0.5rem)] lg:basis-[calc(25%-0.75rem)] min-w-0 flex items-start gap-3">
       <span className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full bg-surface text-bronze-ink">
         <Icon aria-hidden="true" className="w-4 h-4" />
       </span>
       <div className="min-w-0 flex-1">
-        <h3 className="text-sm font-semibold text-ink leading-snug">{item.title}</h3>
-        <p className="mt-0.5 text-xs text-ink-muted leading-snug line-clamp-2">{item.text}</p>
+        <h3 className="text-sm font-semibold text-ink leading-snug line-clamp-3">{item.title}</h3>
+        <p className="mt-0.5 text-xs text-ink-muted leading-snug line-clamp-3">{item.text}</p>
         {item.code && (
           <div className="mt-1.5">
             <CopyCode
@@ -83,11 +83,11 @@ export default async function PromoStrip() {
 
   return (
     <DismissibleStrip surum={surum}>
-      <ul className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-4 flex-1 min-w-0">
+      <ScrollList>
         {items.map((it) => (
           <Cell key={it.id} item={it} />
         ))}
-      </ul>
+      </ScrollList>
     </DismissibleStrip>
   );
 }
