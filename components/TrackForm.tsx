@@ -30,7 +30,7 @@ export default function TrackForm({ action, defaultCode }: { action: (formData: 
           onChange={(e) => setCode(e.target.value)}
           required
           placeholder="Sipariş veya takip kodunuz"
-          className="flex-1 border border-neutral-300 rounded-xl px-4 py-3 text-sm bg-white outline-none focus:border-amber-500"
+          className="flex-1 border border-line-strong rounded-xl px-4 py-3 text-sm bg-raised outline-none focus:border-bronze-ink"
         />
         <label htmlFor="email" className="sr-only">
           E-posta (8 haneli sipariş koduyla sorgularken)
@@ -45,13 +45,13 @@ export default function TrackForm({ action, defaultCode }: { action: (formData: 
           required={short}
           aria-describedby="email-ipucu"
           placeholder="E-posta (sipariş kodu için)"
-          className="sm:w-64 border border-neutral-300 rounded-xl px-4 py-3 text-sm bg-white outline-none focus:border-amber-500"
+          className="sm:w-64 border border-line-strong rounded-xl px-4 py-3 text-sm bg-raised outline-none focus:border-bronze-ink"
         />
-        <button type="submit" className="bg-neutral-900 hover:bg-amber-600 text-white text-xs font-semibold px-6 py-3 rounded-xl transition-colors">
+        <button type="submit" className="bg-ink hover:bg-bronze-ink text-canvas text-xs font-semibold px-6 py-3 rounded-xl transition-colors">
           Sorgula
         </button>
       </div>
-      <p id="email-ipucu" className="text-xs text-neutral-600">
+      <p id="email-ipucu" className="text-xs text-ink-muted">
         {short ? "8 haneli sipariş kodu için siparişte kullandığınız e-posta adresi gerekir." : "E-posta yalnızca 8 haneli sipariş kodunda gerekir; takip kodunda boş bırakabilirsiniz."}
       </p>
     </form>

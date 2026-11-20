@@ -137,29 +137,29 @@ export default function AuthPage() {
 
   if (user) {
     return (
-      <main className="min-h-screen bg-neutral-50 py-16 px-4 sm:px-6 lg:px-8">
+      <main className="min-h-screen bg-canvas py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto space-y-8 pb-24">
-          <div className="bg-white rounded-3xl border border-neutral-200 p-8 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="bg-raised rounded-3xl border border-line p-8 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <span className="text-xs uppercase tracking-wider text-amber-600 font-bold">
+              <span className="text-xs uppercase tracking-wider text-bronze-ink font-bold">
                 Kullanıcı Hesabı
               </span>
-              <h1 className="text-2xl font-serif font-bold text-neutral-900 mt-1">
+              <h1 className="text-2xl font-serif font-bold text-ink mt-1">
                 Hoş Geldiniz, {user.name}
               </h1>
-              <p className="text-xs text-neutral-500 mt-0.5">{user.email}</p>
+              <p className="text-xs text-ink-muted mt-0.5">{user.email}</p>
             </div>
 
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={handleLogoutAll}
-                className="text-xs font-semibold bg-neutral-100 hover:bg-neutral-200 text-neutral-700 px-4 py-2 rounded-xl transition-colors w-fit"
+                className="text-xs font-semibold bg-surface hover:bg-line text-ink-muted px-4 py-2 rounded-xl transition-colors w-fit"
               >
                 Tüm cihazlardan çıkış yap
               </button>
               <button
                 onClick={handleLogout}
-                className="text-xs font-semibold bg-neutral-100 hover:bg-neutral-200 text-neutral-700 px-4 py-2 rounded-xl transition-colors w-fit"
+                className="text-xs font-semibold bg-surface hover:bg-line text-ink-muted px-4 py-2 rounded-xl transition-colors w-fit"
               >
                 Çıkış Yap
               </button>
@@ -174,14 +174,14 @@ export default function AuthPage() {
               ["kuponlar", "Kuponlar"],
               ["mesajlar", "Mesajlar"],
             ].map(([id, label]) => (
-              <a key={id} href={`#${id}`} className="inline-flex min-h-10 items-center rounded-full border border-neutral-300 bg-white px-4 text-xs font-semibold text-neutral-700 hover:border-amber-600 hover:text-amber-800 focus-visible:outline-2 focus-visible:outline-amber-600">
+              <a key={id} href={`#${id}`} className="inline-flex min-h-10 items-center rounded-full border border-line-strong bg-raised px-4 text-xs font-semibold text-ink-muted hover:border-bronze-ink hover:text-bronze-ink focus-visible:outline-2 focus-visible:outline-bronze-ink">
                 {label}
               </a>
             ))}
           </nav>
 
-          <div id="siparisler" className="bg-white rounded-3xl border border-neutral-200 p-8 shadow-sm space-y-6 scroll-mt-24">
-            <h2 className="text-lg font-serif font-bold text-neutral-900 border-b border-neutral-100 pb-3">
+          <div id="siparisler" className="bg-raised rounded-3xl border border-line p-8 shadow-sm space-y-6 scroll-mt-24">
+            <h2 className="text-lg font-serif font-bold text-ink border-b border-line pb-3">
               Geçmiş Siparişleriniz & Kargo Durumu
             </h2>
 
@@ -190,18 +190,18 @@ export default function AuthPage() {
                 {user.orders.map((order) => (
                   <div
                     key={order.id}
-                    className="border border-neutral-200 rounded-2xl p-5 space-y-3 bg-neutral-50/50"
+                    className="border border-line rounded-2xl p-5 space-y-3 bg-surface/50"
                   >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-neutral-200/80 pb-3 text-xs">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-line pb-3 text-xs">
                       <div>
-                        <span className="inline-flex items-center gap-2 text-neutral-500 font-mono">Sipariş Kodu: {orderCode(order.id)} <CopyCodeButton text={orderCode(order.id)} label="Sipariş kodu kopyalandı" /></span>
-                        <span className="block text-[11px] text-neutral-500 mt-0.5">
+                        <span className="inline-flex items-center gap-2 text-ink-muted font-mono">Sipariş Kodu: {orderCode(order.id)} <CopyCodeButton text={orderCode(order.id)} label="Sipariş kodu kopyalandı" /></span>
+                        <span className="block text-[11px] text-ink-muted mt-0.5">
                           Tarih: {new Date(order.createdAt).toLocaleDateString("tr-TR")}
                         </span>
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-sm text-neutral-900">
+                        <span className="font-bold text-sm text-ink">
                           {order.totalAmount.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺
                         </span>
                         <span
@@ -241,7 +241,7 @@ export default function AuthPage() {
 
                     <OrderTracker order={order} />
 
-                    <div className="text-xs text-neutral-700 space-y-3">
+                    <div className="text-xs text-ink-muted space-y-3">
                       {order.items.map((item) => (
                         <div key={item.id} className="flex justify-between items-center gap-3">
                           <span className="flex items-center gap-2.5 min-w-0">
@@ -249,7 +249,7 @@ export default function AuthPage() {
                               <Link
                                 href={productPath(item.variation.product)}
                                 aria-label={`${item.variation.product.title} ürün sayfası`}
-                                className="w-16 h-16 rounded-xl bg-neutral-100 overflow-hidden shrink-0 border border-neutral-200 flex items-center justify-center"
+                                className="w-16 h-16 rounded-xl bg-surface overflow-hidden shrink-0 border border-line flex items-center justify-center"
                               >
                                 {item.variation.product.imageUrl && (
                                   <img src={smallImage(item.variation.product.imageUrl)} alt={item.variation.product.title} width={64} height={64} loading="lazy" decoding="async" className="w-full h-full object-cover" />
@@ -259,15 +259,15 @@ export default function AuthPage() {
                             <span className="min-w-0">
                               {item.quantity}x{" "}
                               {item.variation.product ? (
-                                <Link href={productPath(item.variation.product)} className="font-semibold hover:text-amber-700 hover:underline">
+                                <Link href={productPath(item.variation.product)} className="font-semibold hover:text-bronze-ink hover:underline">
                                   {displayTitle(item.variation.product.title).title}
                                 </Link>
                               ) : null}{" "}
-                              <span className="text-neutral-500">{item.variation.variationValue}</span>
+                              <span className="text-ink-muted">{item.variation.variationValue}</span>
                             </span>
                           </span>
                           <span className="flex flex-col items-end gap-1.5 shrink-0">
-                            <span className="font-medium text-neutral-900">
+                            <span className="font-medium text-ink">
                               {(item.quantity * item.unitPrice).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺
                             </span>
                             {item.variation.product && ["PENDING", "READY_FOR_PICKUP", "SHIPPED", "DELIVERED"].includes(order.status) && (
@@ -286,7 +286,7 @@ export default function AuthPage() {
                     {(() => {
                       const b = breakdownOf(order.items, order.shippingType, order.totalAmount);
                       return b.discount > 0 ? (
-                        <p className="flex justify-between text-xs font-semibold text-emerald-700 border-t border-neutral-200/80 pt-2">
+                        <p className="flex justify-between text-xs font-semibold text-emerald-700 border-t border-line pt-2">
                           <span>{discountLabel(order, b.itemsSum, b.discount)}</span>
                           <span className="whitespace-nowrap">-{formatTl(b.discount)}</span>
                         </p>
@@ -313,7 +313,7 @@ export default function AuthPage() {
                       </a>
                     )}
 
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-neutral-500 pt-2 border-t border-neutral-100">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-ink-muted pt-2 border-t border-line">
                       <div>
                         Teslimat:{" "}
                         <strong>
@@ -334,13 +334,13 @@ export default function AuthPage() {
                       </div>
 
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                        <Link href={`/siparis-onay/${order.id}`} className="text-amber-700 hover:underline font-semibold">
+                        <Link href={`/siparis-onay/${order.id}`} className="text-bronze-ink hover:underline font-semibold">
                           Sipariş detayı →
                         </Link>
                         {order.shippingTrackingCode && (
                           <Link
                             href={`/kargo-takip?code=${encodeURIComponent(order.shippingTrackingCode)}`}
-                            className="text-amber-700 hover:underline font-semibold"
+                            className="text-bronze-ink hover:underline font-semibold"
                           >
                             🚚 Kargo Takip →
                           </Link>
@@ -361,7 +361,7 @@ export default function AuthPage() {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-3 text-neutral-500 text-xs">
+              <div className="text-center py-3 text-ink-muted text-xs">
                 Henüz kayıtlı bir siparişiniz bulunmuyor.
               </div>
             )}
@@ -386,9 +386,9 @@ export default function AuthPage() {
   }
 
   return (
-    <main className="min-h-screen bg-neutral-50 py-16 px-4 flex items-center justify-center">
-      <div className="max-w-md w-full bg-white rounded-3xl border border-neutral-200 p-8 sm:p-10 shadow-sm space-y-6">
-        <div role="tablist" aria-label="Giriş türü" className="flex bg-neutral-100 p-1 rounded-2xl text-xs font-semibold">
+    <main className="min-h-screen bg-canvas py-16 px-4 flex items-center justify-center">
+      <div className="max-w-md w-full bg-raised rounded-3xl border border-line p-8 sm:p-10 shadow-sm space-y-6">
+        <div role="tablist" aria-label="Giriş türü" className="flex bg-surface p-1 rounded-2xl text-xs font-semibold">
           {(["musteri", "yonetici"] as const).map((key) => (
             <button
               key={key}
@@ -397,7 +397,7 @@ export default function AuthPage() {
               aria-selected={tab === key}
               onClick={() => setTab(key)}
               className={`flex-1 py-2.5 rounded-xl transition-all ${
-                tab === key ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-500 hover:text-neutral-900"
+                tab === key ? "bg-raised text-ink shadow-sm" : "text-ink-muted hover:text-ink"
               }`}
             >
               {key === "musteri" ? "Müşteri Girişi" : "Yönetici Girişi"}
@@ -410,20 +410,20 @@ export default function AuthPage() {
         ) : (
           <>
         <div className="text-center space-y-1">
-          <span className="text-xs uppercase tracking-widest text-amber-600 font-bold">
+          <span className="text-xs uppercase tracking-widest text-bronze-ink font-bold">
             Yıldırım Avize
           </span>
-          <h1 className="text-2xl font-serif font-bold text-neutral-900">
+          <h1 className="text-2xl font-serif font-bold text-ink">
             Hesabınıza Giriş Yapın
           </h1>
-          <p className="text-xs text-neutral-500">
+          <p className="text-xs text-ink-muted">
             Siparişlerinizi ve kargo durumunuzu takip etmek için giriş yapın veya kayıt olun.
           </p>
         </div>
 
         <a
           href="/api/auth/google"
-          className="w-full flex items-center justify-center gap-3 bg-white hover:bg-neutral-50 border border-neutral-300 text-neutral-800 font-semibold py-3.5 px-4 rounded-2xl transition-all shadow-2xs hover:shadow-sm text-xs disabled:opacity-50"
+          className="w-full flex items-center justify-center gap-3 bg-raised hover:bg-surface border border-line-strong text-ink font-semibold py-3.5 px-4 rounded-2xl transition-all shadow-2xs hover:shadow-sm text-xs disabled:opacity-50"
         >
           <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
             <path
@@ -447,11 +447,11 @@ export default function AuthPage() {
         </a>
 
         <div className="flex items-center gap-2 sm:gap-3 my-3">
-          <div aria-hidden="true" className="flex-1 min-w-0 border-t border-neutral-200" />
-          <span className="shrink-0 whitespace-nowrap text-[10px] sm:text-[11px] text-neutral-400 uppercase tracking-wide sm:tracking-wider font-medium">
+          <div aria-hidden="true" className="flex-1 min-w-0 border-t border-line" />
+          <span className="shrink-0 whitespace-nowrap text-[10px] sm:text-[11px] text-ink-subtle uppercase tracking-wide sm:tracking-wider font-medium">
             veya e-posta ile
           </span>
-          <div aria-hidden="true" className="flex-1 min-w-0 border-t border-neutral-200" />
+          <div aria-hidden="true" className="flex-1 min-w-0 border-t border-line" />
         </div>
 
         <AuthForms
@@ -461,7 +461,7 @@ export default function AuthPage() {
         />
 
         <div className="text-center pt-2">
-          <Link href="/" className="text-xs text-neutral-500 hover:text-amber-600 transition-colors">
+          <Link href="/" className="text-xs text-ink-muted hover:text-bronze-ink transition-colors">
             ← Alışverişe Devam Et
           </Link>
         </div>
@@ -533,45 +533,45 @@ function AdminLoginForm() {
   return (
     <>
       <div className="text-center space-y-1">
-        <span className="text-xs uppercase tracking-widest text-amber-600 font-bold">Yıldırım Avize</span>
-        <h1 className="text-2xl font-serif font-bold text-neutral-900">Yönetici Girişi</h1>
-        <p className="text-xs text-neutral-500">Yalnızca yetkili mağaza yöneticileri içindir.</p>
+        <span className="text-xs uppercase tracking-widest text-bronze-ink font-bold">Yıldırım Avize</span>
+        <h1 className="text-2xl font-serif font-bold text-ink">Yönetici Girişi</h1>
+        <p className="text-xs text-ink-muted">Yalnızca yetkili mağaza yöneticileri içindir.</p>
       </div>
       {pending ? (
         <div className="space-y-3">
-          <p className="text-xs text-neutral-600">Yönetici hesabınızda iki aşamalı doğrulama açık.</p>
+          <p className="text-xs text-ink-muted">Yönetici hesabınızda iki aşamalı doğrulama açık.</p>
           <CodeStep email={pending.email} initialWait={pending.wait} busy={loading} onSubmit={verify} onResend={resend} submitLabel="Yönetim Paneline Gir" />
           {error && (
             <p role="alert" className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-xl p-3">
               {error}
             </p>
           )}
-          <button type="button" onClick={() => { setPending(null); setError(""); }} className="w-full text-xs text-neutral-500 hover:text-amber-700 font-semibold py-1">
+          <button type="button" onClick={() => { setPending(null); setError(""); }} className="w-full text-xs text-ink-muted hover:text-bronze-ink font-semibold py-1">
             ← Girişe dön
           </button>
         </div>
       ) : (
       <form onSubmit={submit} className="space-y-4 text-xs">
         <div>
-          <label htmlFor="admin-user" className="font-semibold text-neutral-700 block mb-1">E-posta veya Kullanıcı Adı</label>
+          <label htmlFor="admin-user" className="font-semibold text-ink-muted block mb-1">E-posta veya Kullanıcı Adı</label>
           <input
             id="admin-user"
             required
             autoComplete="username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600"
+            className="w-full text-base sm:text-xs p-3 rounded-xl border border-line-strong focus:border-bronze-ink focus-visible:outline-2 focus-visible:outline-bronze-ink"
           />
         </div>
         <div>
-          <label htmlFor="admin-pass" className="font-semibold text-neutral-700 block mb-1">Şifre</label>
+          <label htmlFor="admin-pass" className="font-semibold text-ink-muted block mb-1">Şifre</label>
           <PasswordInput
             id="admin-pass"
             required
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600"
+            className="w-full text-base sm:text-xs p-3 rounded-xl border border-line-strong focus:border-bronze-ink focus-visible:outline-2 focus-visible:outline-bronze-ink"
           />
         </div>
         {error && (
@@ -582,7 +582,7 @@ function AdminLoginForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-neutral-900 hover:bg-amber-600 text-white font-semibold py-3.5 rounded-xl transition-colors shadow-sm disabled:opacity-50"
+          className="w-full bg-ink hover:bg-bronze-ink text-canvas font-semibold py-3.5 rounded-xl transition-colors shadow-sm disabled:opacity-50"
         >
           {loading ? "Doğrulanıyor..." : "Yönetim Paneline Gir"}
         </button>

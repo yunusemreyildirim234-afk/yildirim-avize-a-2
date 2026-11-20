@@ -9,9 +9,9 @@ import PasswordFields, { passwordsOk } from "@/components/PasswordFields";
 type Mode = "login" | "register" | "forgot";
 type Step = "form" | "code" | "password" | "twofactor";
 
-const inputCls = "w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600";
+const inputCls = "w-full text-base sm:text-xs p-3 rounded-xl border border-line-strong focus:border-bronze-ink focus-visible:outline-2 focus-visible:outline-bronze-ink";
 const primaryBtn =
-  "w-full bg-neutral-900 hover:bg-amber-600 text-white font-semibold py-3.5 rounded-xl transition-colors shadow-sm disabled:opacity-50 mt-2";
+  "w-full bg-ink hover:bg-bronze-ink text-canvas font-semibold py-3.5 rounded-xl transition-colors shadow-sm disabled:opacity-50 mt-2";
 
 async function post(url: string, body: object) {
   const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -162,11 +162,11 @@ export default function AuthForms({ onAuthenticated }: { onAuthenticated: (user:
     return (
       <div className="space-y-4">
         <div className="text-center space-y-1">
-          <h2 className="text-lg font-serif font-bold text-neutral-900">İki Aşamalı Doğrulama</h2>
-          <p className="text-xs text-neutral-500">E-postanıza Gönderilen 6 Haneli Kodu Girin</p>
+          <h2 className="text-lg font-serif font-bold text-ink">İki Aşamalı Doğrulama</h2>
+          <p className="text-xs text-ink-muted">E-postanıza Gönderilen 6 Haneli Kodu Girin</p>
         </div>
         <CodeStep email={normEmail} initialWait={initialWait} busy={busy} onSubmit={verify2fa} onResend={resend2fa} submitLabel="Giriş Yap" />
-        <button type="button" onClick={() => switchMode("login")} className="w-full text-xs text-neutral-500 hover:text-amber-700">
+        <button type="button" onClick={() => switchMode("login")} className="w-full text-xs text-ink-muted hover:text-bronze-ink">
           ← Geri dön
         </button>
       </div>
@@ -176,21 +176,21 @@ export default function AuthForms({ onAuthenticated }: { onAuthenticated: (user:
   if (mode === "login") {
     return (
       <>
-        <div className="flex bg-neutral-100 p-1 rounded-2xl text-xs font-semibold">
-          <button type="button" aria-pressed="true" className="flex-1 py-2.5 rounded-xl bg-white text-neutral-900 shadow-sm">Giriş Yap</button>
-          <button type="button" aria-pressed="false" onClick={() => switchMode("register")} className="flex-1 py-2.5 rounded-xl text-neutral-500 hover:text-neutral-900">
+        <div className="flex bg-surface p-1 rounded-2xl text-xs font-semibold">
+          <button type="button" aria-pressed="true" className="flex-1 py-2.5 rounded-xl bg-raised text-ink shadow-sm">Giriş Yap</button>
+          <button type="button" aria-pressed="false" onClick={() => switchMode("register")} className="flex-1 py-2.5 rounded-xl text-ink-muted hover:text-ink">
             Kayıt Ol
           </button>
         </div>
         <form onSubmit={login} className="space-y-4 text-xs">
           <div>
-            <label className="font-semibold text-neutral-700 block mb-1">E-posta Adresi</label>
+            <label className="font-semibold text-ink-muted block mb-1">E-posta Adresi</label>
             <input aria-label="E-posta adresi" required type="email" autoComplete="email" placeholder="ornek@mail.com" value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} />
           </div>
           <div>
-            <label className="font-semibold text-neutral-700 block mb-1">Şifre</label>
+            <label className="font-semibold text-ink-muted block mb-1">Şifre</label>
             <PasswordInput aria-label="Şifre" required autoComplete="current-password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className={inputCls} />
-            <button type="button" onClick={() => switchMode("forgot")} className="mt-2 text-amber-700 hover:underline font-semibold">
+            <button type="button" onClick={() => switchMode("forgot")} className="mt-2 text-bronze-ink hover:underline font-semibold">
               Şifremi Unuttum?
             </button>
           </div>
@@ -207,14 +207,14 @@ export default function AuthForms({ onAuthenticated }: { onAuthenticated: (user:
   return (
     <>
       {isRegister ? (
-        <div className="flex bg-neutral-100 p-1 rounded-2xl text-xs font-semibold">
-          <button type="button" aria-pressed="false" onClick={() => switchMode("login")} className="flex-1 py-2.5 rounded-xl text-neutral-500 hover:text-neutral-900">Giriş Yap</button>
-          <button type="button" aria-pressed="true" className="flex-1 py-2.5 rounded-xl bg-white text-neutral-900 shadow-sm">Kayıt Ol</button>
+        <div className="flex bg-surface p-1 rounded-2xl text-xs font-semibold">
+          <button type="button" aria-pressed="false" onClick={() => switchMode("login")} className="flex-1 py-2.5 rounded-xl text-ink-muted hover:text-ink">Giriş Yap</button>
+          <button type="button" aria-pressed="true" className="flex-1 py-2.5 rounded-xl bg-raised text-ink shadow-sm">Kayıt Ol</button>
         </div>
       ) : (
         <div className="text-center space-y-1">
-          <h2 className="text-lg font-serif font-bold text-neutral-900">Şifremi Unuttum</h2>
-          <p className="text-xs text-neutral-500">E-posta adresinize gönderilen kodla yeni şifre belirleyin.</p>
+          <h2 className="text-lg font-serif font-bold text-ink">Şifremi Unuttum</h2>
+          <p className="text-xs text-ink-muted">E-posta adresinize gönderilen kodla yeni şifre belirleyin.</p>
         </div>
       )}
 
@@ -222,19 +222,19 @@ export default function AuthForms({ onAuthenticated }: { onAuthenticated: (user:
         <form onSubmit={sendCode} className="space-y-4 text-xs">
           {isRegister && (
             <div>
-              <label className="font-semibold text-neutral-700 block mb-1">Adınız Soyadınız</label>
+              <label className="font-semibold text-ink-muted block mb-1">Adınız Soyadınız</label>
               <input aria-label="Adınız Soyadınız" required type="text" placeholder="Ad Soyad" value={name} onChange={(e) => setName(e.target.value)} className={inputCls} />
             </div>
           )}
           <div>
-            <label className="font-semibold text-neutral-700 block mb-1">E-posta Adresi</label>
+            <label className="font-semibold text-ink-muted block mb-1">E-posta Adresi</label>
             <input aria-label="E-posta adresi" required type="email" autoComplete="email" placeholder="ornek@mail.com" value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} />
           </div>
           <button type="submit" disabled={busy || (isRegister && name.trim().length < 2)} className={primaryBtn}>
             {busy ? "Gönderiliyor..." : "Doğrulama Kodu Gönder"}
           </button>
           {!isRegister && (
-            <button type="button" onClick={() => switchMode("login")} className="w-full text-neutral-500 hover:text-amber-700">
+            <button type="button" onClick={() => switchMode("login")} className="w-full text-ink-muted hover:text-bronze-ink">
               ← Girişe dön
             </button>
           )}

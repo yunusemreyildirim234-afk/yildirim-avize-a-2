@@ -23,7 +23,7 @@ export default function PasswordInput({ className = "", ...rest }: Props) {
         onClick={() => setVisible((v) => !v)}
         aria-label={visible ? "Şifreyi gizle" : "Şifreyi göster"}
         aria-pressed={visible}
-        className="absolute right-0 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-11 h-11 rounded-xl text-neutral-600 hover:text-neutral-900 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-amber-600"
+        className="absolute right-0 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-11 h-11 rounded-xl text-ink-muted hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-bronze-ink"
       >
         {visible ? <EyeOff aria-hidden="true" className="w-4 h-4" /> : <Eye aria-hidden="true" className="w-4 h-4" />}
       </button>

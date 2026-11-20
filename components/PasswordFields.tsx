@@ -6,7 +6,7 @@ import { PASSWORD_RULES, isStrongPassword } from "@/lib/validation";
 
 export const passwordsOk = (password: string, confirm: string) => isStrongPassword(password) && password === confirm;
 
-const inputCls = "w-full text-base sm:text-xs p-3 rounded-xl border border-neutral-300 focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600";
+const inputCls = "w-full text-base sm:text-xs p-3 rounded-xl border border-line-strong focus:border-bronze-ink focus-visible:outline-2 focus-visible:outline-bronze-ink";
 
 /** Şifre + şifre tekrarı; kurallar ve eşleşme canlı gösterilir. */
 export default function PasswordFields({
@@ -25,7 +25,7 @@ export default function PasswordFields({
   return (
     <div className="space-y-3">
       <div>
-        <label className="font-semibold text-neutral-700 block mb-1">{label}</label>
+        <label className="font-semibold text-ink-muted block mb-1">{label}</label>
         <PasswordInput
           aria-label={label}
           required
@@ -40,8 +40,8 @@ export default function PasswordFields({
         {PASSWORD_RULES.map((r) => {
           const ok = r.test(password);
           return (
-            <li key={r.key} className={`flex items-center gap-1.5 text-[11px] ${ok ? "text-emerald-600 font-semibold" : "text-neutral-400"}`}>
-              {ok ? <Check aria-hidden="true" className="w-3 h-3" /> : <span aria-hidden="true" className="w-3 h-3 rounded-full border border-neutral-300" />}
+            <li key={r.key} className={`flex items-center gap-1.5 text-[11px] ${ok ? "text-emerald-600 font-semibold" : "text-ink-subtle"}`}>
+              {ok ? <Check aria-hidden="true" className="w-3 h-3" /> : <span aria-hidden="true" className="w-3 h-3 rounded-full border border-line-strong" />}
               {r.label}
             </li>
           );
@@ -49,7 +49,7 @@ export default function PasswordFields({
       </ul>
 
       <div>
-        <label className="font-semibold text-neutral-700 block mb-1">{label} Tekrarı</label>
+        <label className="font-semibold text-ink-muted block mb-1">{label} Tekrarı</label>
         <PasswordInput
           aria-label={`${label} tekrarı`}
           required

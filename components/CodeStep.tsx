@@ -38,7 +38,7 @@ export default function CodeStep({
 
   return (
     <div className="space-y-3 text-xs">
-      <p className="text-neutral-600">
+      <p className="text-ink-muted">
         <strong className="break-all">{email}</strong> adresine 6 haneli doğrulama kodu gönderdik. Kod 10 dakika geçerlidir.
       </p>
       <input
@@ -49,13 +49,13 @@ export default function CodeStep({
         value={code}
         onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
         placeholder="______"
-        className="w-full p-3 text-center text-2xl font-mono tracking-[0.5em] rounded-xl border border-neutral-300 focus:border-amber-600 focus-visible:outline-2 focus-visible:outline-amber-600"
+        className="w-full p-3 text-center text-2xl font-mono tracking-[0.5em] rounded-xl border border-line-strong focus:border-bronze-ink focus-visible:outline-2 focus-visible:outline-bronze-ink"
       />
       <button
         type="button"
         disabled={busy || code.length !== 6}
         onClick={() => onSubmit(code)}
-        className="w-full bg-neutral-900 hover:bg-amber-600 text-white font-semibold py-3.5 rounded-xl transition-colors disabled:opacity-50"
+        className="w-full bg-ink hover:bg-bronze-ink text-canvas font-semibold py-3.5 rounded-xl transition-colors disabled:opacity-50"
       >
         {busy ? "Doğrulanıyor..." : submitLabel}
       </button>
@@ -63,7 +63,7 @@ export default function CodeStep({
         type="button"
         disabled={wait > 0 || busy}
         onClick={resend}
-        className="w-full text-neutral-600 hover:text-amber-700 disabled:text-neutral-400 font-semibold py-1"
+        className="w-full text-ink-muted hover:text-bronze-ink disabled:text-ink-subtle font-semibold py-1"
       >
         {wait > 0 ? `Yeni kod için ${wait} sn bekleyin` : "Kodu tekrar gönder"}
       </button>
