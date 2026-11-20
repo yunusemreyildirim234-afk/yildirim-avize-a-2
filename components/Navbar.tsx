@@ -14,6 +14,7 @@ import {
   LogOut,
   Menu,
   Phone,
+  Search,
   Shield,
   X,
   MessageSquare,
@@ -324,6 +325,21 @@ export default function Navbar({ extraCategories = [], fixedOverrides = {}, show
                 <X aria-hidden="true" className="w-5 h-5 text-ink-muted" />
               </button>
             </div>
+            <form action="/arama" method="get" role="search" className="px-4 py-3 border-b border-line shrink-0">
+              <div className="relative">
+                <Search aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-subtle" />
+                <input
+                  type="search"
+                  name="q"
+                  maxLength={100}
+                  enterKeyHint="search"
+                  autoComplete="off"
+                  aria-label="Çekmecede ürün ara"
+                  placeholder="Ürün adı veya model kodu"
+                  className="w-full rounded-full border border-line-strong bg-raised pl-9 pr-3 py-2.5 text-base text-ink placeholder:text-ink-subtle focus:outline-none focus:border-bronze-ink focus:ring-2 focus:ring-bronze/20"
+                />
+              </div>
+            </form>
             <div className="flex-1 overflow-y-auto p-3 space-y-5">
               <div>
                 <h2 className="px-3 pb-1 text-[11px] font-bold uppercase tracking-wider text-ink-subtle">Koleksiyonlar</h2>
