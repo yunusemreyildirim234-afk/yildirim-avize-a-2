@@ -6,6 +6,7 @@
  * Anlamsal renk jetonları (--ya-*): açık ve koyu değerler ayrı tanımlanır; aşağıdaki .dark ölçek ters çevirmesi bunlara dokunmaz.
  * Kontrastlar: docs/kod-denetimi/ui-yenileme-plani.md Bölüm 4.3. bronze (#A27B5C) yalnız dekor; yazı/düğme için bronze-ink.
  * night ve bronze-soft tema-bağımsızdır (.keep-theme içindeki koyu alanlar için).
+ * on-photo ve scrim de tema-bağımsızdır: fotoğraf üstü beyaz metin ve karartma katmanı (hero), açık/koyu temada aynı görünür.
  */
 :root {
   --ya-canvas: #faf9f6;
@@ -25,6 +26,8 @@
   --ya-focus: #7c5a3e;
   --ya-night: #1c1c1c;
   --ya-bronze-soft: #c9a27e;
+  --ya-on-photo: #ffffff;
+  --ya-scrim: #000000;
   --background: var(--ya-canvas);
   --foreground: var(--ya-ink);
 }
@@ -46,6 +49,8 @@
   --color-sale: var(--ya-sale);
   --color-night: var(--ya-night);
   --color-bronze-soft: var(--ya-bronze-soft);
+  --color-on-photo: var(--ya-on-photo);
+  --color-scrim: var(--ya-scrim);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
