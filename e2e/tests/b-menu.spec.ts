@@ -75,11 +75,10 @@ test.describe("b) Menü ve kategoriler", () => {
     await expect.poll(() => strip.evaluate((el) => el.scrollLeft)).toBeGreaterThan(0);
   });
 
-  test("masaüstü açılır menü sabit sırayı gösterir", async ({ page }, info) => {
+  test("masaüstü kategori satırı sabit sırayı gösterir", async ({ page }, info) => {
     test.skip(info.project.name !== "desktop", "yalnızca masaüstü");
     await openOk(page, "/");
-    await page.getByRole("button", { name: "Koleksiyonlar menüsünü aç" }).hover();
-    const items = page.getByRole("menuitem").filter({ hasText: /./ }).locator("xpath=self::a[starts-with(@href,'/kategori/')]");
+    const items = page.locator('nav[aria-label="Kategoriler"] a');
     await expect(items.first()).toBeVisible();
     const hrefs = await items.evaluateAll((els) => els.map((a) => a.getAttribute("href") ?? ""));
     expect(hrefs[0]).toBe("/kategori/tum");
