@@ -76,12 +76,12 @@ export default async function Home() {
       <PromoStrip />
 
       {/* 2. Beyaz -> açık gri: koleksiyonlar ve öne çıkanlar */}
-      <section className="bg-gradient-to-b from-white via-zinc-50 to-zinc-100 px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
+      <section className="bg-canvas px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
         <div className="max-w-7xl mx-auto space-y-16">
           <div>
             <div className="text-center mb-8 space-y-2">
-              <span className="text-xs uppercase tracking-widest text-amber-700 font-semibold">Koleksiyonlar</span>
-              <h2 className="text-2xl sm:text-3xl font-serif font-bold text-zinc-900">Aydınlatma Koleksiyonları</h2>
+              <span className="text-xs uppercase tracking-widest text-bronze-ink font-semibold">Koleksiyonlar</span>
+              <h2 className="text-2xl sm:text-3xl font-serif font-bold text-ink">Aydınlatma Koleksiyonları</h2>
             </div>
             <CollectionsRow count={collections.length}>
               {collections.map((c) => {
@@ -92,10 +92,10 @@ export default async function Home() {
                     role="listitem"
                     href={`/kategori/${c.slug}`}
                     data-testid="koleksiyon-kart"
-                    className="group flex flex-col rounded-2xl overflow-hidden bg-white border border-zinc-200 shrink-0 snap-start w-[calc(50%-8px)] lg:w-[calc(25%-12px)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600"
+                    className="group flex flex-col rounded-2xl overflow-hidden bg-raised border border-line shrink-0 snap-start w-[calc(50%-8px)] lg:w-[calc(25%-12px)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze-ink"
                   >
                     {/* Fotoğraf alanı: oran (4/5) ve kırpma (object-cover) eskisiyle aynı; yazı artık fotoğrafın üstünde değil */}
-                    <div className="relative aspect-[4/5] overflow-hidden bg-zinc-200">
+                    <div className="relative aspect-[4/5] overflow-hidden bg-surface">
                       {cover && (
                         <Image
                           src={smallImage(cover)}
@@ -108,9 +108,9 @@ export default async function Home() {
                       )}
                     </div>
                     {/* Düz zeminli başlık şeridi: açık temada beyaz/koyu yazı, koyu temada renk ölçeği ters döner. Uzun başlık kesilmez, alt satıra iner. */}
-                    <div className="flex-1 border-t border-zinc-200 bg-white px-3 py-3 sm:px-4 sm:py-3.5">
-                      <h3 className="font-serif font-bold text-sm sm:text-lg leading-snug text-zinc-900 break-words">{c.title}</h3>
-                      <span className="mt-1 block text-xs font-semibold text-amber-800 group-hover:underline">Keşfet →</span>
+                    <div className="flex-1 border-t border-line bg-raised px-3 py-3 sm:px-4 sm:py-3.5">
+                      <h3 className="font-serif font-bold text-sm sm:text-lg leading-snug text-ink break-words">{c.title}</h3>
+                      <span className="mt-1 block text-xs font-semibold text-bronze-ink group-hover:underline">Keşfet →</span>
                     </div>
                   </Link>
                 );
@@ -121,15 +121,15 @@ export default async function Home() {
           <div>
             <div className="flex items-end justify-between mb-8 gap-4">
               <div className="space-y-2">
-                <span className="text-xs uppercase tracking-widest text-amber-700 font-semibold">Vitrin</span>
-                <h2 className="text-2xl sm:text-3xl font-serif font-bold text-zinc-900">Öne Çıkan Ürünler</h2>
+                <span className="text-xs uppercase tracking-widest text-bronze-ink font-semibold">Vitrin</span>
+                <h2 className="text-2xl sm:text-3xl font-serif font-bold text-ink">Öne Çıkan Ürünler</h2>
               </div>
-              <Link href="/kategori/one-cikanlar" className="text-xs font-semibold text-zinc-700 hover:text-amber-700 shrink-0">
+              <Link href="/kategori/one-cikanlar" className="text-xs font-semibold text-ink-muted hover:text-bronze-ink shrink-0">
                 Tümünü Gör →
               </Link>
             </div>
             {featured.length === 0 ? (
-              <p className="text-sm text-zinc-500 text-center py-10">Ürünler yakında burada olacak.</p>
+              <p className="text-sm text-ink-muted text-center py-10">Ürünler yakında burada olacak.</p>
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
                 {featured.map((p, i) => (
