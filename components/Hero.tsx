@@ -11,10 +11,14 @@ function LogoEmblem() {
 
 export default function Hero({ categories = [] }: { categories?: { slug: string; title: string }[] }) {
   return (
-    <section className="bg-white px-4 pt-6 pb-8 sm:pt-8 sm:pb-12">
+    <section className="bg-canvas text-ink px-4 pt-6 pb-8 sm:pt-8 sm:pb-12">
       <div className="max-w-3xl mx-auto text-center">
         <LogoEmblem />
-        <h1 className="mt-1 text-4xl sm:text-6xl font-serif font-black tracking-tight text-zinc-950">Yıldırım Avize</h1>
+        <h1 className="mt-1 font-serif font-black tracking-tight text-ink">
+          <span className="block text-4xl sm:text-6xl">Yıldırım Avize</span>
+          <span className="sr-only"> — </span>
+          <span className="mt-2 block text-base sm:text-xl font-bold tracking-normal text-ink-muted">Kristal, klasik ve modern avizeler</span>
+        </h1>
         <Image src="/logo-uc-gen.png" alt="" width={128} height={65} className="mx-auto mt-1 h-auto w-12 sm:w-14" />
 
         <div className="mt-5 sm:mt-6 max-w-2xl mx-auto">
@@ -28,7 +32,7 @@ export default function Hero({ categories = [] }: { categories?: { slug: string;
                 <li key={c.slug} className="shrink-0">
                   <Link
                     href={`/kategori/${c.slug}`}
-                    className="inline-flex items-center rounded-full border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700 whitespace-nowrap hover:border-amber-600 hover:text-amber-800 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600"
+                    className="inline-flex items-center rounded-full border border-line-strong bg-raised px-3 py-1.5 text-xs font-semibold text-ink-muted whitespace-nowrap hover:border-bronze hover:text-bronze-ink transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze-ink"
                   >
                     {c.title}
                   </Link>
@@ -38,8 +42,8 @@ export default function Hero({ categories = [] }: { categories?: { slug: string;
           </nav>
         )}
 
-        <p className="mt-5 text-lg sm:text-xl font-serif font-bold tracking-[0.15em] text-[#B5002A]">Avize &amp; Aydınlatma</p>
-        <p className="mt-2 text-xs sm:text-sm text-zinc-500">Beyoğlu Şişhane&apos;den Türkiye&apos;ye kristal, modern ve klasik avizeler</p>
+        <p className="mt-5 text-lg sm:text-xl font-serif font-bold tracking-[0.15em] text-bronze-ink">Avize &amp; Aydınlatma</p>
+        <p className="mt-2 text-xs sm:text-sm text-ink-muted">Beyoğlu Şişhane&apos;den Türkiye&apos;ye kristal, modern ve klasik avizeler</p>
       </div>
     </section>
   );
