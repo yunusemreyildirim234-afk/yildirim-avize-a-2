@@ -7,8 +7,8 @@ import { isBlobImage, smallImage } from "@/lib/img";
 
 const DRAG_THRESHOLD = 8; // px: bunu aşan hareket sürükleme sayılır, bırakınca bağlantı tıklaması bastırılır
 const SIZES = "(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw";
-// Tüm slaytlarda aynı: sığdır, açık temada çarp, hover'da %3 büyüt (hareket azaltma tercihinde büyütme yok)
-const IMG = "object-contain mix-blend-multiply dark:mix-blend-normal transition-transform duration-500 motion-safe:group-hover:scale-[1.03]";
+// Tüm slaytlarda aynı: sığdır, açık temada çarp. Taban scale-[1.02]: kare olmayan fotoğrafta (örn. 1000x990) object-contain'in bıraktığı 1-2 px'lik üst/alt boşluğu kapatır (kutu overflow-hidden kırpar); hover'da %5 (hareket azaltma tercihinde yalnız taban kalır)
+const IMG = "object-contain mix-blend-multiply dark:mix-blend-normal scale-[1.02] transition-transform duration-500 motion-safe:group-hover:scale-[1.05]";
 
 /**
  * Ürün kartı görseli. Tek görselde eski çıktı AYNEN (ek öğe yok). 2+ görselde: yatay scroll-snap, masaüstünde ok, altta noktalar.
