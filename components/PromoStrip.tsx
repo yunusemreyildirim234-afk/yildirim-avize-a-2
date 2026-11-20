@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Landmark, MapPin, Sparkles, Tag, Truck, type LucideIcon } from "lucide-react";
-import { CopyCode, DismissibleStrip, ScrollList } from "@/components/PromoStripClient";
+import { ClampText, CopyCode, DismissibleStrip, ScrollList } from "@/components/PromoStripClient";
 import { avantajSurumu } from "@/lib/promo-dismiss";
 import { getPromoViews } from "@/lib/promo-data";
 import { getLadderContext } from "@/lib/showcase";
@@ -34,7 +34,7 @@ function Cell({ item }: { item: Item }) {
       </span>
       <div className="min-w-0 flex-1">
         <h3 className="text-sm font-semibold text-ink leading-snug line-clamp-3">{item.title}</h3>
-        <p className="mt-0.5 text-xs text-ink-muted leading-snug line-clamp-3">{item.text}</p>
+        <ClampText text={item.text} />
         {item.code && (
           <div className="mt-1.5">
             <CopyCode

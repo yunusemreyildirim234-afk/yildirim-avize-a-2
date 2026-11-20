@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, ChevronLeft, ChevronRight, Copy, X } from "lucide-react";
 import { AVANTAJ_ACMA_OLAYI, AVANTAJ_DEGISTI_OLAYI, AVANTAJ_KAYIT_ANAHTARI, avantajGorunsunMu, kaydiCoz, type AvantajKaydi } from "@/lib/promo-dismiss";
@@ -204,7 +204,7 @@ export function ScrollList({ children }: { children: React.ReactNode }) {
       <ul
         ref={listRef}
         onFocus={(e) => e.target.scrollIntoView({ inline: "nearest", block: "nearest" })}
-        className="flex gap-4 overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex items-start gap-4 overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {children}
       </ul>
@@ -219,5 +219,45 @@ export function ScrollList({ children }: { children: React.ReactNode }) {
         </button>
       )}
     </div>
+  );
+}
+
+/** Avantaj metni: en fazla 3 satır; gerçekten taşıyorsa (scrollHeight > clientHeight) "Devamı" düğmesi çıkar, tıklanınca tamamı açılır. Açık/kapalı durumu yalnızca bu bileşende kalır (avantaj sürümüne karışmaz). */
+export function ClampText({ text }: { text: string }) {
+  const id = useId();
+  const ref = useRef<HTMLParagraphElement>(null);
+  const [open, setOpen] = useState(false);
+  const [overflow, setOverflow] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    // Yalnızca kısalmış (kapalı) haldeyken ölçülür; açıkken önceki sonuç korunur ki "Daha az" düğmesi kaybolmasın
+    const measure = () => {
+      if (!open) setOverflow(el.scrollHeight > el.clientHeight + 1);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [open, text]);
+
+  return (
+    <>
+      <p id={id} ref={ref} className={`mt-0.5 text-xs text-ink-muted leading-snug ${open ? "" : "line-clamp-3"}`}>
+        {text}
+      </p>
+      {overflow && (
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls={id}
+          onClick={() => setOpen((o) => !o)}
+          className="inline-flex items-center min-h-11 -my-1.5 text-xs font-medium text-bronze-ink underline underline-offset-2 hover:text-bronze-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze-ink"
+        >
+          {open ? "Daha az" : "Devamı"}
+        </button>
+      )}
+    </>
   );
 }
