@@ -38,21 +38,19 @@ export function DismissibleStrip({ surum, children }: { surum: string; children:
 
   if (visible === false) return null;
   return (
-    <section id="avantajlar" aria-label="Avantajlar" className={`relative bg-zinc-50 border-b border-zinc-200 scroll-mt-20 ${visible === null ? "invisible" : ""}`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-5">
-        <div className="flex items-center justify-between gap-3 mb-3">
-          <h2 className="text-xs uppercase tracking-widest font-semibold text-zinc-700">Avantajlar</h2>
-          <button
-            type="button"
-            onClick={hide}
-            aria-label="Gizle"
-            title="Gizle"
-            className="shrink-0 inline-flex items-center justify-center w-11 h-11 -my-2 -mr-2 rounded-full text-zinc-600 hover:bg-zinc-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600"
-          >
-            <X aria-hidden="true" className="w-4 h-4" />
-          </button>
-        </div>
+    <section id="avantajlar" aria-label="Avantajlar" className={`relative bg-canvas border-y border-line scroll-mt-20 ${visible === null ? "invisible" : ""}`}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-start gap-2">
+        <h2 className="sr-only">Avantajlar</h2>
         {children}
+        <button
+          type="button"
+          onClick={hide}
+          aria-label="Gizle"
+          title="Gizle"
+          className="shrink-0 inline-flex items-center justify-center w-11 h-11 -my-1 -mr-3 rounded-full text-ink-subtle hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze-ink"
+        >
+          <X aria-hidden="true" className="w-4 h-4" />
+        </button>
       </div>
     </section>
   );
@@ -155,13 +153,13 @@ export function CopyCode({ code, buttonClass, codeClass }: { code: string; butto
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <code ref={codeRef} className={`font-mono font-bold text-lg sm:text-xl tracking-wider rounded-lg px-3 py-1.5 select-all ${codeClass}`}>
+      <code ref={codeRef} className={`font-mono font-bold text-sm tracking-wider rounded-md px-2 py-1 select-all ${codeClass}`}>
         {code}
       </code>
       <button
         type="button"
         onClick={onCopy}
-        className={`inline-flex items-center justify-center gap-1.5 min-h-11 px-4 rounded-lg text-xs font-semibold transition-colors motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${buttonClass}`}
+        className={`inline-flex items-center justify-center gap-1.5 min-h-11 px-3 rounded-md text-xs font-semibold transition-colors motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze-ink ${buttonClass}`}
       >
         {state === "copied" ? <Check aria-hidden="true" className="w-4 h-4" /> : <Copy aria-hidden="true" className="w-4 h-4" />}
         {state === "copied" ? "Kopyalandı ✓" : "Kopyala"}

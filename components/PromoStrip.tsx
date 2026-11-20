@@ -1,72 +1,90 @@
 import Link from "next/link";
-import { ArrowRight, MapPin, Tag, Truck } from "lucide-react";
+import { Landmark, MapPin, Sparkles, Tag, Truck, type LucideIcon } from "lucide-react";
 import { CopyCode, DismissibleStrip } from "@/components/PromoStripClient";
 import { avantajSurumu } from "@/lib/promo-dismiss";
 import { getPromoViews } from "@/lib/promo-data";
-import type { PromoTheme, PromoView } from "@/lib/promo-cards";
+import { getLadderContext } from "@/lib/showcase";
+import { BANK_TRANSFER_DISCOUNT } from "@/lib/pricing";
+import type { PromoKind, PromoView } from "@/lib/promo-cards";
 
-// Marka logosunun renk ailesi; derin tonlar (700-800) üzerinde beyaz metin ve sarıda koyu metin: WCAG AA (>= 4.5:1).
-const THEMES: Record<PromoTheme, { card: string; chip: string; btn: string; link: string }> = {
-  kirmizi: { card: "bg-gradient-to-br from-red-700 to-rose-900 text-white", chip: "bg-white/15 text-white", btn: "bg-white text-red-900 hover:bg-red-50", link: "text-white underline decoration-white/60" },
-  turuncu: { card: "bg-gradient-to-br from-orange-700 to-amber-900 text-white", chip: "bg-white/15 text-white", btn: "bg-white text-orange-900 hover:bg-orange-50", link: "text-white underline decoration-white/60" },
-  sari: { card: "bg-gradient-to-br from-amber-300 to-yellow-400 text-zinc-900", chip: "bg-zinc-900/10 text-zinc-900", btn: "bg-zinc-900 text-white hover:bg-zinc-800", link: "text-zinc-900 underline decoration-zinc-900/50" },
-  yesil: { card: "bg-gradient-to-br from-emerald-700 to-green-900 text-white", chip: "bg-white/15 text-white", btn: "bg-white text-emerald-900 hover:bg-emerald-50", link: "text-white underline decoration-white/60" },
-  mavi: { card: "bg-gradient-to-br from-blue-800 to-sky-900 text-white", chip: "bg-white/15 text-white", btn: "bg-white text-blue-900 hover:bg-blue-50", link: "text-white underline decoration-white/60" },
-  mor: { card: "bg-gradient-to-br from-purple-800 to-violet-900 text-white", chip: "bg-white/15 text-white", btn: "bg-white text-purple-900 hover:bg-purple-50", link: "text-white underline decoration-white/60" },
-};
+const MAX_ITEMS = 4;
+const ICONS: Record<PromoKind | "HAVALE", LucideIcon> = { COUPON: Tag, SHIPPING: Truck, PICKUP: MapPin, TEXT: Sparkles, HAVALE: Landmark };
+// Şerit sırası: kupon, kargo, mağaza, (Havale), serbest metin. Aynı türde admin sırası korunur.
+const ORDER: Record<PromoKind, number> = { COUPON: 0, SHIPPING: 1, PICKUP: 2, TEXT: 4 };
+const HAVALE_ORDER = 3;
 
-const ICONS = { COUPON: Tag, SHIPPING: Truck, PICKUP: MapPin, TEXT: ArrowRight } as const;
+type Item = { id: string; icon: LucideIcon; title: string; text: string; code?: string; link?: { label: string; href: string } };
 
-function Card({ v }: { v: PromoView }) {
-  const t = THEMES[v.theme];
-  const Icon = ICONS[v.kind];
-  const linkCls = `inline-flex items-center gap-1 min-h-11 text-xs font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${t.link}`;
+function toItem(v: PromoView): Item {
+  const base = { id: v.id, icon: ICONS[v.kind], title: v.title, text: v.text, ...(v.code ? { code: v.code } : {}) };
+  if (v.kind === "SHIPPING") return { ...base, link: { label: "Aras Kargo · canlı takip", href: "/kargo-takip" } };
+  if (v.kind === "PICKUP") return { ...base, link: { label: "Beyoğlu Şişhane", href: "/iletisim" } };
+  if (v.kind === "TEXT" && v.href) return { ...base, link: { label: "Detaylar", href: v.href } };
+  return base;
+}
+
+const linkCls = "inline-flex items-center min-h-6 text-xs font-medium text-bronze-ink underline underline-offset-2 hover:text-bronze-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze-ink";
+
+function Cell({ item }: { item: Item }) {
+  const Icon = item.icon;
   return (
-    <article className={`snap-start shrink-0 basis-[85%] sm:basis-auto rounded-2xl p-5 shadow-sm flex flex-col gap-3 ${t.card}`}>
-      <div className="flex items-center gap-2">
-        <span className={`inline-flex items-center justify-center w-9 h-9 rounded-full ${t.chip}`}>
-          <Icon aria-hidden="true" className="w-4 h-4" />
-        </span>
-        <h3 className="font-serif font-bold text-lg leading-tight">{v.title}</h3>
+    <li className="flex items-start gap-3 min-w-0">
+      <span className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full bg-surface text-bronze-ink">
+        <Icon aria-hidden="true" className="w-4 h-4" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <h3 className="text-sm font-semibold text-ink leading-snug">{item.title}</h3>
+        <p className="mt-0.5 text-xs text-ink-muted leading-snug line-clamp-2">{item.text}</p>
+        {item.code && (
+          <div className="mt-1.5">
+            <CopyCode
+              code={item.code}
+              codeClass="bg-surface text-ink"
+              buttonClass="border border-line-strong text-ink hover:bg-surface"
+            />
+          </div>
+        )}
+        {item.link &&
+          (item.link.href.startsWith("/") ? (
+            <Link href={item.link.href} className={linkCls}>
+              {item.link.label}
+            </Link>
+          ) : (
+            <a href={item.link.href} target="_blank" rel="noopener noreferrer" className={linkCls}>
+              {item.link.label}
+            </a>
+          ))}
       </div>
-      <p className="text-sm leading-relaxed">{v.text}</p>
-      {v.code && <CopyCode code={v.code} buttonClass={t.btn} codeClass="bg-black/25 text-inherit" />}
-      {v.cta &&
-        (v.cta.external ? (
-          <a href={v.cta.href} target="_blank" rel="noopener noreferrer" className={linkCls}>
-            {v.cta.label} <ArrowRight aria-hidden="true" className="w-3.5 h-3.5" />
-          </a>
-        ) : (
-          <Link href={v.cta.href} className={linkCls}>
-            {v.cta.label}
-          </Link>
-        ))}
-      {v.href &&
-        (v.href.startsWith("/") ? (
-          <Link href={v.href} className={linkCls}>
-            Detaylar <ArrowRight aria-hidden="true" className="w-3.5 h-3.5" />
-          </Link>
-        ) : (
-          <a href={v.href} target="_blank" rel="noopener noreferrer" className={linkCls}>
-            Detaylar <ArrowRight aria-hidden="true" className="w-3.5 h-3.5" />
-          </a>
-        ))}
-    </article>
+    </li>
   );
 }
 
-/** Hero'nun altındaki "Avantajlar" şeridi. Sunucu bileşeni; yalnızca kopyala ve gizle düğmeleri istemci adasıdır. Görünür kart yoksa hiçbir şey çizilmez. */
+/** Hero'nun altındaki "Avantajlar" güven şeridi. Sunucu bileşeni; yalnızca kopyala ve gizle düğmeleri istemci adasıdır. Yönetici kart bırakmadıysa hiçbir şey çizilmez. */
 export default async function PromoStrip() {
   const views = await getPromoViews();
   if (views.length === 0) return null;
   const surum = avantajSurumu(views);
+  const ctx = await getLadderContext();
+
+  const ranked: { order: number; item: Item }[] = views.map((v) => ({ order: ORDER[v.kind], item: toItem(v) }));
+  // Havale/EFT: toplam indirim üst sınırı 0 ise (ek indirim yok) indirim vaat eden öğe gösterilmez
+  if (ctx.maxTotalDiscountPct !== 0) {
+    const pct = (Math.round(BANK_TRANSFER_DISCOUNT * 10000) / 100).toLocaleString("tr-TR", { maximumFractionDigits: 2 });
+    ranked.push({ order: HAVALE_ORDER, item: { id: "havale", icon: ICONS.HAVALE, title: `Havale/EFT'de %${pct} indirim`, text: "Net tutar ürün sayfasında" } });
+  }
+  const items = ranked
+    .map((r, i) => ({ ...r, i }))
+    .sort((a, b) => a.order - b.order || a.i - b.i)
+    .slice(0, MAX_ITEMS)
+    .map((r) => r.item);
+
   return (
     <DismissibleStrip surum={surum}>
-      <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-1 -mx-1 px-1 sm:mx-0 sm:px-0 sm:overflow-visible sm:grid sm:grid-cols-2 lg:grid-cols-3">
-        {views.map((v) => (
-          <Card key={v.id} v={v} />
+      <ul className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-4 flex-1 min-w-0">
+        {items.map((it) => (
+          <Cell key={it.id} item={it} />
         ))}
-      </div>
+      </ul>
     </DismissibleStrip>
   );
 }
