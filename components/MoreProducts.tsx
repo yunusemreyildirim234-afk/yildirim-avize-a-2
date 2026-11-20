@@ -38,7 +38,7 @@ export default function MoreProducts({ section, total, cols, dark = false, fallb
 
   const btn = dark
     ? "text-white border border-white/40 hover:bg-white hover:text-zinc-900"
-    : "text-zinc-800 border border-zinc-300 hover:border-amber-600 hover:text-amber-800";
+    : "text-ink border border-line-strong hover:border-bronze-ink hover:text-bronze-ink";
 
   return (
     <div className="mt-6 sm:mt-8">
@@ -54,7 +54,7 @@ export default function MoreProducts({ section, total, cols, dark = false, fallb
             aria-expanded={items.length > 0}
             aria-busy={loading}
             disabled={loading}
-            className={`mx-auto w-fit rounded-full px-6 py-3 text-xs font-semibold transition-colors disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-amber-600 ${btn}`}
+            className={`mx-auto w-fit rounded-full px-6 py-3 text-xs font-semibold transition-colors disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-bronze-ink ${btn}`}
           >
             {loading ? "Yükleniyor…" : `Daha fazla göster (${remaining})`}
           </button>

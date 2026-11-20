@@ -53,7 +53,7 @@ export default function HoverMenu({ trigger, label, align = "left", panelClassNa
           if (canHover() && e.detail > 0) setOpen(true);
           else setOpen((o) => !o);
         }}
-        className="flex items-center gap-1.5 rounded-full px-2 py-1.5 hover:bg-zinc-100 transition-colors"
+        className="flex items-center gap-1.5 rounded-full px-2 py-1.5 hover:bg-surface transition-colors"
       >
         {trigger(open)}
       </button>
@@ -62,7 +62,7 @@ export default function HoverMenu({ trigger, label, align = "left", panelClassNa
           role="menu"
           className={`absolute top-full pt-2 z-50 ${align === "right" ? "right-0" : "left-0"} ${panelClassName}`}
         >
-          <div className="bg-white rounded-2xl border border-zinc-200 shadow-2xl p-3">{children(() => setOpen(false))}</div>
+          <div className="bg-raised rounded-2xl border border-line shadow-2xl p-3">{children(() => setOpen(false))}</div>
         </div>
       )}
     </div>

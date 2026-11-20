@@ -23,7 +23,7 @@ export default function CopyCodeButton({ text, label = "Kod kopyalandı" }: { te
     <button
       type="button"
       onClick={copy}
-      className="shrink-0 inline-flex items-center gap-1 rounded-md bg-neutral-900 hover:bg-amber-600 text-white text-[10px] font-semibold px-2 py-1 transition-colors"
+      className="shrink-0 inline-flex items-center gap-1 rounded-md bg-ink hover:bg-bronze-ink text-canvas text-[10px] font-semibold px-2 py-1 transition-colors"
     >
       {copied ? <Check aria-hidden="true" className="w-3 h-3" /> : <Copy aria-hidden="true" className="w-3 h-3" />}
       {copied ? "Kopyalandı" : "Kopyala"}
