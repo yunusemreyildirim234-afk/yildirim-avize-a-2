@@ -7,11 +7,11 @@ import { getLadderContext } from "@/lib/showcase";
 import { BANK_TRANSFER_DISCOUNT } from "@/lib/pricing";
 import type { PromoKind, PromoView } from "@/lib/promo-cards";
 
-const MAX_ITEMS = 4;
 const ICONS: Record<PromoKind | "HAVALE", LucideIcon> = { COUPON: Tag, SHIPPING: Truck, PICKUP: MapPin, TEXT: Sparkles, HAVALE: Landmark };
 // Şerit sırası: kupon, kargo, mağaza, (Havale), serbest metin. Aynı türde admin sırası korunur.
 const ORDER: Record<PromoKind, number> = { COUPON: 0, SHIPPING: 1, PICKUP: 2, TEXT: 4 };
 const HAVALE_ORDER = 3;
+const HAVALE_RE = /havale|\beft\b/i;
 
 type Item = { id: string; icon: LucideIcon; title: string; text: string; code?: string; link?: { label: string; href: string } };
 
@@ -68,14 +68,17 @@ export default async function PromoStrip() {
 
   const ranked: { order: number; item: Item }[] = views.map((v) => ({ order: ORDER[v.kind], item: toItem(v) }));
   // Havale/EFT: toplam indirim üst sınırı 0 ise (ek indirim yok) indirim vaat eden öğe gösterilmez
-  if (ctx.maxTotalDiscountPct !== 0) {
+  // Admin'de zaten etkin bir Havale/EFT kartı varsa (başlık veya metinde "havale"/"EFT") koddan üretileni göstermeyiz; admin'inki Havale sırasına geçer.
+  const adminHavale = views.filter((v) => v.kind === "TEXT" && HAVALE_RE.test(`${v.title} ${v.text}`));
+  if (adminHavale.length > 0) {
+    for (const r of ranked) if (adminHavale.some((v) => v.id === r.item.id)) r.order = HAVALE_ORDER;
+  } else if (ctx.maxTotalDiscountPct !== 0) {
     const pct = (Math.round(BANK_TRANSFER_DISCOUNT * 10000) / 100).toLocaleString("tr-TR", { maximumFractionDigits: 2 });
     ranked.push({ order: HAVALE_ORDER, item: { id: "havale", icon: ICONS.HAVALE, title: `Havale/EFT'de %${pct} indirim`, text: "Net tutar ürün sayfasında" } });
   }
   const items = ranked
     .map((r, i) => ({ ...r, i }))
     .sort((a, b) => a.order - b.order || a.i - b.i)
-    .slice(0, MAX_ITEMS)
     .map((r) => r.item);
 
   return (
