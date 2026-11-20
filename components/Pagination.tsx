@@ -25,8 +25,8 @@ export default function Pagination({
 }) {
   if (pages <= 1) return null;
   const href = (n: number) => pageHref(path, n, params);
-  const base = "inline-flex min-w-10 h-10 items-center justify-center rounded-lg border px-3 text-sm font-medium focus-visible:outline-2 focus-visible:outline-amber-600";
-  const idle = `${base} border-zinc-200 bg-white text-zinc-700 hover:border-amber-600 hover:text-amber-800`;
+  const base = "inline-flex min-w-10 h-10 items-center justify-center rounded-lg border px-3 text-sm font-medium focus-visible:outline-2 focus-visible:outline-bronze-ink";
+  const idle = `${base} border-line bg-raised text-ink-muted hover:border-bronze-ink hover:text-bronze-ink`;
   return (
     <nav aria-label={label} className={`${className} flex flex-nowrap sm:flex-wrap items-center justify-between sm:justify-center gap-2`}>
       {page > 1 ? (
@@ -35,21 +35,21 @@ export default function Pagination({
           <span className="sr-only sm:not-sr-only">← Önceki</span>
         </Link>
       ) : (
-        <span aria-disabled="true" className={`${base} border-zinc-100 text-zinc-300`}>
+        <span aria-disabled="true" className={`${base} border-line text-ink-subtle`}>
           <ChevronLeft aria-hidden="true" className="h-4 w-4 sm:hidden" />
           <span className="sr-only sm:not-sr-only">← Önceki</span>
         </span>
       )}
-      <span className="sm:hidden text-sm text-zinc-600 px-2">
+      <span className="sm:hidden text-sm text-ink-muted px-2">
         Sayfa {page} / {pages}
       </span>
       {pageItems(page, pages).map((it, i) =>
         it === "gap" ? (
-          <span key={`g${i}`} aria-hidden="true" className="hidden sm:inline px-1 text-zinc-400">
+          <span key={`g${i}`} aria-hidden="true" className="hidden sm:inline px-1 text-ink-subtle">
             …
           </span>
         ) : it === page ? (
-          <span key={it} aria-current="page" className={`${base} max-sm:hidden border-zinc-900 bg-zinc-900 text-white`}>
+          <span key={it} aria-current="page" className={`${base} max-sm:hidden border-ink bg-ink text-canvas`}>
             {it}
           </span>
         ) : (
@@ -64,7 +64,7 @@ export default function Pagination({
           <span className="sr-only sm:not-sr-only">Sonraki →</span>
         </Link>
       ) : (
-        <span aria-disabled="true" className={`${base} border-zinc-100 text-zinc-300`}>
+        <span aria-disabled="true" className={`${base} border-line text-ink-subtle`}>
           <ChevronRight aria-hidden="true" className="h-4 w-4 sm:hidden" />
           <span className="sr-only sm:not-sr-only">Sonraki →</span>
         </span>
