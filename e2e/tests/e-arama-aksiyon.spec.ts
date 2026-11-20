@@ -25,14 +25,6 @@ const cartQty = (page: P) =>
     }
   });
 
-async function typeBig(page: P, text: string) {
-  const box = page.getByLabel("Avize ara");
-  await expect(async () => {
-    await box.fill(text, { timeout: 3000 });
-    await expect(box).toHaveValue(text, { timeout: 2000 });
-  }).toPass({ timeout: 20_000 });
-}
-
 async function typeTop(page: P, mobile: boolean, text: string) {
   await expect(async () => {
     if (mobile && !(await topInput(page).count())) await page.getByRole("button", { name: "Ürün ara" }).first().click();
@@ -42,22 +34,6 @@ async function typeTop(page: P, mobile: boolean, text: string) {
 }
 
 test.describe("e) Arama listelerinde ürün aksiyonları (salt okunur)", () => {
-  test("büyük liste: 'Sepete Ekle' yazısına ve + düğmesine basmak sepete ekler", async ({ page, request }) => {
-    const p = await pick(request, false, 2);
-    test.skip(!p, "stoğu en az 2 olan tek seçenekli ürün yok");
-    await openOk(page, "/");
-    await typeBig(page, p!.title);
-    const row = page.locator("div.absolute div.p-3").filter({ has: page.locator(`a[href="/urun/${p!.id}"]`) }).first();
-    await expect(row).toBeVisible();
-    // Kullanıcının bastığı şey: ortadaki "Sepete Ekle" yazısı
-    await row.getByRole("button", { name: "Sepete Ekle" }).click();
-    await expect.poll(() => cartQty(page), { message: "'Sepete Ekle' sonrası sepet adedi" }).toBe(1);
-    await row.getByRole("button", { name: "Adedi artır" }).click();
-    await expect.poll(() => cartQty(page)).toBe(2);
-    await expect(page).not.toHaveURL(/\/urun\//);
-    await expect(row).toBeVisible(); // liste kapanmadı
-  });
-
   test("üst arama: kalp ve + çalışır, liste kapanmaz, ürüne gitmez", async ({ page, request }, info) => {
     const p = await pick(request, false);
     test.skip(!p, "stokta tek seçenekli ürün yok");
@@ -102,13 +78,13 @@ test.describe("e) Arama listelerinde ürün aksiyonları (salt okunur)", () => {
     expect(await cartQty(page)).toBe(0);
   });
 
-  test("390 px: büyük ve üst arama listesinde yatay taşma yok", async ({ page, request }) => {
+  test("390 px: üst arama listesinde yatay taşma yok", async ({ page, request }) => {
     const p = await pick(request, false);
     test.skip(!p, "ürün yok");
     await page.setViewportSize({ width: 390, height: 844 });
     await openOk(page, "/");
-    await typeBig(page, p!.title);
-    await expect(page.locator("div.absolute div.p-3").first()).toBeVisible();
+    await typeTop(page, true, p!.title);
+    await expect(page.getByRole("listbox", { name: "Arama sonuçları" }).locator("li").first()).toBeVisible();
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     expect(overflow, "yatay taşma").toBeLessThanOrEqual(0);
   });

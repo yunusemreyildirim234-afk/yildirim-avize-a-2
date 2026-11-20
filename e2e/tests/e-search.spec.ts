@@ -123,33 +123,29 @@ test.describe("e) Arama (salt okunur)", () => {
     await expect(page).toHaveURL(/\/urun\//);
   });
 
-  // ---- Ana sayfadaki büyük arama kutusu (SearchBar): üst aramayla aynı davranış ----
-  test("ana sayfa arama kutusu: Enter ve büyüteç /arama?q= sayfasına gider", async ({ page }) => {
+  // ---- Ana sayfa: hero'da arama kutusu yok; üst arama (masaüstü NavSearch, mobil simge + katman) tek arama yüzeyi ----
+  test("ana sayfa: Enter ve büyüteç /arama?q= sayfasına gider", async ({ page }, info) => {
+    const mobile = info.project.name === "mobile";
     await openOk(page, "/");
-    const box = page.getByLabel("Avize ara");
-    await expect(async () => {
-      await box.fill("avize", { timeout: 3000 });
-      await expect(box).toHaveValue("avize", { timeout: 2000 });
-    }).toPass({ timeout: 20_000 });
+    const box = await typeTop(page, mobile, "avize");
     await box.press("Enter");
     await expect(page).toHaveURL(/\/arama\?q=avize$/);
     await expect(page.getByRole("heading", { level: 1, name: "Arama Sonuçları" })).toBeVisible();
     await openOk(page, "/");
-    await expect(async () => {
-      await page.getByLabel("Avize ara").fill("kontes", { timeout: 3000 });
-      await expect(page.getByLabel("Avize ara")).toHaveValue("kontes", { timeout: 2000 });
-    }).toPass({ timeout: 20_000 });
-    await page.locator("form[role=search]", { has: page.getByLabel("Avize ara") }).getByRole("button", { name: "Ara", exact: true }).click();
+    await typeTop(page, mobile, "kontes");
+    await page.locator("form[role=search]", { has: topInput(page) }).getByRole("button", { name: "Ara", exact: true }).click();
     await expect(page).toHaveURL(/\/arama\?q=kontes$/);
   });
 
-  test("ana sayfa arama kutusu: öneriye tıklamak ürüne gider", async ({ page }) => {
+  test("ana sayfa: hero'da ikinci arama kutusu yok", async ({ page }) => {
     await openOk(page, "/");
-    await expect(async () => {
-      await page.getByLabel("Avize ara").fill("avize", { timeout: 3000 });
-      await expect(page.getByLabel("Avize ara")).toHaveValue("avize", { timeout: 2000 });
-    }).toPass({ timeout: 20_000 });
-    const suggestion = page.locator("div.absolute a[href^='/urun/']").first();
+    await expect(page.getByLabel("Avize ara")).toHaveCount(0);
+  });
+
+  test("ana sayfa: öneriye tıklamak ürüne gider", async ({ page }, info) => {
+    await openOk(page, "/");
+    await typeTop(page, info.project.name === "mobile", "avize");
+    const suggestion = page.getByRole("listbox", { name: "Arama sonuçları" }).getByRole("link").first();
     await expect(suggestion).toBeVisible();
     await suggestion.click();
     await expect(page).toHaveURL(/\/urun\//);
