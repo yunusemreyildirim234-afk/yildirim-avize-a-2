@@ -6,8 +6,32 @@ const { carrierTrackingLink, carrierDisplayName } = await import("../lib/carrier
 
 test("Aras id ile: Aras bağlantısı, kod URL-kodlanır", () => {
   const r = carrierTrackingLink({ providerId: 4, providerName: null, code: "A B/1" });
-  assert.equal(r.href, "https://kargotakip.araskargo.com.tr/?kargotakipno=A%20B%2F1");
-  assert.equal(r.label, "Aras Kargo ile Canlı Takip Et ↗");
+  assert.equal(r.href, "https://www.araskargo.com.tr/");
+  assert.ok(!r.href.includes("A%20B"), "href kodu içermez");
+  assert.equal(r.code, "A B/1");
+  assert.equal(r.label, "Aras Kargo'da sorgula ↗");
+  assert.equal(r.queryLabel, "Aras Kargo'da sorgula ↗");
+  assert.equal(r.hint, "Takip numaranızı açılan sayfaya yapıştırın");
+});
+test("Aras: kod boşsa href null", () => {
+  assert.equal(carrierTrackingLink({ providerId: 4, code: "  " }).href, null);
+});
+test("kodda kargotakip.araskargo geçen yer kalmadı", async () => {
+  const { readFileSync, readdirSync, statSync } = await import("node:fs");
+  const { join } = await import("node:path");
+  const { fileURLToPath } = await import("node:url");
+  const needle = "kargotakip.araskargo";
+  const hits = [];
+  const walk = (d) => {
+    for (const n of readdirSync(d)) {
+      if ([".git", ".next", "node_modules", "e2e", "tests", "docs"].includes(n)) continue;
+      const p = join(d, n);
+      if (statSync(p).isDirectory()) walk(p);
+      else if (/\.(ts|tsx|mjs|js|json)$/.test(n) && readFileSync(p, "utf8").includes(needle)) hits.push(p);
+    }
+  };
+  walk(fileURLToPath(new URL("..", import.meta.url)));
+  assert.deepEqual(hits, []);
 });
 test("Aras ad ile", () => {
   assert.match(carrierTrackingLink({ providerName: "Aras Kargo", code: "123" }).href, /araskargo/);

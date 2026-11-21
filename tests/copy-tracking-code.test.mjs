@@ -18,12 +18,12 @@ test("CopyTrackingCode: müşteri ve admin sayfalarında kullanılır", () => {
   }
 });
 
-test("carrier-links: Hepsijet ipucu ve sorgula etiketi, Aras ipucusuz", async () => {
+test("carrier-links: Hepsijet ve Aras ipucu ve sorgula etiketi", async () => {
   await import("./_alias.mjs");
   const { carrierTrackingLink } = await import("../lib/carrier-links.ts");
   const h = carrierTrackingLink({ providerId: 6, code: "HJ1" });
   assert.match(h.queryLabel, /Hepsijet'te sorgula/);
   assert.equal(h.hint, "Gönderi numaranızı açılan sayfaya yapıştırın");
-  assert.equal(carrierTrackingLink({ providerId: 4, code: "1" }).hint, null);
+  assert.equal(carrierTrackingLink({ providerId: 4, code: "1" }).hint, "Takip numaranızı açılan sayfaya yapıştırın");
   assert.equal(carrierTrackingLink({ code: "1" }).href, null);
 });

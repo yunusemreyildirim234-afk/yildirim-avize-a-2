@@ -1,5 +1,6 @@
-/** Kargo firmasına göre takip bağlantısı (saf fonksiyon). Hepsijet için derin bağlantı biçimi doğrulanmadığı için ana sayfaya gider. */
+/** Kargo firmasına göre takip bağlantısı (saf fonksiyon). Hepsijet ve Aras için derin bağlantı biçimi doğrulanmadığı için ana sayfaya gider (Aras eski takip adresini kapattı). */
 export const HEPSIJET_HINT = "Gönderi numaranızı açılan sayfaya yapıştırın";
+export const ARAS_HINT = "Takip numaranızı açılan sayfaya yapıştırın";
 /** queryLabel: müşteri tarafı kısa bağlantı metni; hint: varsa bağlantının altına yazılacak ipucu. */
 export type CarrierTracking = { label: string; href: string | null; code: string; queryLabel: string; hint: string | null };
 
@@ -12,11 +13,11 @@ export function carrierTrackingLink(p: {
   const name = (p.providerName ?? "").toLocaleLowerCase("tr");
   if (p.providerId === 4 || name.includes("aras")) {
     return {
-      label: "Aras Kargo ile Canlı Takip Et ↗",
-      href: code ? `https://kargotakip.araskargo.com.tr/?kargotakipno=${encodeURIComponent(code)}` : null,
+      label: "Aras Kargo'da sorgula ↗",
+      href: code ? "https://www.araskargo.com.tr/" : null,
       code,
-      queryLabel: "Aras Kargo ile Canlı Takip Et ↗",
-      hint: null,
+      queryLabel: "Aras Kargo'da sorgula ↗",
+      hint: ARAS_HINT,
     };
   }
   if (p.providerId === 6 || name.includes("hepsijet")) {
