@@ -4,6 +4,9 @@ import { serverError } from "@/lib/api-error";
 import { adminGuard } from "@/lib/admin-guard";
 import { prisma } from "@/lib/db";
 import { notifyCustomer } from "@/lib/notifications";
+import { sendShippedEmail } from "@/lib/email";
+import { cleanGuestEmail } from "@/lib/guest-email";
+import { buildShippedNotice } from "@/lib/shipped-notice";
 import { forceReserveCoupon, releaseCoupon } from "@/lib/coupons";
 import { signSession } from "@/lib/session";
 import { ORDER_STATUSES, StatusRefusal, applyStatusChangeInTx, type StatusChangeTx } from "@/lib/order-undo";
@@ -55,11 +58,25 @@ async function POSTHandler(req: Request) {
     const updatedOrder = await prisma.order.findUniqueOrThrow({ where: { id: orderId } });
 
     const notified = before.status !== status && Boolean(STATUS_NOTICE[status]);
+    // Kargoya verildi (standart kargo + takip kodu var): bildirime firma ve takip no eklenir, e-posta gönderilir
+    const shippedNotice = before.status !== status && status === "SHIPPED" ? buildShippedNotice(updatedOrder) : null;
     if (notified) {
       await notifyCustomer(
         { userId: updatedOrder.userId },
-        { title: "Sipariş durumunuz güncellendi", message: `#${orderId.slice(0, 8)}: ${STATUS_NOTICE[status]}`, type: "ORDER", link: "/giris#siparisler" }
+        shippedNotice
+          ? { title: "Sipariş durumunuz güncellendi", message: shippedNotice.message(orderId), type: "ORDER", link: shippedNotice.link }
+          : { title: "Sipariş durumunuz güncellendi", message: `#${orderId.slice(0, 8)}: ${STATUS_NOTICE[status]}`, type: "ORDER", link: "/giris#siparisler" }
       );
+    }
+    if (shippedNotice) {
+      try {
+        const user = await prisma.user.findUnique({ where: { id: updatedOrder.userId }, select: { email: true, name: true } });
+        if (user) {
+          await sendShippedEmail({ to: cleanGuestEmail(user.email), name: user.name, orderId, carrier: shippedNotice.carrier, trackingNumber: shippedNotice.tracking });
+        }
+      } catch (e) {
+        console.warn("Kargo e-postası gönderilemedi:", (e as Error).message);
+      }
     }
 
     // Geri Al belirteci: yalnızca durum gerçekten değiştiyse. Stok/kupon iadesi yapıldıysa geri alırken tersine çevrilir.

@@ -1,4 +1,4 @@
-// Kargo barkodu oluşturmanın saf çekirdeği: önce koşullu sahiplenme, sonra gönderi, sonra koşullu "kargoya verildi" yazımı.
+// Kargo barkodu oluşturmanın saf çekirdeği: önce koşullu sahiplenme, sonra gönderi, sonra koşullu barkod yazımı (sipariş durumu değişmez).
 // Veritabanı ve Kargonomi çağrıları parametredir (test edilebilir).
 
 /** Barkod yalnızca ödemesi onaylanmış (hazırlanıyor) veya zaten kargodaki siparişte oluşturulur. */
@@ -19,7 +19,7 @@ export interface ShippingDeps<T> {
   claim: () => Promise<boolean>;
   /** Kargonomi gönderisini açar / yeniler. */
   open: () => Promise<T>;
-  /** Koşullu durum yazımı (yalnızca sipariş hâlâ PENDING/SHIPPED ise SHIPPED); yazıldıysa true. */
+  /** Koşullu barkod/firma yazımı (yalnızca sipariş hâlâ PENDING/SHIPPED ise; durum alanına dokunulmaz); yazıldıysa true. */
   finish: (shipped: T) => Promise<boolean>;
   /** Gönderi açılamadıysa sahiplenmeyi geri bırakır (yeniden denenebilsin). */
   release: () => Promise<unknown>;
@@ -27,7 +27,7 @@ export interface ShippingDeps<T> {
 
 /**
  * - Çift tıklama / iki sekme: ikinci istek sahiplenmeyi kaybeder (CLAIM_LOST), ikinci gönderi açılmaz, ikinci e-posta gitmez.
- * - Gönderi açılırken sipariş iptal/iade edildiyse durum SHIPPED yapılmaz (STATUS_CHANGED); müşteriye bildirim gitmez.
+ * - Gönderi açılırken sipariş iptal/iade edildiyse barkod yazılmaz (STATUS_CHANGED).
  * - Kargonomi hata verirse sahiplenme bırakılır ve hata çağırana iletilir.
  */
 export async function createShippingOnce<T>(deps: ShippingDeps<T>): Promise<ShippingResult<T>> {

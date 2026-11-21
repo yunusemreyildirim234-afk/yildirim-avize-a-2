@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { cleanGuestEmail } from "@/lib/guest-email";
 import { recipientOf } from "@/lib/recipient";
+import { resolveProvider } from "@/lib/carrier-quotes";
 
 const BASE_URL = (process.env.KARGONOMI_API_URL || process.env.KARGONOMI_BASE_URL || "https://app.kargonomi.com.tr/api/v1").replace(/\/$/, "");
 
@@ -38,8 +39,10 @@ export interface KargonomiShipmentInput {
 type Json = any;
 
 export class KargonomiError extends Error {
-  constructor(message: string, public status: number) {
+  status: number;
+  constructor(message: string, status: number) {
     super(message);
+    this.status = status;
   }
 }
 
@@ -75,6 +78,17 @@ export const listStates = () => request("/states");
 export const listCities = (stateId: number) => request(`/cities/${stateId}`);
 export const getShipment = (id: number) => request(`/shipments/${id}`);
 export const listWarehouses = () => request("/warehouses");
+
+/** Gönderi için firma fiyat listesi (desi ve il/ilçe gönderi kaydından alınır). */
+export const getPriceComparison = (shipmentId: number) => request(`/shipment-price-comparison/${shipmentId}`);
+
+/** Taslak gönderiyi seçilen firmayla onaylar (ücretli). -1 (otomatik) kullanılmaz. */
+export function confirmShippingPrice(shipmentId: number, providerId: number) {
+  const form = new FormData();
+  form.append("shipment_id", String(shipmentId));
+  form.append("shipping_provider_id", String(providerId));
+  return request("/confirm-shipping-price", { method: "POST", body: form });
+}
 
 export async function countShipments(): Promise<number> {
   const data = await request("/shipments?per_page=1");
@@ -124,7 +138,7 @@ function statusFields(s: Json) {
 const barcodeLink = (orderId: string, url?: string | null) => url || `/api/admin/kargonomi/barcode?orderId=${orderId}`;
 
 /**
- * Siparişe ait Kargonomi (Aras Kargo) gönderisini oluşturur ve sonucu siparişe yazar.
+ * Siparişe ait Kargonomi gönderi TASLAĞINI oluşturur ve sonucu siparişe yazar (firma barkod öncesi onayla belli olur).
  * `regenerate`: mevcut gönderi bağlantısı bırakılıp yeni gönderi açılır (eski kayıt Kargonomi panelinden iptal edilmelidir).
  */
 export async function createShipmentForOrder(orderId: string, opts: { regenerate?: boolean } = {}) {
@@ -166,8 +180,6 @@ export async function createShipmentForOrder(orderId: string, opts: { regenerate
       ...fields,
       shippingBarcode: fields.shippingBarcode ?? `YA-${order.id.slice(0, 8).toUpperCase()}`,
       barcodeUrl: barcodeLink(order.id, fields.barcodeUrl),
-      shippingProviderId: carrier().id,
-      shippingProviderName: carrier().name,
       packageDesi: desi,
     },
   });
@@ -180,5 +192,9 @@ export async function refreshOrderShipment(orderId: string) {
 
   const shipment = unwrap(await getShipment(order.kargonomiShipmentId));
   const { barcodeUrl, ...fields } = statusFields(shipment);
-  return prisma.order.update({ where: { id: order.id }, data: { ...fields, ...(barcodeUrl ? { barcodeUrl } : {}) } });
+  // Firma panelden değişmiş olabilir: yanıttaki firmayı siparişe yansıt (yanıtta yoksa mevcut değere dokunma)
+  const prov = resolveProvider({ id: shipment?.shipping_provider_id, slug: shipment?.shipping_provider_slug, name: shipment?.shipping_provider_name });
+  const apiName = typeof shipment?.shipping_provider_name === "string" && shipment.shipping_provider_name.trim() ? shipment.shipping_provider_name.trim() : null;
+  const provider = prov ? { shippingProviderId: prov.id, shippingProviderName: prov.name } : apiName ? { shippingProviderName: apiName } : {};
+  return prisma.order.update({ where: { id: order.id }, data: { ...fields, ...provider, ...(barcodeUrl ? { barcodeUrl } : {}) } });
 }
