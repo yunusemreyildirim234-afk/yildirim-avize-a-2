@@ -1402,7 +1402,7 @@ export default function CartPage() {
               )}
 
               <div className="text-center pt-2 text-[10px] text-ink-subtle">
-                🔒 256-Bit SSL{isPickup ? "" : " & Aras Kargo ile Gönderim"}
+                🔒 256-Bit SSL{isPickup ? "" : " & Aras Kargo / Hepsijet ile Gönderim"}
               </div>
             </div>
           </div>

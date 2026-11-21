@@ -17,7 +17,7 @@ type Item = { id: string; icon: LucideIcon; title: string; text: string; code?: 
 
 function toItem(v: PromoView): Item {
   const base = { id: v.id, icon: ICONS[v.kind], title: v.title, text: v.text, ...(v.code ? { code: v.code } : {}) };
-  if (v.kind === "SHIPPING") return { ...base, link: { label: "Aras Kargo · canlı takip", href: "/kargo-takip" } };
+  if (v.kind === "SHIPPING") return { ...base, link: { label: "Kargo · canlı takip", href: "/kargo-takip" } };
   if (v.kind === "PICKUP") return { ...base, link: { label: "Beyoğlu Şişhane", href: "/iletisim" } };
   if (v.kind === "TEXT" && v.href) return { ...base, link: { label: "Detaylar", href: v.href } };
   return base;

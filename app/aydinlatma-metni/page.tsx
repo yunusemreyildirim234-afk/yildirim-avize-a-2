@@ -76,7 +76,7 @@ export default async function Page() {
         {
           title: "Kişisel Verilerin Aktarıldığı Alıcı Grupları ve Amaçları",
           body: [
-            "Kargo ve lojistik: teslimat için ad-soyad, telefon, e-posta ve adres bilgileriniz Kargonomi platformuna ve gönderiyi taşıyan kargo firmasına (Aras Kargo) aktarılır.",
+            "Kargo ve lojistik: teslimat için ad-soyad, telefon, e-posta ve adres bilgileriniz Kargonomi platformuna ve gönderiyi taşıyan kargo firmasına (Aras Kargo ve Hepsijet) aktarılır.",
             "Ödeme kuruluşu: kartlı ödemelerde ödemenin gerçekleştirilmesi için gerekli bilgiler PayTR'ye aktarılır.",
             "E-posta hizmet sağlayıcısı: sipariş, kargo ve talep bildirimlerinin iletilmesi için e-posta adresiniz ve bildirim içeriği Resend hizmeti aracılığıyla gönderilir.",
             "Barındırma ve altyapı: sitenin ve veritabanının işletilmesi için barındırma (Vercel) ve veritabanı (Neon) hizmet sağlayıcıları verilerinizi bizim adımıza işler. Oturum açma amacıyla Google'ın kimlik doğrulama hizmeti kullanılır.",

@@ -27,6 +27,7 @@ interface EmailOrderData {
 
 import { ADDRESS_LINE, ADMIN_EMAILS, BANK_INFO, PHONE_DISPLAY, SITE_URL } from "@/lib/site";
 import { orderCode, bankPaymentDeadline, breakdownOf, breakdownRows, deliveryAddressText, formatIstanbul, type BreakdownRow } from "@/lib/order-display";
+import { carrierTrackingLink } from "@/lib/carrier-links";
 import { IADE_TALIMATI } from "@/lib/legal-texts";
 import { buildLegalSummaryHtml } from "@/lib/legal-email";
 import { adminOrderHref } from "@/lib/admin-order-detail";
@@ -566,7 +567,7 @@ export async function sendRequestDecisionEmail(data: { to: string; name: string;
 
 /** Sipariş kargoya verilince müşteriye takip numarası ve canlı takip bağlantısı. */
 export async function sendShippedEmail(data: { to: string; name: string; orderId: string; carrier: string; trackingNumber: string }) {
-  const live = `https://kargotakip.araskargo.com.tr/?kargotakipno=${encodeURIComponent(data.trackingNumber)}`;
+  const live = carrierTrackingLink({ providerName: data.carrier, code: data.trackingNumber }).href;
   return sendViaResend(process.env.RESEND_API_KEY, {
     to: [data.to],
     subject: `Siparişiniz ${data.carrier}'ya Verildi - Takip No: ${data.trackingNumber}`,
@@ -575,7 +576,7 @@ export async function sendShippedEmail(data: { to: string; name: string; orderId
       <h2 style="font-size: 17px; margin: 0 0 10px;">Sayın ${esc(data.name)},</h2>
       <p style="font-size: 14px; line-height: 1.6;"><strong>#${esc(orderCode(data.orderId))}</strong> numaralı siparişiniz korumalı kolide <strong>${esc(data.carrier)}</strong>'ya teslim edildi.</p>
       <p style="text-align: center; margin: 18px 0;"><span style="display: inline-block; font-family: monospace; font-size: 20px; font-weight: bold; letter-spacing: 2px; background: #ffffff; border: 2px dashed #d97706; border-radius: 10px; padding: 10px 20px; color: #92400e;">${esc(data.trackingNumber)}</span></p>
-      <p style="text-align: center; margin: 22px 0 8px;"><a href="${esc(live)}" style="display: inline-block; background: #171717; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 14px; padding: 12px 28px; border-radius: 10px;">Kargomu Takip Et</a></p>
+      ${live ? `<p style="text-align: center; margin: 22px 0 8px;"><a href="${esc(live)}" style="display: inline-block; background: #171717; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 14px; padding: 12px 28px; border-radius: 10px;">Kargomu Takip Et</a></p>` : ""}
       <p style="font-size: 12px; color: #737373; text-align: center;">Yıldırım Avize | Tel: ${PHONE_DISPLAY}</p>
     </div>`,
   });

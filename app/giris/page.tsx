@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import PasswordInput from "@/components/PasswordInput";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { carrierTrackingLink } from "@/lib/carrier-links";
 import MyMessages from "@/components/MyMessages";
 import MyCoupons from "@/components/MyCoupons";
 import OrderRequestBox from "@/components/OrderRequestBox";
@@ -345,16 +346,14 @@ export default function AuthPage() {
                             🚚 Kargo Takip →
                           </Link>
                         )}
-                        {order.shippingTrackingCode && (
-                          <a
-                            href={`https://kargotakip.araskargo.com.tr/?kargotakipno=${encodeURIComponent(order.shippingTrackingCode)}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-orange-700 hover:underline font-semibold"
-                          >
-                            Aras Kargo ile Canlı Takip Et ↗
-                          </a>
-                        )}
+                        {(() => {
+                          const t = carrierTrackingLink({ providerName: order.shippingProviderName, code: order.shippingTrackingCode });
+                          return t.href && order.shippingTrackingCode ? (
+                            <a href={t.href} target="_blank" rel="noopener noreferrer" className="text-orange-700 hover:underline font-semibold">
+                              {t.label}
+                            </a>
+                          ) : null;
+                        })()}
                       </div>
                     </div>
                   </div>

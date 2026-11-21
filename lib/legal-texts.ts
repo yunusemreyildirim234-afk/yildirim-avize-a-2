@@ -35,4 +35,4 @@ export const MONTAJ_NOTU =
 /** Hasarlı/hatalı ürün bildirimi için tek standart cümle */
 export const HASAR_BILDIRIMI = "Ürün hasarlı veya hatalı geldiyse lütfen fotoğrafını WhatsApp destek hattımıza iletiniz.";
 
-export const IADE_TALIMATI = `Ürünü hasarsız ve eksiksiz, mümkünse orijinal ambalajıyla, size iletilecek iade kargo kodu/etiketi ile Aras Kargo'ya teslim ediniz. İade kargo bedeli tarafımıza aittir. İade kargo kodu için bu e-postayı yanıtlayabilir veya WhatsApp destek hattımızdan (${PHONE_DISPLAY}) bize ulaşabilirsiniz. Ürün tarafımıza ulaştıktan sonra bedeliniz, ödeme yönteminize uygun olarak yasal süre içinde iade edilir. ${HASAR_BILDIRIMI}`;
+export const IADE_TALIMATI = `Ürünü hasarsız ve eksiksiz, mümkünse orijinal ambalajıyla, size iletilecek iade kargo kodu/etiketi ile size bildirilen anlaşmalı kargo firmasına teslim ediniz. İade kargo bedeli tarafımıza aittir. İade kargo kodu için bu e-postayı yanıtlayabilir veya WhatsApp destek hattımızdan (${PHONE_DISPLAY}) bize ulaşabilirsiniz. Ürün tarafımıza ulaştıktan sonra bedeliniz, ödeme yönteminize uygun olarak yasal süre içinde iade edilir. ${HASAR_BILDIRIMI}`;

@@ -1,3 +1,4 @@
+import { carrierDisplayName, carrierTrackingLink } from "@/lib/carrier-links";
 import { orderCode } from "@/lib/order-display";
 import type { Metadata } from "next";
 import { Suspense } from "react";
@@ -45,6 +46,7 @@ async function OrderResult({ code, verify }: { code: string; verify?: string }) 
       updatedAt: true,
       kargonomiShipmentId: true,
       shippingProviderName: true,
+      shippingProviderId: true,
       shippingTrackingCode: true,
       shippingBarcode: true,
       recipientName: true,
@@ -104,7 +106,7 @@ async function OrderResult({ code, verify }: { code: string; verify?: string }) 
       {order.kargonomiShipmentId && (
         <div className="pt-3 border-t border-line space-y-1">
           <span className="text-ink-subtle">Kargo Firması</span>
-          <p className="text-sm font-bold text-orange-700">{order.shippingProviderName || "Aras Kargo"}</p>
+          <p className="text-sm font-bold text-orange-700">{carrierDisplayName(order.shippingProviderName)}</p>
           <p className="font-semibold text-ink">
             {order.shippingTrackingCode || order.shippingBarcode ? order.kargonomiStatusLabel || "Kargo kaydı oluşturuldu" : "Kargo bilgileriniz hazırlanıyor"}
           </p>
@@ -118,16 +120,19 @@ async function OrderResult({ code, verify }: { code: string; verify?: string }) 
               Barkod: <span className="font-mono">{order.shippingBarcode}</span>
             </p>
           )}
-          {(order.shippingTrackingCode || order.shippingBarcode) && (
-            <a
-              href={`https://kargotakip.araskargo.com.tr/?kargotakipno=${encodeURIComponent(order.shippingTrackingCode || order.shippingBarcode || "")}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-block mt-2 bg-orange-600 hover:bg-orange-700 text-white font-semibold px-4 py-2.5 rounded-xl transition-colors"
-            >
-              Aras Kargo ile Canlı Takip Et ↗
-            </a>
-          )}
+          {(() => {
+            const t = carrierTrackingLink({ providerId: order.shippingProviderId, providerName: order.shippingProviderName, code: order.shippingTrackingCode || order.shippingBarcode });
+            return t.href ? (
+              <a
+                href={t.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block mt-2 bg-orange-600 hover:bg-orange-700 text-white font-semibold px-4 py-2.5 rounded-xl transition-colors"
+              >
+                {t.label}
+              </a>
+            ) : null;
+          })()}
         </div>
       )}
     </div>

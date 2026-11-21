@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { carrierDisplayName, carrierTrackingLink } from "@/lib/carrier-links";
 
 interface Props {
   order: {
@@ -96,14 +97,14 @@ export default function AdminKargonomiOrderActions({ order }: Props) {
     <div className="space-y-2 min-w-[11rem]">
       <div className="text-[11px] space-y-1">
         <span className="inline-block bg-emerald-50 border border-emerald-200 text-emerald-900 font-bold px-2 py-0.5 rounded-full">
-          {order.shippingProviderName || "Aras Kargo"}
+          {carrierDisplayName(order.shippingProviderName)}
           {order.kargonomiShipmentId ? ` • #${order.kargonomiShipmentId}` : ""}
         </span>
         {tracking && <span className="block font-mono text-neutral-700">Takip No: {tracking}</span>}
         {order.kargonomiStatusLabel && <span className="block text-neutral-500">{order.kargonomiStatusLabel}</span>}
-        {tracking && (
+        {tracking && carrierTrackingLink({ providerName: order.shippingProviderName, code: tracking }).href && (
           <a
-            href={`https://kargotakip.araskargo.com.tr/?kargotakipno=${encodeURIComponent(tracking)}`}
+            href={carrierTrackingLink({ providerName: order.shippingProviderName, code: tracking }).href ?? undefined}
             target="_blank"
             rel="noopener noreferrer"
             className="block text-amber-700 underline"

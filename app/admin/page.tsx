@@ -381,7 +381,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           id="siparisler"
           icon={<Package aria-hidden="true" className="w-4 h-4 text-amber-600" />}
           title="Gelen Siparişler, Durum & Kargonomi Yönetimi"
-          description="Havale ödemesini onaylayabilir, sipariş durumunu yürütebilir, Aras Kargo barkodu oluşturup PDF çıktısı alabilirsiniz."
+          description="Havale ödemesini onaylayabilir, sipariş durumunu yürütebilir, Kargo barkodu oluşturup PDF çıktısı alabilirsiniz."
           badges={[
             { label: `${allGroupCounts.yeni} yeni gelen`, tone: allGroupCounts.yeni > 0 ? "amber" : "neutral" },
             ...(allGroupCounts.talep > 0 ? [{ label: `${allGroupCounts.talep} talep bekliyor`, tone: "red" as const }] : []),

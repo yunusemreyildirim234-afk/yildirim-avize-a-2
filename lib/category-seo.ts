@@ -7,7 +7,7 @@ const pickup = `Şişhane mağazadan teslimde %${Math.round(PICKUP_DISCOUNT * 10
 const TABLE: Record<string, { title: string; desc: string }> = {
   kristal: { title: "Kristal Avize Modelleri ve Fiyatları", desc: `El kesimi kristal taşlı avize modelleri. Montajlı gönderim, ${ship}, ${pickup}.` },
   modern: { title: "Modern Avize Modelleri ve Fiyatları", desc: `LED ve sade çizgili modern avizeler. Havale/EFT'de %${Math.round(BANK_TRANSFER_DISCOUNT * 100)} indirim, ${ship}.` },
-  klasik: { title: "Klasik ve Eskitme Avize Modelleri", desc: "Eskitme ve pirinç gövdeli klasik avizeler. Beyoğlu Şişhane mağazamızdan ya da Aras Kargo ile." },
+  klasik: { title: "Klasik ve Eskitme Avize Modelleri", desc: "Eskitme ve pirinç gövdeli klasik avizeler. Beyoğlu Şişhane mağazamızdan ya da Aras Kargo / Hepsijet ile." },
   sarkit: { title: "Sarkıt ve Aplik Modelleri", desc: `Yemek masası üstü sarkıtlar, aplikler ve lambalar. ${ship}, ${pickup}.` },
   aksesuar: { title: "Avize Yedek Parça ve Kristal Taş", desc: "Kristal avize taşı, duy, zincir ve yedek parçalar. Küçük siparişlerde kargo ücreti sepette gösterilir." },
   tum: { title: "Tüm Avize Modelleri", desc: "Yıldırım Avize'nin tüm koleksiyonu: kristal, modern, klasik avizeler, sarkıt ve aplikler." },
