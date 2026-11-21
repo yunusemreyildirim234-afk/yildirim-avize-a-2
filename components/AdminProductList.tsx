@@ -16,6 +16,8 @@ import ConfirmDialog from "@/components/ConfirmDialog";
 import AdminDescriptionEditor from "@/components/AdminDescriptionEditor";
 import { activeConfirmMessage } from "@/lib/bulk-plan";
 import SmartFilterChips from "@/components/SmartFilterChips";
+import AdminProductFilterPanel from "@/components/AdminProductFilterPanel";
+import { EMPTY_FILTERS, adminFacets, applyAdminFilters, hasAdminFilters, type AdminFilterState } from "@/lib/admin-product-filters";
 import { bulkTiersOf, tierBadgeLabel, tierValueLabel } from "@/lib/bulk-pricing";
 import { CATEGORIES } from "@/lib/site";
 import { buildCategoryList, productInCategory } from "@/lib/categories";
@@ -201,6 +203,7 @@ export default function AdminProductList({ products: serverProducts, maxTotalDis
   const [editingId, setEditingId] = useState<string | null>(null);
   const [descId, setDescId] = useState<string | null>(null); // açıklaması düzenlenen ürün
   const [chips, setChips] = useState<string[]>([]);
+  const [adv, setAdv] = useState<AdminFilterState>(EMPTY_FILTERS); // sırala + renk/ebat/fiyat/stok durumu (lib/admin-product-filters.ts)
   const [catChips, setCatChips] = useState<string[]>([]); // kategori çipleri (anahtar: categoryKey); diğer çiplerle KESİŞİR
   const PAGE = 8;
   const [shown, setShown] = useState(PAGE); // listede gösterilen ürün sayısı (8'er artar)
@@ -382,7 +385,7 @@ Yine de geri alınsın mı?`)) break;
   const noneCount = uncategorizedCount(products); // kategorisiz ürün sayısı (boş / yalnız boşluk)
   const noneOn = catChips.includes(NONE_KEY);
   const chipFiltered = selectedCats.length || noneOn ? chipFiltered0.filter((p) => (noneOn && !p.category.trim()) || selectedCats.some((c) => productInCategory(p.category, c))) : chipFiltered0;
-  const filtered = q
+  const searched = q
     ? chipFiltered.filter(
         (p) =>
           norm(p.title).includes(q) ||
@@ -391,6 +394,11 @@ Yine de geri alınsın mı?`)) break;
           p.variations.some((v) => norm(v.stockCode).includes(q) || norm(v.barcode).includes(q))
       )
     : chipFiltered;
+  // Gelişmiş süzgeçler arama/çip/kategori sonucuyla KESİŞİR; sıralama sonuca uygulanır
+  const filtered = useMemo(() => applyAdminFilters(searched, adv, sets), [searched, adv, sets]);
+  const facets = useMemo(() => adminFacets(searched, adv), [searched, adv]);
+  const advActive = hasAdminFilters(adv) || adv.siralama !== "varsayilan";
+  const clearAllFilters = () => { setQuery(""); setChips([]); setCatChips([]); setAdv(EMPTY_FILTERS); setShown(PAGE); };
 
   const allFilteredSelected = filtered.length > 0 && filtered.every((p) => selected.has(p.id));
   const toggleOne = (id: string) => {
@@ -588,7 +596,15 @@ Yine de geri alınsın mı?`)) break;
             )}
           </p>
         </div>
-        {(q || chips.length > 0 || catChips.length > 0) && (
+        <AdminProductFilterPanel
+          state={adv}
+          onChange={(next) => { setAdv(next); setShown(PAGE); }}
+          colors={facets.colors}
+          sizes={facets.sizes}
+          onClearAll={clearAllFilters}
+          anyActive={Boolean(q) || chips.length > 0 || catChips.length > 0}
+        />
+        {(q || chips.length > 0 || catChips.length > 0 || advActive) && (
           <p className="text-[11px] text-neutral-500 mt-2">
             {filtered.length} / {products.length} model gösteriliyor
           </p>
