@@ -63,7 +63,7 @@ export default function FaqSection() {
       </div>
       <div className="space-y-3">
         {FAQS.map((f) => (
-          <details key={f.q} className="group bg-surface border border-line rounded-2xl px-5 py-4">
+          <details key={f.q} className="group bg-raised border border-line rounded-2xl px-5 py-4">
             <summary className="cursor-pointer list-none flex items-center justify-between gap-4 text-sm font-semibold text-ink">
               {f.q}
               <span aria-hidden="true" className="text-bronze-ink transition-transform group-open:rotate-45 text-lg leading-none">

@@ -142,15 +142,15 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* 3. Açık gri -> koyu gri: indirimli & fırsat ürünleri */}
-      <section className="bg-gradient-to-b from-zinc-100 via-zinc-300 to-zinc-800 dark:from-[#18181b] dark:via-[#1f1f23] dark:to-[#27272a] px-4 sm:px-6 lg:px-8 pt-16 pb-24 sm:pb-28">
+      {/* 3. Canvas: indirimli & fırsat ürünleri (ince çizgiyle ayrılır; Öne Çıkan ve Çok Satanlar ile aynı zemin) */}
+      <section className="bg-canvas border-t border-line px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-8 space-y-2">
-            <span className="text-xs uppercase tracking-widest text-red-700 font-semibold">Fırsatlar</span>
-            <h2 className="text-2xl sm:text-3xl font-serif font-bold text-zinc-900">İndirimli & Fırsat Ürünleri</h2>
+            <span className="text-xs uppercase tracking-widest text-sale font-semibold">Fırsatlar</span>
+            <h2 className="text-2xl sm:text-3xl font-serif font-bold text-ink">İndirimli & Fırsat Ürünleri</h2>
           </div>
           {discounted.length === 0 ? (
-            <p className="text-sm text-zinc-600 text-center py-10">Şu an indirimli ürün bulunmuyor.</p>
+            <p className="text-sm text-ink-muted text-center py-10">Şu an indirimli ürün bulunmuyor.</p>
           ) : (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
               {discounted.map((p) => (
@@ -162,7 +162,7 @@ export default async function Home() {
           <div className="text-center mt-10">
             <Link
               href="/kategori/indirimli"
-              className="keep-theme inline-block text-xs font-semibold text-white border border-white/40 hover:bg-white hover:text-zinc-900 px-6 py-3 rounded-full transition-colors"
+              className="inline-block text-xs font-semibold text-ink border border-line-strong hover:bg-ink hover:text-canvas px-6 py-3 rounded-full transition-colors"
             >
               Tüm Fırsat Ürünleri →
             </Link>
@@ -170,24 +170,24 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* 4. Antrasit: çok satanlar (İndirimlilerin hemen altında) */}
+      {/* 4. Canvas: çok satanlar (İndirimlilerin hemen altında) */}
       {bestSellers.length > 0 && (
-        <section className="keep-theme bg-zinc-800 px-4 sm:px-6 lg:px-8 pb-20 sm:pb-24">
+        <section className="bg-canvas border-t border-line px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-8 space-y-2">
-              <span className="text-xs uppercase tracking-widest text-amber-400 font-semibold">Müşterilerin Tercihi</span>
-              <h2 className="text-2xl sm:text-3xl font-serif font-bold text-white">Çok Satanlar</h2>
+              <span className="text-xs uppercase tracking-widest text-bronze-ink font-semibold">Müşterilerin Tercihi</span>
+              <h2 className="text-2xl sm:text-3xl font-serif font-bold text-ink">Çok Satanlar</h2>
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
               {bestSellers.map((p) => (
-                <ProductCard key={p.id} product={p} dark />
+                <ProductCard key={p.id} product={p} />
               ))}
             </div>
-            <MoreCards section="bestsellers" total={moreBestSellers.length} href="/kategori/cok-satanlar" cols="grid-cols-2 lg:grid-cols-4" dark />
+            <MoreCards section="bestsellers" total={moreBestSellers.length} href="/kategori/cok-satanlar" cols="grid-cols-2 lg:grid-cols-4" />
             <div className="text-center mt-10">
               <Link
                 href="/kategori/cok-satanlar"
-                className="inline-block text-xs font-semibold text-white border border-white/40 hover:bg-white hover:text-zinc-900 px-6 py-3 rounded-full transition-colors"
+                className="inline-block text-xs font-semibold text-ink border border-line-strong hover:bg-ink hover:text-canvas px-6 py-3 rounded-full transition-colors"
               >
                 Tüm Çok Satanlar →
               </Link>
@@ -196,8 +196,8 @@ export default async function Home() {
         </section>
       )}
 
-      {/* 5. Antrasit -> siyah: SSS */}
-      <div className="bg-canvas">
+      {/* 5. Surface: SSS (altındaki koyu footer ile net ayrım) */}
+      <div className="bg-surface border-t border-line">
         <FaqSection />
       </div>
     </main>
