@@ -13,3 +13,8 @@ test("iletisim/page.tsx: marka logosu priority ile, dekoratif alt", () => {
   assert.match(s, /logo-hero-4\.png/);
   assert.match(s, /priority/);
 });
+
+test("iletisim/page.tsx: logo-uc-gen.png kullanılıyor", () => {
+  const s = readFileSync(new URL("../app/iletisim/page.tsx", import.meta.url), "utf8");
+  assert.match(s, /logo-uc-gen\.png/);
+});

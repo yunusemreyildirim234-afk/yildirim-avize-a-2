@@ -88,6 +88,7 @@ export default function IletisimPage() {
               className="w-36 sm:w-48 md:w-60 h-auto"
             />
             <p className="mt-2 font-serif text-lg sm:text-2xl uppercase tracking-[0.1em] sm:tracking-[0.14em] text-ink">Yıldırım Avize</p>
+            <Image src="/logo-uc-gen.png" alt="" width={128} height={65} className="mx-auto mt-1 h-auto w-12 sm:w-14" />
           </div>
         </div>
       </section>
