@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import CopyTrackingCode from "@/components/CopyTrackingCode";
 import { carrierDisplayName, carrierTrackingLink } from "@/lib/carrier-links";
 
 interface Props {
@@ -179,7 +180,7 @@ export default function AdminKargonomiOrderActions({ order }: Props) {
           {carrierDisplayName(order.shippingProviderName)}
           {order.kargonomiShipmentId ? ` • #${order.kargonomiShipmentId}` : ""}
         </span>
-        {tracking && <span className="block font-mono text-neutral-700">Takip No: {tracking}</span>}
+        {tracking && <span className="block text-neutral-700">Takip No: <CopyTrackingCode code={tracking} /></span>}
         {order.kargonomiStatusLabel && <span className="block text-neutral-500">{order.kargonomiStatusLabel}</span>}
         {order.status === "PENDING" && <span className="block text-amber-800">Paketi kargoya verince durumu &apos;Kargoya Verildi&apos; yapın.</span>}
         {tracking && carrierTrackingLink({ providerName: order.shippingProviderName, code: tracking }).href && (

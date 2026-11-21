@@ -1,3 +1,4 @@
+import CopyTrackingCode from "@/components/CopyTrackingCode";
 import { carrierDisplayName, carrierTrackingLink } from "@/lib/carrier-links";
 import { orderCode } from "@/lib/order-display";
 import type { Metadata } from "next";
@@ -112,7 +113,8 @@ async function OrderResult({ code, verify }: { code: string; verify?: string }) 
           </p>
           {order.shippingTrackingCode && (
             <p className="text-ink-muted">
-              Takip kodu: <span className="font-mono">{order.shippingTrackingCode}</span>
+              Takip kodu:
+              <span className="mt-1 block"><CopyTrackingCode code={order.shippingTrackingCode} /></span>
             </p>
           )}
           {order.shippingBarcode && (
@@ -129,9 +131,13 @@ async function OrderResult({ code, verify }: { code: string; verify?: string }) 
                 rel="noopener noreferrer"
                 className="inline-block mt-2 bg-orange-600 hover:bg-orange-700 text-white font-semibold px-4 py-2.5 rounded-xl transition-colors"
               >
-                {t.label}
+                {t.queryLabel}
               </a>
             ) : null;
+          })()}
+          {(() => {
+            const t = carrierTrackingLink({ providerId: order.shippingProviderId, providerName: order.shippingProviderName, code: order.shippingTrackingCode || order.shippingBarcode });
+            return t.href && t.hint ? <p className="text-xs text-ink-muted">{t.hint}</p> : null;
           })()}
         </div>
       )}

@@ -19,6 +19,7 @@ import AddressBook from "@/components/AddressBook";
 import ReceiptUpload from "@/components/ReceiptUpload";
 import OrderBankBox from "@/components/OrderBankBox";
 import CopyCodeButton from "@/components/CopyCodeButton";
+import CopyTrackingCode from "@/components/CopyTrackingCode";
 import { breakdownOf, formatTl, orderCode } from "@/lib/order-display";
 import { discountLabel } from "@/lib/order-discount-label";
 import { titleCaseTr } from "@/lib/display-case";
@@ -325,8 +326,9 @@ export default function AuthPage() {
                               }`}
                         </strong>
                         {order.shippingTrackingCode && (
-                          <span className="ml-2 font-mono text-emerald-700 font-bold">
-                            Takip No: {order.shippingTrackingCode}
+                          <span className="mt-1 block">
+                            <span className="text-ink-muted">Takip No: </span>
+                            <CopyTrackingCode code={order.shippingTrackingCode} />
                           </span>
                         )}
                         {order.shippingType !== "BEYOGLU_MAGAZA_TESLIM" && order.address && (
@@ -350,9 +352,13 @@ export default function AuthPage() {
                           const t = carrierTrackingLink({ providerName: order.shippingProviderName, code: order.shippingTrackingCode });
                           return t.href && order.shippingTrackingCode ? (
                             <a href={t.href} target="_blank" rel="noopener noreferrer" className="text-orange-700 hover:underline font-semibold">
-                              {t.label}
+                              {t.queryLabel}
                             </a>
                           ) : null;
+                        })()}
+                        {(() => {
+                          const t = carrierTrackingLink({ providerName: order.shippingProviderName, code: order.shippingTrackingCode });
+                          return t.hint && order.shippingTrackingCode ? <span className="basis-full text-xs text-ink-muted">{t.hint}</span> : null;
                         })()}
                       </div>
                     </div>
