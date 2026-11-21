@@ -17,13 +17,13 @@ export default function OrderStatusSelector({ orderId, initialStatus, shippingTy
   const [loading, setLoading] = useState(false);
 
   const handleStatusChange = async (newStatus: string) => {
-    // Onay metinleri koddan teyitli: Teslim/Kargo -> yalnızca site içi bildirim (e-posta gitmez, app/api/admin/order-status); İptal/İade -> stok ve kupon iadesi (lib/order-undo.ts)
+    // Onay metinleri koddan teyitli (app/api/admin/order-status, lib/shipped-notice.ts): Teslim -> yalnızca site içi bildirim; Kargo -> site içi bildirim, standart kargo + takip kodu varsa e-posta da gider; İptal/İade -> stok ve kupon iadesi (lib/order-undo.ts)
     const CONFIRM: Record<string, string> = {
       CANCELLED: "Stok ve kupon iade edilecek. Geri Al ile geri alınabilir.",
       ...(["CANCELLED", "PAYMENT_FAILED"].includes(status) ? { PENDING: "Sipariş yeniden açılacak: stok yeniden düşülecek (yetmezse işlem reddedilir) ve kupon hakkı yeniden kullanılmış sayılacak. Bu işlemin Geri Al'ı yoktur; vazgeçerseniz siparişi yeniden İptal yapın. Emin misiniz?" } : {}),
       RETURNED: "Sipariş 'İade Edildi' yapılacak; stok ve kupon iade edilecek (müşteriye bildirim gitmez). Emin misiniz?",
       DELIVERED: "Sipariş 'Teslim Edildi' yapılacak ve müşteriye site içi bildirim gidecek (e-posta gitmez). Emin misiniz?",
-      SHIPPED: "Sipariş 'Kargoya Verildi' yapılacak ve müşteriye site içi bildirim gidecek (e-posta gitmez). Emin misiniz?",
+      SHIPPED: "Sipariş 'Kargoya Verildi' yapılacak ve müşteriye site içi bildirim gidecek ve takip kodu varsa e-posta da gönderilecek. Emin misiniz?",
     };
     if (CONFIRM[newStatus] && !confirm(CONFIRM[newStatus])) return; // onay verilmezse seçim eski değerinde kalır (kontrollü select)
     const previous = status;
