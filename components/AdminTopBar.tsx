@@ -34,8 +34,8 @@ export default function AdminTopBar() {
           <LayoutDashboard aria-hidden="true" className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" /> Yönetim Paneli
         </span>
         <div className="flex items-center gap-1.5 sm:gap-3">
-          {/* Zil açık zemine göre tasarlandığı için açık renkli bir yuvada durur */}
-          <span className="rounded-full bg-neutral-100 text-neutral-900 dark:bg-white">
+          {/* Zil simgesi text-ink jetonuyla çizilir (koyu temada açık renk); yuva temaya uyar: açık temada açık, koyu temada koyu (keep-theme ham ölçeği: neutral-800 koyu) */}
+          <span className="rounded-full bg-neutral-100 dark:bg-neutral-800">
             <NotificationBell />
           </span>
           {/* Sitedeki tema düğmesinin aynısı (aynı depolama anahtarı ve <html class="dark">); açık temada açık, koyu temada koyu zeminli (keep-theme: koyu çubuk ham renk ölçeğiyle çizilir) */}
