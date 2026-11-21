@@ -3,6 +3,7 @@
 import { toast } from "sonner";
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function IletisimPage() {
   const [name, setName] = useState("");
@@ -65,8 +66,8 @@ export default function IletisimPage() {
   return (
     <main className="min-h-screen bg-canvas pb-20">
       {/* Üst Hero Başlık */}
-      <section className="bg-canvas text-ink py-16 px-4 text-center border-b border-line">
-        <div className="max-w-3xl mx-auto space-y-3">
+      <section className="bg-canvas text-ink pt-8 pb-6 sm:pt-10 sm:pb-8 px-4 text-center border-b border-line">
+        <div className="max-w-3xl mx-auto space-y-2">
           <span className="block text-[11px] uppercase tracking-[0.18em] text-bronze-ink font-semibold">
             İletişim & Showroom
           </span>
@@ -76,6 +77,18 @@ export default function IletisimPage() {
           <p className="text-sm text-ink-muted max-w-xl mx-auto font-light">
             Işıltıyı yerinde incelemek, siparişinizi teslim almak veya özel mimari aydınlatma projeleriniz için bize ulaşın.
           </p>
+          <div className="pt-3 flex flex-col items-center">
+            <Image
+              src="/logo-hero-4.png"
+              alt=""
+              width={640}
+              height={298}
+              priority
+              sizes="(min-width: 768px) 240px, (min-width: 640px) 192px, 144px"
+              className="w-36 sm:w-48 md:w-60 h-auto"
+            />
+            <p className="mt-2 font-serif text-lg sm:text-2xl uppercase tracking-[0.1em] sm:tracking-[0.14em] text-ink">Yıldırım Avize</p>
+          </div>
         </div>
       </section>
 
