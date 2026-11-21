@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import CompanyInfo from "@/components/CompanyInfo";
 
 export const metadata: Metadata = {
   title: "İletişim & Mağaza Yol Tarifi",
@@ -8,14 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-  return (
-    <>
-      {children}
-      <div className="bg-surface px-4 sm:px-6 lg:px-8 pb-16">
-        <div className="max-w-7xl mx-auto">
-          <CompanyInfo variant="light" />
-        </div>
-      </div>
-    </>
-  );
+  return <>{children}</>;
 }
