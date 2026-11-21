@@ -135,7 +135,7 @@ export default function AdminKargonomiOrderActions({ order }: Props) {
                 {!quoteData.recommended && <p className="text-red-700">İki firma da bu bölgeye hizmet vermiyor görünüyor; Kargonomi panelinden kontrol edin.</p>}
               </fieldset>
             )}
-            {quoteData?.confirmed && <p className="font-semibold">Gönderi Kargonomi'de zaten onaylı. Barkod bilgisi çekilsin mi?</p>}
+            {quoteData?.confirmed && <p className="font-semibold">Gönderi Kargonomi&apos;de zaten onaylı. Barkod bilgisi çekilsin mi?</p>}
             {quoteData && selected && !quoteData.confirmed && (
               <p className="font-semibold">
                 Ücretli {selected === 6 ? "Hepsijet" : "Aras Kargo"} gönderisi açılır, {quoteData.quotes.find((q) => q.providerId === selected)?.priceText}. Oluşturulsun mu?
@@ -181,7 +181,7 @@ export default function AdminKargonomiOrderActions({ order }: Props) {
         </span>
         {tracking && <span className="block font-mono text-neutral-700">Takip No: {tracking}</span>}
         {order.kargonomiStatusLabel && <span className="block text-neutral-500">{order.kargonomiStatusLabel}</span>}
-        {order.status === "PENDING" && <span className="block text-amber-800">Paketi kargoya verince durumu 'Kargoya Verildi' yapın.</span>}
+        {order.status === "PENDING" && <span className="block text-amber-800">Paketi kargoya verince durumu &apos;Kargoya Verildi&apos; yapın.</span>}
         {tracking && carrierTrackingLink({ providerName: order.shippingProviderName, code: tracking }).href && (
           <a
             href={carrierTrackingLink({ providerName: order.shippingProviderName, code: tracking }).href ?? undefined}
