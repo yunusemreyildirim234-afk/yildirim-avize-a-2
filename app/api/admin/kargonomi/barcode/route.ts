@@ -35,6 +35,6 @@ export async function GET(req: Request) {
   const b64: string | undefined = [d?.pdf, d?.barcode, d?.content, d?.data, typeof d === "string" ? d : undefined].find(
     (v) => typeof v === "string" && v.length > 100
   );
-  if (!b64) return NextResponse.json({ error: "Barkod verisi çözümlenemedi." }, { status: 502 });
+  if (!b64) return NextResponse.json({ error: "Barkod henüz hazır değil olabilir (Kargonomi gönderiyi işleme alıyor). Birkaç dakika sonra tekrar deneyin." }, { status: 502 });
   return pdfResponse(Uint8Array.from(Buffer.from(b64.replace(/^data:application\/pdf;base64,/, ""), "base64")));
 }
