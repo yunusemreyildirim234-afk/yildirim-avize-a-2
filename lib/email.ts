@@ -225,12 +225,10 @@ export async function sendOrderNotificationEmails(data: EmailOrderData) {
 
       ${bankBlock}
 
-      ${kargonomiBlock}
-
       ${buildLegalSummaryHtml(SITE_URL)}
 
       <p style="color: #737373; font-size: 12px; line-height: 1.5; text-align: center;">
-        Avizeniz kargoya verildiğinde tarafınıza tekrar bilgilendirme yapılacaktır.
+        ${isBeyoglu ? "Siparişiniz mağazada teslime hazır olduğunda size bilgi vereceğiz." : "Avizeniz kargoya verildiğinde tarafınıza tekrar bilgilendirme yapılacaktır."}
       </p>
 
       <hr style="border: none; border-top: 1px solid #e5e5e5; margin: 25px 0;" />
@@ -260,6 +258,7 @@ export async function sendOrderNotificationEmails(data: EmailOrderData) {
       <table style="width: 100%; border-collapse: collapse; font-size: 13px;">${itemRows}</table>
       <h3 style="margin: 20px 0 6px; font-size: 14px;">Tutar Dökümü</h3>
       <table style="width: 100%; border-collapse: collapse; font-size: 13px;">${totalsRows}${data.couponCode ? `<tr><td style="padding: 4px 0; color: #737373;">Kupon</td><td style="padding: 4px 0; text-align: right; font-family: monospace;">${esc(data.couponCode)}</td></tr>` : ""}</table>
+      ${kargonomiBlock}
       <p style="margin-top: 20px;"><a href="${adminOrderUrl}" style="display: inline-block; background: #171717; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 13px; padding: 10px 22px; border-radius: 10px;">Siparişi panelde aç</a></p>
     </div>
   `;
