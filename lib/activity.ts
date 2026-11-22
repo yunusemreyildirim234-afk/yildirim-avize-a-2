@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { prisma } from "@/lib/db";
 import { cleanGuestEmail } from "@/lib/guest-email";
 import { ADMIN_EMAILS } from "@/lib/site";
@@ -14,8 +15,15 @@ export async function purgeOldEvents() {
   }
 }
 
+/** Anonim ziyaretçi için sabit, kısa, okunur etiket: "Anonim 7F2A91" (sessionId SHA-256 özetinin ilk 6 hex karakteri). */
+export function anonLabel(sessionId: string): string {
+  return `Anonim ${createHash("sha256").update(sessionId).digest("hex").slice(0, 6).toUpperCase()}`;
+}
+
 export interface ActivityRow {
   key: string;
+  label: string | null; // yalnızca anonim satırlarda
+
   userId: string | null; // yalnızca üyeler
   email: string | null;
   name: string | null;
@@ -30,8 +38,8 @@ export interface ActivityRow {
   errors: { at: string; page: string | null; detail: string }[];
 }
 
-const empty = (key: string, email: string | null): ActivityRow => ({
-  key, userId: null, email, name: null, registeredAt: null, isAdmin: false, firstAt: null, lastAt: null, activeMinutes: 0, searches: [], cartAdds: [], checkoutStarts: 0, errors: [],
+const empty = (key: string, email: string | null, label: string | null = null): ActivityRow => ({
+  key, label, userId: null, email, name: null, registeredAt: null, isAdmin: false, firstAt: null, lastAt: null, activeMinutes: 0, searches: [], cartAdds: [], checkoutStarts: 0, errors: [],
 });
 
 /** Son 3 günün olaylarını müşteri (e-posta) veya anonim oturum bazında gruplar. */
@@ -56,7 +64,7 @@ export async function getActivity(): Promise<{ registered: ActivityRow[]; guests
       const key = email ?? `s:${e.sessionId}`;
       let r = rows.get(key);
       if (!r) {
-        r = empty(key, email);
+        r = empty(key, email, email ? null : anonLabel(e.sessionId));
         rows.set(key, r);
       }
       const at = e.createdAt.toISOString();

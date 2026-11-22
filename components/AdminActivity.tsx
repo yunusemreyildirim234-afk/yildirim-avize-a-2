@@ -37,7 +37,7 @@ E-posta, şifre ve rol değişmez. Onaylıyor musunuz?`)) return;
   return (
     <li className="p-5 space-y-2 text-xs">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <strong className="text-neutral-900">{r.name ?? (guest ? "Misafir" : "Müşteri")}</strong>
+        <strong className="text-neutral-900">{r.name ?? (guest ? (r.label ?? "Misafir") : "Müşteri")}</strong>
         <span className="text-neutral-600 break-all">{r.email ?? "E-posta bilinmiyor (anonim oturum)"}</span>
         {r.isAdmin && <span className="bg-neutral-900 text-white font-bold text-[10px] px-2 py-0.5 rounded-full">Yönetici hesabı</span>}
         {r.errors.length > 0 && <span className="bg-red-100 text-red-800 font-bold text-[10px] px-2 py-0.5 rounded-full">{r.errors.length} hata</span>}
