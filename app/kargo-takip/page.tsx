@@ -111,15 +111,19 @@ async function OrderResult({ code, verify }: { code: string; verify?: string }) 
           <p className="font-semibold text-ink">
             {order.shippingTrackingCode || order.shippingBarcode ? order.kargonomiStatusLabel || "Kargo kaydı oluşturuldu" : "Kargo bilgileriniz hazırlanıyor"}
           </p>
-          {order.shippingTrackingCode && (
+          {(() => {
+            const trackingCode = order.shippingTrackingCode || order.shippingBarcode;
+            return trackingCode ? (
+              <p className="text-ink-muted">
+                Takip kodu:
+                <span className="mt-1 block"><CopyTrackingCode code={trackingCode} /></span>
+              </p>
+            ) : null;
+          })()}
+          {order.shippingTrackingCode && order.shippingBarcode && order.shippingBarcode !== order.shippingTrackingCode && (
             <p className="text-ink-muted">
-              Takip kodu:
-              <span className="mt-1 block"><CopyTrackingCode code={order.shippingTrackingCode} /></span>
-            </p>
-          )}
-          {order.shippingBarcode && (
-            <p className="text-ink-muted">
-              Barkod: <span className="font-mono">{order.shippingBarcode}</span>
+              Barkod:
+              <span className="mt-1 block"><CopyTrackingCode code={order.shippingBarcode} /></span>
             </p>
           )}
           {(() => {

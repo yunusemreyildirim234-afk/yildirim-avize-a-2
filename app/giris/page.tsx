@@ -325,10 +325,10 @@ export default function AuthPage() {
                                 order.shippingProviderName ? `(${order.shippingProviderName})` : ""
                               }`}
                         </strong>
-                        {order.shippingTrackingCode && (
+                        {(order.shippingTrackingCode || order.shippingBarcode) && (
                           <span className="mt-1 block">
                             <span className="text-ink-muted">Takip No: </span>
-                            <CopyTrackingCode code={order.shippingTrackingCode} />
+                            <CopyTrackingCode code={order.shippingTrackingCode || order.shippingBarcode || ""} />
                           </span>
                         )}
                         {order.shippingType !== "BEYOGLU_MAGAZA_TESLIM" && order.address && (
@@ -340,25 +340,25 @@ export default function AuthPage() {
                         <Link href={`/siparis-onay/${order.id}`} className="text-bronze-ink hover:underline font-semibold">
                           Sipariş detayı →
                         </Link>
-                        {order.shippingTrackingCode && (
+                        {(order.shippingTrackingCode || order.shippingBarcode) && (
                           <Link
-                            href={`/kargo-takip?code=${encodeURIComponent(order.shippingTrackingCode)}`}
+                            href={`/kargo-takip?code=${encodeURIComponent(order.shippingTrackingCode || order.shippingBarcode || "")}`}
                             className="text-bronze-ink hover:underline font-semibold"
                           >
                             🚚 Kargo Takip →
                           </Link>
                         )}
                         {(() => {
-                          const t = carrierTrackingLink({ providerName: order.shippingProviderName, code: order.shippingTrackingCode });
-                          return t.href && order.shippingTrackingCode ? (
+                          const t = carrierTrackingLink({ providerName: order.shippingProviderName, code: order.shippingTrackingCode || order.shippingBarcode });
+                          return t.href && (order.shippingTrackingCode || order.shippingBarcode) ? (
                             <a href={t.href} target="_blank" rel="noopener noreferrer" className="text-orange-700 hover:underline font-semibold">
                               {t.queryLabel}
                             </a>
                           ) : null;
                         })()}
                         {(() => {
-                          const t = carrierTrackingLink({ providerName: order.shippingProviderName, code: order.shippingTrackingCode });
-                          return t.hint && order.shippingTrackingCode ? <span className="basis-full text-xs text-ink-muted">{t.hint}</span> : null;
+                          const t = carrierTrackingLink({ providerName: order.shippingProviderName, code: order.shippingTrackingCode || order.shippingBarcode });
+                          return t.hint && (order.shippingTrackingCode || order.shippingBarcode) ?<span className="basis-full text-xs text-ink-muted">{t.hint}</span> : null;
                         })()}
                       </div>
                     </div>
