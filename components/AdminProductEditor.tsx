@@ -490,8 +490,14 @@ export default function AdminProductEditor({ product, onSaved, onDirtyChange, on
 
         <form onSubmit={addVariation} className="flex flex-wrap items-end gap-2 pt-1">
           <input aria-label="Yeni renk" required value={colorName} onChange={(e) => setColorName(e.target.value)} placeholder="Yeni renk adı" className={`${field} w-40`} />
-          <input aria-label="Stok" type="number" min={0} value={colorStock} onChange={(e) => setColorStock(e.target.value)} title="Stok" className={`${field} w-20`} />
-          <input aria-label="Ek fiyat" type="number" min={0} value={colorExtra} onChange={(e) => setColorExtra(e.target.value)} title="Ek fiyat (₺)" className={`${field} w-24`} />
+          <label className="flex flex-col gap-0.5 text-[11px] font-semibold text-neutral-600">
+            Stok
+            <input aria-label="Stok" type="number" min={0} value={colorStock} onChange={(e) => setColorStock(e.target.value)} title="Stok" className={`${field} w-20`} />
+          </label>
+          <label className="flex flex-col gap-0.5 text-[11px] font-semibold text-neutral-600">
+            Ek fiyat (₺)
+            <input aria-label="Ek fiyat" type="number" min={0} value={colorExtra} onChange={(e) => setColorExtra(e.target.value)} title="Ek fiyat (₺)" className={`${field} w-24`} />
+          </label>
           <button type="submit" disabled={busy} className="bg-white border border-neutral-300 hover:border-amber-600 font-semibold px-3 py-2 rounded-lg">
             Renk Ekle
           </button>

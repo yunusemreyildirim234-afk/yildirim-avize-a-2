@@ -43,6 +43,8 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
   const fis = buildFis({ ...order, items: order.items.map((i) => ({ quantity: i.quantity, variationValue: i.variationLabel ?? i.variation?.variationValue, title: i.productTitle ?? orderItemProductView(i.variation?.product).title })) }, ADDRESS_LINE);
   const fisTime = dt ? `${dt.date} ${dt.time}` : "-";
   const awaitsReceipt = order.paymentMethod === "BANK_TRANSFER" && order.status === "PENDING_NEW";
+  // Havale ödemesi onaylanmış: sipariş PENDING_NEW'den ilerlemiş (iptal/başarısız/denemeler hariç). Onay tarihi için mevcut bir alan yok.
+  const bankApproved = order.paymentMethod === "BANK_TRANSFER" && ["PENDING", "READY_FOR_PICKUP", "SHIPPED", "DELIVERED", "RETURNED"].includes(order.status);
 
   return (
     <main className="min-h-screen bg-neutral-100 py-8 px-4 sm:px-6 lg:px-8 print:min-h-0 print:bg-white print:p-0">
@@ -184,6 +186,8 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
                   Dekont:{" "}
                   {order.receiptUrl ? (
                     <a href={order.receiptUrl} target="_blank" rel="noopener" className="font-semibold text-amber-700 underline">Dekontu aç</a>
+                  ) : bankApproved ? (
+                    "Ödeme onaylandı (dekontsuz)"
                   ) : (
                     "henüz yüklenmedi"
                   )}

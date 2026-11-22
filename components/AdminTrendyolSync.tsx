@@ -232,7 +232,7 @@ export default function AdminTrendyolSync({
       <AdminImageCopy pending={uncopiedImages} imagesMode={settings.IMAGES} onRunningChange={setCopying} />
       <div className="space-y-1">
         <p className="text-xs text-neutral-600">Önce &quot;Önizle&quot; ile değişecekleri görün, sonra seçtiklerinizi uygulayın. Önizleme hiçbir şey yazmaz.</p>
-        <p className="text-xs text-amber-900 font-semibold">İlk kez &quot;Elle değiştirdiklerimi koru&quot; ile çalıştırırsanız çoğunlukla yalnızca Trendyol&apos;daki mevcut değerler kaydedilir, stok ve fiyat eşitlenmez. Stok ve fiyatı ilk kez Trendyol&apos;a göre eşitlemek için o satırda &quot;Trendyol&apos;daki değeri yaz&quot; seçin.</p>
+        <p className="text-xs text-amber-900 font-semibold">İlk kez &quot;Elle değiştirdiklerimi koru&quot; ile çalıştırırsanız, daha önce içe aktarılmamış mevcut ürünlerde hiçbir değer değişmez; yalnızca Trendyol&apos;daki değerler sonraki karşılaştırma için kaydedilir, stok ve fiyat eşitlenmez. Sitede olmayan Trendyol ürünleri yeni eklenir. Stok ve fiyatı ilk kez Trendyol&apos;a göre eşitlemek için o satırda &quot;Trendyol&apos;daki değeri yaz&quot; seçin.</p>
       </div>
 
       <fieldset className="space-y-2">
