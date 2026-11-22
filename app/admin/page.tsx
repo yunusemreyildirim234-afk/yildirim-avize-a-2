@@ -46,7 +46,7 @@ import AdminInvoice from "@/components/AdminInvoice";
 import AdminShipmentSync from "@/components/AdminShipmentSync";
 import AdminDeleteButton from "@/components/AdminDeleteButton";
 import { titleCaseTr } from "@/lib/display-case";
-import { countRecentErrors, purgeOldEvents } from "@/lib/activity";
+import { countRecentErrors } from "@/lib/activity";
 import { getCompanyInfo } from "@/lib/company";
 import { UNCOUNTED_STATUSES, matchesGroups, parseGroupParam } from "@/lib/orderStatus";
 import { ORDER_LIST_LIMIT, countGroups, countVisible, dateWhere, effectiveDurum, groupsWhere } from "@/lib/admin-order-query";
@@ -215,10 +215,9 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   // Çok Satanlar: bölüm havuzu (100) aynı sıralamanın uzun hâlidir; ilk 48 = getBestSellers(48) (ikinci sorgu yapılmaz)
   const showcase = { featured: featuredIds.map((p) => p.id), bestSellers: homePools.bestsellers.slice(0, 48).map((p) => p.id), manualFeatured: flaggedFeatured.length };
   const slim = (list: { id: string; title: string; modelCode: string | null }[]) => list.map((p) => ({ id: p.id, title: p.title, modelCode: p.modelCode }));
-  // Hareket kayıtları sayfada yüklenmez (bölüm açılınca /api/admin/activity); yalnız hata rozeti için sayım. 3 günlük saklama süresi için eski kayıt temizliği eskisi gibi her yüklemede çalışır.
-  const [errorCount, , discountRow] = await Promise.all([
+  // Hareket kayıtları sayfada yüklenmez (bölüm açılınca /api/admin/activity); yalnız hata rozeti için sayım. Eski kayıt temizliği günlük cron'da (runDailyCleanup).
+  const [errorCount, discountRow] = await Promise.all([
     countRecentErrors(),
-    purgeOldEvents(),
     prisma.siteConfig.findUnique({ where: { id: 1 }, select: { maxTotalDiscountPct: true } }),
   ]);
   const discountCap = discountRow?.maxTotalDiscountPct ?? null;

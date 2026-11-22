@@ -12,10 +12,11 @@ test("hareket ucu: GET yönetici oturumu ve hız sınırıyla korunur", () => {
   assert.match(get, /getActivity\(\)/);
 });
 
-test("panel sayfası hareket satırlarını yüklemez; yalnız hata sayımı + eski kayıt temizliği", () => {
+test("panel sayfası hareket satırlarını yüklemez; yalnız hata sayımı (eski kayıt temizliği cron'da)", () => {
   const p = read("../app/admin/page.tsx");
   assert.doesNotMatch(p, /getActivity/);
-  assert.match(p, /countRecentErrors\(\),\s*purgeOldEvents\(\)/);
+  assert.match(p, /countRecentErrors\(\)/);
+  assert.doesNotMatch(p, /purgeOldEvents/);
   assert.match(p, /<AdminActivity \/>/);
 });
 

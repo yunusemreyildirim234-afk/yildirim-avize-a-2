@@ -29,11 +29,11 @@ export async function GET(req: Request) {
   }
 
   // 0) Günlük veri temizliği (süresi geçmiş doğrulama kodları, eski okunmuş bildirimler): kendi try/catch'i var; hata hatırlatma adımlarını durdurmaz, onların hatası da bunu engellemez (en başta çalışır)
-  let cleanup: { codes: number; notifications: number; errors: string[] };
+  let cleanup: { codes: number; notifications: number; events: number; errors: string[] };
   try {
     cleanup = await runDailyCleanup(prisma);
   } catch (err) {
-    cleanup = { codes: 0, notifications: 0, errors: [(err as Error).message] };
+    cleanup = { codes: 0, notifications: 0, events: 0, errors: [(err as Error).message] };
   }
   if (cleanup.errors.length) console.error("[cron] temizlik:", cleanup.errors.join("; "));
 

@@ -1,16 +1,25 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { runDailyCleanup, cleanupWhere } from "../lib/cleanup-rules.ts";
+import "./_alias.mjs";
+const { runDailyCleanup, cleanupWhere } = await import("../lib/cleanup-rules.ts");
 
 const DAY = 86_400_000;
 const NOW = Date.parse("2026-11-14T10:00:00Z");
 const ago = (ms) => new Date(NOW - ms);
 
 // Sahte depo: yalnız bu kuralların kullandığı where biçimlerini değerlendirir
-function fakeDb({ codes, notifs, failCodes = false }) {
+function fakeDb({ codes, notifs, events = [], failCodes = false }) {
   return {
-    codes, notifs,
+    codes, notifs, events,
+    clientEvent: {
+      deleteMany: async ({ where }) => {
+        const keep = events.filter((e) => !(e.createdAt < where.createdAt.lt));
+        const count = events.length - keep.length;
+        events.splice(0, events.length, ...keep);
+        return { count };
+      },
+    },
     verificationCode: {
       deleteMany: async ({ where }) => {
         if (failCodes) throw new Error("kod tablosu yok");
@@ -87,4 +96,12 @@ test("temizlik reminders ucunun içinde: yetki denetiminden sonra, kendi try/cat
   assert.throws(() => readFileSync(new URL("../app/api/cron/cleanup/route.ts", import.meta.url)), /ENOENT/);
   const cfg = JSON.parse(readFileSync(new URL("../vercel.json", import.meta.url), "utf8"));
   assert.deepEqual(cfg.crons.map((c) => `${c.path} ${c.schedule}`), ["/api/cron/reminders 0 9 * * *", "/api/cron/sync-shipments 0 10 * * *"]);
+});
+
+test("hareket kayıtları: 3 günden eski silinir (panel açılışında değil, günlük temizlikte)", async () => {
+  const db = fakeDb({ codes: [], notifs: [], events: [{ id: "eski", createdAt: ago(3 * DAY + 1000) }, { id: "yeni", createdAt: ago(2 * DAY) }] });
+  const r = await runDailyCleanup(db, NOW);
+  assert.equal(r.events, 1);
+  assert.deepEqual(db.events.map((e) => e.id), ["yeni"]);
+  assert.equal(r.errors.length, 0);
 });
