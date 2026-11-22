@@ -51,8 +51,23 @@ export function isStaleReservation(createdAt: Date, now: number): boolean {
   return createdAt.getTime() < now - RESERVATION_RELEASE_MINUTES * 60_000;
 }
 
-/** Yönetici toplu silmede silinebilen sipariş: yalnız ödeme başarısız, iptal ve süresi geçmiş (DELETE_GUARD_HOURS) ödeme bekleyen. Ödenmiş/işlemdeki/teslim edilmiş sipariş kalıcı silinmez. */
-export function isOrderDeletable(o: { status: string; createdAt: Date }, now: number): boolean {
-  if (o.status === "PAYMENT_FAILED" || o.status === "CANCELLED") return true;
+/** Yönetici toplu silmede silinebilen sipariş: ödeme başarısız, süresi geçmiş (DELETE_GUARD_HOURS) ödeme bekleyen ve dekontsuz havale iptali. Kartla ödenip iptal edilen sipariş (para hareketi var) ve ödenmiş/işlemdeki/teslim edilmiş sipariş kalıcı silinmez. */
+export function isOrderDeletable(
+  o: { status: string; createdAt: Date; paymentMethod?: string | null; receiptUrl?: string | null },
+  now: number,
+): boolean {
+  if (o.status === "PAYMENT_FAILED") return true;
+  if (o.status === "CANCELLED") return o.paymentMethod === "BANK_TRANSFER" && o.receiptUrl === null;
   return o.status === "AWAITING_PAYMENT" && !isPaymentInFlight(o, now);
+}
+
+/** isOrderDeletable ile aynı kural, veritabanı süzgeci olarak (silme işleminin içinde durumu yeniden denetlemek için). */
+export function deletableOrderWhere(now: number) {
+  return {
+    OR: [
+      { status: "PAYMENT_FAILED" },
+      { status: "CANCELLED", paymentMethod: "BANK_TRANSFER", receiptUrl: null },
+      { status: "AWAITING_PAYMENT", createdAt: { lte: new Date(now - DELETE_GUARD_HOURS * 3_600_000) } },
+    ],
+  };
 }

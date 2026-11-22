@@ -6,6 +6,8 @@ import { isSelectableProviderId } from "@/lib/carrier-quotes";
 import { PROVIDER_LABEL, openShipmentWithProvider } from "@/lib/shipping-confirm";
 import { KARGONOMI_TIMEOUT_MESSAGE, SHIPPABLE_STATUSES, createShippingOnce, isTimeoutError } from "@/lib/shipping-claim";
 
+export const maxDuration = 60;
+
 /** Seçilen firmayla (Aras/Hepsijet) Kargonomi gönderisini onaylayıp barkodu oluşturur. Sipariş durumu "Hazırlanıyor" kalır; müşteriye bildirim gitmez (kargoya verildi geçişinde order-status gönderir). */
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const denied = await adminGuard();

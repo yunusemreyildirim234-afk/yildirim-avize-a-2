@@ -95,7 +95,9 @@ test("A8/C2: sipariş silinirken onay sayfasına giden müşteri bildirimi de ay
   // Bildirim oluşturulurken yazılan bağlantı, silmede aranan bağlantıyla aynı biçimde olmalı
   assert.match(read("../lib/orders.ts"), /link: `\/siparis-onay\/\$\{order\.id\}`/);
   const route = read("../app/api/admin/orders/route.ts");
+  const helper = read("../lib/order-delete.ts");
   const tx = route.indexOf("prisma.$transaction(");
-  const del = route.indexOf("tx.notification.deleteMany({ where: { link: { in: ids.map(orderNotificationLink) } } })");
-  assert.ok(tx > 0 && del > tx && del < route.indexOf("tx.order.deleteMany("), "bildirim silme, sipariş silmeyle aynı transaction'da ve ondan önce");
+  const call = route.indexOf("deleteOrderRowsInTx(tx as unknown as DeleteTx, ids, ids.map(orderNotificationLink)");
+  assert.ok(tx > 0 && call > tx, "silme yardımcısı transaction içinde ve bildirim bağlantılarıyla çağrılır");
+  assert.ok(helper.indexOf("tx.notification.deleteMany(") < helper.indexOf("tx.order.deleteMany("), "bildirim silme, sipariş silmeden önce");
 });
