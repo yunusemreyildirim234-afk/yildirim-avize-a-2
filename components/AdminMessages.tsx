@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import SmartFilterChips from "@/components/SmartFilterChips";
 import AdminDeleteButton from "@/components/AdminDeleteButton";
+import { AdminListStatus, useAdminList } from "@/components/useAdminList";
 
 export interface AdminMessage {
   id: string;
@@ -28,7 +29,14 @@ const GROUPS = [
   { key: "cevap", label: "Cevaplanmış Olanlar", test: (m: AdminMessage) => m.status === "ANSWERED" },
 ] as const;
 
-export default function AdminMessages({ messages }: { messages: AdminMessage[] }) {
+/** Mesajlar sayfayla birlikte yüklenmez: bölüm ilk açıldığında /api/admin/messages'tan (yönetici oturumuyla) çekilir. */
+export default function AdminMessages() {
+  const { open, data, failed, load } = useAdminList<AdminMessage[]>("/api/admin/messages");
+  if (!data) return <AdminListStatus open={open} failed={failed} load={load} what="Mesajlar" />;
+  return <MessagesList messages={data} onChanged={load} />;
+}
+
+function MessagesList({ messages, onChanged }: { messages: AdminMessage[]; onChanged: () => void }) {
   const router = useRouter();
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [sendingId, setSendingId] = useState<string | null>(null);
@@ -54,6 +62,7 @@ export default function AdminMessages({ messages }: { messages: AdminMessage[] }
         [m.id]: data.emailed ? "✓ Yanıt kaydedildi ve müşteriye e-posta ile gönderildi." : "Yanıt kaydedildi ancak e-posta gönderilemedi (Resend ayarlarını kontrol edin).",
       }));
       router.refresh();
+      onChanged();
     } catch (err) {
       setNotice((n) => ({ ...n, [m.id]: (err as Error).message }));
     } finally {
@@ -78,6 +87,7 @@ export default function AdminMessages({ messages }: { messages: AdminMessage[] }
             label={`Listelenen ${visible.length} kaydı sil`}
             confirmText={`Listelenen ${visible.length} mesaj/soru silinecek.`}
             className="mt-3"
+            onDone={onChanged}
           />
         </div>
       )}
@@ -145,7 +155,7 @@ export default function AdminMessages({ messages }: { messages: AdminMessage[] }
                       <span className="text-neutral-400">Son yanıt: {new Date(m.repliedAt).toLocaleString("tr-TR")}</span>
                     )}
                     {notice[m.id] && <span className="text-neutral-600">{notice[m.id]}</span>}
-                    <AdminDeleteButton endpoint="/api/admin/messages" ids={[m.id]} label="Sil" confirmText="Bu mesaj/soru silinecek." className="ml-auto" />
+                    <AdminDeleteButton endpoint="/api/admin/messages" ids={[m.id]} label="Sil" confirmText="Bu mesaj/soru silinecek." className="ml-auto" onDone={onChanged} />
                   </div>
                 </div>
               </li>

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Star, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
+import { AdminListStatus, useAdminList } from "@/components/useAdminList";
 
 export interface AdminReview {
   id: string;
@@ -23,7 +24,14 @@ const STATUS_LABEL: Record<string, { text: string; cls: string }> = {
   REJECTED: { text: "Reddedildi", cls: "bg-red-50 text-red-700 border-red-200" },
 };
 
-export default function AdminReviews({ reviews }: { reviews: AdminReview[] }) {
+/** Yorumlar sayfayla birlikte yüklenmez: bölüm ilk açıldığında /api/admin/reviews'tan (yönetici oturumuyla) çekilir. */
+export default function AdminReviews() {
+  const { open, data, failed, load } = useAdminList<AdminReview[]>("/api/admin/reviews");
+  if (!data) return <AdminListStatus open={open} failed={failed} load={load} what="Yorumlar" />;
+  return <ReviewsList reviews={data} onChanged={load} />;
+}
+
+function ReviewsList({ reviews, onChanged }: { reviews: AdminReview[]; onChanged: () => void }) {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -39,6 +47,7 @@ export default function AdminReviews({ reviews }: { reviews: AdminReview[] }) {
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "İşlem başarısız.");
       toast.success(method === "DELETE" ? "Yorum silindi" : status === "APPROVED" ? "Yorum onaylandı" : "Yorum reddedildi");
       router.refresh();
+      onChanged();
     } catch (e) {
       toast.error((e as Error).message);
     } finally {

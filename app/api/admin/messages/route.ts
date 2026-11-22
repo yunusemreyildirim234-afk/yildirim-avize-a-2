@@ -4,6 +4,34 @@ import { prisma } from "@/lib/db";
 import { sendReplyEmail } from "@/lib/email";
 import { notifyCustomer } from "@/lib/notifications";
 
+import { rateLimit, tooMany } from "@/lib/rate-limit";
+import type { AdminMessage } from "@/components/AdminMessages";
+
+// Mesaj/soru listesi (en çok 200): panel sayfasıyla değil, "Gelen Mesajlar" bölümü açılınca istenir. Bekleyenler üstte, kendi içinde en yeni önce.
+export async function GET(req: Request) {
+  const denied = await adminGuard();
+  if (denied) return denied;
+  const rl = rateLimit(req, "admin-messages", 30, 60_000);
+  if (rl.limited) return tooMany(rl.retryAfter);
+  const rows = await prisma.contactMessage.findMany({ include: { product: { select: { title: true } } }, orderBy: { createdAt: "desc" }, take: 200 });
+  rows.sort((a, b) => Number(b.status === "PENDING") - Number(a.status === "PENDING") || b.createdAt.getTime() - a.createdAt.getTime());
+  const list: AdminMessage[] = rows.map((m) => ({
+    id: m.id,
+    kind: m.kind,
+    name: m.name,
+    email: m.email,
+    phone: m.phone,
+    subject: m.subject,
+    message: m.message,
+    status: m.status,
+    reply: m.reply,
+    repliedAt: m.repliedAt?.toISOString() ?? null,
+    createdAt: m.createdAt.toISOString(),
+    productTitle: m.product?.title ?? null,
+  }));
+  return NextResponse.json(list);
+}
+
 // Seçili mesaj/soruları kalıcı siler
 export async function DELETE(req: Request) {
   const denied = await adminGuard();

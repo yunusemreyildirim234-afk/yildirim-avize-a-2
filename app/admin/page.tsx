@@ -76,7 +76,7 @@ const AdminAccountDeletions = nextDynamic(() => import("@/components/AdminAccoun
 export const dynamic = "force-dynamic";
 
 async function getAdminData() {
-  const [productRows, covers, uncopied, messages, coupons, customers, reviews, company] = await Promise.all([
+  const [productRows, covers, uncopied, pendingMessages, coupons, customers, pendingReviews, company] = await Promise.all([
     prisma.product.findMany({
       // Dar liste: yalnız listenin kullandığı alanlar. Açıklama ve tüm görsel dizileri düzenleyici açılınca tek ürün için okunur (GET /api/admin/product).
       select: ADMIN_LIST_PRODUCT_SELECT,
@@ -85,11 +85,8 @@ async function getAdminData() {
     loadAdminCovers(), // kapak veritabanında hesaplanır (görsel dizileri çekilmez); hata olursa kapaksız
     Promise.resolve(prismaCopyStore.count?.([])).then((c) => c?.kalan ?? 0).catch(() => 0), // "Blob'a kopyalanmamış": tek sayı, veritabanında sayılır
 
-    prisma.contactMessage.findMany({
-      include: { product: { select: { title: true } } },
-      orderBy: { createdAt: "desc" },
-      take: 200,
-    }),
+    // Mesaj ve yorum listeleri bölüm açılınca /api/admin/messages ve /api/admin/reviews'tan gelir; sayfada yalnız bekleyen sayıları
+    prisma.contactMessage.count({ where: { status: "PENDING" } }),
     prisma.coupon.findMany({
       include: { product: { select: { title: true, modelCode: true } } },
       orderBy: { createdAt: "desc" },
@@ -99,16 +96,12 @@ async function getAdminData() {
       select: { name: true, email: true },
       orderBy: { email: "asc" },
     }),
-    prisma.review.findMany({
-      include: { user: { select: { name: true, email: true } }, product: { select: { title: true } } },
-      orderBy: { createdAt: "desc" },
-      take: 300,
-    }),
+    prisma.review.count({ where: { status: "PENDING" } }),
     getCompanyInfo(),
   ]);
 
   const products = withCover(productRows, covers);
-  return { products, uncopied, messages, coupons, customers, reviews, company };
+  return { products, uncopied, pendingMessages, coupons, customers, pendingReviews, company };
 }
 
 const ORDER_INCLUDE = {
@@ -200,7 +193,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const sp = await searchParams;
   const durumParam = sp.durum;
   const orderFilters = { q: sp.q, tarih: sp.tarih, bas: sp.bas, bit: sp.bit };
-  const { products, uncopied, messages, coupons, customers, reviews, company } = await getAdminData();
+  const { products, uncopied, pendingMessages, coupons, customers, pendingReviews, company } = await getAdminData();
   const extraCategories = await getExtraCategoryNames(); // yönetim panelinden eklenen kategoriler (form/toplu işlem seçenekleri)
   // Vitrin çipleri için sitedeki kümeler: Öne Çıkanlar = işaretliler (yoksa otomatik seçim), Çok Satanlar = kategori sayfasındaki liste
   const flaggedFeatured = await prisma.product.findMany({ where: { active: true, isFeatured: true }, select: { id: true } });
@@ -233,14 +226,6 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
     })
     .catch(() => []);
   const payout = buildPayouts(payoutOrders);
-  const pendingReviews = reviews.filter((r) => r.status === "PENDING").length;
-  const sortedReviews = [...reviews].sort(
-    (a, b) => Number(b.status === "PENDING") - Number(a.status === "PENDING") || b.createdAt.getTime() - a.createdAt.getTime()
-  );
-  // Bekleyenler üstte, kendi içinde en yeni önce
-  const sortedMessages = [...messages].sort(
-    (a, b) => Number(b.status === "PENDING") - Number(a.status === "PENDING") || b.createdAt.getTime() - a.createdAt.getTime()
-  );
 
   // Arama + tarih aralığı: durum çiplerinden önce uygulanır; çip sayaçları ve "Tümü" aynı kümeden çıkar (liste = çip seçimi ∩ arama ∩ tarih).
   // Varsayılan görünüm yalnız açık işlerdir; arama ya da tarih süzgeci kullanılırken (ve ?durum= verilmemişken) tüm durumlarda aranır.
@@ -250,7 +235,6 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const selectedGroups = parseGroupParam(effDurum);
   const panel = await getOrderPanel(sp.q ?? "", dateRange, selectedGroups);
   const { orders: visibleOrders, allGroupCounts, groupCounts } = panel;
-  const pendingMessages = messages.filter((m) => m.status === "PENDING").length;
   const { totalRevenue, pendingTransferTotal, openShipmentCount } = panel;
   const bulkFilters = { ...orderFilters, durum: durumParam, dateActive: dateRange !== null };
 
@@ -600,22 +584,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           description="İletişim formu mesajları ve ürün soruları. Yanıtınız müşteriye e-posta ile iletilir ve hesabında görünür."
           badges={[{ label: `${pendingMessages} okunmamış`, tone: pendingMessages > 0 ? "amber" : "neutral" }]}
         >
-        <AdminMessages
-          messages={sortedMessages.map((m) => ({
-            id: m.id,
-            kind: m.kind,
-            name: m.name,
-            email: m.email,
-            phone: m.phone,
-            subject: m.subject,
-            message: m.message,
-            status: m.status,
-            reply: m.reply,
-            repliedAt: m.repliedAt?.toISOString() ?? null,
-            createdAt: m.createdAt.toISOString(),
-            productTitle: m.product?.title ?? null,
-          }))}
-        />
+        <AdminMessages />
         </AdminSection>
 
         {/* 3. Canlı Avize Kataloğu & Stok Yönetimi */}
@@ -629,19 +598,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           description="Yorumlar ve fotoğraflar onaylanana kadar sitede görünmez. Yeşil tik yayınlar, kırmızı çarpı reddeder."
           badges={[{ label: `${pendingReviews} onay bekliyor`, tone: pendingReviews > 0 ? "amber" : "neutral" }]}
         >
-          <AdminReviews
-            reviews={sortedReviews.map((r) => ({
-              id: r.id,
-              author: r.user.name,
-              email: r.user.email,
-              productTitle: r.product.title,
-              rating: r.rating,
-              comment: r.comment,
-              imageUrl: r.imageUrl,
-              status: r.status,
-              createdAt: r.createdAt.toISOString(),
-            }))}
-          />
+          <AdminReviews />
         </AdminSection>
 
         {/* Promosyon Kodları Yönetimi */}
