@@ -72,6 +72,7 @@ tools/gorsel/.env*
 
 # Denetim/rapor/plan dosyaları ve yerel görseller (commit edilmez)
 docs/kod-denetimi/
+docs/kod-denetimi-2/
 docs/rapor-*.md
 docs/plan-*.md
 docs/inceleme-*.md
