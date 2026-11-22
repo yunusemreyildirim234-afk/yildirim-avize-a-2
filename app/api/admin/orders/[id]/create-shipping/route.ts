@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { KargonomiError, confirmShippingPrice, createShipmentForOrder, getPriceComparison, refreshOrderShipment } from "@/lib/kargonomi";
 import { isSelectableProviderId } from "@/lib/carrier-quotes";
 import { PROVIDER_LABEL, openShipmentWithProvider } from "@/lib/shipping-confirm";
+import { decideRegenerate } from "@/lib/regenerate-guard";
 import { KARGONOMI_TIMEOUT_MESSAGE, SHIPPABLE_STATUSES, createShippingOnce, isTimeoutError } from "@/lib/shipping-claim";
 
 export const maxDuration = 60;
@@ -28,6 +29,10 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     if (order.labelCreated && !regenerate) {
       return NextResponse.json({ error: "Bu sipariş için barkod zaten oluşturulmuş." }, { status: 409 });
     }
+
+    // Yeniden üretme: bağlı gönderi önce yenilenir; aktif/onaylıysa (taslak ya da iptal değilse) hiçbir şey açılmaz
+    const guard = await decideRegenerate(order, Boolean(regenerate), () => refreshOrderShipment(id));
+    if (guard.action === "blocked") return NextResponse.json({ error: guard.message }, { status: 409 });
 
     // Önce koşullu sahiplenme (lib/shipping-claim.ts): labelCreated okunan değerden tersine çevrilir; çift tıklamada / iki sekmede yalnızca bir istek kazanır.
     // Barkod yazımı da koşulludur: gönderi açılırken iptal/iade edilen sipariş için STATUS_CHANGED döner. Sipariş durumuna dokunulmaz.

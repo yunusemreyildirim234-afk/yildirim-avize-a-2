@@ -92,7 +92,7 @@ export default function AdminKargonomiOrderActions({ order }: Props) {
       toast.success(kind === "refresh" ? "Kargo durumu güncellendi" : NOTICE);
       router.refresh();
     } catch (err) {
-      toast.error((err as Error).message || "Bağlantı hatası oluştu.");
+      toast.error((err as Error).message || "Bağlantı hatası oluştu.", { duration: 12000 });
     } finally {
       setLoading(null);
     }
