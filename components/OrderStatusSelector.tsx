@@ -15,6 +15,8 @@ export default function OrderStatusSelector({ orderId, initialStatus, shippingTy
   const router = useRouter();
   const [status, setStatus] = useState(initialStatus);
   const [loading, setLoading] = useState(false);
+  // Gerçek takip kodu yokken "Kargoya Verildi": sayfa içi onay (yerel confirm kullanılmaz)
+  const [pending, setPending] = useState<{ status: string; message: string } | null>(null);
 
   const handleStatusChange = async (newStatus: string) => {
     // Onay metinleri koddan teyitli (app/api/admin/order-status, lib/shipped-notice.ts): Teslim -> yalnızca site içi bildirim; Kargo -> site içi bildirim, standart kargo + takip kodu varsa e-posta da gider; İptal/İade -> stok ve kupon iadesi (lib/order-undo.ts)
@@ -26,7 +28,10 @@ export default function OrderStatusSelector({ orderId, initialStatus, shippingTy
       SHIPPED: "Sipariş 'Kargoya Verildi' yapılacak ve müşteriye site içi bildirim gidecek ve takip kodu varsa e-posta da gönderilecek. Emin misiniz?",
     };
     if (CONFIRM[newStatus] && !confirm(CONFIRM[newStatus])) return; // onay verilmezse seçim eski değerinde kalır (kontrollü select)
-    const previous = status;
+    await submit(newStatus, status, false);
+  };
+
+  const submit = async (newStatus: string, previous: string, force: boolean) => {
     setStatus(newStatus);
     setLoading(true);
 
@@ -34,7 +39,7 @@ export default function OrderStatusSelector({ orderId, initialStatus, shippingTy
       const res = await fetch("/api/admin/order-status", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId, status: newStatus }),
+        body: JSON.stringify({ orderId, status: newStatus, ...(force ? { force: true } : {}) }),
       });
 
       const data = await res.json();
@@ -46,6 +51,10 @@ export default function OrderStatusSelector({ orderId, initialStatus, shippingTy
           });
         }
         router.refresh();
+      } else if (res.status === 409 && data.code === "TRACKING_PENDING") {
+        // Hiçbir şey yazılmadı: seçim eski duruma döner, yönetici sayfa içinde onay verirse aynı istek force ile tekrarlanır
+        setStatus(previous);
+        setPending({ status: newStatus, message: String(data.error) });
       } else {
         // Sunucu değişikliği reddetti (ör. eşzamanlı güncelleme): seçim eski duruma döner, güncel durum yeniden okunur
         setStatus(previous);
@@ -86,6 +95,7 @@ export default function OrderStatusSelector({ orderId, initialStatus, shippingTy
   const isBeyoglu = shippingType === "BEYOGLU_MAGAZA_TESLIM";
 
   return (
+    <div>
     <div className="flex items-center gap-2">
       <select
         aria-label="Sipariş durumu"
@@ -122,6 +132,29 @@ export default function OrderStatusSelector({ orderId, initialStatus, shippingTy
       </select>
 
       {loading && <span className="text-[10px] text-ink-subtle animate-spin">⌛</span>}
+    </div>
+    {pending && (
+      <div role="alert" className="mt-2 max-w-xs rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
+        <p>{pending.message}</p>
+        <div className="mt-2 flex gap-2">
+          <button
+            type="button"
+            disabled={loading}
+            onClick={() => {
+              const next = pending.status;
+              setPending(null);
+              void submit(next, status, true);
+            }}
+            className="min-h-9 rounded-lg bg-neutral-900 px-3 font-semibold text-white hover:bg-neutral-700 focus-visible:outline-2 focus-visible:outline-amber-600 disabled:opacity-50"
+          >
+            Evet
+          </button>
+          <button type="button" onClick={() => setPending(null)} className="min-h-9 rounded-lg border border-neutral-300 bg-white px-3 font-semibold hover:bg-neutral-50 focus-visible:outline-2 focus-visible:outline-amber-600">
+            Vazgeç
+          </button>
+        </div>
+      </div>
+    )}
     </div>
   );
 }

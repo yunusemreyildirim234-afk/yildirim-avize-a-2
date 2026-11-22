@@ -5,8 +5,10 @@ import { adminGuard } from "@/lib/admin-guard";
 import { prisma } from "@/lib/db";
 import { notifyCustomer } from "@/lib/notifications";
 import { sendShippedEmail } from "@/lib/email";
+import { refreshOrderShipment } from "@/lib/kargonomi";
+import { decideShippedTracking } from "@/lib/shipped-tracking";
 import { cleanGuestEmail } from "@/lib/guest-email";
-import { buildShippedNotice } from "@/lib/shipped-notice";
+import { buildShippedNotice, buildShippedNoticeForced } from "@/lib/shipped-notice";
 import { forceReserveCoupon, releaseCoupon } from "@/lib/coupons";
 import { signSession } from "@/lib/session";
 import { ORDER_STATUSES, StatusRefusal, applyStatusChangeInTx, type StatusChangeTx } from "@/lib/order-undo";
@@ -21,17 +23,33 @@ const STATUS_NOTICE: Record<string, string> = {
 
 const VALID_STATUSES = ORDER_STATUSES;
 
+// Kargonomi yenilemesi (en çok 2 deneme, aralarında 2 sn) süre alabilir
+export const maxDuration = 30;
+
 async function POSTHandler(req: Request) {
   const denied = await adminGuard();
   if (denied) return denied;
   try {
-    const { orderId, status } = await req.json();
+    const { orderId, status, force } = await req.json();
 
     if (typeof orderId !== "string" || typeof status !== "string" || !orderId || !status) {
       return NextResponse.json({ error: "Eksik parametre" }, { status: 400 });
     }
     if (!VALID_STATUSES.includes(status)) {
       return NextResponse.json({ error: "Geçersiz sipariş durumu." }, { status: 400 });
+    }
+
+    // Kargoya verilirken gerçek takip kodu güvencesi (yalnız standart kargo): kod yoksa yönetici onayı istenir, hiçbir şey yazılmaz
+    let forcedShipped = false;
+    if (status === "SHIPPED") {
+      const pre = await prisma.order.findUnique({ where: { id: orderId }, select: { status: true, shippingType: true, shippingTrackingCode: true, shippingBarcode: true, kargonomiShipmentId: true } });
+      if (pre) {
+        const decision = await decideShippedTracking(pre, orderId, force === true, { refresh: refreshOrderShipment, sleep: (ms) => new Promise((r) => setTimeout(r, ms)) });
+        if (decision.action === "pending") {
+          return NextResponse.json({ success: false, code: "TRACKING_PENDING", barcodeMissing: decision.barcodeMissing, error: decision.message }, { status: 409 });
+        }
+        forcedShipped = decision.forced;
+      }
     }
 
     // Durum + stok + kupon tek transaction'da: biri hata verirse hiçbiri uygulanmaz (lib/order-undo.ts).
@@ -59,7 +77,7 @@ async function POSTHandler(req: Request) {
 
     const notified = before.status !== status && Boolean(STATUS_NOTICE[status]);
     // Kargoya verildi (standart kargo + takip kodu var): bildirime firma ve takip no eklenir, e-posta gönderilir
-    const shippedNotice = before.status !== status && status === "SHIPPED" ? buildShippedNotice(updatedOrder) : null;
+    const shippedNotice = before.status !== status && status === "SHIPPED" ? (forcedShipped ? buildShippedNoticeForced(updatedOrder) : buildShippedNotice(updatedOrder)) : null;
     if (notified) {
       await notifyCustomer(
         { userId: updatedOrder.userId },

@@ -568,21 +568,22 @@ export async function sendRequestDecisionEmail(data: { to: string; name: string;
 }
 
 /** Sipariş kargoya verilince müşteriye takip numarası ve canlı takip bağlantısı. */
-export async function sendShippedEmail(data: { to: string; name: string; orderId: string; carrier: string; trackingNumber: string; trackingKind?: "code" | "barcode" }) {
+export async function sendShippedEmail(data: { to: string; name: string; orderId: string; carrier: string; trackingNumber: string; trackingKind?: "code" | "barcode" | "none" }) {
+  const noCode = data.trackingKind === "none" || !data.trackingNumber;
   const track = carrierTrackingLink({ providerName: data.carrier, code: data.trackingNumber });
-  const live = track.href;
+  const live = noCode ? null : track.href;
   const to = carrierDativeName(data.carrier);
   const codeLabel = data.trackingKind === "barcode" ? "Gönderi barkodu" : "Takip No";
   const orderUrl = `${SITE_URL}${orderNotificationLink(data.orderId)}`;
   return sendViaResend(process.env.RESEND_API_KEY, {
     to: [data.to],
-    subject: `Siparişiniz ${to} Verildi - ${codeLabel}: ${data.trackingNumber}`,
+    subject: noCode ? `Siparişiniz ${to} Verildi` : `Siparişiniz ${to} Verildi - ${codeLabel}: ${data.trackingNumber}`,
     html: `<div style="font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 28px; background: #fafafa; border: 1px solid #e5e5e5; border-radius: 16px; color: #171717;">
       <h1 style="text-align: center; font-size: 22px; letter-spacing: 1px; margin: 0 0 16px;">YILDIRIM AVİZE</h1>
       <h2 style="font-size: 17px; margin: 0 0 10px;">Sayın ${esc(data.name)},</h2>
       <p style="font-size: 14px; line-height: 1.6;"><strong>#${esc(orderCode(data.orderId))}</strong> numaralı siparişiniz korumalı kolide <strong>${to}</strong> teslim edildi.</p>
-      <p style="text-align: center; margin: 18px 0 6px; font-size: 12px; color: #525252;">${codeLabel}</p>
-      <p style="text-align: center; margin: 0 0 18px;"><span style="display: inline-block; white-space: nowrap; user-select: all; -webkit-user-select: all; font-family: monospace; font-size: 20px; font-weight: bold; letter-spacing: 2px; background: #ffffff; border: 2px dashed #b45309; border-radius: 10px; padding: 10px 20px; color: #92400e;">${esc(data.trackingNumber)}</span></p>
+      ${noCode ? "" : `<p style="text-align: center; margin: 18px 0 6px; font-size: 12px; color: #525252;">${codeLabel}</p>
+      <p style="text-align: center; margin: 0 0 18px;"><span style="display: inline-block; white-space: nowrap; user-select: all; -webkit-user-select: all; font-family: monospace; font-size: 20px; font-weight: bold; letter-spacing: 2px; background: #ffffff; border: 2px dashed #b45309; border-radius: 10px; padding: 10px 20px; color: #92400e;">${esc(data.trackingNumber)}</span></p>`}
       <p style="text-align: center; font-size: 13px; color: #525252; margin: 0 0 14px;">Sipariş kodu: <strong style="font-family: monospace; color: #171717;">${esc(orderCode(data.orderId))}</strong> · <a href="${esc(orderUrl)}" style="color: #92400e; font-weight: bold;">Siparişi görüntüle</a></p>
       ${live ? `<p style="text-align: center; margin: 22px 0 8px;"><a href="${esc(live)}" style="display: inline-block; background: #171717; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 14px; padding: 12px 28px; border-radius: 10px;">${esc(track.queryLabel.replace(/ ↗$/, ""))}</a></p>${track.hint ? `<p style="font-size: 12px; color: #525252; text-align: center; margin: 0 0 12px;">${esc(track.hint)}</p>` : ""}` : ""}
       <p style="font-size: 12px; color: #737373; text-align: center;">Yıldırım Avize | Tel: ${PHONE_DISPLAY}</p>
