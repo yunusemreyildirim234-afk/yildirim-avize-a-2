@@ -26,6 +26,14 @@ export function carrierTrackingLink(p: {
   return { label: "Kargo", href: null, code, queryLabel: "Kargo", hint: null };
 }
 
+/** "…'ya/'e teslim edildi" tamlaması: Aras → "Aras Kargo'ya", Hepsijet → "Hepsijet'e", diğer/bilinmeyen → "kargo firmasına". */
+export function carrierDativeName(name?: string | null): string {
+  const n = (name ?? "").toLocaleLowerCase("tr");
+  if (n.includes("aras")) return "Aras Kargo'ya";
+  if (n.includes("hepsijet")) return "Hepsijet'e";
+  return "kargo firmasına";
+}
+
 /** Firma adı yoksa nötr "Kargo". */
 export function carrierDisplayName(name?: string | null): string {
   return name?.trim() || "Kargo";

@@ -26,8 +26,8 @@ interface EmailOrderData {
 }
 
 import { ADDRESS_LINE, ADMIN_EMAILS, BANK_INFO, PHONE_DISPLAY, SITE_URL } from "@/lib/site";
-import { orderCode, bankPaymentDeadline, breakdownOf, breakdownRows, deliveryAddressText, formatIstanbul, type BreakdownRow } from "@/lib/order-display";
-import { carrierTrackingLink } from "@/lib/carrier-links";
+import { orderCode, bankPaymentDeadline, breakdownOf, breakdownRows, deliveryAddressText, formatIstanbul, formatTl, orderNotificationLink, type BreakdownRow } from "@/lib/order-display";
+import { carrierDativeName, carrierTrackingLink } from "@/lib/carrier-links";
 import { IADE_TALIMATI } from "@/lib/legal-texts";
 import { buildLegalSummaryHtml } from "@/lib/legal-email";
 import { adminOrderHref } from "@/lib/admin-order-detail";
@@ -47,6 +47,8 @@ const REPLY_TO = "omeryildirim_3@hotmail.com";
 const maskTo = (to: unknown) => (Array.isArray(to) ? to : [to]).map((t) => String(t).replace(/^(.).*@/, "$1***@"));
 
 /** Tüm e-postaların en üstüne marka logosu (opak beyaz PNG, mutlak https adres; görsel engellenirse alt metin okunur). */
+/** Tutar rengi ve düğme zemini (beyaz yazıyla ≥4.5:1; eski #d97706 ~3:1 idi). */
+export const EMAIL_ORANGE = "#b45309";
 export const EMAIL_LOGO_HTML = `<img src="https://www.yildirimavize.com.tr/email-logo-v3.png" width="200" alt="Yıldırım Avize" style="display:block;margin:0 auto 16px;border:0">`;
 
 // RESEND_FROM (yoksa kurumsal varsayılan adres) ile dener; alan adı doğrulanmamışsa onboarding@resend.dev ile yeniden dener
@@ -85,7 +87,7 @@ function breakdownHtml(rows: BreakdownRow[]): string {
         r.kind === "total"
           ? "padding: 10px 0 4px; border-top: 1px solid #e5e5e5; font-size: 15px; font-weight: bold; color: #171717;"
           : `padding: 4px 0; color: ${r.kind === "discount" ? "#047857" : "#525252"};`;
-      const valueStyle = r.kind === "total" ? "font-size: 18px; color: #d97706;" : "";
+      const valueStyle = r.kind === "total" ? `font-size: 18px; color: ${EMAIL_ORANGE};` : "";
       return `<tr><td style="${style}">${r.label}</td><td style="${style} text-align: right; white-space: nowrap; ${valueStyle}">${r.value}</td></tr>`;
     })
     .join("");
@@ -110,12 +112,12 @@ export async function sendOrderNotificationEmails(data: EmailOrderData) {
       ? `
       <div style="background-color: #fffbeb; padding: 16px; border-radius: 12px; border: 1px solid #fde68a; margin: 20px 0;">
         <div style="font-size: 12px; font-weight: bold; color: #92400e; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">
-          🚚 Kargonomi Lojistik Kaydı
+          🚚 Kargo Kaydı
         </div>
         <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
           ${
             data.kargonomiShipmentId
-              ? `<tr><td style="padding: 4px 0; color: #78350f;">Kargonomi Gönderi No:</td><td style="padding: 4px 0; text-align: right; font-family: monospace; font-weight: bold; color: #171717;">#${esc(String(data.kargonomiShipmentId))}</td></tr>`
+              ? `<tr><td style="padding: 4px 0; color: #78350f;">Gönderi No:</td><td style="padding: 4px 0; text-align: right; font-family: monospace; font-weight: bold; color: #171717;">#${esc(String(data.kargonomiShipmentId))}</td></tr>`
               : ""
           }
           ${
@@ -146,8 +148,9 @@ export async function sendOrderNotificationEmails(data: EmailOrderData) {
         <div>Banka: <strong>${BANK_INFO.bank}</strong></div>
         <div>Alıcı Adı: <strong>${BANK_INFO.holder}</strong></div>
         <div>IBAN: <strong style="font-family: monospace;">${BANK_INFO.iban}</strong></div>
+        <div>Gönderilecek tutar: <strong>${formatTl(data.totalAmount)}</strong></div>
         ${bankDeadline ? `<div style="margin-top: 8px;">Son ödeme: <strong>${bankDeadline}</strong> (bu süre içinde dekont ulaşmazsa sipariş otomatik iptal edilir)</div>` : ""}
-        <div style="margin-top: 10px; color: #b91c1c; font-weight: bold;">Lütfen havale/EFT açıklama kısmına Sipariş Kodunuzu (${orderCode(data.orderId)}) yazmayı unutmayınız.</div>
+        <div style="margin-top: 10px; padding: 8px 10px; background: #fef3c7; border-left: 3px solid #b45309; color: #78350f; font-weight: bold;">Lütfen havale/EFT açıklama kısmına Sipariş Kodunuzu (${orderCode(data.orderId)}) yazmayı unutmayınız.</div>
       </div>
       `
       : "";
@@ -174,7 +177,7 @@ export async function sendOrderNotificationEmails(data: EmailOrderData) {
   const customerHtml = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; background-color: #fafafa; border: 1px solid #e5e5e5; border-radius: 16px;">
       <h1 style="color: #171717; font-size: 26px; text-align: center; margin-bottom: 4px; letter-spacing: 1px;">YILDIRIM AVİZE</h1>
-      <p style="text-align: center; color: #d97706; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; margin-top: 0; font-weight: bold;">Beyoğlu Şişhane Mirası</p>
+      <p style="text-align: center; color: ${EMAIL_ORANGE}; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; margin-top: 0; font-weight: bold;">Beyoğlu Şişhane Mirası</p>
       
       <hr style="border: none; border-top: 1px solid #e5e5e5; margin: 25px 0;" />
       
@@ -227,7 +230,7 @@ export async function sendOrderNotificationEmails(data: EmailOrderData) {
       ${buildLegalSummaryHtml(SITE_URL)}
 
       <p style="color: #737373; font-size: 12px; line-height: 1.5; text-align: center;">
-        Avizeniz hazırlandığında veya kargoya verildiğinde tarafınıza tekrar bilgilendirme yapılacaktır.
+        Avizeniz kargoya verildiğinde tarafınıza tekrar bilgilendirme yapılacaktır.
       </p>
 
       <hr style="border: none; border-top: 1px solid #e5e5e5; margin: 25px 0;" />
@@ -395,7 +398,7 @@ export async function sendVerificationCodeEmail(data: { to: string; code: string
     subject: `${copy.subject} - Yıldırım Avize`,
     html: `<div style="font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 28px; background: #fafafa; border: 1px solid #e5e5e5; border-radius: 16px; color: #171717;">
       <h1 style="text-align: center; font-size: 22px; letter-spacing: 1px; margin: 0;">YILDIRIM AVİZE</h1>
-      <p style="text-align: center; color: #d97706; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; font-weight: bold; margin: 4px 0 20px;">Beyoğlu Şişhane Mirası</p>
+      <p style="text-align: center; color: ${EMAIL_ORANGE}; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; font-weight: bold; margin: 4px 0 20px;">Beyoğlu Şişhane Mirası</p>
       <p style="font-size: 14px; line-height: 1.6;">${copy.lead}</p>
       <div style="text-align: center; margin: 22px 0;"><span style="display: inline-block; font-family: monospace; font-size: 34px; font-weight: bold; letter-spacing: 8px; background: #ffffff; border: 2px dashed #d97706; border-radius: 12px; padding: 14px 24px; color: #92400e;">${data.code}</span></div>
       <p style="font-size: 12px; color: #b91c1c; text-align: center; font-weight: bold;">Bu kod 10 dakika süreyle geçerlidir. Güvenliğiniz için kimseyle paylaşmayınız.</p>
@@ -480,7 +483,7 @@ export async function sendReceiptReminderEmail(data: { to: string; name: string;
       <h1 style="text-align: center; font-size: 22px; letter-spacing: 1px; margin: 0 0 16px;">YILDIRIM AVİZE</h1>
       <h2 style="font-size: 17px; margin: 0 0 10px;">Sayın ${esc(data.name)},</h2>
       <p style="font-size: 14px; line-height: 1.6;">Siparişinizin onaylanması için havale dekontunuzu bekliyoruz. Aşağıdaki bağlantıdan dekontunuzu yükleyebilir veya sipariş detaylarını görebilirsiniz.</p>
-      <p style="text-align: center; margin: 22px 0 8px;"><a href="${url}" style="display: inline-block; background: #d97706; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 14px; padding: 12px 28px; border-radius: 10px;">Dekontumu Yükle</a></p>
+      <p style="text-align: center; margin: 22px 0 8px;"><a href="${url}" style="display: inline-block; background: ${EMAIL_ORANGE}; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 14px; padding: 12px 28px; border-radius: 10px;">Dekontumu Yükle</a></p>
       <p style="font-size: 12px; color: #737373; text-align: center;">Sipariş Kodu: ${orderCode(data.orderId)}<br />Yıldırım Avize | Tel: ${PHONE_DISPLAY}</p>
     </div>`,
   });
@@ -566,17 +569,22 @@ export async function sendRequestDecisionEmail(data: { to: string; name: string;
 }
 
 /** Sipariş kargoya verilince müşteriye takip numarası ve canlı takip bağlantısı. */
-export async function sendShippedEmail(data: { to: string; name: string; orderId: string; carrier: string; trackingNumber: string }) {
+export async function sendShippedEmail(data: { to: string; name: string; orderId: string; carrier: string; trackingNumber: string; trackingKind?: "code" | "barcode" }) {
   const track = carrierTrackingLink({ providerName: data.carrier, code: data.trackingNumber });
   const live = track.href;
+  const to = carrierDativeName(data.carrier);
+  const codeLabel = data.trackingKind === "barcode" ? "Gönderi barkodu" : "Takip No";
+  const orderUrl = `${SITE_URL}${orderNotificationLink(data.orderId)}`;
   return sendViaResend(process.env.RESEND_API_KEY, {
     to: [data.to],
-    subject: `Siparişiniz ${data.carrier}'ya Verildi - Takip No: ${data.trackingNumber}`,
+    subject: `Siparişiniz ${to} Verildi - ${codeLabel}: ${data.trackingNumber}`,
     html: `<div style="font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 28px; background: #fafafa; border: 1px solid #e5e5e5; border-radius: 16px; color: #171717;">
       <h1 style="text-align: center; font-size: 22px; letter-spacing: 1px; margin: 0 0 16px;">YILDIRIM AVİZE</h1>
       <h2 style="font-size: 17px; margin: 0 0 10px;">Sayın ${esc(data.name)},</h2>
-      <p style="font-size: 14px; line-height: 1.6;"><strong>#${esc(orderCode(data.orderId))}</strong> numaralı siparişiniz korumalı kolide <strong>${esc(data.carrier)}</strong>'ya teslim edildi.</p>
-      <p style="text-align: center; margin: 18px 0;"><span style="display: inline-block; font-family: monospace; font-size: 20px; font-weight: bold; letter-spacing: 2px; background: #ffffff; border: 2px dashed #d97706; border-radius: 10px; padding: 10px 20px; color: #92400e;">${esc(data.trackingNumber)}</span></p>
+      <p style="font-size: 14px; line-height: 1.6;"><strong>#${esc(orderCode(data.orderId))}</strong> numaralı siparişiniz korumalı kolide <strong>${to}</strong> teslim edildi.</p>
+      <p style="text-align: center; margin: 18px 0 6px; font-size: 12px; color: #525252;">${codeLabel}</p>
+      <p style="text-align: center; margin: 0 0 18px;"><span style="display: inline-block; white-space: nowrap; user-select: all; -webkit-user-select: all; font-family: monospace; font-size: 20px; font-weight: bold; letter-spacing: 2px; background: #ffffff; border: 2px dashed #b45309; border-radius: 10px; padding: 10px 20px; color: #92400e;">${esc(data.trackingNumber)}</span></p>
+      <p style="text-align: center; font-size: 13px; color: #525252; margin: 0 0 14px;">Sipariş kodu: <strong style="font-family: monospace; color: #171717;">${esc(orderCode(data.orderId))}</strong> · <a href="${esc(orderUrl)}" style="color: #92400e; font-weight: bold;">Siparişi görüntüle</a></p>
       ${live ? `<p style="text-align: center; margin: 22px 0 8px;"><a href="${esc(live)}" style="display: inline-block; background: #171717; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 14px; padding: 12px 28px; border-radius: 10px;">${esc(track.queryLabel.replace(/ ↗$/, ""))}</a></p>${track.hint ? `<p style="font-size: 12px; color: #525252; text-align: center; margin: 0 0 12px;">${esc(track.hint)}</p>` : ""}` : ""}
       <p style="font-size: 12px; color: #737373; text-align: center;">Yıldırım Avize | Tel: ${PHONE_DISPLAY}</p>
     </div>`,

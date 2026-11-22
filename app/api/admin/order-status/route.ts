@@ -72,7 +72,7 @@ async function POSTHandler(req: Request) {
       try {
         const user = await prisma.user.findUnique({ where: { id: updatedOrder.userId }, select: { email: true, name: true } });
         if (user) {
-          await sendShippedEmail({ to: cleanGuestEmail(user.email), name: user.name, orderId, carrier: shippedNotice.carrier, trackingNumber: shippedNotice.tracking });
+          await sendShippedEmail({ to: cleanGuestEmail(user.email), name: user.name, orderId, carrier: shippedNotice.carrier, trackingNumber: shippedNotice.tracking, trackingKind: shippedNotice.trackingKind });
         }
       } catch (e) {
         console.warn("Kargo e-postası gönderilemedi:", (e as Error).message);
