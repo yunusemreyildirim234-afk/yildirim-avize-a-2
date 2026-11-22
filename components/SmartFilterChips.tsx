@@ -22,6 +22,7 @@ export default function SmartFilterChips({
   total,
   onChange,
   allLabel = "Tümü",
+  nowrap = false,
 }: {
   label: string;
   options: ChipOption[];
@@ -29,14 +30,16 @@ export default function SmartFilterChips({
   total: number;
   onChange: (next: string[]) => void;
   allLabel?: string;
+  /** Tek satır (ScrollChips içinde kullanılır): çipler sarılmaz, küçülmez. */
+  nowrap?: boolean;
 }) {
-  const chip = "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze-ink";
+  const chip = `${nowrap ? "shrink-0 whitespace-nowrap " : ""}inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze-ink`;
   const on = "bg-ink border-ink text-canvas";
   const off = "bg-raised border-line-strong text-ink-muted hover:border-ink-muted";
   const allActive = selected.length === 0;
 
   return (
-    <div role="group" aria-label={label} className="flex flex-wrap items-center gap-2">
+    <div role="group" aria-label={label} className={`flex items-center gap-2 ${nowrap ? "w-max px-0.5 py-0.5" : "flex-wrap"}`}>
       <button type="button" aria-pressed={allActive} onClick={() => onChange([])} className={`${chip} ${allActive ? on : off}`}>
         {allLabel} <span className="opacity-70">({total})</span>
       </button>

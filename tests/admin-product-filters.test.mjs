@@ -89,3 +89,17 @@ test("AdminProductList: süzgeç paneli bağlı, mevcut Stoksuz çipi duruyor, s
   assert.match(panel, /Filtrele ve Sırala/);
   assert.match(panel, /Süzgeçleri temizle/);
 });
+
+test("süzgeç sadeleştirme: çip sıraları oklu şeritte, renk/ebat açılır başlık, iç kaydırma yok", () => {
+  const list = readFileSync(new URL("../components/AdminProductList.tsx", import.meta.url), "utf8");
+  assert.equal((list.match(/<ScrollChips>/g) ?? []).length, 2);
+  assert.equal((list.match(/<\/ScrollChips>/g) ?? []).length, 2);
+  const strip = readFileSync(new URL("../components/ScrollChips.tsx", import.meta.url), "utf8");
+  assert.match(strip, /aria-label="Sola kaydır"/);
+  assert.match(strip, /aria-label="Sağa kaydır"/);
+  assert.match(strip, /scrollBy/);
+  const panel = readFileSync(new URL("../components/AdminProductFilterPanel.tsx", import.meta.url), "utf8");
+  assert.match(panel, /aria-expanded=\{open\}\r?\n\s+aria-controls=\{listId\}/);
+  assert.match(panel, /useState\(false\)/);
+  assert.doesNotMatch(panel, /max-h-36|overflow-y-auto/);
+});

@@ -17,6 +17,7 @@ import AdminDescriptionEditor from "@/components/AdminDescriptionEditor";
 import { activeConfirmMessage } from "@/lib/bulk-plan";
 import SmartFilterChips from "@/components/SmartFilterChips";
 import AdminProductFilterPanel from "@/components/AdminProductFilterPanel";
+import ScrollChips from "@/components/ScrollChips";
 import { EMPTY_FILTERS, adminFacets, applyAdminFilters, hasAdminFilters, type AdminFilterState } from "@/lib/admin-product-filters";
 import { bulkTiersOf, tierBadgeLabel, tierValueLabel } from "@/lib/bulk-pricing";
 import { CATEGORIES } from "@/lib/site";
@@ -559,7 +560,9 @@ Yine de geri alınsın mı?`)) break;
           />
         </div>
         <div className="mt-3">
+          <ScrollChips>
           <SmartFilterChips
+            nowrap
             label="Ürün vitrin ve indirim filtreleri"
             selected={chips}
             onChange={(c) => { setChips(c); setShown(PAGE); }}
@@ -572,8 +575,11 @@ Yine de geri alınsın mı?`)) break;
               ...(Object.keys(QUICK_FILTER_LABELS) as QuickFilterKey[]).map((key) => ({ key, label: QUICK_FILTER_LABELS[key], count: products.filter((p) => quickFilterTest(key, p)).length })),
             ]}
           />
+          </ScrollChips>
           <div className="mt-2">
+            <ScrollChips>
             <SmartFilterChips
+              nowrap
               label="Ürün kategori filtreleri"
               selected={catChips}
               onChange={(c) => { setCatChips(c); setShown(PAGE); }}
@@ -581,6 +587,7 @@ Yine de geri alınsın mı?`)) break;
               allLabel="Tüm kategoriler"
               options={[...catEntries.filter((c) => c.count > 0).map((c) => ({ key: c.key, label: c.title, count: c.count })), ...(noneCount > 0 ? [{ key: NONE_KEY, label: "Kategorisiz", count: noneCount }] : [])]}
             />
+            </ScrollChips>
           </div>
           {/* Öne Çıkanlar modu: elle işaret varsa site yalnızca onları gösterir; yoksa otomatik seçim */}
           <p className="mt-2 text-[11px] text-neutral-600 flex flex-wrap items-center gap-x-3 gap-y-1">

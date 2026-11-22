@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { SlidersHorizontal } from "lucide-react";
+import { useId, useState } from "react";
+import { ChevronDown, SlidersHorizontal } from "lucide-react";
 import { ADMIN_SORTS, ADMIN_SORT_LABELS, hasAdminFilters, type AdminFilterState, type AdminSort, type FacetOption, type StockMode } from "@/lib/admin-product-filters";
 
 const STOCK_OPTIONS: { key: StockMode; label: string }[] = [
@@ -14,11 +14,30 @@ const legend = "block text-[11px] font-bold uppercase tracking-wide text-neutral
 const numInput = "w-full min-h-11 text-xs px-3 rounded-xl border border-neutral-300 bg-white focus:outline-none focus:border-amber-600";
 
 function Facet({ title, options, onToggle }: { title: string; options: FacetOption[]; onToggle: (key: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const listId = useId();
   if (options.length === 0) return null;
+  const picked = options.filter((o) => o.selected);
+  const names = picked.map((o) => o.name).join(", ");
+  const summary = picked.length === 0 ? "seçili yok" : names.length > 40 ? `${names.slice(0, 40)}…` : names;
   return (
-    <fieldset className="min-w-0">
-      <legend className={legend}>{title}</legend>
-      <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto">
+    <div className="min-w-0 border-t border-neutral-200 pt-3">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={listId}
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full min-h-11 items-center gap-2 text-left text-xs focus-visible:outline-2 focus-visible:outline-amber-600"
+      >
+        <span className="text-[11px] font-bold uppercase tracking-wide text-neutral-600">{title}</span>
+        <span aria-hidden="true" className="text-neutral-400">·</span>
+        <span className="min-w-0 flex-1 truncate text-neutral-700">{summary}</span>
+        {picked.length > 0 && (
+          <span className="shrink-0 rounded-full bg-amber-600 px-2 py-0.5 text-[11px] font-bold text-white">{picked.length} seçili</span>
+        )}
+        <ChevronDown aria-hidden="true" className={`h-4 w-4 shrink-0 text-neutral-500 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      <div id={listId} hidden={!open} className="mt-2 flex flex-wrap gap-1.5">
         {options.map((o) => (
           <button
             key={o.key}
@@ -31,7 +50,7 @@ function Facet({ title, options, onToggle }: { title: string; options: FacetOpti
           </button>
         ))}
       </div>
-    </fieldset>
+    </div>
   );
 }
 
