@@ -77,7 +77,8 @@ test("terk edilmiş sepet e-postası: vitrin kuponu herkese açık, 'size özel 
   const giden = yakala();
   await email.sendAbandonedCartEmail({ to: "a@example.com", name: "Ayşe", orderId: "o", items: [{ title: "Avize", quantity: 1 }], couponCode: "YILDIRIM5", discountLabel: "%5", footerHtml: "" });
   const { subject, html } = giden[0].body;
-  assert.match(subject, /Sepetinizi tamamlarken kullanabileceğiniz %5 indirim kodu: YILDIRIM5/);
+  assert.equal(subject, "Sepetiniz sizi bekliyor — %5 indirim kodu"); // kısa konu; kupon kodu gövdede
+  assert.match(html, /YILDIRIM5/);
   assert.match(html, /Sepetinizi tamamlarken kullanabileceğiniz <strong>%5 indirim<\/strong> kodu:/);
   assert.doesNotMatch(subject + html, /size özel|kuponunuz/i);
 });
