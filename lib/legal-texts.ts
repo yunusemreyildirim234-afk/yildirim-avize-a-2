@@ -3,7 +3,7 @@
 
 import { LEGAL_CONTACT_EMAIL, PHONE_DISPLAY } from "@/lib/site";
 
-export const LEGAL_UPDATED = "2 Kasım 2026";
+export const LEGAL_UPDATED = "21 Kasım 2026";
 /** Siparişte saklanan sözleşme/ön bilgilendirme sürümü (Order.legalConsentVersion); LEGAL_UPDATED ile aynı değer, kaydın adı açık olsun diye. */
 export const LEGAL_VERSION = LEGAL_UPDATED;
 

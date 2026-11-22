@@ -14,7 +14,7 @@ export default async function Page() {
   return (
     <LegalPage
       path="/aydinlatma-metni"
-      updated="14 Kasım 2026"
+      updated="21 Kasım 2026"
       title="Kişisel Verilerin İşlenmesine İlişkin Aydınlatma Metni"
       intro="Bu metin, 6698 sayılı Kişisel Verilerin Korunması Kanunu'nun (KVKK) 10. maddesi ve Aydınlatma Yükümlülüğünün Yerine Getirilmesinde Uyulacak Usul ve Esaslar Hakkında Tebliğ kapsamında, müşterilerimizi ve site ziyaretçilerimizi bilgilendirmek amacıyla hazırlanmıştır. Bir onay metni değildir; bilgilendirme amaçlıdır."
       sections={[
