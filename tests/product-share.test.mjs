@@ -89,7 +89,7 @@ test("ProductShareButton ve ProductDetailClient: erişilebilirlik, Web Share + f
   assert.match(btnSrc, /aria-label="Ürünü paylaş"/);
   assert.match(btnSrc, /title="Paylaş"/);
   assert.match(btnSrc, /navigator\.share/);
-  assert.match(btnSrc, /navigator\.clipboard\.writeText/);
+  assert.match(btnSrc, /copyText\(url\)/); // pano + textarea yedeği lib/clipboard.ts'te
   assert.match(btnSrc, /Bağlantıyı Kopyala/);
   assert.match(btnSrc, /Kopyalandı/);
   assert.match(btnSrc, /WhatsApp/);

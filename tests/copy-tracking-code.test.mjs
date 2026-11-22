@@ -6,7 +6,7 @@ const src = readFileSync(new URL("../components/CopyTrackingCode.tsx", import.me
 
 test("CopyTrackingCode: client bileşen, clipboard ve aria-live kullanır", () => {
   assert.match(src, /^"use client"/);
-  assert.match(src, /navigator\.clipboard\.writeText/);
+  assert.match(src, /copyText\(code\)/); // pano + textarea yedeği lib/clipboard.ts'te
   assert.match(src, /aria-live="polite"/);
   assert.match(src, /select-all/);
   assert.match(src, /min-h-11/);
