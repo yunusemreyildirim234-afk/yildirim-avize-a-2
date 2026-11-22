@@ -420,11 +420,17 @@ export async function sendPasswordChangedEmail(to: string) {
 }
 
 /** Terk edilen ödeme denemesi için KAMPANYA sürümü (vitrin kuponunun gerçek değeriyle). Yalnızca ticari ileti onayı olanlara gönderilir; footerHtml (unvan, adres, çıkış bağlantısı) zorunludur. */
+/** Konu en çok 60 karakter (telefonda kesilmesin); etiket çok uzunsa etiketsiz kısa konuya düşer. Kupon kodu gövdede. */
+export function abandonedCartSubject(discountLabel: string): string {
+  const s = `Sepetiniz sizi bekliyor — ${discountLabel} indirim kodu`;
+  return s.length <= 60 ? s : "Sepetiniz sizi bekliyor — indirim kodu";
+}
+
 export async function sendAbandonedCartEmail(data: { to: string; name: string; orderId: string; items: { title: string; quantity: number }[]; couponCode: string; discountLabel: string; footerHtml: string }) {
   return sendViaResend(process.env.RESEND_API_KEY, {
     to: [data.to],
     headers: unsubscribeHeaders(data.to),
-    subject: `Sepetinizdeki avize sizi bekliyor! Sepetinizi tamamlarken kullanabileceğiniz ${data.discountLabel} indirim kodu: ${data.couponCode}`,
+    subject: abandonedCartSubject(data.discountLabel),
     html: `<div style="font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 28px; background: #fafafa; border: 1px solid #e5e5e5; border-radius: 16px; color: #171717;">
       <h1 style="text-align: center; font-size: 22px; letter-spacing: 1px; margin: 0 0 16px;">YILDIRIM AVİZE</h1>
       <h2 style="font-size: 17px; margin: 0 0 10px;">Sayın ${esc(data.name)},</h2>
