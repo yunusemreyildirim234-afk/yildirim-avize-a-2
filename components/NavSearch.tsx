@@ -1,5 +1,6 @@
 "use client";
 
+import { PRICE_CONTACT_TEXT, hasPrice } from "@/lib/has-price";
 import { useEffect, useRef, useState } from "react";
 import { useFocusTrap } from "@/components/useFocusTrap";
 import Link from "next/link";
@@ -80,7 +81,7 @@ function Results({
                 <span className="text-[10px] text-bronze-ink bg-surface px-1.5 py-0.5 rounded-full font-medium">{p.category}</span>
                 {p.modelCode && <span className="text-[10px] font-mono text-ink-subtle">Model {p.modelCode}</span>}
               </span>
-              <span className="block text-xs font-bold text-ink mt-1">{p.basePrice.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
+              <span className="block text-xs font-bold text-ink mt-1">{hasPrice(p.basePrice) ? `${p.basePrice.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺` : PRICE_CONTACT_TEXT}</span>
             </span>
           </Link>
           <div className="w-28 shrink-0 space-y-1.5">

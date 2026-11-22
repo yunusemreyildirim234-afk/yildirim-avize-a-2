@@ -25,6 +25,8 @@ import { smallImage } from "@/lib/img";
 import { displayTitle } from "@/lib/title-display";
 import { pickDefaultOption } from "@/lib/default-variation";
 import InstallmentLink from "@/components/InstallmentLink";
+import { seriesBadge } from "@/lib/category-label";
+import { NO_PRICE_CART_REASON, PRICE_CONTACT_HREF, PRICE_CONTACT_TEXT, hasPrice } from "@/lib/has-price";
 import ProductShareButton from "@/components/ProductShareButton";
 
 interface Variation {
@@ -130,7 +132,8 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
   const outOfStock = !selectedVariation || maxQty <= 0;
   const lowStockText = lowStock && selectedVariation ? lowStockLabel(selectedVariation.stock, lowStock) : null; // seçili varyasyonun gerçek stoğu; ayar kapalıysa null
   const soldOut = product.variations.every((v) => v.stock <= 0); // tüm seçenekler tükendi: satın alma bölümü yerine stok sorma
-  const priceOnRequest = !soldOut && !isPurchasablePrice(currentPrice); // fiyatı 0/altı: "Sepete ekle" yerine "Fiyat için sorun"
+  const noPrice = !hasPrice(currentPrice); // fiyat bloğu/taksit/indirim satırları gizlenir
+  const priceOnRequest = !soldOut && noPrice; // fiyatı 0/altı: "Sepete ekle" yerine "Fiyat için sorun"
   const priceMessage = `Merhaba, ${product.title}${product.modelCode ? ` (Model: ${product.modelCode})` : ""} avizesinin güncel fiyatını öğrenmek istiyorum: ${SITE_URL}/urun/${product.id}`;
   const fav = isFavorite(product.id);
   const freeShipping = currentPrice >= FREE_SHIPPING_THRESHOLD;
@@ -266,11 +269,11 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
                 data-testid="product-category-link"
                 className="inline-block text-xs font-semibold text-bronze-ink uppercase tracking-wider hover:text-bronze-ink hover:underline underline-offset-2 rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze-ink"
               >
-                {product.category} Serisi
+                {seriesBadge(product.category) ?? product.category.trim()}
               </Link>
             ) : (
               <span className="text-xs font-semibold text-bronze-ink uppercase tracking-wider">
-                {product.category} Serisi
+                {seriesBadge(product.category) ?? product.category.trim()}
               </span>
             )
           )}
@@ -311,6 +314,12 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
             <span className="inline-block text-[11px] font-semibold text-ink-muted border border-line-strong rounded-md px-2 py-0.5">Montajlı</span>
           )}
           <div className="pt-4">
+            {noPrice ? (
+              <Link href={PRICE_CONTACT_HREF} data-testid="fiyat-iletisim" className="text-lg font-semibold text-ink underline underline-offset-2 hover:text-bronze-ink rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze-ink">
+                {PRICE_CONTACT_TEXT}
+              </Link>
+            ) : (
+            <>
             <span className="text-xs text-ink-muted block mb-1">{quantity > 1 ? "Toplam Tutar" : "Fiyat"}</span>
             {listShown && listShown > currentPrice && (
               <span className="block text-xs text-ink-muted"><span>Liste fiyatı: </span><span className="line-through">{(listShown * quantity).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span></span>
@@ -329,6 +338,8 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
             <div className="mt-2">
               <InstallmentLink amount={lineNow} />
             </div>
+            </>
+            )}
             {bulk.length > 0 && (
               <ul className="mt-2 space-y-1">
                 {bulk.map((t) => (
@@ -346,7 +357,7 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
               </ul>
             )}
             {quantity > 1 && <p className="mt-3 text-[11px] font-semibold text-ink-muted">Aşağıdaki indirimli fiyatlar 1 adet (birim) içindir.</p>}
-            <PriceLadder steps={priceLadder(product, ladderCtx, currentPrice)} itemsTotal={currentPrice} />
+            {!noPrice && <PriceLadder steps={priceLadder(product, ladderCtx, currentPrice)} itemsTotal={currentPrice} />}
             {notes.length > 0 && (
               <ul className="mt-2 space-y-0.5">
                 {notes.map((n) => (
@@ -435,6 +446,17 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
           ) : (
             <>
           {priceOnRequest ? (
+            <>
+            <button
+              type="button"
+              disabled
+              aria-describedby="fiyat-yok-neden"
+              data-testid="sepete-ekle-pasif"
+              className="w-full min-h-11 bg-ink text-canvas font-medium py-3 px-4 rounded-xl text-sm opacity-50 cursor-not-allowed"
+            >
+              Sepete Ekle
+            </button>
+            <p id="fiyat-yok-neden" className="text-xs text-ink-muted">{NO_PRICE_CART_REASON}</p>
             <a
               href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(priceMessage)}`}
               data-testid="fiyat-sor"
@@ -444,6 +466,7 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
             >
               Fiyat için sorun
             </a>
+            </>
           ) : (
           <div className="flex items-center gap-4">
               <div className="flex items-center border border-line-strong rounded-xl overflow-hidden bg-surface">
@@ -491,7 +514,7 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
             </>
           )}
 
-          {!soldOut && (
+          {!soldOut && !noPrice && (
           <div className="bg-amber-50/60 border border-amber-200/60 rounded-xl p-3.5 text-xs text-amber-950 flex items-start gap-2.5">
             <span aria-hidden="true" className="text-base">📍</span>
             <div>

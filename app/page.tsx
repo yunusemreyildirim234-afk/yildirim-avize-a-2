@@ -8,7 +8,7 @@ import JsonLd from "@/components/JsonLd";
 import ProductCard from "@/components/ProductCard";
 import CollectionsRow from "@/components/CollectionsRow";
 import { getHomeCollections } from "@/lib/home-collections";
-import { composeSection } from "@/lib/homepage-compose";
+import { composeSection, inStockOnly } from "@/lib/homepage-compose";
 import { getHomepageConfig, getSectionPools } from "@/lib/homepage";
 import MoreProducts from "@/components/MoreProducts";
 import { ADDRESS_LINE, LAT, LNG, PHONE_TEL, SITE_URL } from "@/lib/site";
@@ -62,7 +62,7 @@ export default async function Home() {
   // Bölüm havuzları ve yönetici ayarı (istek başına bir kez); ayar yoksa/bozuksa bugünkü sıralama ve sayılar
   const [config, pools, collections] = await Promise.all([getHomepageConfig(), getSectionPools(), getHomeCollections()]);
   const { shown: featured, more: moreFeatured } = composeSection(pools.featured, config.featured, pools.featuredManual);
-  const { shown: discounted, more: moreDiscounted } = composeSection(pools.discounted, config.discounted);
+  const { shown: discounted, more: moreDiscounted } = composeSection(inStockOnly(pools.discounted), config.discounted);
   const { shown: bestSellers, more: moreBestSellers } = composeSection(pools.bestsellers, config.bestsellers);
 
   return (
@@ -142,22 +142,19 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* 3. Canvas: indirimli & fırsat ürünleri (ince çizgiyle ayrılır; Öne Çıkan ve Çok Satanlar ile aynı zemin) */}
+      {/* 3. Canvas: indirimli & fırsat ürünleri (ince çizgiyle ayrılır; Öne Çıkan ve Çok Satanlar ile aynı zemin); stoklu ürün yoksa bant gizlenir */}
+      {discounted.length > 0 && (
       <section className="bg-canvas border-t border-line px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-8 space-y-2">
             <span className="text-xs uppercase tracking-widest text-sale font-semibold">Fırsatlar</span>
             <h2 className="text-2xl sm:text-3xl font-serif font-bold text-ink">İndirimli & Fırsat Ürünleri</h2>
           </div>
-          {discounted.length === 0 ? (
-            <p className="text-sm text-ink-muted text-center py-10">Şu an indirimli ürün bulunmuyor.</p>
-          ) : (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
               {discounted.map((p) => (
                 <ProductCard key={p.id} product={p} />
               ))}
             </div>
-          )}
           <MoreCards section="discounted" total={moreDiscounted.length} href="/kategori/indirimli" cols="grid-cols-2 lg:grid-cols-4" />
           <div className="text-center mt-10">
             <Link
@@ -169,6 +166,7 @@ export default async function Home() {
           </div>
         </div>
       </section>
+      )}
 
       {/* 4. Canvas: çok satanlar (İndirimlilerin hemen altında) */}
       {bestSellers.length > 0 && (

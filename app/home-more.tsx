@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import ProductCard from "@/components/ProductCard";
-import { SECTION_KEYS, composeSection, type SectionKey } from "@/lib/homepage-compose";
+import { SECTION_KEYS, composeSection, inStockOnly, type SectionKey } from "@/lib/homepage-compose";
 import { getHomepageConfig, getSectionPools } from "@/lib/homepage";
 
 const MORE_PAGE_SIZE = 24;
@@ -19,7 +19,7 @@ export async function loadMoreProducts(section: string, offset: number): Promise
   try {
     const key = section as SectionKey;
     const [config, pools] = await Promise.all([getHomepageConfig(), getSectionPools()]);
-    const pool = key === "featured" ? pools.featured : key === "discounted" ? pools.discounted : pools.bestsellers;
+    const pool = key === "featured" ? pools.featured : key === "discounted" ? inStockOnly(pools.discounted) : pools.bestsellers;
     const { more } = composeSection(pool, config[key], key === "featured" ? pools.featuredManual : false);
     const items = more.slice(offset, offset + MORE_PAGE_SIZE).map((p) => ({ id: p.id, node: <ProductCard key={p.id} product={p} dark={key === "bestsellers"} /> }));
     return { ok: true, items, total: more.length };

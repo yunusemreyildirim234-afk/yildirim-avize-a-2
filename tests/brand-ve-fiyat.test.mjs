@@ -34,8 +34,8 @@ test("fiyat kuralı üç sipariş/sepet ucunda da bağlı", () => {
 
 test("fiyatı 0 ürün: kartta 'Fiyat için sorun', admin listesinde 'Fiyatı 0' rozeti", () => {
   const card = readFileSync(new URL("../components/ProductCard.tsx", import.meta.url), "utf8");
-  assert.match(card, /priceOnRequest = !isPurchasablePrice\(product\.basePrice\)/);
-  assert.match(card, /priceOnRequest \? \(\s*<span[^>]*>Fiyat için sorun<\/span>/);
+  assert.match(card, /priceOnRequest = !hasPrice\(product\.basePrice\)/);
+  assert.match(card, /priceOnRequest \? \(\s*<span[^>]*>\{PRICE_CONTACT_TEXT\}<\/span>/);
   assert.match(card, /!priceOnRequest && <PriceLadder/);
   const admin = readFileSync(new URL("../components/AdminProductList.tsx", import.meta.url), "utf8");
   assert.match(admin, /!isPurchasablePrice\(product\.basePrice\)[\s\S]{0,400}Fiyatı 0: satış engelli, fiyat girin/);

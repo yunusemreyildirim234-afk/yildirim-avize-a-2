@@ -68,3 +68,6 @@ export function resolveHiddenBestSellers(raw: unknown): string[] {
   if (!Array.isArray(v)) return [];
   return [...new Set(v.filter((x): x is string => typeof x === "string" && x.length > 0 && x.length <= 64))].slice(0, MAX_HIDDEN_BEST_SELLERS);
 }
+
+/** İndirimli bandı: tüm seçenekleri tükenmiş ürün bandan çıkar (kategori sayfasında kalır, silinmez). */
+export const inStockOnly = <P extends { variations: { stock: number }[] }>(list: P[]): P[] => list.filter((p) => p.variations.some((v) => v.stock > 0));

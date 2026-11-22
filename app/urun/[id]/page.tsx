@@ -3,6 +3,7 @@ import { notFound, permanentRedirect } from "next/navigation";
 import { getLadderContext } from "@/lib/showcase";
 import ProductDetailClient from "@/components/ProductDetailClient";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import { crumbCategoryName } from "@/lib/category-label";
 import ProductReviews from "@/components/ProductReviews";
 import ProductQuestionForm from "@/components/ProductQuestionForm";
 import ProductCard from "@/components/ProductCard";
@@ -187,7 +188,7 @@ export default async function ProductDetailPage({ params }: Props) {
             ...(category
               ? [{ name: categoryDisplayTitle(categorySettings, categoryKey(category.dbCategory), category.title), href: categoryHref }]
               : hasCategory
-                ? [{ name: `${product.category} Avizeler`, ...(categoryHref ? { href: categoryHref } : {}) }]
+                ? [{ name: crumbCategoryName(product.category), ...(categoryHref ? { href: categoryHref } : {}) }]
                 : []),
             { name: displayTitle(product.title).title },
           ]}

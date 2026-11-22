@@ -7,7 +7,7 @@ import { getLadderContext } from "@/lib/showcase";
 import { priceLadder } from "@/lib/price-ladder";
 import { coverImageOf, galleryOf } from "@/lib/variation-input";
 import { CartStepper, FavoriteButton } from "@/components/ProductQuickActions";
-import { isPurchasablePrice } from "@/lib/purchasable";
+import { PRICE_CONTACT_TEXT, hasPrice } from "@/lib/has-price";
 import { displayTitle } from "@/lib/title-display";
 import { lowStockLabel } from "@/lib/low-stock";
 import { getLowStockSetting } from "@/lib/low-stock-setting";
@@ -32,7 +32,7 @@ export default async function ProductCard({
       ? Math.round((1 - product.basePrice / product.listPrice) * 100)
       : 0;
 
-  const priceOnRequest = !isPurchasablePrice(product.basePrice); // fiyatı 0/altı: ürün sayfasıyla aynı dil
+  const priceOnRequest = !hasPrice(product.basePrice); // fiyatı 0/altı: ürün sayfasıyla aynı dil
   const bulk = bulkTiersOf(product);
   // Kapak: varsayılan (ilk stoklu) rengin fotoğrafı varsa o, yoksa ürün kapağı
   const cover = coverImageOf(product);
@@ -91,7 +91,7 @@ export default async function ProductCard({
           <div>
             <div className="flex items-baseline gap-2">
               {priceOnRequest ? (
-                <span data-testid="fiyat-icin-sorun" className="text-sm sm:text-base font-semibold">Fiyat için sorun</span>
+                <span data-testid="fiyat-icin-sorun" className="text-sm sm:text-base font-semibold">{PRICE_CONTACT_TEXT}</span>
               ) : (
                 <span className={`text-base sm:text-lg font-bold tabular-nums ${discount > 0 ? priceTone(dark).sale : ""}`}>{product.basePrice.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
               )}
@@ -114,7 +114,13 @@ export default async function ProductCard({
       {/* Link dışında: hızlı aksiyonlar kartın bağlantısını tetiklemez */}
       <FavoriteButton product={quick} className="absolute top-3 right-3 z-10" />
       <div className="px-2.5 pb-2.5 sm:px-5 sm:pb-5">
-        <CartStepper product={quick} />
+        {priceOnRequest ? (
+          <button type="button" disabled className="w-full rounded-xl bg-surface text-ink-subtle text-xs font-semibold py-2">
+            Sepete eklenemez
+          </button>
+        ) : (
+          <CartStepper product={quick} />
+        )}
       </div>
     </div>
   );
