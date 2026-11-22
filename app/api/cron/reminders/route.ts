@@ -14,6 +14,7 @@ import { couponValueLabel, loadShowcaseCoupon } from "@/lib/showcase";
 import { revalidateStorefrontSafe } from "@/lib/revalidate";
 import { runDailyCleanup } from "@/lib/cleanup-rules";
 import { purgeExpiredAddressBooks } from "@/lib/address-retention";
+import { PAID_ORDER_STATUSES, abandonedCardWhere, shouldSendAbandonedReminder } from "@/lib/abandoned-card";
 
 // Tek çağrıda temizlik + e-posta + iade adımları çalışır; varsayılan süre yetmeyebilir
 export const maxDuration = 60;
@@ -49,20 +50,25 @@ export async function GET(req: Request) {
   let abandoned = 0;
   let receipts = 0;
 
-  // 1) Terk edilmiş ödeme denemeleri: 2 saati geçmiş, son 7 gün
-  const carts = await prisma.order.findMany({
-    where: {
-      status: "AWAITING_PAYMENT",
-      abandonedEmailSent: false,
-      createdAt: { lt: new Date(now - 2 * HOUR), gt: new Date(now - 7 * 24 * HOUR) },
-    },
+  // 1) Terk edilmiş kartlı ödeme denemeleri: bekleyen veya (31 dk sonra tembel kapatılmış) başarısız, 2 saati geçmiş, son 7 gün; sonradan ödenmiş siparişi olan kullanıcıya gitmez
+  const candidates = await prisma.order.findMany({
+    where: abandonedCardWhere(now),
     select: {
       id: true,
+      userId: true,
+      createdAt: true,
       user: { select: { email: true, name: true } },
       items: { select: { quantity: true, variation: { select: { product: { select: { title: true } } } } } },
     },
     take: 50,
   });
+  const paidLater = candidates.length
+    ? await prisma.order.findMany({
+        where: { userId: { in: [...new Set(candidates.map((c) => c.userId))] }, status: { in: PAID_ORDER_STATUSES }, createdAt: { gt: new Date(now - 7 * 24 * HOUR) } },
+        select: { userId: true, status: true, createdAt: true },
+      })
+    : [];
+  const carts = candidates.filter((c) => shouldSendAbandonedReminder(c, paidLater.filter((p) => p.userId === c.userId)));
   // Vitrin kuponu geçerli değilse (pasif, süresi dolmuş, limit dolu, kişiye/ürüne özel) onaylı kişiye de sade hatırlatma gider
   const showcase = carts.length > 0 ? await loadShowcaseCoupon().catch(() => null) : null;
   for (const o of carts) {
