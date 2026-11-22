@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import "./_alias.mjs";
 
-const { decideRegenerate, REGENERATE_BLOCKED_MESSAGE, REGENERATE_ALLOWED_STATUSES } = await import("../lib/regenerate-guard.ts");
+const { decideRegenerate, regenerateBlockedMessage, REGENERATE_ALLOWED_STATUSES } = await import("../lib/regenerate-guard.ts");
 
 const linked = { kargonomiShipmentId: 55 };
 const withStatus = (s) => {
@@ -24,14 +24,16 @@ test("iptal edilmiş gönderi: yeniden üretir", async () => {
 test("aktif/onaylı gönderi: 409 mesajı, yeni gönderi açılmaz", async () => {
   for (const s of ["ready", "webservice_shipment_started", "webservice_shipment_delivered"]) {
     const d = await decideRegenerate(linked, true, withStatus(s).refresh);
-    assert.deepEqual(d, { action: "blocked", message: REGENERATE_BLOCKED_MESSAGE }, s);
+    assert.deepEqual(d, { action: "blocked", message: regenerateBlockedMessage(s) }, s);
   }
-  assert.equal(REGENERATE_BLOCKED_MESSAGE, "Mevcut gönderi aktif. Önce Kargonomi panelinden gönderiyi iptal et, sonra 'Durumu Yenile'ye bas, ardından yeniden üret.");
+  assert.equal(regenerateBlockedMessage("ready"), "Mevcut gönderi aktif görünüyor (Kargonomi durumu: ready). Önce Kargonomi panelinden iptal et, sonra 'Durumu Yenile'ye bas, ardından yeniden üret.");
 });
 
 test("bilinmeyen / boş durum: aktif sayılır (güvenli taraf)", async () => {
   for (const s of ["canceled_by_carrier", "xyz", "", null]) {
-    assert.equal((await decideRegenerate(linked, true, withStatus(s).refresh)).action, "blocked", String(s));
+    const d = await decideRegenerate(linked, true, withStatus(s).refresh);
+    assert.equal(d.action, "blocked", String(s));
+    assert.ok(d.message.includes(`durumu: ${s || "boş"})`), String(s)); // ham değer mesajda
   }
   assert.deepEqual([...REGENERATE_ALLOWED_STATUSES], ["draft", "cancelled"]);
 });
