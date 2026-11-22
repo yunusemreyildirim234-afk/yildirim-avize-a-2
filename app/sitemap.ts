@@ -23,7 +23,7 @@ const STATIC_PAGES = ["/kargo-takip", "/iletisim", "/gizlilik-politikasi", "/kul
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const products = await getSitemapProducts()
-    .then((l) => l.map((p) => ({ id: p.id, updatedAt: new Date(p.updatedAt) })))
+    .then((l) => l.map((p) => ({ id: p.id, title: p.title, updatedAt: new Date(p.updatedAt) })))
     .catch(() => []);
 
   const galleryCount = await getGalleryPhotoCount();
