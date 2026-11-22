@@ -14,24 +14,39 @@ function ym(d: Date): [number, number] {
 const keyOf = (y: number, m: number) => `${y}-${String(m).padStart(2, "0")}`;
 const labelOf = (y: number, m: number) => `${MONTH_NAMES_TR[m - 1]} ${y}`;
 
+/** Veritabanından gelen aylık satır: key = "YYYY-MM" (İstanbul takvimi), n = sipariş adedi, kurus = toplam tutar (kuruş tamsayısı). */
+export type MonthAggRow = { key: string; n: number; kurus: number };
+
 export function monthlyRevenue(orders: { createdAt: Date; totalAmount: number }[], now: Date): MonthlyRevenue {
+  const agg = new Map<string, MonthAggRow>();
+  for (const o of orders) {
+    const [y, m] = ym(o.createdAt);
+    const k = keyOf(y, m);
+    const a = agg.get(k) ?? { key: k, n: 0, kurus: 0 };
+    a.n += 1;
+    a.kurus += Math.round(o.totalAmount * 100);
+    agg.set(k, a);
+  }
+  return monthlyRevenueFromRows([...agg.values()], now);
+}
+
+/** Aylık ciro, veritabanında ay ay gruplanmış satırlardan (tek GROUP BY sorgusu). Aynı ay birden çok satırsa toplanır. */
+export function monthlyRevenueFromRows(rows: MonthAggRow[], now: Date): MonthlyRevenue {
   const [ny, nm] = ym(now);
   const agg = new Map<string, { n: number; kurus: number }>();
   let first = ny * 12 + (nm - 1);
   let last = first;
   let totalKurus = 0;
-  for (const o of orders) {
-    const [y, m] = ym(o.createdAt);
+  for (const r of rows) {
+    const [y, m] = r.key.split("-").map(Number);
     const idx = y * 12 + (m - 1);
     if (idx < first) first = idx;
     if (idx > last) last = idx;
-    const k = keyOf(y, m);
-    const a = agg.get(k) ?? { n: 0, kurus: 0 };
-    const kurus = Math.round(o.totalAmount * 100);
-    a.n += 1;
-    a.kurus += kurus;
-    totalKurus += kurus;
-    agg.set(k, a);
+    const a = agg.get(r.key) ?? { n: 0, kurus: 0 };
+    a.n += r.n;
+    a.kurus += r.kurus;
+    totalKurus += r.kurus;
+    agg.set(r.key, a);
   }
   const months: MonthRow[] = [];
   for (let idx = last; idx >= first; idx--) {

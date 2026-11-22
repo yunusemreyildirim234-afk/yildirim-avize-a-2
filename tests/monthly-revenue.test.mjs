@@ -42,3 +42,21 @@ test("now değişince bu ay değişir; sipariş yoksa yalnız bu ay", () => {
   assert.equal(e.months.length, 1);
   assert.equal(e.total, 0);
 });
+
+test("satırlardan: 31 Mart 21:30 UTC = 1 Nisan İstanbul (ay anahtarı SQL'den gelir) ve sonuç sipariş listesiyle aynı", async () => {
+  const { monthlyRevenueFromRows } = await import("../lib/monthly-revenue.ts");
+  const now = d("2026-04-15T10:00:00Z");
+  const orders = [
+    { createdAt: d("2026-03-31T21:30:00Z"), totalAmount: 100.5 },
+    { createdAt: d("2026-03-31T20:59:59Z"), totalAmount: 50 },
+    { createdAt: d("2026-04-02T10:00:00Z"), totalAmount: 20.25 },
+  ];
+  const rows = [
+    { key: "2026-03", n: 1, kurus: 5000 },
+    { key: "2026-04", n: 2, kurus: 12075 },
+  ];
+  const fromRows = monthlyRevenueFromRows(rows, now);
+  assert.deepEqual(fromRows, monthlyRevenue(orders, now));
+  assert.equal(fromRows.months.find((m) => m.key === "2026-04").orderCount, 2);
+  assert.equal(fromRows.total, 170.75);
+});

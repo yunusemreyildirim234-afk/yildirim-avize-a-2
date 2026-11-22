@@ -6,7 +6,8 @@ import { cleanGuestEmail } from "@/lib/guest-email";
 import { maskEmail } from "@/lib/admin-password";
 import AdminPayoutCard from "@/components/AdminPayoutCard";
 import AdminRevenueCard from "@/components/AdminRevenueCard";
-import { monthlyRevenue } from "@/lib/monthly-revenue";
+import { monthlyRevenueFromRows, type MonthAggRow } from "@/lib/monthly-revenue";
+import { Prisma } from "@/generated/prisma/client";
 import AdminOrderBreakdown from "@/components/AdminOrderBreakdown";
 import { PAYOUT_EXCLUDED_STATUSES, buildPayouts, payoutWindowStart } from "@/lib/payout";
 import Link from "next/link";
@@ -130,15 +131,22 @@ const ORDER_INCLUDE = {
 async function getOrderPanel(q: string, range: DateRange | null, keys: ReturnType<typeof parseGroupParam>) {
   const dw = dateWhere(range);
   const counted = { status: { notIn: UNCOUNTED_STATUSES } };
-  const [globalGroups, countedAgg, pendingAgg, openShipmentCount, beyogluCount, beyogluDelivered, revenueRows] = await Promise.all([
+  const [globalGroups, pendingAgg, openShipmentCount, beyogluCount, beyogluDelivered, revenueRows] = await Promise.all([
     prisma.order.groupBy({ by: ["status", "cancelReturnStatus"], _count: { _all: true } }),
-    prisma.order.aggregate({ where: counted, _count: { _all: true }, _sum: { totalAmount: true } }),
     prisma.order.aggregate({ where: { status: "PENDING_NEW", paymentMethod: "BANK_TRANSFER" }, _count: { _all: true }, _sum: { totalAmount: true } }),
     prisma.order.count({ where: { kargonomiShipmentId: { not: null }, status: { in: ["PENDING", "SHIPPED"] } } }),
     prisma.order.count({ where: { ...counted, shippingType: "BEYOGLU_MAGAZA_TESLIM" } }),
     prisma.order.count({ where: { status: "DELIVERED", shippingType: "BEYOGLU_MAGAZA_TESLIM" } }),
-    prisma.order.findMany({ where: counted, select: { createdAt: true, totalAmount: true } }), // aylık ciro: yalnız hafif alanlar
+    // Aylık ciro: tek GROUP BY (ay anahtarı İstanbul takvimine göre; tutar kuruş tamsayısı); satır sayısı ay sayısı kadardır
+    prisma.$queryRaw<{ key: string; n: number; kurus: number }[]>`
+      SELECT to_char("createdAt" AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Istanbul', 'YYYY-MM') AS key,
+             COUNT(*)::int AS n,
+             COALESCE(SUM(ROUND("totalAmount"::numeric * 100)), 0)::float8 AS kurus
+      FROM "Order"
+      WHERE "status" NOT IN (${Prisma.join(UNCOUNTED_STATUSES)})
+      GROUP BY 1`,
   ]);
+  const monthRows: MonthAggRow[] = revenueRows.map((r) => ({ key: r.key, n: Number(r.n), kurus: Number(r.kurus) }));
   const toRows = (g: typeof globalGroups) => g.map((r) => ({ status: r.status, cancelReturnStatus: r.cancelReturnStatus, n: r._count._all }));
   const globalRows = toRows(globalGroups);
 
@@ -176,9 +184,9 @@ async function getOrderPanel(q: string, range: DateRange | null, keys: ReturnTyp
     scopedTotal: scope.total,
     totalAll: all.total,
     attemptCount: globalRows.filter((r) => r.status === "AWAITING_PAYMENT").reduce((n, r) => n + r.n, 0),
-    countedCount: countedAgg._count._all,
-    totalRevenue: countedAgg._sum.totalAmount ?? 0,
-    monthly: monthlyRevenue(revenueRows, new Date()),
+    countedCount: monthRows.reduce((n, r) => n + r.n, 0),
+    totalRevenue: monthRows.reduce((k, r) => k + r.kurus, 0) / 100,
+    monthly: monthlyRevenueFromRows(monthRows, new Date()),
     pendingTransferCount: pendingAgg._count._all,
     pendingTransferTotal: pendingAgg._sum.totalAmount ?? 0,
     openShipmentCount,
