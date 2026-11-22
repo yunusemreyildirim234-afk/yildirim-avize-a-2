@@ -4,27 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { Check, Copy, Mail, MessageCircle, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { buildProductShare, isShareAbortError, type ProductShareInput } from "@/lib/product-share";
-
-function copyWithTextareaFallback(text: string): boolean {
-  if (typeof document === "undefined") return false;
-  try {
-    const ta = document.createElement("textarea");
-    ta.value = text;
-    ta.setAttribute("readonly", "");
-    ta.style.position = "fixed";
-    ta.style.top = "-9999px";
-    ta.style.left = "-9999px";
-    ta.style.opacity = "0";
-    document.body.appendChild(ta);
-    ta.focus();
-    ta.select();
-    const ok = document.execCommand("copy");
-    document.body.removeChild(ta);
-    return ok;
-  } catch {
-    return false;
-  }
-}
+import { copyText } from "@/lib/clipboard";
+import { SITE_URL } from "@/lib/site";
+import { productPath } from "@/lib/product-url";
 
 export default function ProductShareButton({ product }: { product: ProductShareInput }) {
   const [open, setOpen] = useState(false);
@@ -70,7 +52,7 @@ export default function ProductShareButton({ product }: { product: ProductShareI
   const getShare = () =>
     buildProductShare({
       ...product,
-      url: typeof window !== "undefined" ? window.location.href : null,
+      url: `${SITE_URL}${productPath(product)}`, // kanonik adres (adres çubuğundaki sorgu/eski ad değil)
     });
 
   const markCopied = () => {
@@ -114,21 +96,12 @@ export default function ProductShareButton({ product }: { product: ProductShareI
 
   const handleCopy = async () => {
     const { url } = getShare();
-    try {
-      if (typeof navigator !== "undefined" && navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
-        await navigator.clipboard.writeText(url);
-        markCopied();
-        return;
-      }
-      throw new Error("Clipboard API unavailable");
-    } catch {
-      if (copyWithTextareaFallback(url)) {
-        markCopied();
-        return;
-      }
-      if (typeof window !== "undefined" && typeof window.prompt === "function") {
-        window.prompt("Bağlantıyı kopyalayın:", url);
-      }
+    if (await copyText(url)) {
+      markCopied();
+      return;
+    }
+    if (typeof window !== "undefined" && typeof window.prompt === "function") {
+      window.prompt("Bağlantıyı kopyalayın:", url);
     }
   };
 

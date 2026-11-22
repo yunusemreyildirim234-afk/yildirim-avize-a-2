@@ -3,19 +3,19 @@
 import { toast } from "sonner";
 import { useState } from "react";
 import { Check, Copy } from "lucide-react";
+import { copyText } from "@/lib/clipboard";
 
 /** BankTransferCard'daki Kopyala düğmesiyle aynı davranış: panoya yaz, bildirim göster, olmazsa prompt. */
 export default function CopyCodeButton({ text, label = "Kod kopyalandı" }: { text: string; label?: string }) {
   const [copied, setCopied] = useState(false);
 
   const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(text);
+    if (await copyText(text)) {
       setCopied(true);
       toast.success(label);
       setTimeout(() => setCopied(false), 2000);
-    } catch {
-      window.prompt("Kopyalayın:", text);
+    } else {
+      window.prompt("Kopyalayın:", text); // en son yedek
     }
   };
 

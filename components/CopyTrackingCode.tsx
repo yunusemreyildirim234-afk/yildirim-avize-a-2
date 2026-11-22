@@ -1,17 +1,24 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { copyText } from "@/lib/clipboard";
 
 export default function CopyTrackingCode({ code, className = "" }: { code: string; className?: string }) {
   const ref = useRef<HTMLSpanElement>(null);
   const [state, setState] = useState<"idle" | "ok" | "fail">("idle");
+  const [hint, setHint] = useState("");
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
 
   async function copy() {
-    try {
-      await navigator.clipboard.writeText(code);
+    if (await copyText(code)) {
       setState("ok");
-      setTimeout(() => setState("idle"), 2000);
-    } catch {
+      if (timer.current) clearTimeout(timer.current);
+      timer.current = setTimeout(() => setState("idle"), 2000);
+    } else {
+      // Kopyalanamadı: kod seçilir; yönerge cihaza göre (dokunmatikte Ctrl+C yok)
+      const fine = typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(pointer: fine)").matches;
+      setHint(fine ? "Ctrl+C ile kopyalayın" : "Kod seçildi, uzun basıp Kopyala'ya dokunun");
       const el = ref.current;
       if (el) {
         const range = document.createRange();
@@ -37,7 +44,7 @@ export default function CopyTrackingCode({ code, className = "" }: { code: strin
         {state === "ok" ? "Kopyalandı ✓" : "Kopyala"}
       </button>
       <span aria-live="polite" className="text-xs text-ink-muted">
-        {state === "fail" ? "Seçili, Ctrl+C ile kopyalayın" : ""}
+        {state === "ok" ? "Kopyalandı" : state === "fail" ? hint : ""}
       </span>
     </span>
   );
