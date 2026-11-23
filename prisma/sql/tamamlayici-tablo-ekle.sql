@@ -1,4 +1,4 @@
--- UYGULANDI (sahip beyanı): e2e-test ve canlı, yaklaşık 15 Kasım 2026; kesin tarih Neon kayıtlarından/K-1…K-3 sorgularından doğrulanacak. (plan-23, sürüm 2: içerik değişmedi; ürün düzeyi bağ ve "ürün ya ana ya tamamlayıcı" kuralı kararlarla teyit edildi,
+-- UYGULANDI (sahip beyanı): canlı veritabanında, yaklaşık 15 Kasım 2026; 23 Kasım 2026'da K-1…K-3 salt okuma sorgularıyla canlıda doğrulandı. e2e-test dalı sonradan silindi (gerekirse yeniden açılır). (plan-23, sürüm 2: içerik değişmedi; ürün düzeyi bağ ve "ürün ya ana ya tamamlayıcı" kuralı kararlarla teyit edildi,
 -- kural uygulamada denetlenir, SQL'de ifade edilemez). (Çalıştırma sırası: Neon'da önce `e2e-test` dalında (önce `select 1`), sonra canlıda.)
 -- Geri alma (yorum): DROP TABLE IF EXISTS "ProductComplement";
 -- Idempotent: tekrar çalıştırması güvenlidir.
