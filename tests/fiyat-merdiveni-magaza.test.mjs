@@ -54,5 +54,5 @@ test("havale satırı etiketi '%5' içerir (indirim yalnızca ürün tutarından
   const bank = priceLadder({ basePrice: 309 }, { coupon: null, maxTotalDiscountPct: null }).find((s) => s.key === "bank");
   assert.equal(bank.label, "+ Havale/EFT ile (%5)");
   assert.equal(bank.short, "Havale/EFT %5");
-  assert.equal(bank.price, 294); // 309 − 15; + 100 kargo = 394
+  assert.equal(bank.price, 294); // 309 − 15; + 129 kargo = 423
 });

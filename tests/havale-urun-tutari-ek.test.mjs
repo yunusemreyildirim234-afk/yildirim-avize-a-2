@@ -21,7 +21,7 @@ const fixed = (amount) => ({ code: `TL${amount}`, discountType: "FIXED", discoun
 const pct10 = { code: "TEST10", discountPercent: 10, productId: null };
 const line = (price, quantity = 1, o = {}) => ({ variationId: o.id ?? "v1", productId: o.id ?? "p1", price, quantity, tiers: [], couponAllowed: true, pickupPct: null, transferPct: null, ...o });
 const near = (a, b, msg) => assert.ok(Math.abs(a - b) < 1e-6, `${msg}: ${a} != ${b}`);
-const sh = (items, ship) => (ship === PICKUP || items >= 350 ? 0 : 100);
+const sh = (items, ship) => (ship === PICKUP || items >= 350 ? 0 : 129);
 
 // ---- (1) Sabit TL kupon ----
 function refFixed(price, qty, amount, pay, ship) {
@@ -48,10 +48,10 @@ test("sabit TL kupon (50 ₺) ve ürün fiyatından büyük kupon (500 ₺): pri
 
 test("TL kupon örnekleri: 309 ₺ − 50 ₺ havale adrese; kupon ürünü aşınca kargo kalır", () => {
   const t = (price, amount, pay, ship) => priceCart({ lines: [line(price)], shippingType: ship, paymentMethod: pay, coupon: fixed(amount) }).total;
-  assert.equal(t(309, 50, BANK, HOME), 309 + 100 - 50 - Math.round(259 * 0.05)); // 359 − 13 = 346
+  assert.equal(t(309, 50, BANK, HOME), 309 + 129 - 50 - Math.round(259 * 0.05)); // 359 − 13 = 375
   assert.equal(t(309, 50, BANK, PICKUP), 309 - 50 - 9 - Math.round(250 * 0.05)); // 238
-  assert.equal(t(309, 500, BANK, HOME), 100); // ürün 0 ₺, havale indirimi 0, kargo ödenir
-  assert.equal(t(309, 500, CC, HOME), 100);
+  assert.equal(t(309, 500, BANK, HOME), 129); // ürün 0 ₺, havale indirimi 0, kargo ödenir
+  assert.equal(t(309, 500, CC, HOME), 129);
   assert.equal(t(309, 500, BANK, PICKUP), 0);
 });
 
@@ -121,7 +121,7 @@ test("karışık oran, elle hesap: 200 ₺ (%5/%3) + 100 ₺ (transfer %10, mağ
   assert.equal(home.couponDiscount, 30);
   assert.equal(home.pickupDiscount, 0);
   assert.equal(home.bankDiscount, 18); // 180×%5 = 9 + 90×%10 = 9
-  assert.equal(home.total, 300 + 100 - 30 - 18);
+  assert.equal(home.total, 300 + 129 - 30 - 18);
   const pick = priceCart({ lines: ls, shippingType: PICKUP, paymentMethod: BANK, coupon: pct10 });
   assert.equal(pick.pickupDiscount, 6); // yalnızca 200 ₺'lik üründe %3
   assert.equal(pick.shipping, 0);
@@ -147,12 +147,12 @@ test("kupon + toplam indirim üst sınırı: indirim sınırı aşmaz, sınıra 
   }
 });
 
-test("üst sınır örneği: 309 ₺ %10 kupon + havale adrese, sınır %10: indirim 30,90'ı aşmaz, kargo 100 ₺", () => {
+test("üst sınır örneği: 309 ₺ %10 kupon + havale adrese, sınır %10: indirim 30,90'ı aşmaz, kargo 129 ₺", () => {
   const r = priceCart({ lines: [line(309)], shippingType: HOME, paymentMethod: BANK, coupon: pct10, maxTotalDiscountPct: 10 });
   const d = r.couponDiscount + r.pickupDiscount + r.bankDiscount;
   assert.ok(d <= 30.9 + 1e-9 && d >= 30.85, String(d));
-  assert.equal(r.shipping, 100);
-  near(r.total, 309 + 100 - d, "toplam");
+  assert.equal(r.shipping, 129);
+  near(r.total, 309 + 129 - d, "toplam");
 });
 
 test("üst sınır + merdiven: merdiven + kargo = toplam (adrese), merdiven sonu = toplam (mağazadan)", () => {

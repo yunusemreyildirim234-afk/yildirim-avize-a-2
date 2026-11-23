@@ -92,7 +92,7 @@ export default async function OrderConfirmationPage({ params }: { params: Promis
   const isPickup = order.shippingType === "BEYOGLU_MAGAZA_TESLIM";
   const awaitingPayment = order.status === "AWAITING_PAYMENT";
   const paymentFailed = order.status === "PAYMENT_FAILED";
-  // Ölçüm (GTM): yalnızca ödemesi alınmış kartlı veya oluşturulmuş havale siparişi; kargo = sabit kural (mağazadan teslim 0, eşik üstü 0, aksi 100 ₺)
+  // Ölçüm (GTM): yalnızca ödemesi alınmış kartlı veya oluşturulmuş havale siparişi; kargo = sabit kural (mağazadan teslim 0, eşik üstü 0, aksi SHIPPING_COST)
   const breakdown = breakdownOf(order.items, order.shippingType, order.totalAmount);
   const shippingFee = breakdown.shipping;
   // Dekont yüklenmemiş havale siparişi bu süre sonunda otomatik iptal edilir (shouldCancelUnpaidBank ile aynı koşul)

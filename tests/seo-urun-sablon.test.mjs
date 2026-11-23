@@ -41,7 +41,7 @@ test("Offer ekleri: kargo eşiği, iade 14 gün, +30 gün, gtin13", () => {
   const now = new Date("2026-01-01T00:00:00Z");
   const hi = offerExtras({ price: 350, siteUrl: "https://x.tr", now });
   assert.equal(hi.shippingDetails.shippingRate.value, 0);
-  assert.equal(offerExtras({ price: 349, siteUrl: "https://x.tr", now }).shippingDetails.shippingRate.value, 100);
+  assert.equal(offerExtras({ price: 349, siteUrl: "https://x.tr", now }).shippingDetails.shippingRate.value, 129);
   assert.equal(hi.hasMerchantReturnPolicy.merchantReturnDays, 14);
   assert.equal(hi.hasMerchantReturnPolicy.merchantReturnLink, "https://x.tr/iptal-iade-cayma");
   assert.equal(hi.priceValidUntil, "2026-01-31");

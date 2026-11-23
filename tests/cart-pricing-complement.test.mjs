@@ -74,8 +74,8 @@ test("bozulmama: bilinen değerler", () => {
   assert.equal(p.shipping, 0);
   assert.equal(p.bankDiscount, Math.round(28999 * 0.05));
   const q = priceCart({ lines: [L("a", 100, 1)], shippingType: HOME, paymentMethod: "CREDIT_CARD" });
-  assert.equal(q.shipping, 100);
-  assert.equal(q.total, 200);
+  assert.equal(q.shipping, 129);
+  assert.equal(q.total, 229);
 });
 
 // ---------- ETKİLEŞİM (sahip kararı: her ana ürün adedi, tamamlayıcıdan 1 adedi KENDİ bağının indirimiyle indirimli yapar) ----------
@@ -181,7 +181,7 @@ test("kupon tabanı indirimli tutardır; couponAllowed=false ve minimum sepet ku
 test("ücretsiz kargo eşiği (350) indirimli toplamla kıyaslanır", () => {
   const p = run([L("main", 100, 1), L("bulb", 260, 1, { complementOf: [fix("main", 20)] })]);
   assert.equal(p.itemsTotal, 340);
-  assert.equal(p.shipping, 100); // indirimsiz 360 olurdu: kargo çıkar (karar 2)
+  assert.equal(p.shipping, 129); // indirimsiz 360 olurdu: kargo çıkar (karar 2)
   const exact = run([L("main", 100, 1), L("bulb", 270, 1, { complementOf: [fix("main", 20)] })]);
   assert.equal(exact.itemsTotal, 350);
   assert.equal(exact.shipping, 0); // tam 350 ücretsiz

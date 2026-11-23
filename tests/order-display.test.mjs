@@ -24,19 +24,19 @@ test("tutar dökümü indirim farkını verir, negatif olmaz", () => {
 const nb = (s) => s.replace(/\u00a0/g, " ");
 
 test("E1/E3: e-posta döküm metni: ürünler, kargo, indirimler, toplam (onay sayfasıyla aynı satırlar)", () => {
-  // 309 ₺ ürün + 100 ₺ kargo, kupon ve havale indirimi sonrası 374 ₺ (canlı gezi örneği)
-  const b = breakdownOf([{ unitPrice: 309, quantity: 1 }], "STANDART_KARGO", 374);
-  assert.deepEqual(b, { itemsSum: 309, shipping: 100, discount: 35, total: 374 });
+  // 309 ₺ ürün + 129 ₺ kargo, kupon ve havale indirimi sonrası 403 ₺ (canlı gezi örneği)
+  const b = breakdownOf([{ unitPrice: 309, quantity: 1 }], "STANDART_KARGO", 403);
+  assert.deepEqual(b, { itemsSum: 309, shipping: 129, discount: 35, total: 403 });
   assert.deepEqual(breakdownRows(b).map((r) => [r.label, nb(r.value), r.kind]), [
     ["Ürünler", "309,00 ₺", "plain"],
-    ["Kargo", "100,00 ₺", "plain"],
+    ["Kargo", "129,00 ₺", "plain"],
     ["İndirimler", "-35,00 ₺", "discount"],
-    ["Toplam", "374,00 ₺", "total"],
+    ["Toplam", "403,00 ₺", "total"],
   ]);
 });
 
 test("E1: indirim yoksa satırı çıkmaz; eşik üstü ve mağazadan teslimde kargo Ücretsiz", () => {
-  assert.equal(orderShippingFee(349.99, "STANDART_KARGO"), 100);
+  assert.equal(orderShippingFee(349.99, "STANDART_KARGO"), 129);
   assert.equal(orderShippingFee(350, "STANDART_KARGO"), 0);
   assert.equal(orderShippingFee(100, "BEYOGLU_MAGAZA_TESLIM"), 0);
   const rows = breakdownRows(breakdownOf([{ unitPrice: 500, quantity: 2 }], "STANDART_KARGO", 1000));

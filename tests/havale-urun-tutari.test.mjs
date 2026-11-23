@@ -22,7 +22,7 @@ const near = (a, b, msg) => assert.ok(Math.abs(a - b) < 1e-6, `${msg}: ${a} != $
 // Bağımsız referans: havale indirimi = round((ürün − kupon − mağaza) × %5), kargo hariç
 function expected(price, qty, coupon, pay, ship) {
   const items = price * qty;
-  const shipping = ship === PICKUP || items >= 350 ? 0 : 100;
+  const shipping = ship === PICKUP || items >= 350 ? 0 : 129;
   const c = coupon ? Math.round((items * coupon.discountPercent) / 100) : 0;
   const p = ship === PICKUP ? Math.round(items * 0.03) : 0;
   const bank = pay === BANK ? Math.round(Math.max(0, items - c - p) * 0.05) : 0;
@@ -46,30 +46,30 @@ test("priceCart = bağımsız referans: tüm fiyat/adet/kupon/ödeme/teslimat ko
 
 test("örnekler: 309 ₺ havale adrese (kargo %5'e girmez), 449 ₺ eskisiyle aynı, 349/350 sınırı", () => {
   const t = (price, pay, ship) => priceCart({ lines: [line(price, 1)], shippingType: ship, paymentMethod: pay }).total;
-  assert.equal(t(309, BANK, HOME), 394); // 309 − 15 (309×%5=15,45 → 15) + 100 kargo; eskisi 389
-  assert.equal(t(309, CC, HOME), 409);
+  assert.equal(t(309, BANK, HOME), 423); // 309 − 15 (309×%5=15,45 → 15) + 129 kargo
+  assert.equal(t(309, CC, HOME), 438);
   assert.equal(t(309, BANK, PICKUP), 285); // 309 − 9 (mağaza) − 15 (havale, 300×%5): kargo yok, değişmez
   assert.equal(t(449, BANK, HOME), 427); // kargo ücretsiz: değişmez
   assert.equal(t(449, BANK, PICKUP), 449 - 13 - Math.round((449 - 13) * 0.05));
-  assert.equal(t(349, BANK, HOME), 349 + 100 - 17);
+  assert.equal(t(349, BANK, HOME), 349 + 129 - 17);
   assert.equal(t(350, BANK, HOME), 350 - 18);
-  assert.equal(t(349, CC, HOME), 449);
+  assert.equal(t(349, CC, HOME), 478);
   assert.equal(t(350, CC, HOME), 350);
 });
 
-test("kargo havale indirimi tabanında değil: kargo 100 ₺ iken indirim yalnızca ürün tutarına bağlı", () => {
+test("kargo havale indirimi tabanında değil: kargo 129 ₺ iken indirim yalnızca ürün tutarına bağlı", () => {
   const a = priceCart({ lines: [line(200, 1)], shippingType: HOME, paymentMethod: BANK });
-  assert.equal(a.shipping, 100);
+  assert.equal(a.shipping, 129);
   assert.equal(a.bankDiscount, 10); // 200 × %5; eskisi 15 (300 × %5)
 });
 
 test("toplam indirim üst sınırı (maxTotalDiscountPct) korunur, kargo sınırdan etkilenmez", () => {
   for (const cap of [3, 5, 8]) {
     const r = priceCart({ lines: [line(309, 1)], shippingType: HOME, paymentMethod: BANK, maxTotalDiscountPct: cap });
-    assert.equal(r.shipping, 100);
+    assert.equal(r.shipping, 129);
     const discount = r.couponDiscount + r.pickupDiscount + r.bankDiscount;
     assert.ok(discount <= (309 * cap) / 100 + 1e-9, `cap ${cap}: ${discount}`);
-    near(r.total, 309 + 100 - discount, `cap ${cap} toplam`);
+    near(r.total, 309 + 129 - discount, `cap ${cap} toplam`);
   }
   // sınır yeterliyse kısılmaz
   assert.equal(priceCart({ lines: [line(309, 1)], shippingType: HOME, paymentMethod: BANK, maxTotalDiscountPct: 10 }).bankDiscount, 15);
@@ -83,12 +83,12 @@ test("adet kademesi ve ücretsiz kargo eşiği davranışı değişmedi", () => 
   assert.equal(r.shipping, 0);
   assert.equal(r.bankDiscount, 18);
   const one = priceCart({ lines: [{ ...line(200, 1), tiers }], shippingType: HOME, paymentMethod: BANK });
-  assert.equal(one.shipping, 100); // adet 1: kademe yok, 200 < 350
+  assert.equal(one.shipping, 129); // adet 1: kademe yok, 200 < 350
 });
 
 test("eski lib/pricing.ts computeTotals da aynı kural", async () => {
   const { computeTotals } = await import("../lib/pricing.ts");
-  assert.equal(computeTotals({ itemsTotal: 309, shippingType: HOME, paymentMethod: BANK }).total, 394);
+  assert.equal(computeTotals({ itemsTotal: 309, shippingType: HOME, paymentMethod: BANK }).total, 423);
   assert.equal(computeTotals({ itemsTotal: 449, shippingType: HOME, paymentMethod: BANK }).total, 427);
   assert.equal(computeTotals({ itemsTotal: 309, shippingType: PICKUP, paymentMethod: BANK }).total, 285);
 });

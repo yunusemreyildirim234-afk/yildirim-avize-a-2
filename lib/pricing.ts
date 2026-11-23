@@ -1,6 +1,6 @@
 export const DEFAULT_COUPON_CODE = "YILDIRIM5";
 
-export const SHIPPING_COST = 100;
+export const SHIPPING_COST = 129;
 export const FREE_SHIPPING_THRESHOLD = 350;
 export const BANK_TRANSFER_DISCOUNT = 0.05;
 export const PICKUP_DISCOUNT = 0.03;

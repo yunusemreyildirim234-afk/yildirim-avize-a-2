@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import CopyTrackingCode from "@/components/CopyTrackingCode";
 import { carrierDisplayName, carrierTrackingLink } from "@/lib/carrier-links";
 import { shippingPriceToKurus } from "@/lib/shipping-fee";
+import { formatCarrierPriceText } from "@/lib/carrier-price-display";
 
 interface Props {
   order: {
@@ -134,7 +135,7 @@ export default function AdminKargonomiOrderActions({ order }: Props) {
                   <label key={q.providerId} className={`flex items-start gap-2 ${q.available ? "cursor-pointer" : "opacity-60"}`}>
                     <input type="radio" name={`carrier-${order.id}`} className="mt-0.5" disabled={!q.available} checked={selected === q.providerId} onChange={() => setSelected(q.providerId)} />
                     <span>
-                      {q.name} — {q.available ? q.priceText : "Hizmet dışı bölge"}
+                      {q.name} — {q.available ? formatCarrierPriceText(q.priceText) : "Hizmet dışı bölge"}
                     </span>
                   </label>
                 ))}
@@ -145,7 +146,7 @@ export default function AdminKargonomiOrderActions({ order }: Props) {
             {quoteData?.confirmed && <p className="font-semibold">Gönderi Kargonomi&apos;de zaten onaylı. Barkod bilgisi çekilsin mi?</p>}
             {quoteData && selected && !quoteData.confirmed && (
               <p className="font-semibold">
-                Ücretli {selected === 6 ? "Hepsijet" : "Aras Kargo"} gönderisi açılır, {quoteData.quotes.find((q) => q.providerId === selected)?.priceText}. Oluşturulsun mu?
+                Ücretli {selected === 6 ? "Hepsijet" : "Aras Kargo"} gönderisi açılır, {formatCarrierPriceText(quoteData.quotes.find((q) => q.providerId === selected)?.priceText ?? "")}. Oluşturulsun mu?
               </p>
             )}
             {quoteData && (
