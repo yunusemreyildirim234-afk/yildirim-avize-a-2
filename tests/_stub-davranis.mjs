@@ -1,0 +1,40 @@
+// Sahte e-posta/bildirim/oturum/silme-deposu. Çağrılar globalThis.__olaylar'a sırayla yazılır (sıra denetimi için).
+const log = (...a) => (globalThis.__olaylar ??= []).push(a.join(":"));
+const mail = (ad) => async (a) => (log("mail", ad), (globalThis.__mails ??= []).push({ ad, ...a }), true);
+export const sendInvoiceEmail = mail("fatura");
+export const sendAccountDeletedEmail = mail("hesap-silindi");
+export const sendAbandonedCartEmail = mail("terk");
+export const sendBankOrderCancelledEmail = mail("havale-iptal");
+export const sendCartReminderEmail = mail("sepet");
+export const sendReceiptReminderEmail = mail("dekont");
+export const notifyAdmins = async () => {};
+export const notifyCustomer = async () => {};
+export const getSessionUserId = async () => globalThis.__uid ?? null;
+export const issueUserToken = async (id) => `tok-${id}`;
+export const touchLastLogin = async () => {};
+export const deletionDbFor = (tx) => globalThis.__deletionDb(tx);
+// Gerçek kuralı (lib/revalidate-rule.ts) kullanır; yenileme yerine sayaç artırır.
+import { shouldRevalidate } from "../lib/revalidate-rule.ts";
+export const withStorefrontRevalidate = (handler) => async (...args) => {
+  const res = await handler(...args);
+  if (shouldRevalidate(res)) globalThis.__revalidated = (globalThis.__revalidated ?? 0) + 1;
+  return res;
+};
+export const revalidateStorefrontSafe = () => {};
+export const revalidateStorefront = () => {};
+export const sendAccountDeletionRequestedEmail = mail("sendAccountDeletionRequestedEmail");
+export const sendCampaignCouponEmail = mail("sendCampaignCouponEmail");
+export const sendDeliveredEmail = mail("sendDeliveredEmail");
+export const sendNewMessageEmail = mail("sendNewMessageEmail");
+export const sendOrderNotificationEmails = mail("sendOrderNotificationEmails");
+export const sendPasswordChangedEmail = mail("sendPasswordChangedEmail");
+export const sendPriceDropEmail = mail("sendPriceDropEmail");
+export const sendQuestionReceivedEmail = mail("sendQuestionReceivedEmail");
+export const sendReceiptUploadedAdminEmail = mail("sendReceiptUploadedAdminEmail");
+export const sendReplyEmail = mail("sendReplyEmail");
+export const sendRequestAdminEmail = mail("sendRequestAdminEmail");
+export const sendRequestDecisionEmail = mail("sendRequestDecisionEmail");
+export const sendReviewAdminEmail = mail("sendReviewAdminEmail");
+export const sendShippedEmail = mail("sendShippedEmail");
+export const sendStockShortageEmail = mail("sendStockShortageEmail");
+export const sendVerificationCodeEmail = mail("sendVerificationCodeEmail");
