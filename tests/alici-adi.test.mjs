@@ -28,7 +28,7 @@ test("şema ve SQL: yalnızca Order.recipientName String? ve IF NOT EXISTS'li nu
   assert.equal((order.match(/recipientName/g) ?? []).length, 1);
   assert.match(order, /recipientName\s+String\?/);
   const sql = readFileSync(new URL("../prisma/sql/alici-adi-ekle.sql", import.meta.url), "utf8");
-  const stmts = sql.split("\n").filter((l) => l.trim() && !l.startsWith("--"));
+  const stmts = sql.split(/\r?\n/).filter((l) => l.trim() && !l.startsWith("--"));
   assert.deepEqual(stmts, ['ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "recipientName" TEXT;']);
   assert.match(sql, /SQL ONCE/);
 });
