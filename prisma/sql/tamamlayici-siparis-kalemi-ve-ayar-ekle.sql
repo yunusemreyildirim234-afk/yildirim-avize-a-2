@@ -1,4 +1,4 @@
--- TASLAK (plan-23, sürüm 2). ÇALIŞTIRILMADI. Sahibi Neon'da önce `e2e-test` dalında (önce `select 1`), sonra canlıda çalıştırır.
+-- UYGULANDI (sahip beyanı): e2e-test ve canlı, yaklaşık 15 Kasım 2026; kesin tarih Neon kayıtlarından/K-1…K-3 sorgularından doğrulanacak. (plan-23, sürüm 2.) (Çalıştırma sırası: Neon'da önce `e2e-test` dalında (önce `select 1`), sonra canlıda.)
 -- Yalnız nullable sütun ekleme (varsayılan yok); mevcut satır ve kod bozulmaz. Geriye dönük doldurma YOK.
 -- Dosya adı sürüm 1'de `02-siparis-kalemi-tamamlayici-ekle.sql` idi; B bölümü (SiteConfig) sürüm 2'de eklendi.
 -- Geri alma (yorum):
