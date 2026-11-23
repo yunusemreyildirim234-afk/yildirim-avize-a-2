@@ -1,7 +1,7 @@
 "use client";
 
 import { daysLeft, trDateOf, trToday } from "@/lib/coupon-expiry";
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown, Search, Tag, Users } from "lucide-react";
 import { useOpenOnHash } from "@/components/useOpenOnHash";
@@ -27,7 +27,8 @@ export interface CouponRow {
 
 interface Props {
   coupons: CouponRow[];
-  customers: { name: string; email: string }[];
+  /** Tüm kuponların sayısı (rozet); `coupons` yalnız aktifler + son 100 olabilir */
+  totalCount: number;
   products: { id: string; title: string; modelCode: string | null }[];
 }
 
@@ -35,7 +36,7 @@ const norm = (v?: string | null) => (v ?? "").toLocaleLowerCase("tr").trim();
 
 const tl = (n: number) => `${n.toLocaleString("tr-TR", { minimumFractionDigits: 0, maximumFractionDigits: 2 })} ₺`;
 
-export default function AdminCoupons({ coupons, customers, products }: Props) {
+export default function AdminCoupons({ coupons: initialCoupons, totalCount, products }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   useOpenOnHash("kuponlar", setOpen);
@@ -65,11 +66,53 @@ export default function AdminCoupons({ coupons, customers, products }: Props) {
   const [productQuery, setProductQuery] = useState("");
   const [productId, setProductId] = useState("");
 
-  const customerMatches = useMemo(() => {
-    const q = norm(customerQuery);
-    if (!q) return customers.slice(0, 8);
-    return customers.filter((c) => norm(c.email).includes(q) || norm(c.name).includes(q)).slice(0, 8);
-  }, [customers, customerQuery]);
+  // Müşteri önerisi sunucudan aranır (en az 2 karakter; yazma durunca). Tüm üyeler sayfaya gömülmez.
+  const [found, setFound] = useState<{ name: string; email: string }[]>([]);
+  const customerMatches = customerQuery.trim().length >= 2 ? found : [];
+  useEffect(() => {
+    const q = customerQuery.trim();
+    if (q.length < 2) return;
+    const ctrl = new AbortController();
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/admin/customers?q=${encodeURIComponent(q)}`, { signal: ctrl.signal });
+        const data = await res.json().catch(() => ({}));
+        setFound(res.ok && Array.isArray(data.customers) ? data.customers : []);
+      } catch {
+        /* iptal veya bağlantı hatası: öneri boş kalır */
+      }
+    }, 250);
+    return () => {
+      clearTimeout(t);
+      ctrl.abort();
+    };
+  }, [customerQuery]);
+
+  // Kupon listesi: sayfa aktifler + son 100'ü verir; "Tümünü göster" ayrı uçtan hepsini yükler
+  const [allCoupons, setAllCoupons] = useState<CouponRow[] | null>(null);
+  const [loadingAll, setLoadingAll] = useState(false);
+  const [listError, setListError] = useState("");
+  const coupons = allCoupons ?? initialCoupons;
+  const loadAll = async () => {
+    setLoadingAll(true);
+    setListError("");
+    try {
+      const res = await fetch("/api/admin/coupons/liste");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !Array.isArray(data.coupons)) throw new Error();
+      setAllCoupons(data.coupons);
+    } catch {
+      setListError("Kuponların tamamı yüklenemedi; tekrar deneyin.");
+    } finally {
+      setLoadingAll(false);
+    }
+  };
+  // Oluşturma/silme/düzenleme sonrası sayfa yenilenince sunucu verisi geçerli olsun
+  const [seenCoupons, setSeenCoupons] = useState(initialCoupons);
+  if (seenCoupons !== initialCoupons) {
+    setSeenCoupons(initialCoupons);
+    setAllCoupons(null);
+  }
 
   const productMatches = useMemo(() => {
     const q = norm(productQuery);
@@ -155,7 +198,7 @@ export default function AdminCoupons({ coupons, customers, products }: Props) {
         </div>
         <span className="flex items-center gap-3 shrink-0">
           <span className="text-xs font-semibold text-neutral-500 bg-neutral-100 px-3 py-1.5 rounded-lg">
-            {coupons.length} kod
+            {totalCount} kod
           </span>
           <ChevronDown aria-hidden="true" className={`w-5 h-5 text-neutral-500 transition-transform ${open ? "rotate-180" : ""}`} />
         </span>
@@ -245,7 +288,7 @@ export default function AdminCoupons({ coupons, customers, products }: Props) {
                   </div>
                   {customerQuery && (
                     <ul className="mt-1 rounded-lg border border-neutral-200 divide-y divide-neutral-100 max-h-44 overflow-auto">
-                      {customerMatches.length === 0 && <li className="px-3 py-2 text-neutral-400">Müşteri bulunamadı.</li>}
+                      {customerMatches.length === 0 && <li className="px-3 py-2 text-neutral-400">{customerQuery.trim().length < 2 ? "En az 2 karakter yazın." : "Müşteri bulunamadı."}</li>}
                       {customerMatches.map((c) => (
                         <li key={c.email}>
                           <button
@@ -486,6 +529,17 @@ export default function AdminCoupons({ coupons, customers, products }: Props) {
               </tbody>
             </table>
           </div>
+          {totalCount > coupons.length && (
+            <div className="flex flex-wrap items-center gap-3 text-xs text-neutral-600">
+              <span>
+                {coupons.length} / {totalCount} kod gösteriliyor (aktifler ve en yeni 100).
+              </span>
+              <button type="button" onClick={loadAll} disabled={loadingAll} className="rounded-lg border border-neutral-300 px-3 py-1.5 font-semibold text-neutral-800 hover:bg-neutral-50 disabled:opacity-50">
+                {loadingAll ? "Yükleniyor..." : "Tümünü göster"}
+              </button>
+              {listError && <span role="alert" className="font-semibold text-red-600">{listError}</span>}
+            </div>
+          )}
         </div>
       )}
     </div>

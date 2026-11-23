@@ -14,6 +14,7 @@ import Link from "next/link";
 import { ArrowLeft, BarChart3, Building2, KeyRound, MapPin, MessageSquare, Package, Phone, Receipt, ShieldCheck, ShoppingBag, Star, StickyNote, Truck, Users } from "lucide-react";
 import AdminSectionNav from "@/components/AdminSectionNav";
 import nextDynamic from "next/dynamic";
+import { listCouponsForPage, toCouponRow } from "@/lib/admin-coupon-list";
 import { prisma } from "@/lib/db";
 import OrderStatusSelector from "@/components/OrderStatusSelector";
 import AdminKargonomiHeader from "@/components/AdminKargonomiHeader";
@@ -76,7 +77,7 @@ const AdminAccountDeletions = nextDynamic(() => import("@/components/AdminAccoun
 export const dynamic = "force-dynamic";
 
 async function getAdminData() {
-  const [productRows, covers, uncopied, pendingMessages, coupons, customers, pendingReviews, company] = await Promise.all([
+  const [productRows, covers, uncopied, pendingMessages, couponList, pendingReviews, company] = await Promise.all([
     prisma.product.findMany({
       // Dar liste: yalnız listenin kullandığı alanlar. Açıklama ve tüm görsel dizileri düzenleyici açılınca tek ürün için okunur (GET /api/admin/product).
       select: ADMIN_LIST_PRODUCT_SELECT,
@@ -87,21 +88,14 @@ async function getAdminData() {
 
     // Mesaj ve yorum listeleri bölüm açılınca /api/admin/messages ve /api/admin/reviews'tan gelir; sayfada yalnız bekleyen sayıları
     prisma.contactMessage.count({ where: { status: "PENDING" } }),
-    prisma.coupon.findMany({
-      include: { product: { select: { title: true, modelCode: true } } },
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.user.findMany({
-      where: { role: "USER", password: { not: "guest_checkout" } },
-      select: { name: true, email: true },
-      orderBy: { email: "asc" },
-    }),
+    // Kuponlar: aktifler + son 100 (tümü "Tümünü göster" ile /api/admin/coupons/liste'den); müşteri önerisi /api/admin/customers?q= ile aranır
+    listCouponsForPage(prisma),
     prisma.review.count({ where: { status: "PENDING" } }),
     getCompanyInfo(),
   ]);
 
   const products = withCover(productRows, covers);
-  return { products, uncopied, pendingMessages, coupons, customers, pendingReviews, company };
+  return { products, uncopied, pendingMessages, coupons: couponList.coupons, couponTotal: couponList.total, pendingReviews, company };
 }
 
 const ORDER_INCLUDE = {
@@ -197,7 +191,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const sp = await searchParams;
   const durumParam = sp.durum;
   const orderFilters = { q: sp.q, tarih: sp.tarih, bas: sp.bas, bit: sp.bit };
-  const { products, uncopied, pendingMessages, coupons, customers, pendingReviews, company } = await getAdminData();
+  const { products, uncopied, pendingMessages, coupons, couponTotal, pendingReviews, company } = await getAdminData();
   const extraCategories = await getExtraCategoryNames(); // yönetim panelinden eklenen kategoriler (form/toplu işlem seçenekleri)
   // Vitrin çipleri için sitedeki kümeler: Öne Çıkanlar = işaretliler (yoksa otomatik seçim), Çok Satanlar = kategori sayfasındaki liste
   const flaggedFeatured = await prisma.product.findMany({ where: { active: true, isFeatured: true }, select: { id: true } });
@@ -608,24 +602,8 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
 
         {/* Promosyon Kodları Yönetimi */}
         <AdminCoupons
-          coupons={coupons.map((c) => ({
-            id: c.id,
-            code: c.code,
-            discountPercent: c.discountPercent,
-            expiresAt: c.expiresAt ? c.expiresAt.toISOString() : null,
-            discountType: c.discountType,
-            discountAmount: c.discountAmount,
-            minCartTotal: c.minCartTotal,
-            perUserLimit: c.perUserLimit,
-            maxUses: c.maxUses,
-            usedCount: c.usedCount,
-            userEmail: c.userEmail,
-            productTitle: c.product?.title ?? null,
-            productModelCode: c.product?.modelCode ?? null,
-            active: c.active,
-            createdAt: c.createdAt.toISOString(),
-          }))}
-          customers={customers}
+          coupons={coupons.map(toCouponRow)}
+          totalCount={couponTotal}
           products={products.map((p) => ({ id: p.id, title: p.title, modelCode: p.modelCode }))}
         />
 
