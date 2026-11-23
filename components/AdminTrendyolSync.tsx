@@ -60,7 +60,7 @@ const badge: Record<Decision, string> = {
 async function call(body: object) {
   const res = await fetch("/api/admin/trendyol/sync", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || "İşlem başarısız.");
+  if (!res.ok) throw Object.assign(new Error(data.error || "İşlem başarısız."), { status: res.status });
   return data;
 }
 
@@ -164,12 +164,16 @@ export default function AdminTrendyolSync({
     setBusy("apply");
     setError("");
     try {
-      const data = await call({ ayarlar: settings, dryRun: false, seciliUrunler: everything ? undefined : [...checked], sifirlaVaryasyonlar: [...sifirla].map(([varyasyonId, stok]) => ({ varyasyonId, stok })) });
+      const data = await call({ ayarlar: settings, dryRun: false, sayac: preview.sayac, seciliUrunler: everything ? undefined : [...checked], sifirlaVaryasyonlar: [...sifirla].map(([varyasyonId, stok]) => ({ varyasyonId, stok })) });
       setResult(data.sonuc);
       setPreview(null);
       router.refresh();
     } catch (e) {
-      setError((e as Error).message);
+      if ((e as { status?: number }).status === 409) {
+        // Önizleme eskidi: hiçbir şey yazılmadı; eski önizlemeyi kaldır, yeniden önizlemeyi öner
+        setPreview(null);
+        setError(`${(e as Error).message} Hiçbir şey uygulanmadı; «Önizle» düğmesiyle önizlemeyi yenileyin.`);
+      } else setError((e as Error).message);
     } finally {
       setBusy("");
     }

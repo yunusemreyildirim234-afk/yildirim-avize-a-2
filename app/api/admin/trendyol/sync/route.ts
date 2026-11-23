@@ -6,6 +6,7 @@ import { adminGuard } from "@/lib/admin-guard";
 import { rateLimit, tooMany } from "@/lib/rate-limit";
 import { applyPlan, buildPlan, parseSettings, sifirlaKalkan } from "@/lib/trendyol-sync";
 import { onizleme } from "@/lib/trendyol-plan";
+import { ESKI_ONIZLEME_MESAJI, onizlemeEskidiMi } from "@/lib/trendyol-onizleme-kontrol";
 import { prisma } from "@/lib/db";
 import { TrendyolGuardError } from "@/lib/trendyol-guard";
 import { OPEN_ORDER_STATUSES, pendingByBarcode, stockChangeVariationIds, sumPendingByVariation } from "@/lib/trendyol-bekleyen";
@@ -45,6 +46,8 @@ export async function POST(req: Request) {
       const bekleyen = pendingByBarcode(plan.products, sumPendingByVariation(items));
       return NextResponse.json({ success: true, dryRun: true, plan: { ...onizleme(plan), bekleyen, kalkanVaryasyonlar: plan.kalkan } });
     }
+    // Önizleme sonrası Trendyol değiştiyse (pasife alma/ezme/yeni ürün arttı) hiçbir şey yazmadan reddet; sayac yoksa (eski istemci) kontrol yok.
+    if (onizlemeEskidiMi(body.sayac, plan.sayac)) return NextResponse.json({ error: ESKI_ONIZLEME_MESAJI }, { status: 409 });
     const sonuc = await applyPlan(plan, secili);
     const sifirlama = sifirla.length ? await sifirlaKalkan(plan.kalkan, sifirla) : undefined;
     revalidateStorefront(); // vitrin yalnızca gerçek uygulamadan sonra yenilenir (önizleme yazmaz, önbelleği sıfırlamaz)
