@@ -57,6 +57,7 @@ CREATE TABLE "Product" (
     "transferDiscountPct" DOUBLE PRECISION,
     "trendyolMainId" TEXT,
     "modelCode" TEXT,
+    "videoUrl" TEXT,
     "ebat" TEXT,
     "trendyolCategory" TEXT,
     "trendyolUrl" TEXT,

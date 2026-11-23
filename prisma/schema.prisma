@@ -65,6 +65,7 @@ model Product {
   transferDiscountPct Float? // Havale/EFT indirimi % (boş: varsayılan, 0: yok)
   trendyolMainId   String?            @unique // productMainId
   modelCode        String?            @unique // Site içi model kodu (1-236, yönetici değiştirebilir)
+  videoUrl         String? // Ürün videosu adresi (YouTube/Vimeo/.mp4; lib/video-url.ts; yönetici girer, Trendyol eşitlemesi dokunmaz)
   ebat             String? // Ürün ebadı "45 x 25" (yönetici girer; filtre/sıralamada kullanılır; Trendyol eşitlemesi dokunmaz)
   coupons          Coupon[]
   trendyolCategory String?

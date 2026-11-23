@@ -105,3 +105,6 @@ Sorgular ve select'ler:
 4. Admin düzenleyici "Video" bölümü + PATCH.
 5. Ürün sayfası galeri/tembel oynatıcı.
 6. CSP genişletmesi (`next.config.ts`, sahip izniyle) ve — karar verildiyse — Trendyol'dan çekme.
+
+
+> Trendyol'dan çekme kapsam dışı bırakıldı (sahip kararı, 24 Kasım 2026); yalnız elle ekleme.

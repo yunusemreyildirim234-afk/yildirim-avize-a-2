@@ -18,6 +18,7 @@ Bu klasör, veritabanı şemasının **gerçek geçmişidir**. Şema değişikli
 | `sozlesme-onayi-ekle.sql` | `Order.legalConsentAt` ve `legalConsentVersion` (sözleşme onay kaydı; eski siparişler NULL) |
 | `teslim-tarihi-ekle.sql` | `Order.deliveredAt` (teslim anı), ikinci bölümde geriye dönük doldurma (yaklaşık) |
 | `ebat-ekle.sql` | `Product.ebat` |
+| `video-url-ekle.sql` | `Product.videoUrl` (ürün başına tek video adresi: YouTube/Vimeo/.mp4; nullable TEXT) |
 | `variation-index-ekle.sql` | `ProductVariation.productId` indeksi |
 | `account-deletion.sql` | `AccountDeletionRequest` tablosu, `User.lastLoginAt`, durum CHECK kuralı ve kullanıcı başına tek bekleyen talep kısmi benzersiz indeksi |
 | `tamamlayici-tablo-ekle.sql` | `ProductComplement` tablosu (ana ürün ↔ tamamlayıcı ürün bağı; FK CASCADE, UNIQUE, CHECK, indeks) |

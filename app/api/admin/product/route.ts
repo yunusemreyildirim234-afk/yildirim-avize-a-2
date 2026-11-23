@@ -16,6 +16,8 @@ import { isTextOverwrite, normalizeDescription, snapshotDescription } from "@/li
 import { resolveSyncModes } from "@/lib/trendyol-modes";
 import { EXTRA_PRICE_ERROR, PRICE_ERROR, validExtraPrice, validPrice } from "@/lib/price-input";
 
+import { parseVideoUrl } from "@/lib/video-url";
+
 const PRODUCT_ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
 
 // 0. Açıklama düzenleyicisi için okuma (GET ?productId=): güncel açıklama, Trendyol'un son gönderdiği metin (syncSnapshot.description) ve
@@ -34,6 +36,12 @@ export async function GET(req: Request) {
       });
       if (!imgs) return NextResponse.json({ error: "Ürün bulunamadı." }, { status: 404 });
       return NextResponse.json(imgs, { headers: { "Cache-Control": "no-store" } });
+    }
+    // fields=video: düzenleyicideki Video bölümü için tek ürünün video adresi (liste dar select'tedir; videoUrl listede yoktur)
+    if (new URL(req.url).searchParams.get("fields") === "video") {
+      const row = await prisma.product.findUnique({ where: { id: productId }, select: { videoUrl: true } });
+      if (!row) return NextResponse.json({ error: "Ürün bulunamadı." }, { status: 404 });
+      return NextResponse.json({ videoUrl: row.videoUrl }, { headers: { "Cache-Control": "no-store" } });
     }
     const [product, config] = await Promise.all([
       prisma.product.findUnique({ where: { id: productId }, select: { description: true, syncSnapshot: true } }),
@@ -167,6 +175,15 @@ async function PATCHHandler(req: Request) {
       if (written.count === 0) return NextResponse.json({ error: "Ürün bulunamadı." }, { status: 404 });
       // Açıklama kartlarda, fiyatta ve stokta görünmez: tüm vitrin önbelleği boşaltılmaz; ürün sayfası kendi süresiyle (60 sn) yenilenir
       return NextResponse.json({ success: true, description: description.value }, STOREFRONT_UNCHANGED);
+    }
+
+    // Video adresi (tek alan): lib/video-url.ts ile doğrulanır ve kanonik biçimde saklanır; boş = null (silme). Vitrin önbelleği withStorefrontRevalidate ile temizlenir.
+    if (typeof body.productId === "string" && "videoUrl" in body) {
+      const video = parseVideoUrl(body.videoUrl);
+      if (!video.ok) return NextResponse.json({ error: video.error }, { status: 400 });
+      const written = await prisma.product.updateMany({ where: { id: body.productId }, data: { videoUrl: video.video?.url ?? null } });
+      if (written.count === 0) return NextResponse.json({ error: "Ürün bulunamadı." }, { status: 404 });
+      return NextResponse.json({ success: true, videoUrl: video.video?.url ?? null });
     }
 
     // Tekil ürün düzenleme: başlık, fiyat, görseller (varsa model kodu ile birlikte)
