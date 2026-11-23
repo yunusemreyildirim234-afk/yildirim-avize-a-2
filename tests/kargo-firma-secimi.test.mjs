@@ -121,6 +121,10 @@ test("order-status: kargoya verildi bildirimi takip kodu varken gider, yokken/ma
   assert.equal(buildShippedNotice({ ...base, shippingTrackingCode: null, shippingBarcode: "B" }).tracking, "B");
   assert.equal(buildShippedNotice({ ...base, shippingType: "BEYOGLU_MAGAZA_TESLIM" }), null);
   const r = read("app/api/admin/order-status/route.ts");
-  assert.match(r, /before\.status !== status && status === "SHIPPED" \? \(forcedShipped \? buildShippedNoticeForced\(updatedOrder\) : buildShippedNotice/);
-  assert.match(r, /catch \(e\) \{\s*console\.warn\("Kargo e-postası/);
+  // Bildirim/e-posta mantığı ortak yardımcıya taşındı (lib/mark-shipped.ts); rota onu forcedShipped ile çağırır
+  assert.match(r, /before\.status !== status && status === "SHIPPED"/);
+  assert.match(r, /announceShipped\(updatedOrder, orderId, \{ forced: forcedShipped, auto: false \}\)/);
+  const h = read("lib/mark-shipped.ts");
+  assert.match(h, /opts\.forced \? buildShippedNoticeForced\(order\) : buildShippedNotice\(order\)/);
+  assert.match(h, /catch \(e\) \{\s*console\.warn\("Kargo e-postası/);
 });

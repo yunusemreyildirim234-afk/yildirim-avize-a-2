@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { refreshOrderShipment } from "@/lib/kargonomi";
+import { autoShipEnabled, refreshWithAutoShip } from "@/lib/mark-shipped";
 import { notifyCustomer } from "@/lib/notifications";
 
 /** Türkçe karakterleri ve büyük/küçük harfi normalize eder: "Kargo TESLİM Edildi" → "kargo teslim edildi". */
@@ -53,29 +53,34 @@ export interface SyncResult {
   checked: number;
   delivered: number;
   failed: number;
+  /** Kargonomi'de "Teslim Sürecinde"ye geçtiği için otomatik Kargoya Verildi yapılanlar */
+  autoShipped?: number;
 }
 
 /** Kargodaki (SHIPPED) siparişlerin durumunu Kargonomi'den çeker; teslim edilmiş olanları DELIVERED yapar. En fazla `limit` sipariş. */
 export async function syncShippedOrders(limit = 50): Promise<SyncResult> {
   const orders = await prisma.order.findMany({
-    where: { status: "SHIPPED", kargonomiShipmentId: { not: null } },
+    // Bayrak açıksa gönderisi açılmış standart kargo siparişleri (PENDING) de taranır; otomatik Kargoya Verildi için
+    where: { kargonomiShipmentId: { not: null }, OR: [{ status: "SHIPPED" }, ...(autoShipEnabled() ? [{ status: "PENDING", shippingType: "STANDART_KARGO" }] : [])] },
     orderBy: { updatedAt: "asc" },
     take: Math.min(limit, 50),
     select: { id: true },
   });
-  const result: SyncResult = { checked: orders.length, delivered: 0, failed: 0 };
+  const result: SyncResult = { checked: orders.length, delivered: 0, failed: 0, autoShipped: 0 };
   for (let i = 0; i < orders.length; i += 5) {
     const chunk = orders.slice(i, i + 5);
     const settled = await Promise.allSettled(
       chunk.map(async (o) => {
-        const updated = await refreshOrderShipment(o.id);
-        if (isDeliveredStatus(updated.kargonomiStatus, updated.kargonomiStatusLabel)) return markDelivered(o.id);
+        const { order: updated, autoShipped } = await refreshWithAutoShip(o.id);
+        if (autoShipped) return "shipped" as const;
+        if (isDeliveredStatus(updated.kargonomiStatus, updated.kargonomiStatusLabel)) return (await markDelivered(o.id)) ? ("delivered" as const) : false;
         return false;
       })
     );
     for (const s of settled) {
       if (s.status === "fulfilled") {
-        if (s.value) result.delivered++;
+        if (s.value === "delivered") result.delivered++;
+        else if (s.value === "shipped") result.autoShipped = (result.autoShipped ?? 0) + 1;
       } else {
         result.failed++;
         console.error("[shipment-sync] sipariş senkronize edilemedi:", (s.reason as Error)?.message);

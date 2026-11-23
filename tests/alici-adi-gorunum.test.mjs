@@ -43,7 +43,7 @@ test("görünümler: admin liste/detay 'Alıcı: X (sipariş veren: Y)', fiş, t
 });
 
 test("hesap e-postaları (kargolandı, dekont hatırlatma, iptal, hatırlatma) ve fatura hesap adıyla kalır", () => {
-  assert.match(src("app/api/admin/order-status/route.ts"), /sendShippedEmail\(\{[^}]*name: user\.name/);
+  assert.match(src("lib/mark-shipped.ts"), /deps\.email\(\{[^}]*name: user\.name/);
   assert.match(src("app/api/cron/reminders/route.ts"), /name: o\.user\.name/);
   assert.ok(!/recipient/.test(src("app/api/cron/reminders/route.ts")));
   assert.ok(!/recipient/.test(src("app/api/admin/orders/[id]/invoice/route.ts")));

@@ -4,11 +4,9 @@ import { serverError } from "@/lib/api-error";
 import { adminGuard } from "@/lib/admin-guard";
 import { prisma } from "@/lib/db";
 import { notifyCustomer } from "@/lib/notifications";
-import { sendShippedEmail } from "@/lib/email";
 import { refreshOrderShipment } from "@/lib/kargonomi";
 import { decideShippedTracking } from "@/lib/shipped-tracking";
-import { cleanGuestEmail } from "@/lib/guest-email";
-import { buildShippedNotice, buildShippedNoticeForced } from "@/lib/shipped-notice";
+import { announceShipped } from "@/lib/mark-shipped";
 import { forceReserveCoupon, releaseCoupon } from "@/lib/coupons";
 import { signSession } from "@/lib/session";
 import { ORDER_STATUSES, StatusRefusal, applyStatusChangeInTx, type StatusChangeTx } from "@/lib/order-undo";
@@ -75,26 +73,13 @@ async function POSTHandler(req: Request) {
     const restoredStock = plan.restoreStock;
     const updatedOrder = await prisma.order.findUniqueOrThrow({ where: { id: orderId } });
 
-    const notified = before.status !== status && Boolean(STATUS_NOTICE[status]);
-    // Kargoya verildi (standart kargo + takip kodu var): bildirime firma ve takip no eklenir, e-posta gönderilir
-    const shippedNotice = before.status !== status && status === "SHIPPED" ? (forcedShipped ? buildShippedNoticeForced(updatedOrder) : buildShippedNotice(updatedOrder)) : null;
-    if (notified) {
-      await notifyCustomer(
-        { userId: updatedOrder.userId },
-        shippedNotice
-          ? { title: "Sipariş durumunuz güncellendi", message: shippedNotice.message(orderId), type: "ORDER", link: shippedNotice.link }
-          : { title: "Sipariş durumunuz güncellendi", message: `#${orderId.slice(0, 8)}: ${STATUS_NOTICE[status]}`, type: "ORDER", link: "/giris#siparisler" }
-      );
+    // Kargoya verildi (standart kargo + takip kodu var): bildirime firma ve takip no eklenir, e-posta gönderilir (lib/mark-shipped.ts)
+    if (before.status !== status && status === "SHIPPED") {
+      await announceShipped(updatedOrder, orderId, { forced: forcedShipped, auto: false });
     }
-    if (shippedNotice) {
-      try {
-        const user = await prisma.user.findUnique({ where: { id: updatedOrder.userId }, select: { email: true, name: true } });
-        if (user) {
-          await sendShippedEmail({ to: cleanGuestEmail(user.email), name: user.name, orderId, carrier: shippedNotice.carrier, trackingNumber: shippedNotice.tracking, trackingKind: shippedNotice.trackingKind });
-        }
-      } catch (e) {
-        console.warn("Kargo e-postası gönderilemedi:", (e as Error).message);
-      }
+    const notified = before.status !== status && Boolean(STATUS_NOTICE[status]);
+    if (notified && status !== "SHIPPED") {
+      await notifyCustomer({ userId: updatedOrder.userId }, { title: "Sipariş durumunuz güncellendi", message: `#${orderId.slice(0, 8)}: ${STATUS_NOTICE[status]}`, type: "ORDER", link: "/giris#siparisler" });
     }
 
     // Geri Al belirteci: yalnızca durum gerçekten değiştiyse. Stok/kupon iadesi yapıldıysa geri alırken tersine çevrilir.

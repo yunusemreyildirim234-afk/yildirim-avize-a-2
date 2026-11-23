@@ -2,6 +2,7 @@ import { createHmac, timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { isDeliveredStatus, markDelivered } from "@/lib/shipment-sync";
+import { KARGONOMI_STARTED, autoShipEnabled, markShippedAuto } from "@/lib/mark-shipped";
 
 // Herkese açık uç (proxy.ts korumasının dışında): güvenlik tamamen X-Webhook-Signature (HMAC-SHA256) doğrulamasına dayanır.
 // Secret tanımlı değilse veya imza yanlışsa 401 döner (fail closed).
@@ -44,7 +45,10 @@ export async function POST(req: Request) {
     const status = str(s.status);
     const label = str(s.status_label);
 
-    if (!isDeliveredStatus(status, label)) return NextResponse.json({ ok: true, ignored: true });
+    const delivered = isDeliveredStatus(status, label);
+    // "Teslim Sürecinde" (started) yalnız otomatik Kargoya Verildi açıksa işlenir; diğer durumlar yok sayılır
+    const started = !delivered && status === KARGONOMI_STARTED && autoShipEnabled();
+    if (!delivered && !started) return NextResponse.json({ ok: true, ignored: true });
 
     const or: Array<Record<string, unknown>> = [];
     if (Number.isFinite(id) && id > 0) or.push({ kargonomiShipmentId: id });
@@ -55,6 +59,15 @@ export async function POST(req: Request) {
     const order = await prisma.order.findFirst({ where: { OR: or }, select: { id: true } });
     if (!order) return NextResponse.json({ ok: true, ignored: true });
 
+    if (started) {
+      // Kayıtlı durumu atomik karşılaştır-ve-ata: yalnız started'a GEÇİŞTE (count === 1) otomatik Kargoya Verildi. Aynı olay tekrar gelirse veya Geri Al sonrası tetiklenmez.
+      const claimed = await prisma.order.updateMany({
+        where: { id: order.id, OR: [{ kargonomiStatus: null }, { kargonomiStatus: { not: KARGONOMI_STARTED } }] },
+        data: { kargonomiStatus: KARGONOMI_STARTED, ...(label ? { kargonomiStatusLabel: label } : {}) },
+      });
+      if (claimed.count === 1) await markShippedAuto(order.id, { refreshed: false });
+      return NextResponse.json({ ok: true });
+    }
     await markDelivered(order.id, { ...(status ? { kargonomiStatus: status } : {}), ...(label ? { kargonomiStatusLabel: label } : {}) });
   } catch (e) {
     console.error("[kargonomi-webhook] işlenemedi:", (e as Error).message);

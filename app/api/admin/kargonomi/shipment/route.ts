@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { adminGuard } from "@/lib/admin-guard";
 import { prisma } from "@/lib/db";
-import { KargonomiError, createShipmentForOrder, refreshOrderShipment } from "@/lib/kargonomi";
+import { refreshWithAutoShip } from "@/lib/mark-shipped";
+import { KargonomiError, createShipmentForOrder } from "@/lib/kargonomi";
 
 function fail(error: unknown) {
   const status = error instanceof KargonomiError ? error.status : 500;
@@ -44,7 +45,7 @@ export async function PATCH(req: Request) {
   try {
     const { orderId } = await req.json();
     if (!orderId) return NextResponse.json({ error: "orderId zorunlu" }, { status: 400 });
-    return NextResponse.json({ success: true, order: await refreshOrderShipment(orderId) });
+    return NextResponse.json({ success: true, order: (await refreshWithAutoShip(orderId)).order });
   } catch (error) {
     return fail(error);
   }
