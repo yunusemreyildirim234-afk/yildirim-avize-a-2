@@ -121,3 +121,23 @@ test("yönetici ucu videoUrl'i video-url.ts ile doğrular, boş = null", () => {
   assert.match(route, /parseVideoUrl\(body\.videoUrl\)/);
   assert.match(route, /videoUrl: video\.video\?\.url \?\? null/);
 });
+
+import { isShortsUrl, videoPlayerSrc, videoAspect } from "../lib/video-url.ts";
+
+test("shorts adresi dikey, diğerleri geniş/yerel oran", () => {
+  assert.equal(isShortsUrl(`https://www.youtube.com/shorts/${ID}`), true);
+  assert.equal(isShortsUrl(`https://www.youtube.com/watch?v=${ID}`), false);
+  assert.equal(isShortsUrl("https://evil.test/shorts/abc"), false);
+  assert.equal(isShortsUrl(null), false);
+  const yt = parseVideoUrl(`https://www.youtube.com/watch?v=${ID}`).video;
+  assert.equal(videoAspect(yt, `https://www.youtube.com/shorts/${ID}`), "vertical");
+  assert.equal(videoAspect(yt, yt.url), "wide");
+  assert.equal(videoAspect(parseVideoUrl("https://vimeo.com/123456789").video), "wide");
+  assert.equal(videoAspect(parseVideoUrl("https://cdn.example.com/a.mp4").video), "native");
+});
+
+test("oynatıcı adresi: nocookie + autoplay, Vimeo autoplay, mp4 iframe değil", () => {
+  assert.equal(videoPlayerSrc(parseVideoUrl(`https://youtu.be/${ID}`).video), `https://www.youtube-nocookie.com/embed/${ID}?autoplay=1&rel=0`);
+  assert.equal(videoPlayerSrc(parseVideoUrl("https://vimeo.com/123456789").video), "https://player.vimeo.com/video/123456789?autoplay=1");
+  assert.equal(videoPlayerSrc(parseVideoUrl("https://cdn.example.com/a.mp4").video), null);
+});

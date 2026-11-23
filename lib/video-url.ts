@@ -67,3 +67,27 @@ export function parseVideoUrl(raw: unknown): VideoParse {
   }
   return bad(VIDEO_URL_ERROR);
 }
+
+/** Adres YouTube "shorts" biçimindeyse true (dikey 9:16 oynatıcı için). Kanonik kayıt shorts yolunu korumuyorsa false döner. */
+export function isShortsUrl(raw: unknown): boolean {
+  if (typeof raw !== "string") return false;
+  try {
+    const u = new URL(raw.trim());
+    return YT_HOSTS.has(u.hostname) && u.pathname.split("/").filter(Boolean)[0] === "shorts";
+  } catch {
+    return false;
+  }
+}
+
+/** Modal içinde oynatılacak iframe adresi (kullanıcı tıkladığı için autoplay). mp4 iframe değil <video> ile oynar: null. */
+export function videoPlayerSrc(video: VideoInfo): string | null {
+  if (video.provider === "youtube") return `${video.embedUrl}?autoplay=1&rel=0`;
+  if (video.provider === "vimeo") return `${video.embedUrl}?autoplay=1`;
+  return null;
+}
+
+/** Oynatıcı oranı: YouTube shorts dikey 9:16, diğer gömülü videolar 16:9, mp4 kendi oranında. */
+export function videoAspect(video: VideoInfo, rawUrl?: unknown): "vertical" | "wide" | "native" {
+  if (video.provider === "mp4") return "native";
+  return video.provider === "youtube" && (isShortsUrl(rawUrl) || isShortsUrl(video.url)) ? "vertical" : "wide";
+}

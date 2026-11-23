@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Heart } from "lucide-react";
+import { ChevronLeft, ChevronRight, Heart, Play } from "lucide-react";
+import { parseVideoUrl } from "@/lib/video-url";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -22,7 +23,7 @@ import { activeTier, bulkLabel, bulkTiersOf, unitPriceFor } from "@/lib/bulk-pri
 import { lowStockLabel, type LowStockSetting } from "@/lib/low-stock";
 import { bulbNoteFor, isAccessoryCategory } from "@/lib/bulb-note";
 import { smallImage } from "@/lib/img";
-import ProductVideo from "@/components/ProductVideo";
+import ProductVideoModal from "@/components/ProductVideoModal";
 import { displayTitle } from "@/lib/title-display";
 import { pickDefaultOption } from "@/lib/default-variation";
 import InstallmentLink from "@/components/InstallmentLink";
@@ -79,6 +80,8 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
   const [quantity, setQuantity] = useState(1);
   const [addedToCart, setAddedToCart] = useState(false);
   const [zoomed, setZoomed] = useState(false);
+  const [videoOpen, setVideoOpen] = useState(false);
+  const hasVideo = (() => { const p = parseVideoUrl(product.videoUrl); return p.ok && p.video !== null; })();
   const [descOpen, setDescOpen] = useState(false);
   const longDesc = (product.description?.length ?? 0) > 280 || (product.description?.split("\n").length ?? 0) > 5;
   const trackRef = useRef<HTMLDivElement>(null);
@@ -238,8 +241,19 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
           <span>Beyoğlu Mağazamızda Sergileniyor</span>
         </div>
         )}
+
+        {hasVideo && (
+          <button
+            type="button"
+            onClick={() => setVideoOpen(true)}
+            aria-label={`${product.title} ürün videosunu aç`}
+            className="absolute bottom-16 right-4 z-10 inline-flex items-center gap-1.5 rounded-full bg-zinc-900/80 px-3 py-1.5 text-[11px] font-semibold text-white shadow-lg hover:bg-zinc-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-500 sm:bottom-6 sm:right-6"
+          >
+            <Play aria-hidden="true" className="h-3.5 w-3.5" fill="currentColor" /> Video
+          </button>
+        )}
       </div>
-      {gallery.length > 1 && (
+      {(gallery.length > 1 || hasVideo) && (
         <div ref={thumbsRef} className="keep-theme bg-neutral-900 flex gap-2 overflow-x-auto p-3 border-t border-neutral-800" role="tablist" aria-label="Ürün fotoğrafları">
           {gallery.map((src, i) => (
             <button
@@ -257,9 +271,24 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
               <img src={smallImage(src)} alt="" width={72} height={72} loading="lazy" decoding="async" className="w-full h-full object-cover" />
             </button>
           ))}
+          {hasVideo && (
+            <button
+              type="button"
+              onClick={() => setVideoOpen(true)}
+              aria-label={`${product.title} ürün videosunu aç`}
+              className="relative shrink-0 w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-lg overflow-hidden border-2 border-transparent opacity-80 hover:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-500"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              {coverImageOf(product) && <img src={smallImage(coverImageOf(product) as string)} alt="" width={72} height={72} loading="lazy" decoding="async" className="w-full h-full object-cover" />}
+              <span className="absolute inset-0 flex items-center justify-center bg-black/40">
+                <Play aria-hidden="true" className="h-6 w-6 text-white" fill="currentColor" />
+              </span>
+              <span className="absolute bottom-0.5 left-0.5 rounded bg-zinc-900/80 px-1 text-[9px] font-semibold text-white">Video</span>
+            </button>
+          )}
         </div>
       )}
-      <ProductVideo framed url={product.videoUrl} title={product.title} poster={coverImageOf(product)} />
+      <ProductVideoModal open={videoOpen} url={product.videoUrl} title={product.title} onClose={() => setVideoOpen(false)} />
       </div>
 
       {/* Sağ: Ürün Bilgileri ve Seçenekler */}
