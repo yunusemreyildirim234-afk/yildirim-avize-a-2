@@ -1,6 +1,10 @@
 // Tamamlayıcı ürün ("bununla birlikte alın") indirimi: SAF hesap (veritabanı yok).
 // Ana ürün sepetteyken tamamlayıcı ürünün birim fiyatı kademeden SONRA düşer (ardışık/yığılır).
+// İndirim, tamamlayıcının sepet satırı başına YALNIZ COMPLEMENT_DISCOUNT_QTY (1) adedi için geçerlidir; kalan adetler normal fiyattan gider.
 // Kurallar yalnızca sunucuda veritabanından okunur; istemci gövdesinden asla alınmaz.
+
+/** Tamamlayıcı indirimi sepet satırı başına kaç adede uygulanır (sahip kararı: 1). */
+export const COMPLEMENT_DISCOUNT_QTY = 1;
 
 export type ComplementType = "PERCENT" | "FIXED";
 

@@ -49,16 +49,15 @@ const orderBody = (items, extra = {}) => ({
 });
 const both = [{ variationId: "v-main", quantity: 1 }, { variationId: "v-bulb", quantity: 6 }];
 
-test("sipariş: bağ + ana ürün sepette → indirimli birim fiyat, bundle alanları dolu; toplam teklifle aynı", async () => {
+test("sipariş: bağ + ana ürün sepette → 1 adet indirimli + kalan normal kalem, bundle alanları dolu; toplam teklifle aynı", async () => {
   useDb([link]);
   const res = await post(order, orderBody(both));
   assert.equal(res.status, 200);
   const items = calls.orderData.items.create;
-  const bulb = items.find((i) => i.variationId === "v-bulb");
+  // 6 adet ampul: 1 adet indirimli kalem + 5 adet normal kalem (her kalemde unitPrice × quantity doğru)
+  const bulbRows = items.filter((i) => i.variationId === "v-bulb");
   const main = items.find((i) => i.variationId === "v-main");
-  assert.equal(bulb.unitPrice, 90);
-  assert.equal(bulb.bundleMainProductId, "p-main");
-  assert.equal(bulb.bundleDiscount, 60);
+  assert.deepEqual(bulbRows.map((r) => [r.quantity, r.unitPrice, r.bundleMainProductId, r.bundleDiscount]), [[1, 90, "p-main", 10], [5, 100, null, null]]);
   assert.equal(main.unitPrice, 1000);
   assert.equal(main.bundleMainProductId, null);
   assert.equal(main.bundleDiscount, null);
@@ -67,9 +66,12 @@ test("sipariş: bağ + ana ürün sepette → indirimli birim fiyat, bundle alan
   // teklif ucuyla aynı toplam (havale %5 dahil)
   const q = await (await post(quote, { items: [{ variationId: "v-main", qty: 1 }, { variationId: "v-bulb", qty: 6 }], paymentMethod: "BANK_TRANSFER" })).json();
   assert.equal(calls.orderData.totalAmount, q.totals.total);
-  assert.equal(q.totals.itemsTotal, 1540);
-  assert.equal(q.lines[1].unitPrice, 90);
-  assert.deepEqual(q.lines[1].bundle, { mainProductId: "p-main", unitDiscount: 10, total: 60 });
+  assert.equal(q.totals.itemsTotal, 1590);
+  assert.equal(q.lines[1].unitPrice, 100);
+  assert.equal(q.lines[1].lineTotal, 590);
+  assert.deepEqual(q.lines[1].bundle, { mainProductId: "p-main", unitDiscount: 10, total: 10 });
+  // saklanan kalemlerin toplamı = sepet/teklif ürün toplamı (PayTR sepeti aynı kalemlerden kurulur)
+  assert.equal(items.reduce((sum, r) => sum + r.unitPrice * r.quantity, 0), q.totals.itemsTotal);
   assert.equal(q.lines[0].bundle, null);
 });
 

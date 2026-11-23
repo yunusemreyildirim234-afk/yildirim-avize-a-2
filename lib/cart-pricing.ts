@@ -1,5 +1,5 @@
 import { unitPriceFor, type BulkRule } from "@/lib/bulk-pricing";
-import { bestComplement, type ComplementRule } from "@/lib/complement-pricing";
+import { bestComplement, COMPLEMENT_DISCOUNT_QTY, type ComplementRule } from "@/lib/complement-pricing";
 import {
   BANK_TRANSFER_DISCOUNT,
   DEFAULT_COUPON_CODE,
@@ -56,10 +56,10 @@ export interface CapInfo {
 
 export interface PricedLine extends CartPriceLine {
   capInfo?: CapInfo; // yalnızca üst sınır nedeniyle kısılma olduysa
-  unitPrice: number; // kademe sonrası birim fiyat
-  lineTotal: number; // unitPrice × quantity (yuvarlanmaz)
+  unitPrice: number; // kademe sonrası NORMAL birim fiyat (birlikte alma indirimi hariç)
+  lineTotal: number; // satırın gerçek tutarı: unitPrice × quantity; birlikte alma varsa 1 adet indirimli + kalan adetler unitPrice (yuvarlanmaz)
   tierQty: number; // kademeyi belirleyen toplam adet (aynı ürünün tüm renkleri)
-  bundle?: { mainProductId: string; unitDiscount: number; total: number }; // birlikte alma indirimi (yalnız uygulandıysa)
+  bundle?: { mainProductId: string; unitDiscount: number; total: number }; // birlikte alma indirimi (yalnız uygulandıysa); total = unitDiscount × COMPLEMENT_DISCOUNT_QTY (satır başına 1 adet)
 }
 
 export interface CartPricing {
@@ -96,11 +96,14 @@ export function priceCart(opts: {
   const lines: PricedLine[] = opts.lines.map((l) => {
     const tierQty = qtyByProduct.get(l.productId) ?? l.quantity;
     const tierUnit = unitPriceFor(l.price, tierQty, l.tiers);
-    // Birlikte alma: ana ürün sepetteyse tüm adetler kademeden SONRA indirimli (kupon/kargo/üst sınır bu birim fiyattan hesaplanır)
+    // Birlikte alma: ana ürün sepetteyse satırın YALNIZ ilk COMPLEMENT_DISCOUNT_QTY adedi kademeden SONRA indirimli; kalan adetler kademe fiyatında (kupon/kargo/üst sınır lineTotal'dan hesaplanır)
     const pick = bestComplement(l.complementOf, present, tierUnit);
-    const unitPrice = pick ? Math.round((tierUnit - pick.unitDiscount) * 100) / 100 : tierUnit;
-    const bundle = pick ? { mainProductId: pick.mainProductId, unitDiscount: pick.unitDiscount, total: Math.round(pick.unitDiscount * l.quantity * 100) / 100 } : undefined;
-    return { ...l, tierQty, unitPrice, lineTotal: unitPrice * l.quantity, ...(bundle ? { bundle } : {}) };
+    if (!pick) return { ...l, tierQty, unitPrice: tierUnit, lineTotal: tierUnit * l.quantity };
+    const discQty = Math.min(l.quantity, COMPLEMENT_DISCOUNT_QTY);
+    const discountedUnit = Math.round((tierUnit - pick.unitDiscount) * 100) / 100;
+    const lineTotal = Math.round((discountedUnit * discQty + tierUnit * (l.quantity - discQty)) * 100) / 100;
+    const bundle = { mainProductId: pick.mainProductId, unitDiscount: pick.unitDiscount, total: Math.round(pick.unitDiscount * discQty * 100) / 100 };
+    return { ...l, tierQty, unitPrice: tierUnit, lineTotal, bundle };
   });
   const itemsTotal = lines.reduce((sum, l) => sum + l.lineTotal, 0);
 
@@ -203,6 +206,15 @@ export function priceCart(opts: {
     }
   }
   return result;
+}
+
+/** Fiyatlanmış satırı sipariş kalemlerine böler: birlikte alma varsa 1 adet indirimli + kalan adetler normal (unitPrice × quantity her kalemde doğru kalır; PayTR sepeti ve e-posta aynı satırları kullanır). */
+export function splitPricedLine(l: Pick<PricedLine, "quantity" | "unitPrice" | "bundle">): { quantity: number; unitPrice: number; bundle: NonNullable<PricedLine["bundle"]> | null }[] {
+  if (!l.bundle) return [{ quantity: l.quantity, unitPrice: l.unitPrice, bundle: null }];
+  const discQty = Math.min(l.quantity, COMPLEMENT_DISCOUNT_QTY);
+  const rows: { quantity: number; unitPrice: number; bundle: NonNullable<PricedLine["bundle"]> | null }[] = [{ quantity: discQty, unitPrice: Math.round((l.unitPrice - l.bundle.unitDiscount) * 100) / 100, bundle: l.bundle }];
+  if (l.quantity > discQty) rows.push({ quantity: l.quantity - discQty, unitPrice: l.unitPrice, bundle: null });
+  return rows;
 }
 
 /** Üst sınır nedeniyle kısılan ürün için sepet satırı mesajı. */

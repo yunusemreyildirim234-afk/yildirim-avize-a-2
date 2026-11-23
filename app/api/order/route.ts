@@ -11,7 +11,7 @@ import { getSessionUserId } from "@/lib/account";
 import { EMAIL_RE, cleanControlChars, invoiceError, shippingFormError } from "@/lib/validation";
 import { bulkTiersOf } from "@/lib/bulk-pricing";
 import { isShort, mergeByVariation } from "@/lib/stock-rules";
-import { priceCart } from "@/lib/cart-pricing";
+import { priceCart, splitPricedLine } from "@/lib/cart-pricing";
 import { groupComplementRules } from "@/lib/complement-pricing";
 import { isPurchasablePrice, priceUnavailableMessage } from "@/lib/purchasable";
 import { releaseCoupon, reserveCouponLocked, validateCoupon } from "@/lib/coupons";
@@ -225,7 +225,10 @@ export async function POST(req: Request) {
     }
 
     // 3. Siparişi kaydet (kartlı ödemede ödeme onayına kadar AWAITING_PAYMENT)
-    const itemRows = orderLines.map((l, i) => ({ variationId: l.variation.id, quantity: l.quantity, unitPrice: l.unitPrice, productTitle: l.variation.product.title, variationLabel: l.variation.variationValue, bundleMainProductId: priced.lines[i].bundle?.mainProductId ?? null, bundleDiscount: priced.lines[i].bundle?.total ?? null }));
+    // Birlikte alma satırı iki kaleme bölünür (1 adet indirimli + kalan adetler normal): her kalemde unitPrice × quantity doğru kalır
+    const itemRows = orderLines.flatMap((l, i) =>
+      splitPricedLine(priced.lines[i]).map((r) => ({ variationId: l.variation.id, quantity: r.quantity, unitPrice: r.unitPrice, productTitle: l.variation.product.title, variationLabel: l.variation.variationValue, bundleMainProductId: r.bundle?.mainProductId ?? null, bundleDiscount: r.bundle?.total ?? null }))
+    );
     const totalQty = orderLines.reduce((sum, l) => sum + l.quantity, 0);
     // Kupon hakkı rezervasyonu ve sipariş kaydı tek işlemde: limit doluysa sipariş hiç oluşmaz
     class CouponLimitError extends Error {}
@@ -318,10 +321,10 @@ export async function POST(req: Request) {
 
     // 4b. Kartlı ödeme: PayTR iFrame token'ı al
     try {
-      const basket = orderLines.map((l) => ({
-        name: `${l.variation.product.title} - ${l.variation.variationValue}`,
-        price: l.unitPrice,
-        quantity: l.quantity,
+      const basket = itemRows.map((r) => ({
+        name: `${r.productTitle} - ${r.variationLabel}`,
+        price: r.unitPrice,
+        quantity: r.quantity,
       }));
       if (totals.shipping > 0) basket.push({ name: "Kargo", price: totals.shipping, quantity: 1 });
 

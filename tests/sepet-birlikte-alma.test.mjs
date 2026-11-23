@@ -5,7 +5,7 @@ import { register } from "node:module";
 register("./_alias-hooks.mjs", import.meta.url);
 
 const { cartPriceLines } = await import("../lib/cart-lines.ts");
-const { bundleLineView, lostBundleTitles } = await import("../lib/cart-bundle.ts");
+const { bundleLineView, lostBundleTitles, shownUnitPrice, lineBreakdownExpr } = await import("../lib/cart-bundle.ts");
 const { priceCart } = await import("../lib/cart-pricing.ts");
 
 const item = (variationId, productId, price, over = {}) => ({ variationId, productId, price, quantity: 1, bulk: [], ...over });
@@ -20,7 +20,8 @@ test("cartPriceLines: complementOf yoksa alan hiç eklenmez (eski sonuç birebir
 
 test("cartPriceLines: complementOf taşınır; ana ürün sepetteyken tamamlayıcı indirimli, yokken değil", () => {
   const withMain = price([item("vm", "main", 1000), item("vc", "comp", 100, { rules: RULES })]);
-  assert.equal(withMain.lines[1].unitPrice, 90);
+  assert.equal(withMain.lines[1].lineTotal, 90); // 1 adet: indirimli
+  assert.equal(withMain.lines[1].unitPrice, 100); // normal birim
   assert.deepEqual(withMain.lines[1].bundle, { mainProductId: "main", unitDiscount: 10, total: 10 });
   const noMain = price([item("vc", "comp", 100, { rules: RULES })]);
   assert.equal(noMain.lines[0].unitPrice, 100);
@@ -30,10 +31,12 @@ test("cartPriceLines: complementOf taşınır; ana ürün sepetteyken tamamlayı
 test("bundleLineView: etiket ve indirimsiz birim fiyat; bağ yoksa null", () => {
   assert.equal(bundleLineView(undefined, 90), null);
   assert.equal(bundleLineView(null, 90), null);
-  const v = bundleLineView({ mainProductId: "main", unitDiscount: 10, total: 30 }, 90);
+  const v = bundleLineView({ mainProductId: "main", unitDiscount: 10, total: 10 }, 100); // unitPrice = normal birim
   assert.equal(v.label, "Birlikte alma indirimi");
   assert.equal(v.regularUnit, 100);
-  assert.match(v.text, /30,00 ₺/);
+  assert.equal(v.discountedUnit, 90);
+  assert.match(v.text, /1 adet için/);
+  assert.match(v.text, /10,00 ₺/);
 });
 
 test("lostBundleTitles: ana ürün çıkınca tamamlayıcının indirimi kalkar → başlık döner", () => {
@@ -45,4 +48,13 @@ test("lostBundleTitles: ana ürün çıkınca tamamlayıcının indirimi kalkar 
   assert.deepEqual(lostBundleTitles(prev, [{ variationId: "vc", available: false }]), []);
   assert.deepEqual(lostBundleTitles(undefined, [{ variationId: "vc" }]), []);
   assert.deepEqual(lostBundleTitles([{ variationId: "vc", title: "Ampul" }], [{ variationId: "vc" }]), []); // önceden de yoktu
+});
+
+test("shownUnitPrice / lineBreakdownExpr: tek adette indirimli birim; çok adette 1 × indirimli + kalan × normal", () => {
+  const b = { mainProductId: "main", unitDiscount: 10, total: 10 };
+  assert.equal(shownUnitPrice({ unitPrice: 100, quantity: 1, bundle: b }), 90);
+  assert.equal(shownUnitPrice({ unitPrice: 100, quantity: 6, bundle: b }), 100);
+  assert.equal(shownUnitPrice({ unitPrice: 100, quantity: 6 }), 100);
+  assert.equal(lineBreakdownExpr({ unitPrice: 100, quantity: 6, bundle: b }), "1 × 90,00 ₺ + 5 × 100,00 ₺");
+  assert.equal(lineBreakdownExpr({ unitPrice: 100, quantity: 6 }), "6 × 100,00 ₺");
 });

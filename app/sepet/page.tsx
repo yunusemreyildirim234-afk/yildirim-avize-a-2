@@ -40,7 +40,7 @@ import { productPath } from "@/lib/product-url";
 import ComplementSuggestions from "@/components/ComplementSuggestions";
 import CartMoreStrip from "@/components/CartMoreStrip";
 import type { Suggestion } from "@/lib/complements";
-import { bundleLineView, lostBundleTitles, type BundleInfo } from "@/lib/cart-bundle";
+import { bundleLineView, lineBreakdownExpr, lostBundleTitles, shownUnitPrice, type BundleInfo } from "@/lib/cart-bundle";
 
 interface LocationItem {
   id: number;
@@ -228,6 +228,9 @@ export default function CartPage() {
   const applied = discountsApplied({ lines: cartPriceLines(cart), coupon: appliedCoupon, maxTotalDiscountPct: capPct });
   const notApplied = <span className="font-medium text-ink-muted"> (bu sepette uygulanmaz)</span>;
   const pricedOf = (variationId: string) => localTotals.lines.find((l) => l.variationId === variationId);
+  // Birlikte alma satırında birim fiyat tek değil: gösterilen birim (tek adette indirimli) ve ortalama birim (tasarruf/analitik için)
+  const unitShownOf = (i: { variationId: string; price: number }) => { const p = pricedOf(i.variationId); return p ? shownUnitPrice(p) : i.price; };
+  const avgUnitOf = (i: { variationId: string; price: number }) => { const p = pricedOf(i.variationId); return p && p.quantity > 0 ? p.lineTotal / p.quantity : i.price; };
 
   // Sunucu fiyat teklifi (/api/cart/quote, salt okunur): gösterilen tutar buradan gelir
   interface Quote {
@@ -766,19 +769,19 @@ export default function CartPage() {
                       </span>
                     )}
                     <div className="text-sm font-bold text-ink mt-2">
-                      {(pricedOf(item.variationId)?.unitPrice ?? item.price).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺
-                      {(pricedOf(item.variationId)?.unitPrice ?? item.price) < referenceUnit(item) && (
+                      {unitShownOf(item).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺
+                      {unitShownOf(item) < referenceUnit(item) && (
                         <span className="ml-2 text-xs font-medium text-ink-subtle line-through">{referenceUnit(item).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
                       )}
                     </div>
-                    {lineSavings(item, pricedOf(item.variationId)?.unitPrice ?? item.price) > 0 && (
+                    {lineSavings(item, avgUnitOf(item)) > 0 && (
                       <p data-testid="satir-indirimi" className="text-[11px] text-ink-muted mt-0.5 tabular-nums">
-                        {lineSavings(item, pricedOf(item.variationId)?.unitPrice ?? item.price).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺ indirim
+                        {lineSavings(item, avgUnitOf(item)).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺ indirim
                       </p>
                     )}
                     {item.quantity > 1 && pricedOf(item.variationId) && (
                       <p data-testid="satir-toplami" className="text-xs text-ink-muted mt-1 tabular-nums">
-                        {item.quantity} × {pricedOf(item.variationId)!.unitPrice.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺ ={" "}
+                        {lineBreakdownExpr(pricedOf(item.variationId)!)} ={" "}
                         <strong className="text-ink">{pricedOf(item.variationId)!.lineTotal.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</strong>
                       </p>
                     )}
@@ -1420,7 +1423,7 @@ export default function CartPage() {
             address: effectiveAddress,
             isPickup,
             region: [cities.find((c) => Number(c.id) === Number(buyerCityId))?.name, states.find((st) => Number(st.id) === Number(buyerStateId))?.name].filter(Boolean).join(" / "),
-            items: cart.map((i) => ({ title: i.title, variation: i.variationName, quantity: i.quantity, price: pricedOf(i.variationId)?.unitPrice ?? i.price })),
+            items: cart.map((i) => ({ title: i.title, variation: i.variationName, quantity: i.quantity, price: Math.round(avgUnitOf(i) * 100) / 100 })),
             itemsTotal: itemsShown,
             shippingLabel: SHIPPING_LABELS[shippingType] ?? shippingType,
             shippingCost,
