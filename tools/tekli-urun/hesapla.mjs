@@ -12,9 +12,12 @@ export function sadelestir(s) {
 }
 
 /** Komut satırı değerlerini doğrular. Hata mesajları dizisi döner (boş = geçerli). */
-export function argDogrula({ kaynak, paketAdedi, fiyat }) {
+export function argDogrula({ kaynak, kaynakId, paketAdedi, fiyat }) {
   const h = [];
-  if (!kaynak || !String(kaynak).trim()) h.push("--kaynak gerekli (başlıktan bir parça).");
+  const kVar = Boolean(kaynak && String(kaynak).trim());
+  const idVar = Boolean(kaynakId && String(kaynakId).trim());
+  if (kVar && idVar) h.push("--kaynak ve --kaynak-id birlikte verilemez.");
+  else if (!kVar && !idVar) h.push("--kaynak gerekli (başlıktan bir parça) ya da --kaynak-id (ürün kimliği).");
   if (!/^\d+$/.test(String(paketAdedi ?? "")) || Number(paketAdedi) < 2) h.push("--paket-adedi 2 veya daha büyük bir tam sayı olmalı.");
   const f = Number(String(fiyat ?? "").replace(",", "."));
   if (!/^\d+([.,]\d+)?$/.test(String(fiyat ?? "")) || !Number.isFinite(f) || f <= 0) h.push("--fiyat sıfırdan büyük bir sayı olmalı.");
@@ -33,7 +36,15 @@ export function kaynakBul(urunler, parca) {
   return { durum: adaylar.length === 0 ? "yok" : "cok", adaylar };
 }
 
-const adetRe = (n) => new RegExp(`(?<![\\d.,])${n}\\s*adet(?!\\p{L})`, "iu");
+/** Kaynağı kimlikle seçer. Yoksa "yok", pasifse "pasif". */
+export function kaynakIdBul(urunler, id) {
+  const u = urunler.find((x) => x.id === String(id).trim());
+  if (!u) return { durum: "yok" };
+  if (!u.active) return { durum: "pasif", urun: u };
+  return { durum: "tek", urun: u };
+}
+
+const adetRe =(n) => new RegExp(`(?<![\\d.,])${n}\\s*adet(?!\\p{L})`, "iu");
 
 /** Başlıkta ilk "<n> adet" ifadesini "1 Adet" yapar (parantez/boşluk düzeni korunur). */
 export function baslikDonustur(title, n) {
@@ -97,7 +108,7 @@ export function planOlustur({ kaynak, varyasyonlar, mevcutBasliklar, paketAdedi:
   const b = baslikDonustur(kaynak.title, n);
   if (!b.ok) return { hata: `Başlıkta "${n} adet" ifadesi bulunamadı: ${kaynak.title}` };
   const yeniBaslik = sadelestir(b.title);
-  if (mevcutBasliklar.some((t) => sadelestir(t) === yeniBaslik)) return { hata: `Bu başlıkla ürün zaten var: ${b.title}` };
+  if (mevcutBasliklar.some((t) => sadelestir(t) === yeniBaslik)) return { hata: `Bu başlıkla ürün zaten var: ${b.title}`, mevcut: true };
   if (!Number.isInteger(v.stock) || v.stock < 0) return { hata: `Kaynak varyasyon stoğu geçersiz: ${v.stock}` };
 
   const varYeni = {
