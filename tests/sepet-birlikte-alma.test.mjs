@@ -22,16 +22,16 @@ test("cartPriceLines: complementOf taşınır; ana ürün sepetteyken tamamlayı
   const withMain = price([item("vm", "main", 1000), item("vc", "comp", 100, { rules: RULES })]);
   assert.equal(withMain.lines[1].lineTotal, 90); // 1 adet: indirimli
   assert.equal(withMain.lines[1].unitPrice, 100); // normal birim
-  assert.deepEqual(withMain.lines[1].bundle, { mainProductId: "main", unitDiscount: 10, total: 10 });
+  assert.deepEqual(withMain.lines[1].bundles, [{ mainProductId: "main", unitDiscount: 10, qty: 1, total: 10 }]);
   const noMain = price([item("vc", "comp", 100, { rules: RULES })]);
   assert.equal(noMain.lines[0].unitPrice, 100);
-  assert.equal(noMain.lines[0].bundle, undefined);
+  assert.equal(noMain.lines[0].bundles, undefined);
 });
 
 test("bundleLineView: etiket ve indirimsiz birim fiyat; bağ yoksa null", () => {
   assert.equal(bundleLineView(undefined, 90), null);
   assert.equal(bundleLineView(null, 90), null);
-  const v = bundleLineView({ mainProductId: "main", unitDiscount: 10, total: 10 }, 100); // unitPrice = normal birim
+  const v = bundleLineView([{ mainProductId: "main", unitDiscount: 10, qty: 1, total: 10 }], 100); // unitPrice = normal birim
   assert.equal(v.label, "Birlikte alma indirimi");
   assert.equal(v.regularUnit, 100);
   assert.equal(v.discountedUnit, 90);
@@ -40,10 +40,10 @@ test("bundleLineView: etiket ve indirimsiz birim fiyat; bağ yoksa null", () => 
 });
 
 test("lostBundleTitles: ana ürün çıkınca tamamlayıcının indirimi kalkar → başlık döner", () => {
-  const b = { mainProductId: "main", unitDiscount: 10, total: 10 };
-  const prev = [{ variationId: "vm", title: "Avize" }, { variationId: "vc", title: "Ampul", bundle: b }];
-  assert.deepEqual(lostBundleTitles(prev, [{ variationId: "vc", available: true, bundle: null }]), ["Ampul"]);
-  assert.deepEqual(lostBundleTitles(prev, [{ variationId: "vm" }, { variationId: "vc", bundle: b }]), []); // hâlâ var
+  const b = [{ mainProductId: "main", unitDiscount: 10, qty: 1, total: 10 }];
+  const prev = [{ variationId: "vm", title: "Avize" }, { variationId: "vc", title: "Ampul", bundles: b }];
+  assert.deepEqual(lostBundleTitles(prev, [{ variationId: "vc", available: true, bundles: [] }]), ["Ampul"]);
+  assert.deepEqual(lostBundleTitles(prev, [{ variationId: "vm" }, { variationId: "vc", bundles: b }]), []); // hâlâ var
   assert.deepEqual(lostBundleTitles(prev, [{ variationId: "vm" }]), []); // tamamlayıcının kendisi çıktı
   assert.deepEqual(lostBundleTitles(prev, [{ variationId: "vc", available: false }]), []);
   assert.deepEqual(lostBundleTitles(undefined, [{ variationId: "vc" }]), []);
@@ -51,10 +51,19 @@ test("lostBundleTitles: ana ürün çıkınca tamamlayıcının indirimi kalkar 
 });
 
 test("shownUnitPrice / lineBreakdownExpr: tek adette indirimli birim; çok adette 1 × indirimli + kalan × normal", () => {
-  const b = { mainProductId: "main", unitDiscount: 10, total: 10 };
-  assert.equal(shownUnitPrice({ unitPrice: 100, quantity: 1, bundle: b }), 90);
-  assert.equal(shownUnitPrice({ unitPrice: 100, quantity: 6, bundle: b }), 100);
+  const b = [{ mainProductId: "main", unitDiscount: 10, qty: 1, total: 10 }];
+  assert.equal(shownUnitPrice({ unitPrice: 100, quantity: 1, bundles: b }), 90);
+  assert.equal(shownUnitPrice({ unitPrice: 100, quantity: 6, bundles: b }), 100);
   assert.equal(shownUnitPrice({ unitPrice: 100, quantity: 6 }), 100);
-  assert.equal(lineBreakdownExpr({ unitPrice: 100, quantity: 6, bundle: b }), "1 × 90,00 ₺ + 5 × 100,00 ₺");
+  assert.equal(lineBreakdownExpr({ unitPrice: 100, quantity: 6, bundles: b }), "1 × 90,00 ₺ + 5 × 100,00 ₺");
   assert.equal(lineBreakdownExpr({ unitPrice: 100, quantity: 6 }), "6 × 100,00 ₺");
+});
+
+test("çok gruplu satır: metin ve döküm yeni bölmeyi söyler (10 × … + 1 × … + kalan)", () => {
+  const g = [{ mainProductId: "big", unitDiscount: 16, qty: 1, total: 16 }, { mainProductId: "small", unitDiscount: 12, qty: 10, total: 120 }];
+  assert.equal(lineBreakdownExpr({ unitPrice: 100, quantity: 13, bundles: g }), "1 × 84,00 ₺ + 10 × 88,00 ₺ + 2 × 100,00 ₺");
+  assert.equal(lineBreakdownExpr({ unitPrice: 100, quantity: 11, bundles: g }), "1 × 84,00 ₺ + 10 × 88,00 ₺");
+  assert.equal(shownUnitPrice({ unitPrice: 100, quantity: 11, bundles: g }), 100);
+  assert.equal(shownUnitPrice({ unitPrice: 100, quantity: 2, bundles: [{ mainProductId: "m", unitDiscount: 10, qty: 2, total: 20 }] }), 90);
+  assert.match(bundleLineView(g, 100).text, /11 adet için\): 136,00 ₺$/);
 });

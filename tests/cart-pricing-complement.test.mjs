@@ -43,7 +43,7 @@ const ships = [HOME, PICKUP];
 const pays = ["CREDIT_CARD", "BANK_TRANSFER"];
 const strip = (p) => ({ ...p, lines: p.lines.map(({ complementOf, ...rest }) => rest) });
 
-test("bozulmama: complementOf yok / boş / ana ürünü sepette olmayan / geçersiz kural → eski hesapla BİREBİR aynı (bundle anahtarı yok)", () => {
+test("bozulmama: complementOf yok / boş / ana ürünü sepette olmayan / geçersiz kural → eski hesapla BİREBİR aynı (bundles anahtarı yok)", () => {
   let n = 0;
   for (const basket of baskets)
     for (const coupon of coupons)
@@ -60,7 +60,7 @@ test("bozulmama: complementOf yok / boş / ana ürünü sepette olmayan / geçer
             ];
             for (const lines of variants) {
               const got = priceCart({ ...opts, lines });
-              assert.equal(got.lines.some((l) => "bundle" in l), false);
+              assert.equal(got.lines.some((l) => "bundles" in l), false);
               assert.deepEqual(strip(got), strip(expected));
               n++;
             }
@@ -78,7 +78,7 @@ test("bozulmama: bilinen değerler", () => {
   assert.equal(q.total, 200);
 });
 
-// ---------- ETKİLEŞİM (sahip kararı: tamamlayıcı indirimi sepet satırı başına YALNIZ 1 adet için) ----------
+// ---------- ETKİLEŞİM (sahip kararı: her ana ürün adedi, tamamlayıcıdan 1 adedi KENDİ bağının indirimiyle indirimli yapar) ----------
 const bulbRules = [pct("main", 10)];
 const mainAndBulb = (bulbOver = {}) => [L("main", 1000, 1), L("bulb", 100, 6, { complementOf: bulbRules, ...bulbOver })];
 const run = (lines, over = {}) => priceCart({ lines, shippingType: HOME, paymentMethod: "CREDIT_CARD", ...over });
@@ -90,48 +90,49 @@ test("1 adet tamamlayıcı: indirim o 1 adete; satır bölünmez", () => {
   const bulb = p.lines[1];
   assert.equal(bulb.unitPrice, 100);
   assert.equal(bulb.lineTotal, 90);
-  assert.deepEqual(bulb.bundle, { mainProductId: "main", unitDiscount: 10, total: 10 });
+  assert.deepEqual(bulb.bundles, [{ mainProductId: "main", unitDiscount: 10, qty: 1, total: 10 }]);
   assert.deepEqual(splitPricedLine(bulb).map((r) => [r.quantity, r.unitPrice]), [[1, 90]]);
 });
 
 test("2 ve 6 adet: yalnız 1 adet indirimli, kalan adetler normal; toplam doğru", () => {
   const two = run([L("main", 1000, 1), L("bulb", 100, 2, { complementOf: bulbRules })]);
   assert.equal(two.lines[1].lineTotal, 190);
-  assert.equal(two.lines[1].bundle.total, 10);
+  assert.equal(two.lines[1].bundles[0].total, 10);
   assert.deepEqual(splitPricedLine(two.lines[1]).map((r) => [r.quantity, r.unitPrice, r.bundle ? r.bundle.total : null]), [[1, 90, 10], [1, 100, null]]);
   const six = run(mainAndBulb());
   const bulb = six.lines[1];
   assert.equal(bulb.unitPrice, 100); // normal birim
   assert.equal(bulb.lineTotal, 590); // 90 + 5 × 100
-  assert.deepEqual(bulb.bundle, { mainProductId: "main", unitDiscount: 10, total: 10 });
-  assert.equal(six.lines[0].bundle, undefined);
+  assert.deepEqual(bulb.bundles, [{ mainProductId: "main", unitDiscount: 10, qty: 1, total: 10 }]);
+  assert.equal(six.lines[0].bundles, undefined);
   assert.equal(six.itemsTotal, 1590);
   assert.deepEqual(splitPricedLine(bulb).map((r) => [r.quantity, r.unitPrice]), [[1, 90], [5, 100]]);
   assert.equal(rowsSum(six), six.itemsTotal);
 });
 
-test("ana ürün adedi 3: tamamlayıcı indirimi yine 1 adet", () => {
+test("ana ürün adedi 3: tamamlayıcıdan 3 adet indirimli (her ana adedi 1 hak)", () => {
   const p = run([L("main", 1000, 3), L("bulb", 100, 6, { complementOf: bulbRules })]);
-  assert.equal(p.lines[1].lineTotal, 590);
-  assert.equal(p.lines[1].bundle.total, 10);
-  assert.equal(p.itemsTotal, 3590);
+  assert.equal(p.lines[1].lineTotal, 570); // 3 × 90 + 3 × 100
+  assert.deepEqual(p.lines[1].bundles, [{ mainProductId: "main", unitDiscount: 10, qty: 3, total: 30 }]);
+  assert.equal(p.itemsTotal, 3570);
+  assert.deepEqual(splitPricedLine(p.lines[1]).map((r) => [r.quantity, r.unitPrice]), [[3, 90], [3, 100]]);
 });
 
 test("ana ürün sepette yok: indirim yok", () => {
   const p = run([L("bulb", 100, 6, { complementOf: bulbRules })]);
   assert.equal(p.lines[0].unitPrice, 100);
   assert.equal(p.lines[0].lineTotal, 600);
-  assert.equal(p.lines[0].bundle, undefined);
+  assert.equal(p.lines[0].bundles, undefined);
   assert.deepEqual(splitPricedLine(p.lines[0]), [{ quantity: 6, unitPrice: 100, bundle: null }]);
 });
 
 test("yüzde ve TL indirimi 1 adet için", () => {
   const percent = run([L("main", 1000, 1), L("bulb", 100, 4, { complementOf: [pct("main", 25)] })]);
   assert.equal(percent.lines[1].lineTotal, 75 + 300);
-  assert.equal(percent.lines[1].bundle.total, 25);
+  assert.equal(percent.lines[1].bundles[0].total, 25);
   const fixed = run([L("main", 1000, 1), L("bulb", 100, 4, { complementOf: [fix("main", 30)] })]);
   assert.equal(fixed.lines[1].lineTotal, 70 + 300);
-  assert.equal(fixed.lines[1].bundle.total, 30);
+  assert.equal(fixed.lines[1].bundles[0].total, 30);
 });
 
 test("kuruş yuvarlama: kalem toplamları satır/sepet toplamına eşit", () => {
@@ -143,7 +144,7 @@ test("kuruş yuvarlama: kalem toplamları satır/sepet toplamına eşit", () => 
     assert.equal(rowTotal, r2(bulb.lineTotal), `${price} × ${qty}`);
     assert.equal(rows.reduce((s, r) => s + r.quantity, 0), qty);
     assert.equal(rowsSum(p), r2(p.itemsTotal));
-    assert.equal(r2(rows[0].unitPrice), r2(price - bulb.bundle.unitDiscount));
+    assert.equal(r2(rows[0].unitPrice), r2(price - bulb.bundles[0].unitDiscount));
   }
 });
 
@@ -152,17 +153,19 @@ test("kademe + birlikte alma yığılır; indirim yalnız 1 adet (%5 kademe, son
   const p = run(mainAndBulb({ tiers }));
   assert.equal(p.lines[0].unitPrice, 1000);
   assert.equal(p.lines[1].unitPrice, 95); // kademe sonrası normal birim
-  assert.equal(p.lines[1].bundle.unitDiscount, 9.5);
-  assert.equal(p.lines[1].bundle.total, 9.5);
+  assert.equal(p.lines[1].bundles[0].unitDiscount, 9.5);
+  assert.equal(p.lines[1].bundles[0].total, 9.5);
   assert.equal(p.lines[1].lineTotal, 560.5); // 85,5 + 5 × 95
   assert.deepEqual(splitPricedLine(p.lines[1]).map((r) => [r.quantity, r.unitPrice]), [[1, 85.5], [5, 95]]);
 });
 
-test("tamamlayıcının renkleri: her satır kendi 1 adedi için indirim alır", () => {
+test("tamamlayıcının renkleri: haklar ana ürün adedi kadardır ve satırlar arasında paylaşılır", () => {
   const lines = [L("main", 1000, 1), L("bulb", 100, 2, { complementOf: bulbRules, vid: 1 }), L("bulb", 100, 3, { complementOf: bulbRules, vid: 2 })];
   const p = run(lines);
-  assert.deepEqual(p.lines.slice(1).map((l) => l.lineTotal), [190, 290]);
-  assert.equal(p.itemsTotal, 1000 + 190 + 290);
+  assert.deepEqual(p.lines.slice(1).map((l) => l.lineTotal), [190, 300]); // tek hak ilk satırda
+  assert.equal(p.itemsTotal, 1000 + 190 + 300);
+  const two = run([L("main", 1000, 2), ...lines.slice(1)]);
+  assert.deepEqual(two.lines.slice(1).map((l) => l.lineTotal), [180, 300]); // 2 hak ilk satırda biter (ilk satır 2 adet)
 });
 
 test("kupon tabanı indirimli tutardır; couponAllowed=false ve minimum sepet kuralı aynen işler", () => {
@@ -233,14 +236,110 @@ test("breakdownOf(saklı kalemler: bölünmüş satırlar) sepet toplamı ve kar
   }
 });
 
-test("birden fazla ana ürün: en büyük indirim tek kez (1 adet); birim indirim ≥ fiyat ise bağ yok", () => {
+test("birden fazla ana ürün: her biri kendi indirimiyle 1 hak; birim indirim ≥ fiyat ise bağ yok", () => {
   const lines = [L("m1", 500, 1), L("m2", 500, 1), L("bulb", 100, 2, { complementOf: [pct("m1", 10), fix("m2", 30)] })];
   const p = run(lines);
   assert.equal(p.lines[2].unitPrice, 100);
-  assert.equal(p.lines[2].lineTotal, 170); // 70 + 100
-  assert.equal(p.lines[2].bundle.mainProductId, "m2");
-  assert.equal(p.lines[2].bundle.total, 30); // toplanmaz, tek kez
+  assert.equal(p.lines[2].lineTotal, 160); // 70 (m2) + 90 (m1); indirimler toplanıp tek adede yüklenmez
+  assert.deepEqual(p.lines[2].bundles.map((g) => [g.mainProductId, g.qty, g.total]), [["m2", 1, 30], ["m1", 1, 10]]); // büyük indirim önce
   const over = run([L("m1", 500, 1), L("bulb", 100, 1, { complementOf: [fix("m1", 100)] })]);
   assert.equal(over.lines[1].unitPrice, 100);
-  assert.equal(over.lines[1].bundle, undefined);
+  assert.equal(over.lines[1].bundles, undefined);
+});
+
+// ---------- ANA ÜRÜN ADEDİ KURALI: her ana ürün adedi, tamamlayıcıdan 1 adedi KENDİ bağının indirimiyle indirimli yapar ----------
+const small = pct("small", 12); // ampul 100 ₺ → 12 ₺ indirim
+const big = pct("big", 16); // 16 ₺ indirim
+const shape = (p, i) => splitPricedLine(p.lines[i]).map((r) => [r.quantity, r.unitPrice, r.bundle ? r.bundle.mainProductId : null]);
+const eqSum = (p) => assert.equal(rowsSum(p), r2(p.itemsTotal));
+
+test("ana adedi kuralı: 1 avize + 1 ampul → 1 indirimli; 1 avize + 2 ampul → 1 indirimli + 1 normal", () => {
+  const a = run([L("small", 1000, 1), L("bulb", 100, 1, { complementOf: [small] })]);
+  assert.deepEqual(shape(a, 1), [[1, 88, "small"]]);
+  const b = run([L("small", 1000, 1), L("bulb", 100, 2, { complementOf: [small] })]);
+  assert.deepEqual(shape(b, 1), [[1, 88, "small"], [1, 100, null]]);
+  eqSum(a); eqSum(b);
+});
+
+test("ana adedi kuralı: 2 avize + 2 ampul → 2 indirimli; 2 avize (farklı) + 1 ampul → 1 indirimli, büyük indirim", () => {
+  const a = run([L("small", 1000, 2), L("bulb", 100, 2, { complementOf: [small] })]);
+  assert.deepEqual(shape(a, 1), [[2, 88, "small"]]);
+  assert.equal(a.lines[1].lineTotal, 176);
+  const b = run([L("small", 1000, 1), L("big", 1000, 1), L("bulb", 100, 1, { complementOf: [small, big] })]);
+  assert.deepEqual(shape(b, 2), [[1, 84, "big"]]);
+  assert.equal(b.lines[2].lineTotal, 84);
+  const c = run([L("small", 1000, 2), L("bulb", 100, 1, { complementOf: [small] })]); // aynı avizeden 2, 1 ampul: hak fazla, boşa gider
+  assert.deepEqual(shape(c, 1), [[1, 88, "small"]]);
+  eqSum(a); eqSum(b); eqSum(c);
+});
+
+test("ana adedi kuralı: 10 küçük (12) + 1 büyük (16) + 11 ampul → 1×16 + 10×12", () => {
+  const p = run([L("small", 1000, 10), L("big", 1000, 1), L("bulb", 100, 11, { complementOf: [small, big] })]);
+  assert.deepEqual(shape(p, 2), [[1, 84, "big"], [10, 88, "small"]]);
+  assert.equal(p.lines[2].lineTotal, 84 + 880);
+  assert.deepEqual(p.lines[2].bundles.map((g) => [g.mainProductId, g.qty, g.unitDiscount, g.total]), [["big", 1, 16, 16], ["small", 10, 12, 120]]);
+  eqSum(p);
+});
+
+test("ana adedi kuralı: 10 küçük + 1 büyük + 5 ampul → büyük 16 önce, sonra 4×12; farklı indirimler toplanmaz", () => {
+  const p = run([L("small", 1000, 10), L("big", 1000, 1), L("bulb", 100, 5, { complementOf: [small, big] })]);
+  assert.deepEqual(shape(p, 2), [[1, 84, "big"], [4, 88, "small"]]);
+  assert.equal(p.lines[2].lineTotal, 84 + 4 * 88);
+  eqSum(p);
+});
+
+test("ana adedi kuralı: en çok (kullanılan ana ürün sayısı + 1) satıra bölünür", () => {
+  const tiny = pct("tiny", 5);
+  const p = run([L("small", 1000, 10), L("big", 1000, 1), L("tiny", 1000, 1), L("bulb", 100, 14, { complementOf: [small, big, tiny] })]);
+  assert.deepEqual(shape(p, 3), [[1, 84, "big"], [10, 88, "small"], [1, 95, "tiny"], [2, 100, null]]);
+  assert.equal(shape(p, 3).length, 3 + 1);
+  assert.equal(p.lines[3].lineTotal, 84 + 880 + 95 + 200);
+  eqSum(p);
+});
+
+test("ana adedi kuralı: iki farklı avize aynı indirimle → ikisi ayrı grup (id sırası), toplanmaz", () => {
+  const p = run([L("m1", 500, 1), L("m2", 500, 1), L("bulb", 100, 3, { complementOf: [pct("m2", 10), pct("m1", 10)] })]);
+  assert.deepEqual(shape(p, 2), [[1, 90, "m1"], [1, 90, "m2"], [1, 100, null]]);
+  eqSum(p);
+});
+
+test("ana adedi kuralı: ana ürün yok / bağsız ürün → indirim yok", () => {
+  const none = run([L("bulb", 100, 4, { complementOf: [small] })]);
+  assert.equal(none.lines[0].lineTotal, 400);
+  assert.equal(none.lines[0].bundles, undefined);
+  const unlinked = run([L("small", 1000, 3), L("bulb", 100, 4)]);
+  assert.equal(unlinked.lines[1].lineTotal, 400);
+  assert.deepEqual(shape(unlinked, 1), [[4, 100, null]]);
+  const other = run([L("zzz", 1000, 3), L("bulb", 100, 4, { complementOf: [small] })]);
+  assert.equal(other.lines[1].lineTotal, 400);
+});
+
+test("ana adedi kuralı: yüzde ve TL indirim; indirim ≥ birim fiyat olan bağın hakkı doğmaz", () => {
+  const p = run([L("m1", 1000, 2), L("m2", 1000, 3), L("bulb", 100, 6, { complementOf: [pct("m1", 25), fix("m2", 30)] })]);
+  assert.deepEqual(shape(p, 2), [[3, 70, "m2"], [2, 75, "m1"], [1, 100, null]]);
+  assert.equal(p.lines[2].lineTotal, 210 + 150 + 100);
+  const over = run([L("m1", 1000, 5), L("m2", 1000, 1), L("bulb", 100, 4, { complementOf: [fix("m1", 100), fix("m2", 20)] })]);
+  assert.deepEqual(shape(over, 2), [[1, 80, "m2"], [3, 100, null]]); // m1 hakkı doğmaz (indirim = fiyat)
+  eqSum(p); eqSum(over);
+});
+
+test("ana adedi kuralı: kuruş yuvarlama; satır, kalem ve sepet toplamı eşit", () => {
+  for (const [price, qty, mq, rules] of [[33.33, 7, 3, [pct("m1", 7), pct("m2", 12.5)]], [19.99, 9, 4, [pct("m1", 12.5), fix("m2", 0.07)]], [0.2, 6, 2, [fix("m1", 0.07), pct("m2", 33.33)]]]) {
+    const p = run([L("m1", 1000, mq), L("m2", 1000, 2), L("bulb", price, qty, { complementOf: rules })]);
+    const rows = splitPricedLine(p.lines[2]);
+    assert.equal(r2(rows.reduce((s, r) => s + r.unitPrice * r.quantity, 0)), r2(p.lines[2].lineTotal), `${price} × ${qty}`);
+    assert.equal(rows.reduce((s, r) => s + r.quantity, 0), qty);
+    assert.ok(rows.length <= p.lines[2].bundles.length + 1);
+    eqSum(p);
+  }
+});
+
+test("ana adedi kuralı: kademe sonrası birim fiyat üzerinden hesap; sepet = kalemler = (PayTR sepeti kalemlerle aynı)", () => {
+  const tiers = [{ minQty: 5, type: "PERCENT", value: 10 }];
+  const p = run([L("small", 1000, 3), L("big", 1000, 1), L("bulb", 100, 6, { complementOf: [small, big], tiers })]);
+  assert.equal(p.lines[2].unitPrice, 90); // kademe sonrası
+  assert.deepEqual(shape(p, 2), [[1, 90 - 14.4, "big"], [3, 90 - 10.8, "small"], [2, 90, null]]);
+  eqSum(p);
+  const basket = p.lines.flatMap((l) => splitPricedLine(l)).map((r) => ({ price: r.unitPrice, quantity: r.quantity }));
+  assert.equal(r2(basket.reduce((s, r) => s + r.price * r.quantity, 0)), r2(p.itemsTotal));
 });

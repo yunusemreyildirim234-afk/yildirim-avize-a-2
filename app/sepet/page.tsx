@@ -234,7 +234,7 @@ export default function CartPage() {
 
   // Sunucu fiyat teklifi (/api/cart/quote, salt okunur): gösterilen tutar buradan gelir
   interface Quote {
-    lines: { variationId: string; available: boolean; bundle?: BundleInfo | null; message?: string; stockShort?: boolean; title?: string; variationName?: string; price?: number; unitPrice?: number; bulk?: BulkRule[]; rules?: ItemRules; capInfo?: CapInfo | null; ladder?: LadderStep[] }[];
+    lines: { variationId: string; available: boolean; bundles?: BundleInfo[] | null; message?: string; stockShort?: boolean; title?: string; variationName?: string; price?: number; unitPrice?: number; bulk?: BulkRule[]; rules?: ItemRules; capInfo?: CapInfo | null; ladder?: LadderStep[] }[];
     totals: { itemsTotal: number; shipping: number; couponDiscount: number; pickupDiscount: number; bankDiscount: number; total: number };
     coupon: { ok: boolean; error?: string; limited?: boolean } | null;
     zeroTotal?: boolean; // indirimler sonrası ödenecek tutar 0 ₺: sipariş sunucuda reddedilir
@@ -352,7 +352,7 @@ export default function CartPage() {
       absorbQuote(q, localTotals.total);
       // Ana ürün sepetten çıkınca tamamlayıcının indirimi kalkar: mevcut fiyat bildirimi (onaylı) bunu da söyler
       const prev = lastQuoteRef.current;
-      const lost = lostBundleTitles(prev?.lines.map((l) => ({ variationId: l.variationId, title: l.title ? displayTitle(l.title).title : undefined, bundle: l.bundle })), q.lines);
+      const lost = lostBundleTitles(prev?.lines.map((l) => ({ variationId: l.variationId, title: l.title ? displayTitle(l.title).title : undefined, bundles: l.bundles })), q.lines);
       lastQuoteRef.current = q;
       if (prev && lost.length > 0) {
         setPriceNotice({ from: prev.totals.total, to: q.totals.total, bundleLost: lost });
@@ -786,7 +786,7 @@ export default function CartPage() {
                       </p>
                     )}
                     {(() => {
-                      const b = bundleLineView(pricedOf(item.variationId)?.bundle, pricedOf(item.variationId)?.unitPrice ?? item.price);
+                      const b = bundleLineView(pricedOf(item.variationId)?.bundles, pricedOf(item.variationId)?.unitPrice ?? item.price);
                       return b ? (
                         <p data-testid="birlikte-alma-indirimi" className="text-[11px] font-medium text-emerald-800 mt-1 tabular-nums">
                           {b.text}

@@ -69,10 +69,10 @@ test("sipariş: bağ + ana ürün sepette → 1 adet indirimli + kalan normal ka
   assert.equal(q.totals.itemsTotal, 1590);
   assert.equal(q.lines[1].unitPrice, 100);
   assert.equal(q.lines[1].lineTotal, 590);
-  assert.deepEqual(q.lines[1].bundle, { mainProductId: "p-main", unitDiscount: 10, total: 10 });
+  assert.deepEqual(q.lines[1].bundles, [{ mainProductId: "p-main", unitDiscount: 10, qty: 1, total: 10 }]);
   // saklanan kalemlerin toplamı = sepet/teklif ürün toplamı (PayTR sepeti aynı kalemlerden kurulur)
   assert.equal(items.reduce((sum, r) => sum + r.unitPrice * r.quantity, 0), q.totals.itemsTotal);
-  assert.equal(q.lines[0].bundle, null);
+  assert.deepEqual(q.lines[0].bundles, []);
 });
 
 test("sipariş: bağ yok → indirim yok, alanlar null (dormant: davranış aynı)", async () => {
@@ -127,4 +127,48 @@ test("kaynak: complementOf yalnızca DB kurallarından gelir; teklif ucu salt ok
   }
   const q = readFileSync(new URL("../app/api/cart/quote/route.ts", import.meta.url), "utf8");
   assert.ok(!/\.(update|updateMany|create|createMany|delete|deleteMany|upsert)\(/.test(q));
+});
+
+// ---------- ANA ÜRÜN ADEDİ KURALI (çok gruplu bölme): sepet = sipariş kalemleri = PayTR sepeti, kuruşu kuruşuna ----------
+for (const [id, price] of [["small", 1000], ["big", 1000], ["tiny", 1000]]) VARS[`v-${id}`] = { id: `v-${id}`, productId: `p-${id}`, variationValue: "Gold", extraPrice: 0, stock: 100, product: product(`p-${id}`, price) };
+const multiLinks = [
+  { mainProductId: "p-small", complementProductId: "p-bulb", discountType: "PERCENT", discountValue: 12 },
+  { mainProductId: "p-big", complementProductId: "p-bulb", discountType: "PERCENT", discountValue: 16 },
+  { mainProductId: "p-tiny", complementProductId: "p-bulb", discountType: "FIXED", discountValue: 5.55 },
+];
+const cents = (x) => Math.round(x * 100);
+
+test("sipariş: 10 küçük + 1 büyük + 1 tiny + 14 ampul → 4 kalem; kalem, teklif ve PayTR sepeti toplamı kuruşu kuruşuna eşit", async () => {
+  useDb(multiLinks);
+  const items = [{ variationId: "v-small", quantity: 10 }, { variationId: "v-big", quantity: 1 }, { variationId: "v-tiny", quantity: 1 }, { variationId: "v-bulb", quantity: 14 }];
+  globalThis.__lastPaytr = null;
+  const res = await post(order, orderBody(items, { paymentMethod: "CREDIT_CARD" }));
+  assert.equal(res.status, 200);
+  const rows = calls.orderData.items.create;
+  const bulb = rows.filter((r) => r.variationId === "v-bulb");
+  assert.deepEqual(bulb.map((r) => [r.quantity, r.unitPrice, r.bundleMainProductId, r.bundleDiscount]), [[1, 84, "p-big", 16], [10, 88, "p-small", 120], [1, 94.45, "p-tiny", 5.55], [2, 100, null, null]]);
+  assert.equal(bulb.length, 4); // 3 kullanılan ana ürün + 1 normal
+  const q = await (await post(quote, { items: items.map((i) => ({ variationId: i.variationId, qty: i.quantity })), paymentMethod: "CREDIT_CARD" })).json();
+  const orderSum = rows.reduce((s, r) => s + cents(r.unitPrice * r.quantity), 0);
+  assert.equal(orderSum, cents(q.totals.itemsTotal));
+  assert.equal(q.lines[3].lineTotal, 84 + 880 + 94.45 + 200);
+  assert.deepEqual(q.lines[3].bundles.map((g) => [g.mainProductId, g.qty, g.total]), [["p-big", 1, 16], ["p-small", 10, 120], ["p-tiny", 1, 5.55]]);
+  const paytr = globalThis.__lastPaytr;
+  const basketSum = paytr.basket.reduce((s, b) => s + cents(b.price * b.quantity), 0);
+  assert.equal(basketSum, orderSum); // PayTR sepeti = sipariş kalemleri (kargo yok: 350 ₺ üstü)
+  assert.equal(basketSum, cents(paytr.amountTl));
+  assert.equal(cents(calls.orderData.totalAmount), cents(q.totals.total));
+  assert.equal(cents(q.totals.total), orderSum);
+});
+
+test("sipariş ve teklif: istemci gövdesinden ana ürün adedi / indirim / bundles gönderilse de yok sayılır", async () => {
+  useDb(multiLinks);
+  const forged = { bundles: [{ mainProductId: "p-small", unitDiscount: 99, qty: 50, total: 4950 }], mainQty: { "p-small": 99 }, bundleDiscount: 999, unitPrice: 1 };
+  const items = [{ variationId: "v-small", quantity: 1, ...forged }, { variationId: "v-bulb", quantity: 5, ...forged }];
+  const res = await post(order, orderBody(items, { ...forged, paymentMethod: "CREDIT_CARD" }));
+  assert.equal(res.status, 200);
+  const bulb = calls.orderData.items.create.filter((r) => r.variationId === "v-bulb");
+  assert.deepEqual(bulb.map((r) => [r.quantity, r.unitPrice, r.bundleMainProductId]), [[1, 88, "p-small"], [4, 100, null]]); // 1 ana ürün = 1 hak
+  const q = await (await post(quote, { items: items.map((i) => ({ variationId: i.variationId, qty: i.quantity, ...forged })), ...forged })).json();
+  assert.equal(q.lines[1].lineTotal, 88 + 400);
 });

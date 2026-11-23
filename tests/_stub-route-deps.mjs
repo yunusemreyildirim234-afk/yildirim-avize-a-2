@@ -8,7 +8,7 @@ export const swapAndCreate = async (_tx, _ids, _release, create) => create();
 export const closeAwaitingCardInTx = async () => {};
 export const shouldPlanSwapForQuote = () => false;
 export const stockWithHeld = (stock) => stock;
-export const getPaytrToken = async () => "tok";
+export const getPaytrToken = async (args) => ((globalThis.__lastPaytr = args), "tok"); // testler PayTR sepetini buradan okur
 export const recordConsent = async () => {};
 export const revalidateStorefrontSafe = () => {};
 export const getLadderContextFresh = async () => null;

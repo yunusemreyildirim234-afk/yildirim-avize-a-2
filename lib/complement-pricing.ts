@@ -1,9 +1,10 @@
 // Tamamlayıcı ürün ("bununla birlikte alın") indirimi: SAF hesap (veritabanı yok).
 // Ana ürün sepetteyken tamamlayıcı ürünün birim fiyatı kademeden SONRA düşer (ardışık/yığılır).
-// İndirim, tamamlayıcının sepet satırı başına YALNIZ COMPLEMENT_DISCOUNT_QTY (1) adedi için geçerlidir; kalan adetler normal fiyattan gider.
+// Her ANA ürün adedi, tamamlayıcıdan COMPLEMENT_DISCOUNT_QTY (1) adedi KENDİ bağının birim indirimiyle indirimli yapar (allocateComplement);
+// haklar büyük indirimden küçüğe kullanılır, toplanmaz; tamamlayıcı adedini aşamaz, kalan adetler normal fiyattan gider.
 // Kurallar yalnızca sunucuda veritabanından okunur; istemci gövdesinden asla alınmaz.
 
-/** Tamamlayıcı indirimi sepet satırı başına kaç adede uygulanır (sahip kararı: 1). */
+/** Sepetteki her ana ürün adedi, tamamlayıcıdan kaç adedi indirimli yapar (sahip kararı: 1). */
 export const COMPLEMENT_DISCOUNT_QTY = 1;
 
 export type ComplementType = "PERCENT" | "FIXED";
@@ -47,6 +48,50 @@ export function bestComplement(rules: ComplementRule[] | null | undefined, prese
     if (!best || d > best.unitDiscount || (d === best.unitDiscount && r.mainProductId < best.mainProductId)) best = { mainProductId: r.mainProductId, unitDiscount: d };
   }
   return best;
+}
+
+/** Bir ana ürüne ait kullanılan indirim hakları: qty adet, birim başına unitDiscount, total = unitDiscount × qty. */
+export interface ComplementGroup {
+  mainProductId: string;
+  unitDiscount: number;
+  qty: number;
+  total: number;
+}
+
+/**
+ * Ana ürün adetlerine göre hak dağıtımı. Her ana ürün adedi, kendi bağının birim indirimiyle 1 adet hak doğurur
+ * (indirim ≤ 0 veya ≥ birim fiyat ise o bağın hakkı yok). Haklar birim indirimi büyükten küçüğe (eşitlikte küçük mainProductId)
+ * satır adedine kadar kullanılır; farklı indirimler toplanmaz. `remaining` aynı tamamlayıcının diğer satırlarıyla paylaşılan
+ * kalan hak sayacıdır (ana ürün → kalan hak); verilmezse yalnız bu çağrı için kurulur. Ana ürün adetleri yalnız sunucu verisinden gelir.
+ */
+export function allocateComplement(
+  rules: ComplementRule[] | null | undefined,
+  mainQty: ReadonlyMap<string, number>,
+  unitAfterTier: number,
+  quantity: number,
+  remaining: Map<string, number> = new Map(),
+  selfProductId?: string
+): ComplementGroup[] {
+  const best = new Map<string, number>(); // mainProductId → en büyük geçerli birim indirim
+  for (const r of rules ?? []) {
+    if (!validComplementRule(r) || r.mainProductId === selfProductId || (mainQty.get(r.mainProductId) ?? 0) < 1) continue;
+    const d = complementUnitDiscount(r, unitAfterTier);
+    if (!(d > 0) || d >= unitAfterTier) continue;
+    if (d > (best.get(r.mainProductId) ?? 0)) best.set(r.mainProductId, d);
+  }
+  const order = [...best].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1));
+  const groups: ComplementGroup[] = [];
+  let left = quantity;
+  for (const [mainProductId, unitDiscount] of order) {
+    if (left <= 0) break;
+    const avail = remaining.get(mainProductId) ?? Math.floor(mainQty.get(mainProductId) ?? 0) * COMPLEMENT_DISCOUNT_QTY;
+    const use = Math.min(avail, left);
+    remaining.set(mainProductId, avail - use);
+    if (use <= 0) continue;
+    groups.push({ mainProductId, unitDiscount, qty: use, total: round2(unitDiscount * use) });
+    left -= use;
+  }
+  return groups;
 }
 
 /** Veritabanı satırlarını tamamlayıcı ürün kimliğine göre kural listesine çevirir (geçersiz satırlar atılır). */

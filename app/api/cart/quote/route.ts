@@ -137,7 +137,7 @@ export async function POST(req: Request) {
       lineTotal: l.lineTotal,
       capInfo: l.capInfo ?? null,
       rules: { couponAllowed: l.couponAllowed, pickupPct: l.pickupPct, transferPct: l.transferPct, complementOf: l.complementOf ?? [] },
-      bundle: l.bundle ?? null,
+      bundles: l.bundles ?? [],
       ladder: ladderCtx
         ? priceLadder({ basePrice: l.price, couponAllowed: l.couponAllowed, pickupDiscountPct: l.pickupPct, transferDiscountPct: l.transferPct }, ladderCtx, l.price, { quantity: l.tierQty, tiers: l.tiers })
         : [],
