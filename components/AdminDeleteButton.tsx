@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Trash2, Undo2 } from "lucide-react";
+import { toast } from "sonner";
 import { DELETE_CONFIRM_WORD, isDeleteConfirmed } from "@/lib/bulk-delete";
 import ConfirmDialog from "@/components/ConfirmDialog";
 
@@ -76,6 +77,7 @@ export default function AdminDeleteButton({
         const res = await fetch(endpoint, { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data.error || "Silinemedi.");
+        toast.success("Silindi.");
         router.refresh();
         onDone?.();
         // Liste yenilendikten sonra satır hâlâ varsa (ör. hareketi silinen üye) yeniden gösterilir
@@ -84,7 +86,7 @@ export default function AdminDeleteButton({
         }, 2000);
       } catch (e) {
         if (el) el.style.display = "";
-        alert((e as Error).message);
+        toast.error((e as Error).message);
       } finally {
         finish();
       }

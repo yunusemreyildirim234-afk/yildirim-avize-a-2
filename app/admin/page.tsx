@@ -539,7 +539,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                         )}
                         <details className="mt-2">
                           <summary className="cursor-pointer text-[11px] font-semibold text-neutral-500 hover:text-red-700 focus-visible:outline-2 focus-visible:outline-red-600">Tehlikeli işlemler</summary>
-                          <AdminDeleteButton endpoint="/api/admin/orders" ids={[order.id]} label="Siparişi Sil" confirmText="Bu sipariş ve bağlı fatura/dekont kayıtları kalıcı olarak silinecek; ayrılmış stok iade edilir." className="mt-2" />
+                          <AdminDeleteButton endpoint="/api/admin/orders" ids={[order.id]} label="Siparişi Sil" confirmText={`Sipariş #${order.id.slice(0, 8)} · ${order.totalAmount.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺\nBu işlem geri alınamaz; sipariş ve ona bağlı kayıtlar silinir (ayrılmış stok iade edilir).`} className="mt-2" />
                         </details>
                         <AdminOrderRequest
                           orderId={order.id}

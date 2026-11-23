@@ -53,10 +53,12 @@ export function isStaleReservation(createdAt: Date, now: number): boolean {
 
 /** Yönetici toplu silmede silinebilen sipariş: ödeme başarısız, süresi geçmiş (DELETE_GUARD_HOURS) ödeme bekleyen ve dekontsuz havale iptali. Kartla ödenip iptal edilen sipariş (para hareketi var) ve ödenmiş/işlemdeki/teslim edilmiş sipariş kalıcı silinmez. */
 export function isOrderDeletable(
-  o: { status: string; createdAt: Date; paymentMethod?: string | null; receiptUrl?: string | null },
+  o: { status: string; createdAt: Date; paymentMethod?: string | null; receiptUrl?: string | null; hasInvoice?: boolean },
   now: number,
 ): boolean {
   if (o.status === "PAYMENT_FAILED") return true;
+  // İade edilen sipariş yalnız faturası yüklenmemişse silinir (bilinmiyorsa silinmez)
+  if (o.status === "RETURNED") return o.hasInvoice === false;
   if (o.status === "CANCELLED") return o.paymentMethod === "BANK_TRANSFER" && o.receiptUrl === null;
   return o.status === "AWAITING_PAYMENT" && !isPaymentInFlight(o, now);
 }
@@ -66,6 +68,7 @@ export function deletableOrderWhere(now: number) {
   return {
     OR: [
       { status: "PAYMENT_FAILED" },
+      { status: "RETURNED" }, // fatura yokluğu silme işleminde ayrıca denetlenir (assertNoInvoiceForReturned)
       { status: "CANCELLED", paymentMethod: "BANK_TRANSFER", receiptUrl: null },
       { status: "AWAITING_PAYMENT", createdAt: { lte: new Date(now - DELETE_GUARD_HOURS * 3_600_000) } },
     ],
