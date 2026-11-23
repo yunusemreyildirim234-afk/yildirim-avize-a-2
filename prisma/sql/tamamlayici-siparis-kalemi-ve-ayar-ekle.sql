@@ -1,4 +1,4 @@
--- UYGULANDI (sahip beyanı): canlı veritabanında, yaklaşık 15 Kasım 2026; 23 Kasım 2026'da K-1…K-3 salt okuma sorgularıyla canlıda doğrulandı. e2e-test dalı sonradan silindi (gerekirse yeniden açılır). (plan-23, sürüm 2.) (Çalıştırma sırası: Neon'da önce `e2e-test` dalında (önce `select 1`), sonra canlıda.)
+-- UYGULANDI (sahip beyanı): canlı veritabanında, yaklaşık 15 Kasım 2026; 23 Kasım 2026'da K-1…K-3 salt okuma sorgularıyla canlıda doğrulandı. e2e-test dalı sonradan silindi (gerekirse yeniden açılır). (plan-23, sürüm 2.) (Çalıştırma sırası: e2e-test dalı silindi; sıra: sahibin açacağı geçici/test dalı varsa önce orada, sonra canlıda; test dalında önce `select 1`.)
 -- Yalnız nullable sütun ekleme (varsayılan yok); mevcut satır ve kod bozulmaz. Geriye dönük doldurma YOK.
 -- Dosya adı sürüm 1'de `02-siparis-kalemi-tamamlayici-ekle.sql` idi; B bölümü (SiteConfig) sürüm 2'de eklendi.
 -- Geri alma (yorum):

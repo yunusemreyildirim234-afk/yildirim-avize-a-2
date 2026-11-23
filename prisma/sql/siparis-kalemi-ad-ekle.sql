@@ -1,5 +1,5 @@
 -- OrderItem.productTitle / variationLabel (DB-03): yalnizca ekleme, nullable, varsayilansiz (idempotent). Canli veritabanina ELLE uygulanir:
--- SQL ONCE calistirilir, kod SONRA push edilir. Once Neon "e2e-test" dalinda, sonra canlida.
+-- SQL ONCE calistirilir, kod SONRA push edilir. e2e-test dali silindi; sira: sahibin acacagi gecici/test dali varsa once orada, sonra canlida.
 -- Geri alma: kodu geri almak yeterli (sutunlar bos kalir); istege bagli temizlik:
 --   ALTER TABLE "OrderItem" DROP COLUMN "productTitle", DROP COLUMN "variationLabel";
 ALTER TABLE "OrderItem" ADD COLUMN IF NOT EXISTS "productTitle" TEXT;

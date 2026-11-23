@@ -100,7 +100,7 @@ Sorgular ve select'ler:
 ## 9. Uygulama sırası (öneri)
 
 1. Sahip `tools/trendyol-video-kesfi.mjs` çıktısını paylaşır (Trendyol akışı için karar).
-2. Sahip `prisma/sql/video-url-ekle.sql` dosyasını production'da çalıştırır (önce `e2e-test` dalı gerekiyorsa orada).
+2. Sahip `prisma/sql/video-url-ekle.sql` dosyasını production'da çalıştırır (`e2e-test` dalı silindi; sahip geçici/test dalı açarsa önce orada).
 3. Şema satırı (`videoUrl String?`) + `lib/video-url.ts` + testler.
 4. Admin düzenleyici "Video" bölümü + PATCH.
 5. Ürün sayfası galeri/tembel oynatıcı.

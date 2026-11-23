@@ -105,9 +105,9 @@
 ## 8. e2e Testleri (Playwright)
 - `e2e/` kök projeden bağımsız alt projedir (kendi `package.json`); köke bağımlılık eklenmez. Ayrıntı: `e2e/README.md`.
 - Komutlar (`cd e2e`): `npm test` (hepsi), `npm run test:desktop`, `npm run test:mobile`, `npm run test:admin`, `npm run report`.
-- `E2E_DATABASE_URL` yalnızca `e2e/.env.e2e` içindedir (git'te yok; okunmaz, yazdırılmaz). Neon dalı `e2e-test`'tir.
+- `E2E_DATABASE_URL` yalnızca `e2e/.env.e2e` içindedir (git'te yok; okunmaz, yazdırılmaz). `e2e-test` dalı silindi; şu an tek Neon dalı canlıdır. e2e/test için dal gerekiyorsa sahip yeniden açar; o zamana kadar canlı veritabanına yazan hiçbir test/betik çalıştırılmaz.
 - `public.e2e_marker` güvenlik kilidi (`e2e/safety.cjs`) hiçbir koşulda zayıflatılmaz veya atlanmaz.
-- Neon dalı 5 dk boşta uykuya geçer; koşudan önce Neon SQL Editor'de `e2e-test` dalında `select 1` çalıştır.
+- Neon dalı 5 dk boşta uykuya geçer; sahip test dalını yeniden açarsa koşudan önce o dalda Neon SQL Editor'de `select 1` çalıştırılır.
 - Testler dış servis çağırmaz: Resend/PayTR/Kargonomi anahtarları boştur, GTM isteği engellidir.
 - Admin testleri yalnızca masaüstünde, `workers: 1` ile, herkese açık testlerden sonra çalışır; `E2E ` önekli veri üretir, temizler ve kalıntı denetimi (`audit.ts`) vardır.
 - Tek sunucu süreci çalışır (`next start -p 3100`); bitince kapat (bellek). Kök `.next` paylaşılır.

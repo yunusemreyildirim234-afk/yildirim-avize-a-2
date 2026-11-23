@@ -1,5 +1,5 @@
 -- Adres defteri: yalnizca YENI "Address" tablosu ve indeksi (idempotent); mevcut tablolara dokunmaz.
--- Canli veritabanina ELLE uygulanir: SQL ONCE calistirilir, kod SONRA push edilir. Once Neon "e2e-test" dalinda, sonra canlida.
+-- Canli veritabanina ELLE uygulanir: SQL ONCE calistirilir, kod SONRA push edilir. e2e-test dali silindi; sira: sahibin acacagi gecici/test dali varsa once orada, sonra canlida.
 -- Geri alma: kodu geri almak yeterli (tablo bos kalir). Istege bagli temizlik (kayitli adresler silinir): DROP TABLE "Address";
 CREATE TABLE IF NOT EXISTS "Address" (
     "id" TEXT NOT NULL,

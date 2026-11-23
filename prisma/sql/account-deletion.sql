@@ -1,5 +1,5 @@
 -- Hesap silme talebi: YENI "AccountDeletionRequest" tablosu + User.lastLoginAt (NULL'lu) kolonu (idempotent); mevcut veriye dokunmaz.
--- Canli veritabanina ELLE uygulanir: SQL ONCE calistirilir, SONRA schema.prisma guncellenir ve kod push edilir. Once Neon "e2e-test" dalinda, sonra canlida.
+-- Canli veritabanina ELLE uygulanir: SQL ONCE calistirilir, SONRA schema.prisma guncellenir ve kod push edilir. e2e-test dali silindi; sira: sahibin acacagi gecici/test dali varsa once orada, sonra canlida.
 -- Geri alma: kodu geri almak yeterli. Istege bagli temizlik: DROP TABLE "AccountDeletionRequest"; ALTER TABLE "User" DROP COLUMN "lastLoginAt";
 
 ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "lastLoginAt" TIMESTAMP(3);

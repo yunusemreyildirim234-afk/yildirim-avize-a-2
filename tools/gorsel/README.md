@@ -15,7 +15,7 @@ Betikler şu dosyaları bu öncelikle okur (önce bulunan kazanır): `tools/gors
 | `GORSEL_DATABASE_URL` | `tools/gorsel/.env` | varsayılan hedef (ör. deneme dalı). Yoksa betikler DURUR; canlı için komuta `--canli` eklenir |
 
 Değerler hiçbir çıktıya yazdırılmaz; veritabanı için yalnızca sunucu adı ve dal bilgisi gösterilir.
-Dal bilgisi `public.e2e_marker` tablosuna bakar: varsa `e2e-test`, yoksa **production** kabul edilir
+Dal bilgisi `public.e2e_marker` tablosuna bakar: varsa test dalı (eski adıyla `e2e-test`; dal silindi, şu an tek dal canlıdır), yoksa **production** kabul edilir
 (Neon dal adı bağlantı dizesinde yoktur; sunucu adındaki `ep-...` kimliğini Neon panelindeki dalla karşılaştırın).
 
 ## Komutlar

@@ -6,7 +6,7 @@ Bu klasör, veritabanı şemasının **gerçek geçmişidir**. Şema değişikli
 - `prisma/migrations/` yalnızca **ilk göçü** (`20261006011627_init_yildirim_avize`) içerir ve **KULLANILMAZ**. Oraya dokunmayın, yeni göç eklemeyin.
 - `prisma migrate dev`, `prisma migrate reset` ve `prisma db push` **yasaktır** (canlı veriyi sıfırlayabilir/şemayı Prisma'nın bilmediği kurallarla ezebilir).
 - Her şema değişikliği: önce bu klasöre yeni `*-ekle.sql` yazılır, **sonra** `prisma/schema.prisma` güncellenir ve kod yayınlanır (SQL önce, kod sonra).
-- SQL'i **sahibi** çalıştırır (Neon SQL Editor): önce `e2e-test` dalında, sonra canlıda. Yapay zekâ/CI canlı veritabanına bağlanmaz.
+- SQL'i **sahibi** çalıştırır (Neon SQL Editor): e2e-test dalı silindi; sıra: sahibin açacağı geçici/test dalı varsa önce orada, sonra canlıda. Yapay zekâ/CI canlı veritabanına bağlanmaz.
 
 ## Dosyalar
 | Dosya | Ne yapar |

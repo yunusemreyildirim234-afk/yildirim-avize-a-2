@@ -1,6 +1,6 @@
 -- 00-tam-sema.sql: BOŞ bir PostgreSQL veritabanında tüm şemayı sıfırdan kurar (prisma/schema.prisma'nın o günkü hâli).
 -- Kaynak: npx prisma migrate diff --from-empty --to-schema prisma/schema.prisma --script (sahte bağlantı adresiyle, veritabanına bağlanmadan) + aşağıdaki "yalnız veritabanında olan" kurallar.
--- Yalnız YENİ/BOŞ veritabanı içindir (ör. Neon "e2e-test" dalını sıfırdan kurmak). Dolu bir veritabanında ÇALIŞTIRMAYIN: tabloları yeniden oluşturmaya çalışır ve hata verir.
+-- Yalnız YENİ/BOŞ veritabanı içindir (ör. sahibin açacağı yeni bir Neon test dalını sıfırdan kurmak; "e2e-test" dalı silindi). Dolu bir veritabanında ÇALIŞTIRMAYIN: tabloları yeniden oluşturmaya çalışır ve hata verir.
 -- Şema değiştikçe bu dosya yeniden üretilmeli; mevcut veritabanlarına uygulanacak değişiklikler ayrı, idempotent *-ekle.sql dosyalarıyla yapılır (README.md).
 
 -- CreateSchema
