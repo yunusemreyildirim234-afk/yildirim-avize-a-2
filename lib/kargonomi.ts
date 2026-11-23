@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { cleanGuestEmail } from "@/lib/guest-email";
 import { recipientOf } from "@/lib/recipient";
 import { resolveProvider } from "@/lib/carrier-quotes";
+import { decideShippingPrice } from "@/lib/shipping-fee";
 
 const BASE_URL = (process.env.KARGONOMI_API_URL || process.env.KARGONOMI_BASE_URL || "https://app.kargonomi.com.tr/api/v1").replace(/\/$/, "");
 
@@ -196,5 +197,6 @@ export async function refreshOrderShipment(orderId: string) {
   const prov = resolveProvider({ id: shipment?.shipping_provider_id, slug: shipment?.shipping_provider_slug, name: shipment?.shipping_provider_name });
   const apiName = typeof shipment?.shipping_provider_name === "string" && shipment.shipping_provider_name.trim() ? shipment.shipping_provider_name.trim() : null;
   const provider = prov ? { shippingProviderId: prov.id, shippingProviderName: prov.name } : apiName ? { shippingProviderName: apiName } : {};
-  return prisma.order.update({ where: { id: order.id }, data: { ...fields, ...provider, ...(barcodeUrl ? { barcodeUrl } : {}) } });
+  const fee = decideShippingPrice(shipment); // undefined: mevcut kargo ücretine dokunma
+  return prisma.order.update({ where: { id: order.id }, data: { ...fields, ...provider, ...(barcodeUrl ? { barcodeUrl } : {}), ...(fee !== undefined ? { shippingPrice: fee } : {}) } });
 }

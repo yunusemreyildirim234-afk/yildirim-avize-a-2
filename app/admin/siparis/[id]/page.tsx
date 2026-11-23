@@ -213,6 +213,7 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
               shippingProviderName: order.shippingProviderName,
               barcodeUrl: order.barcodeUrl,
               labelCreated: order.labelCreated,
+              shippingPrice: order.shippingPrice,
             }}
           />
         </section>

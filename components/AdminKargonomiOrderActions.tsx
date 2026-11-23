@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import CopyTrackingCode from "@/components/CopyTrackingCode";
 import { carrierDisplayName, carrierTrackingLink } from "@/lib/carrier-links";
+import { shippingPriceToKurus } from "@/lib/shipping-fee";
 
 interface Props {
   order: {
@@ -18,6 +19,7 @@ interface Props {
     shippingProviderName: string | null;
     barcodeUrl: string | null;
     labelCreated: boolean;
+    shippingPrice?: string | null;
   };
 }
 
@@ -100,6 +102,7 @@ export default function AdminKargonomiOrderActions({ order }: Props) {
 
   const btn = "text-[11px] font-semibold px-3 py-1.5 rounded-lg border transition-colors disabled:opacity-50";
   const tracking = order.shippingTrackingCode || order.shippingBarcode;
+  const feeKurus = shippingPriceToKurus(order.shippingPrice);
   const payable = ["PENDING", "SHIPPED"].includes(order.status);
 
   // İptal/iade edilmiş siparişte barkod oluşturulamaz: düğme ve "ödeme onaylanınca" notu gösterilmez
@@ -182,6 +185,7 @@ export default function AdminKargonomiOrderActions({ order }: Props) {
         </span>
         {tracking && <span className="block text-neutral-700">Takip No: <CopyTrackingCode code={tracking} /></span>}
         {order.kargonomiStatusLabel && <span className="block text-neutral-500">{order.kargonomiStatusLabel}</span>}
+        {feeKurus !== null && <span className="block text-neutral-500">Kargo ücreti: {(feeKurus / 100).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>}
         {order.status === "PENDING" && <span className="block text-amber-800">Paketi kargoya verince durumu &apos;Kargoya Verildi&apos; yapın.</span>}
         {tracking && carrierTrackingLink({ providerName: order.shippingProviderName, code: tracking }).href && (
           <a

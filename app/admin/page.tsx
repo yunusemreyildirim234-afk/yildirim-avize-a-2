@@ -130,16 +130,20 @@ async function getOrderPanel(q: string, range: DateRange | null, keys: ReturnTyp
     prisma.order.count({ where: { kargonomiShipmentId: { not: null }, status: { in: ["PENDING", "SHIPPED"] } } }),
     prisma.order.count({ where: { ...counted, shippingType: "BEYOGLU_MAGAZA_TESLIM" } }),
     prisma.order.count({ where: { status: "DELIVERED", shippingType: "BEYOGLU_MAGAZA_TESLIM" } }),
-    // Aylık ciro: tek GROUP BY (ay anahtarı İstanbul takvimine göre; tutar kuruş tamsayısı); satır sayısı ay sayısı kadardır
-    prisma.$queryRaw<{ key: string; n: number; kurus: number }[]>`
+    // Aylık ciro + kargo gideri: tek GROUP BY (ay anahtarı İstanbul takvimine göre; tutarlar kuruş tamsayısı); satır sayısı ay × kargo firması kadardır
+    prisma.$queryRaw<{ key: string; carrier: string; n: number; kurus: number; shipKurus: number; shipN: number; cargoN: number }[]>`
       SELECT to_char("createdAt" AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Istanbul', 'YYYY-MM') AS key,
+             COALESCE(NULLIF(TRIM("shippingProviderName"), ''), '') AS carrier,
              COUNT(*)::int AS n,
-             COALESCE(SUM(ROUND("totalAmount"::numeric * 100)), 0)::float8 AS kurus
+             COALESCE(SUM(ROUND("totalAmount"::numeric * 100)), 0)::float8 AS kurus,
+             COALESCE(SUM(CASE WHEN "shippingPrice" ~ '^[0-9]+([.][0-9]+)?$' THEN ROUND("shippingPrice"::numeric * 100) END), 0)::float8 AS "shipKurus",
+             (COUNT(*) FILTER (WHERE "shippingPrice" ~ '^[0-9]+([.][0-9]+)?$'))::int AS "shipN",
+             (COUNT(*) FILTER (WHERE "shippingType" <> 'BEYOGLU_MAGAZA_TESLIM'))::int AS "cargoN"
       FROM "Order"
       WHERE "status" NOT IN (${Prisma.join(UNCOUNTED_STATUSES)})
-      GROUP BY 1`,
+      GROUP BY 1, 2`,
   ]);
-  const monthRows: MonthAggRow[] = revenueRows.map((r) => ({ key: r.key, n: Number(r.n), kurus: Number(r.kurus) }));
+  const monthRows: MonthAggRow[] = revenueRows.map((r) => ({ key: r.key, carrier: r.carrier, n: Number(r.n), kurus: Number(r.kurus), shipKurus: Number(r.shipKurus), shipN: Number(r.shipN), cargoN: Number(r.cargoN) }));
   const toRows = (g: typeof globalGroups) => g.map((r) => ({ status: r.status, cancelReturnStatus: r.cancelReturnStatus, n: r._count._all }));
   const globalRows = toRows(globalGroups);
 
@@ -518,6 +522,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                             shippingProviderName: order.shippingProviderName,
                             barcodeUrl: order.barcodeUrl,
                             labelCreated: order.labelCreated,
+                            shippingPrice: order.shippingPrice,
                           }}
                         />
                       </td>
