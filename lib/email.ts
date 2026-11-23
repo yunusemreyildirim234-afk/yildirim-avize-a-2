@@ -597,6 +597,30 @@ export async function sendShippedEmail(data: { to: string; name: string; orderId
   });
 }
 
+/** Kargo teslim edilince müşteriye kısa teşekkür; ürün sayfası varsa yorum daveti (yorum kutusu /urun/...#yorumlar). */
+export async function sendDeliveredEmail(data: { to: string; name: string; orderId: string; items: Array<{ title: string; product?: { id: string; title: string } }> }) {
+  const code = orderCode(data.orderId);
+  const orderUrl = `${SITE_URL}${orderNotificationLink(data.orderId)}`;
+  const list = data.items
+    .map((i) => {
+      const link = i.product ? `${SITE_URL}${productPath(i.product)}#yorumlar` : null;
+      return `<li style="margin: 4px 0;">${esc(i.title)}${link ? ` – <a href="${esc(link)}" style="color: #92400e;">Yorum yazın</a>` : ""}</li>`;
+    })
+    .join("");
+  return sendViaResend(process.env.RESEND_API_KEY, {
+    to: [data.to],
+    subject: `Siparişiniz teslim edildi - #${code}`,
+    html: `<div style="font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 28px; background: #fafafa; border: 1px solid #e5e5e5; border-radius: 16px; color: #171717;">
+      <h2 style="font-size: 17px; margin: 0 0 10px;">Sayın ${esc(data.name)},</h2>
+      <p style="font-size: 14px; line-height: 1.6;"><strong>#${esc(code)}</strong> numaralı siparişiniz teslim edildi. Bizi tercih ettiğiniz için teşekkür ederiz.</p>
+      ${list ? `<ul style="font-size: 14px; line-height: 1.5; padding-left: 20px;">${list}</ul><p style="font-size: 13px; color: #525252;">Ürünlerle ilgili görüşleriniz diğer müşterilere yardımcı olur.</p>` : ""}
+      <p style="font-size: 13px; color: #525252;">Siparişiniz: <a href="${esc(orderUrl)}" style="color: #92400e; font-weight: bold;">Siparişi görüntüle</a></p>
+      <p style="font-size: 13px; color: #525252;">Bir sorun olursa bize WhatsApp veya telefonla ulaşabilirsiniz.</p>
+      <p style="font-size: 12px; color: #737373; text-align: center;">Yıldırım Avize | Tel: ${PHONE_DISPLAY}</p>
+    </div>`,
+  });
+}
+
 /** Teslim edilen siparişin PDF faturası (e-postaya EK olarak; indirme bağlantısı verilmez). */
 export async function sendInvoiceEmail(data: { to: string; name: string; orderId: string; fileName: string; pdf: Buffer }) {
   const no = `#${orderCode(data.orderId)}`;

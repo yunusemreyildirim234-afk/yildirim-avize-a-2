@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { autoShipEnabled, refreshWithAutoShip } from "@/lib/mark-shipped";
 import { notifyCustomer } from "@/lib/notifications";
+import { announceDeliveredEmail, type DeliveredDeps } from "@/lib/mark-delivered";
 
 /** Türkçe karakterleri ve büyük/küçük harfi normalize eder: "Kargo TESLİM Edildi" → "kargo teslim edildi". */
 export function normalizeStatus(v: unknown): string {
@@ -32,7 +33,7 @@ export function isDeliveredStatus(...values: unknown[]): boolean {
  * Siparişi atomik ve idempotent olarak DELIVERED yapar: yalnızca SHIPPED ve talebi onaylanmamış sipariş etkilenir.
  * CANCELLED/RETURNED siparişe dokunmaz, DELIVERED'ı geri almaz. Etkilenen satır 1 ise true.
  */
-export async function markDelivered(orderId: string, extra: { kargonomiStatus?: string; kargonomiStatusLabel?: string } = {}): Promise<boolean> {
+export async function markDelivered(orderId: string, extra: { kargonomiStatus?: string; kargonomiStatusLabel?: string } = {}, emailDeps?: DeliveredDeps): Promise<boolean> {
   const res = await prisma.order.updateMany({
     where: { id: orderId, status: "SHIPPED", OR: [{ cancelReturnStatus: null }, { cancelReturnStatus: { not: "APPROVED" } }] },
     data: { status: "DELIVERED", deliveredAt: new Date(), ...extra },
@@ -45,6 +46,8 @@ export async function markDelivered(orderId: string, extra: { kargonomiStatus?: 
       { userId: order.userId },
       { title: "Sipariş durumunuz güncellendi", message: `#${orderId.slice(0, 8)}: Siparişiniz teslim edildi. Bizi tercih ettiğiniz için teşekkürler!`, type: "ORDER", link: "/giris#siparisler" }
     ).catch(() => {});
+    // Teslim e-postası yalnız ilk geçişte (count === 1); kurallar ve hata yutma lib/mark-delivered.ts içinde
+    await announceDeliveredEmail(orderId, emailDeps);
   }
   return true;
 }

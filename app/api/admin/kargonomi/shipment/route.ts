@@ -3,6 +3,7 @@ import { adminGuard } from "@/lib/admin-guard";
 import { prisma } from "@/lib/db";
 import { refreshWithAutoShip } from "@/lib/mark-shipped";
 import { KargonomiError, createShipmentForOrder } from "@/lib/kargonomi";
+import { creationFailWarning } from "@/lib/creation-fail";
 
 function fail(error: unknown) {
   const status = error instanceof KargonomiError ? error.status : 500;
@@ -27,7 +28,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: existing.kargonomiShipmentId ? "Bu sipariş için gönderi zaten oluşturulmuş." : "Bu sipariş için gönderi zaten oluşturuluyor." }, { status: 409 });
     }
     try {
-      return NextResponse.json({ success: true, order: await createShipmentForOrder(orderId) });
+      const created = await createShipmentForOrder(orderId);
+      return NextResponse.json({ success: true, order: created, warning: creationFailWarning(created.creationFailReason) });
     } catch (error) {
       // Gönderi açılamadı: sahiplenme bırakılır (yeniden denenebilsin)
       await prisma.order.updateMany({ where: { id: orderId, kargonomiShipmentId: null }, data: { labelCreated: false } }).catch(() => {});
@@ -45,7 +47,8 @@ export async function PATCH(req: Request) {
   try {
     const { orderId } = await req.json();
     if (!orderId) return NextResponse.json({ error: "orderId zorunlu" }, { status: 400 });
-    return NextResponse.json({ success: true, order: (await refreshWithAutoShip(orderId)).order });
+    const r = await refreshWithAutoShip(orderId);
+    return NextResponse.json({ success: true, order: r.order, warning: creationFailWarning(r.creationFailReason) });
   } catch (error) {
     return fail(error);
   }

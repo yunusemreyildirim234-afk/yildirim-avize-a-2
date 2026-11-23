@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { KargonomiError, confirmShippingPrice, createShipmentForOrder, getPriceComparison, refreshOrderShipment } from "@/lib/kargonomi";
 import { isSelectableProviderId } from "@/lib/carrier-quotes";
+import { creationFailWarning } from "@/lib/creation-fail";
 import { PROVIDER_LABEL, openShipmentWithProvider } from "@/lib/shipping-confirm";
 import { decideRegenerate } from "@/lib/regenerate-guard";
 import { KARGONOMI_TIMEOUT_MESSAGE, SHIPPABLE_STATUSES, createShippingOnce, isTimeoutError } from "@/lib/shipping-claim";
@@ -71,7 +72,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
       return NextResponse.json({ error: "Gönderi açılırken sipariş durumu değişti (iptal/iade edilmiş olabilir); barkod kaydedilmedi. Açılan gönderiyi Kargonomi panelinden iptal edin ve sayfayı yenileyin." }, { status: 409 });
     }
     const updated = await prisma.order.findUniqueOrThrow({ where: { id } });
-    return NextResponse.json({ success: true, order: updated });
+    return NextResponse.json({ success: true, order: updated, warning: creationFailWarning(result.shipped.shipment.creationFailReason) });
   } catch (error) {
     // Zaman aşımı: istek Kargonomi'ye ulaşmış ve gönderi açılmış olabilir. Sahiplenme bırakılmıştır (yeniden denenebilir) ama yönetici önce paneli kontrol etmelidir.
     if (isTimeoutError(error)) {

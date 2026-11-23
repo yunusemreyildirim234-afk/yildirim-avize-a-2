@@ -47,6 +47,7 @@ export default function AdminKargonomiOrderActions({ order }: Props) {
   const [quoteError, setQuoteError] = useState<string | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [selected, setSelected] = useState<number | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
 
   if (order.shippingType === "BEYOGLU_MAGAZA_TESLIM") {
     return <span className="text-[11px] text-neutral-500">Mağaza teslimi – kargo gerekmiyor</span>;
@@ -76,6 +77,7 @@ export default function AdminKargonomiOrderActions({ order }: Props) {
     const regenProvider = /hepsijet/i.test(order.shippingProviderName ?? "") ? 6 : 4;
     if (kind === "regenerate" && !window.confirm(`Yeni bir ${regenProvider === 6 ? "Hepsijet" : "Aras Kargo"} gönderisi açılacak. Eski gönderiyi Kargonomi panelinden iptal etmeniz gerekir. Devam edilsin mi?`)) return;
     setAskCreate(false);
+    setWarning(null);
     setLoading(kind);
     try {
       const res = await (kind === "refresh"
@@ -91,6 +93,7 @@ export default function AdminKargonomiOrderActions({ order }: Props) {
           }));
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "İşlem başarısız.");
+      if (typeof data.warning === "string" && data.warning) setWarning(data.warning);
       toast.success(kind === "refresh" ? "Kargo durumu güncellendi" : NOTICE);
       router.refresh();
     } catch (err) {
@@ -172,6 +175,7 @@ export default function AdminKargonomiOrderActions({ order }: Props) {
           </button>
         )}
         {!payable && <p className="text-[10px] text-neutral-500 max-w-[11rem]">Ödeme onaylanınca barkod oluşturulabilir.</p>}
+        {warning && <p role="alert" className="text-[11px] font-semibold text-red-700 max-w-[14rem] break-words">{warning}</p>}
       </div>
     );
   }
@@ -198,6 +202,7 @@ export default function AdminKargonomiOrderActions({ order }: Props) {
           </a>
         )}
       </div>
+      {warning && <p role="alert" className="text-[11px] font-semibold text-red-700 max-w-[14rem] break-words">{warning}</p>}
       <div className="flex flex-wrap gap-2">
         <a
           href={order.barcodeUrl || `/api/admin/kargonomi/barcode?orderId=${order.id}`}

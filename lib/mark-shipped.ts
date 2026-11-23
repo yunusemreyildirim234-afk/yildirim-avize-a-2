@@ -78,7 +78,7 @@ export async function refreshWithAutoShip(orderId: string, deps: ShipDeps = defa
   const prev = (await prisma.order.findUnique({ where: { id: orderId }, select: { kargonomiStatus: true } }))?.kargonomiStatus ?? null;
   const updated = await deps.refresh(orderId);
   if (autoShipEnabled() && isStartedTransition(prev, updated.kargonomiStatus)) {
-    if (await markShippedAuto(orderId, { refreshed: true }, deps)) return { order: (await prisma.order.findUnique({ where: { id: orderId } })) ?? updated, autoShipped: true };
+    if (await markShippedAuto(orderId, { refreshed: true }, deps)) return { order: (await prisma.order.findUnique({ where: { id: orderId } })) ?? updated, autoShipped: true, creationFailReason: undefined as string | undefined };
   }
-  return { order: updated, autoShipped: false };
+  return { order: updated, autoShipped: false, creationFailReason: (updated as { creationFailReason?: string }).creationFailReason };
 }
