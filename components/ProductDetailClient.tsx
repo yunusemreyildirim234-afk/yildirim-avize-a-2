@@ -22,6 +22,7 @@ import { activeTier, bulkLabel, bulkTiersOf, unitPriceFor } from "@/lib/bulk-pri
 import { lowStockLabel, type LowStockSetting } from "@/lib/low-stock";
 import { bulbNoteFor, isAccessoryCategory } from "@/lib/bulb-note";
 import { smallImage } from "@/lib/img";
+import ProductVideo from "@/components/ProductVideo";
 import { displayTitle } from "@/lib/title-display";
 import { pickDefaultOption } from "@/lib/default-variation";
 import InstallmentLink from "@/components/InstallmentLink";
@@ -52,6 +53,7 @@ interface Product {
   couponAllowed?: boolean;
   pickupDiscountPct?: number | null;
   transferDiscountPct?: number | null;
+  videoUrl?: string | null;
   variations: Variation[];
 }
 
@@ -257,6 +259,7 @@ export default function ProductDetailClient({ product, ladderCtx, categoryHref, 
           ))}
         </div>
       )}
+      <ProductVideo framed url={product.videoUrl} title={product.title} poster={coverImageOf(product)} />
       </div>
 
       {/* Sağ: Ürün Bilgileri ve Seçenekler */}

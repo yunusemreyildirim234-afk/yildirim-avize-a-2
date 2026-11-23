@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { refreshAdminNow, scheduleAdminRefresh } from "@/lib/admin-refresh";
 import ImagePicker from "@/components/ImagePicker";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import AdminProductVideo from "@/components/AdminProductVideo";
 import { itemsFromUrls, newKey, uploadFile, type PickerItem } from "@/lib/client-upload";
 import { replaceAt, urlsToAppend } from "@/lib/image-list";
 import { MAX_EDIT_IMAGES, MAX_VARIATION_IMAGES } from "@/lib/variation-input";
@@ -369,6 +370,8 @@ export default function AdminProductEditor({ product, onSaved, onDirtyChange, on
         </div>
         {rowError("info")}
       </section>
+
+      <AdminProductVideo productId={product.id} title={title} poster={images[0]?.src ?? product.imageUrl} />
 
       {/* Renk / stok */}
       <section className="space-y-2 border-t border-neutral-200 pt-4">
