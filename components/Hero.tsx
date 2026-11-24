@@ -6,6 +6,8 @@ import Link from "next/link";
 // Alttan yukarı koyulaşan scrim, metnin bulunduğu bölgede fotoğraf ne kadar açık olursa olsun beyaz metne ≥4.5:1 kontrast verir.
 // Mobilde hero 62svh (440–620 px) olduğu için alt kenarı sabit WhatsApp/telefon düğmelerinin (viewport'un alt ~120 px'i) üstünde biter; düğmeler yan yana, <340 px'te alt alta sarar.
 // Arama ve kategori bağlantıları Navbar'dadır.
+// Bu fotoğraf sayfanın LCP öğesidir: preload + fetchPriority="high", lazy değil. sizes bilerek 100vw: dikey ekranda object-cover görseli ekrandan geniş çizer,
+// gerçek çizim genişliğini yazmak mobilde daha büyük dosya indirtirdi.
 
 const btnBase =
   "inline-flex items-center justify-center min-h-11 rounded-full text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-on-photo";
@@ -17,7 +19,8 @@ export default function Hero() {
         src="/hero/salon-avize.webp"
         alt="Altın rengi avizenin aydınlattığı modern bir oturma odası"
         fill
-        priority
+        preload
+        fetchPriority="high"
         sizes="100vw"
         className="object-cover object-[42%_30%] md:object-[50%_12%]"
       />

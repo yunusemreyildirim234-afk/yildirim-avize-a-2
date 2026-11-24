@@ -134,8 +134,8 @@ export default async function Home() {
               <p className="text-sm text-ink-muted text-center py-10">Ürünler yakında burada olacak.</p>
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-                {featured.map((p, i) => (
-                  <ProductCard key={p.id} product={p} priority={i < 2} />
+                {featured.map((p) => (
+                  <ProductCard key={p.id} product={p} />
                 ))}
               </div>
             )}
