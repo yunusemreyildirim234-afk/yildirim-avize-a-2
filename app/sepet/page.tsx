@@ -234,7 +234,7 @@ export default function CartPage() {
 
   // Sunucu fiyat teklifi (/api/cart/quote, salt okunur): gösterilen tutar buradan gelir
   interface Quote {
-    lines: { variationId: string; available: boolean; bundles?: BundleInfo[] | null; message?: string; stockShort?: boolean; title?: string; variationName?: string; price?: number; unitPrice?: number; bulk?: BulkRule[]; rules?: ItemRules; capInfo?: CapInfo | null; ladder?: LadderStep[] }[];
+    lines: { variationId: string; available: boolean; bundles?: BundleInfo[] | null; message?: string; stockShort?: boolean; title?: string; category?: string; variationName?: string; price?: number; unitPrice?: number; bulk?: BulkRule[]; rules?: ItemRules; capInfo?: CapInfo | null; ladder?: LadderStep[] }[];
     totals: { itemsTotal: number; shipping: number; couponDiscount: number; pickupDiscount: number; bankDiscount: number; total: number };
     coupon: { ok: boolean; error?: string; limited?: boolean } | null;
     zeroTotal?: boolean; // indirimler sonrası ödenecek tutar 0 ₺: sipariş sunucuda reddedilir
@@ -752,14 +752,14 @@ export default function CartPage() {
                     <span className="inline-block text-xs bg-amber-50 text-amber-800 font-medium px-2.5 py-0.5 rounded-md mt-1">
                       {item.variationName}
                     </span>
-                    {bulbNoteFor(item.title) === "gift" ? (
+                    {(() => { const note = bulbNoteFor(item.title, quote?.lines.find((l) => l.variationId === item.variationId)?.category); return note === "gift" ? (
                       <span className="mt-1.5 flex items-start gap-1.5 text-[11px] leading-snug text-emerald-900 bg-emerald-50 border border-emerald-200 rounded-lg px-2 py-1 w-fit max-w-full">
                         <span aria-hidden="true">💡</span>
                         <span>
                           <strong>LED ampul hediye</strong>
                         </span>
                       </span>
-                    ) : (
+                    ) : note === "not-included" ? (
                       <span className="mt-1.5 flex items-start gap-1.5 text-[11px] leading-snug text-amber-900 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1 w-fit max-w-full">
                         <span aria-hidden="true">💡</span>
                         <span>
@@ -767,7 +767,7 @@ export default function CartPage() {
                           <span className="max-sm:hidden"> (Standart E14/E27 LED ampullerle uyumludur)</span>
                         </span>
                       </span>
-                    )}
+                    ) : null; })()}
                     <div className="text-sm font-bold text-ink mt-2">
                       {unitShownOf(item).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺
                       {unitShownOf(item) < referenceUnit(item) && (

@@ -47,7 +47,7 @@ export async function POST(req: Request) {
     where: { id: { in: [...wanted.keys()] } },
     select: {
       id: true, productId: true, variationValue: true, extraPrice: true, stock: true,
-      product: { select: { title: true, active: true, basePrice: true, bulkTiers: true, couponAllowed: true, pickupDiscountPct: true, transferDiscountPct: true } },
+      product: { select: { title: true, category: true, active: true, basePrice: true, bulkTiers: true, couponAllowed: true, pickupDiscountPct: true, transferDiscountPct: true } },
     },
   });
   const byId = new Map(variations.map((v) => [v.id, v]));
@@ -125,6 +125,7 @@ export async function POST(req: Request) {
       variationId: l.variationId,
       productId: l.productId,
       title: usable[i].v.product.title,
+      category: usable[i].v.product.category,
       variationName: usable[i].v.variationValue,
       quantity: l.quantity,
       available: true as const,
