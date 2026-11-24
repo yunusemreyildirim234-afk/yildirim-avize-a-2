@@ -2,19 +2,17 @@
 
 /**
  * "İçeriğe atla": sayfadaki ilk odaklanılabilir öğe; yalnızca odaklanınca görünür, ana içeriğe (main) götürür.
- * Sayfalar kendi <main> öğesini çizdiği için hedef tıklanma anında bulunur (id ve tabindex o an atanır).
+ * Hedef, app/layout.tsx'in sayfa içeriğini saran #icerik kutusudur; sunucu çıktısında hazır ve odaklanılabilirdir.
  */
 const TARGET_ID = "icerik";
 
 export default function SkipLink() {
   const go = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    const main = document.querySelector<HTMLElement>("main");
-    if (!main) return;
+    const target = document.getElementById(TARGET_ID);
+    if (!target) return;
     e.preventDefault();
-    if (!main.id) main.id = TARGET_ID;
-    if (!main.hasAttribute("tabindex")) main.setAttribute("tabindex", "-1");
-    main.focus({ preventScroll: true });
-    main.scrollIntoView({ block: "start" });
+    target.focus({ preventScroll: true });
+    target.scrollIntoView({ block: "start" });
   };
 
   return (

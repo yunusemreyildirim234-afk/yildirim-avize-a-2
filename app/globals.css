@@ -57,8 +57,8 @@
   --font-mono: var(--font-geist-mono);
 }
 
-/* "İçeriğe atla" ile odaklanan main: halka çizme, sabit menünün altında kalma (mobil menü ~111 px) */
-main[tabindex="-1"] {
+/* "İçeriğe atla" ile odaklanan içerik kutusu: halka çizme, sabit menünün altında kalma (mobil menü ~111 px) */
+#icerik {
   outline: none;
   scroll-margin-top: 7rem;
 }

@@ -99,7 +99,10 @@ export default async function RootLayout({
             <HideOnAdmin fallback={<AdminTopBar />}>
               <Navbar extraCategories={extraCategories} fixedOverrides={fixedOverrides} showGallery={showGallery} />
             </HideOnAdmin>
-            {children}
+            {/* "İçeriğe atla" hedefi: sayfa yüklenirken DOM'da hazır ve odaklanılabilir (components/SkipLink.tsx) */}
+            <div id="icerik" tabIndex={-1}>
+              {children}
+            </div>
             <HideOnAdmin>
               <Footer extraCategories={extraCategories} fixedOverrides={fixedOverrides} showGallery={showGallery} />
             </HideOnAdmin>
