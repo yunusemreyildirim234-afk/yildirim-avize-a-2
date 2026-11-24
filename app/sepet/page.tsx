@@ -41,6 +41,7 @@ import ComplementSuggestions from "@/components/ComplementSuggestions";
 import CartMoreStrip from "@/components/CartMoreStrip";
 import type { Suggestion } from "@/lib/complements";
 import { bundleLineView, lineBreakdownExpr, lostBundleTitles, shownUnitPrice, type BundleInfo } from "@/lib/cart-bundle";
+import { fillComplementRules } from "@/lib/cart-lines";
 
 interface LocationItem {
   id: number;
@@ -328,7 +329,10 @@ export default function CartPage() {
       setCouponError(!q.coupon.error || q.coupon.error === COUPON_GENERIC_ERROR ? staleCouponMessage(appliedCoupon.code) : q.coupon.error);
       setAppliedCoupon(null);
     }
-    if (kurus(q.totals.total) !== kurus(shownTotal)) {
+    // Kural bilgisi olmayan kalemde (ürün sayfasından eklenmiş) tamamlayıcı indirim yalnız sunucuda bilinir: o fark "fiyat değişti" sayılmaz
+    const filled = fillComplementRules(cart, q.lines);
+    const bundleGap = filled === cart ? 0 : priceCart({ lines: cartPriceLines(filled), shippingType, paymentMethod, coupon: appliedCoupon, maxTotalDiscountPct: capPct }).total - localTotals.total;
+    if (kurus(q.totals.total) !== kurus(shownTotal + bundleGap)) {
       setPriceNotice({ from: shownTotal, to: q.totals.total });
       setPriceAcked(false);
       return true;

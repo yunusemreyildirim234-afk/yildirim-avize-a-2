@@ -100,3 +100,24 @@ test("toplam değişmez: gösterim parçaları toplamı = bağ indirimli satır 
   const sum = expr.split(" + ").reduce((s, p) => { const [q, u] = p.replace(" ₺", "").split(" × "); return s + Number(q) * Number(u.replace(",", ".")); }, 0);
   assert.equal(Math.round(sum * 100) / 100, lineTotal);
 });
+
+test("fillComplementRules: kuralsız kalemde yalnız tamamlayıcı doldurulur; fark bildirimi sadece bu yüzden çıkmaz, gerçek fiyat değişikliği çıkar", async () => {
+  const { fillComplementRules } = await import("../lib/cart-lines.ts");
+  const main = item("vm", "main", 1000);
+  const bulbNoRules = item("vc", "comp", 100); // ürün sayfasından eklendi: rules yok
+  const serverRules = { couponAllowed: true, pickupPct: null, transferPct: null, complementOf: RULES.complementOf };
+  const q = [{ variationId: "vc", rules: serverRules }, { variationId: "vm", rules: { complementOf: [] } }];
+  const cart = [main, bulbNoRules];
+  const serverTotal = price([main, item("vc", "comp", 100, { rules: RULES })]).itemsTotal; // 1090
+  const filled = fillComplementRules(cart, q);
+  assert.notEqual(filled, cart);
+  assert.equal(price(cart).itemsTotal, 1100); // eski: fark var
+  assert.equal(price(filled).itemsTotal, serverTotal); // doldurulunca fark yok → kutu çıkmaz
+  assert.equal(filled[1].price, 100);
+  // gerçek fiyat değişikliği: sunucuda ürün fiyatı 110 → doldurulmuş yerel toplam hâlâ farklı
+  const serverChanged = price([main, item("vc", "comp", 110, { rules: RULES })]).itemsTotal;
+  assert.notEqual(price(filled).itemsTotal, serverChanged);
+  // kuralı zaten bilen kalem: aynı dizi (değişiklik yok)
+  const known = [main, item("vc", "comp", 100, { rules: RULES })];
+  assert.equal(fillComplementRules(known, q), known);
+});
