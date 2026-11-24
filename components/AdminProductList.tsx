@@ -19,6 +19,7 @@ import SmartFilterChips from "@/components/SmartFilterChips";
 import AdminProductFilterPanel from "@/components/AdminProductFilterPanel";
 import ScrollChips from "@/components/ScrollChips";
 import { EMPTY_FILTERS, adminFacets, applyAdminFilters, hasAdminFilters, type AdminFilterState } from "@/lib/admin-product-filters";
+import { adminCodeFirst, searchAdminProducts } from "@/lib/admin-product-search";
 import { bulkTiersOf, tierBadgeLabel, tierValueLabel } from "@/lib/bulk-pricing";
 import { CATEGORIES } from "@/lib/site";
 import { buildCategoryList, productInCategory } from "@/lib/categories";
@@ -386,17 +387,12 @@ Yine de geri alınsın mı?`)) break;
   const noneCount = uncategorizedCount(products); // kategorisiz ürün sayısı (boş / yalnız boşluk)
   const noneOn = catChips.includes(NONE_KEY);
   const chipFiltered = selectedCats.length || noneOn ? chipFiltered0.filter((p) => (noneOn && !p.category.trim()) || selectedCats.some((c) => productInCategory(p.category, c))) : chipFiltered0;
-  const searched = q
-    ? chipFiltered.filter(
-        (p) =>
-          norm(p.title).includes(q) ||
-          norm(p.modelCode) === q ||
-          norm(p.trendyolMainId).includes(q) ||
-          p.variations.some((v) => norm(v.stockCode).includes(q) || norm(v.barcode).includes(q))
-      )
-    : chipFiltered;
-  // Gelişmiş süzgeçler arama/çip/kategori sonucuyla KESİŞİR; sıralama sonuca uygulanır
-  const filtered = useMemo(() => applyAdminFilters(searched, adv, sets), [searched, adv, sets]);
+  const searched = useMemo(() => (q ? searchAdminProducts(chipFiltered, query) : chipFiltered), [q, query, chipFiltered]); // kurallar lib/admin-product-search.ts
+  // Gelişmiş süzgeçler arama/çip/kategori sonucuyla KESİŞİR; sıralama sonuca uygulanır. Rakam sorgusunda varsayılan sıralamada model kodu/stok kodu eşleşen en üstte
+  const filtered = useMemo(() => {
+    const f = applyAdminFilters(searched, adv, sets);
+    return q && adv.siralama === "varsayilan" ? adminCodeFirst(f, query) : f;
+  }, [searched, adv, sets, q, query]);
   const facets = useMemo(() => adminFacets(searched, adv), [searched, adv]);
   const advActive = hasAdminFilters(adv) || adv.siralama !== "varsayilan";
   const clearAllFilters = () => { setQuery(""); setChips([]); setCatChips([]); setAdv(EMPTY_FILTERS); setShown(PAGE); };

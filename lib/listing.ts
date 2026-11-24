@@ -8,7 +8,7 @@ import { LISTING_ROWS_CACHE_SECONDS, STOREFRONT_CACHE_VERSION as ROWS_CACHE_VERS
 import { rowFilter } from "@/lib/listing-where";
 import { getVisibleWhere, getVisibleWhereStrict } from "@/lib/visibility";
 import { MAX_SEARCH_RESULTS } from "@/lib/product-search";
-import { matchesAllWords, matchesSearch, matchesSearchTolerant, normalizeSearch, rankSearchRows, searchText } from "@/lib/search-rank";
+import { matchesAllWords, matchesCompact, matchesSearch, matchesSearchTolerant, normalizeSearch, rankSearchRows, searchText } from "@/lib/search-rank";
 import { buildVocabulary, correctQuery } from "@/lib/search-fuzzy";
 import { applySynonyms } from "@/lib/search-synonyms";
 import { applyListing, isDefaultState, parseSize, variationAttrs, parseListingParams, stateToParams, type CatMeta, type ListingResult, type ListingRow } from "@/lib/listing-core";
@@ -109,6 +109,12 @@ const searchRows = async (q: string) => {
   return (exact.length > 0 ? exact : all.filter((r) => matchesAllWords(r, q))).slice(0, MAX_SEARCH_RESULTS);
 };
 
+/** Üçüncü geçiş: ikisi de boşsa boşluksuz yazım ("kristalavize", "e14duy"; en az 4 karakter, bkz. lib/search-rank.ts matchesCompact). */
+const searchRowsFlex = async (q: string) => {
+  const rows = await searchRows(q);
+  return rows.length > 0 ? rows : (await catalogRows()).filter((r) => matchesCompact(r, q)).slice(0, MAX_SEARCH_RESULTS);
+};
+
 /** Otomatik düzeltme için düzeltilmiş sorgunun en az vermesi gereken ürün sayısı (altında yalnızca "Bunu mu demek istediniz" bağlantısı). */
 export const MIN_AUTO_RESULTS = 2;
 
@@ -138,7 +144,7 @@ export async function searchCorrection(q: string): Promise<SearchCorrection | nu
 /** Üst arama kutusu: tam model kodu önde, sonra alaka sırası; yalnızca kimlikler. */
 export async function searchProductIds(q: string, take: number): Promise<string[]> {
   const n = normalizeSearch(q);
-  const ranked = rankSearchRows(await searchRows(q), q);
+  const ranked = rankSearchRows(await searchRowsFlex(q), q);
   return [...ranked.filter((r) => r.mc === n), ...ranked.filter((r) => r.mc !== n)].slice(0, take).map((r) => r.id);
 }
 
@@ -161,7 +167,7 @@ export async function getListing(base: ListingBase, query: Record<string, string
 
   let rows: ListingRow[];
   if ("search" in base) {
-    rows = await searchRows(base.search);
+    rows = await searchRowsFlex(base.search);
   } else if ("products" in base) {
     const ids = base.products.map((p) => p.id);
     const byId = new Map((await catalogRows()).map((r) => [r.id, r])); // Çok Satanlar ürünleri aktif = katalogda; ayrı okuma yok

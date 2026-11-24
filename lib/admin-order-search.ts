@@ -1,5 +1,5 @@
 // Yönetim paneli sipariş listesi: arama ve tarih aralığı (saf kurallar; veritabanı yok). Durum çipleriyle kesişim olarak çalışır.
-import { normalizeSearch } from "./search-rank.ts";
+import { COMPACT_MIN_LEN, compactSearch, normalizeSearch } from "./search-rank.ts";
 import { cleanGuestEmail } from "./guest-email.ts";
 
 export const MAX_ORDER_QUERY = 100;
@@ -28,6 +28,9 @@ export function matchesOrderSearch(o: SearchableOrder, query: string): boolean {
   if (tokens.length > 0) {
     const text = normalizeSearch(`${o.user.name} ${o.recipientName ?? ""} ${cleanGuestEmail(o.user.email)}`);
     if (tokens.every((t) => text.includes(t))) return true;
+    // Boşluksuz yazım ("ahmetyilmaz" ↔ "Ahmet Yılmaz"): yalnızca harf içeren, en az COMPACT_MIN_LEN karakterlik sorguda (rakam sorgusu telefon kuralına kalır)
+    const c = compactSearch(tokens.join(" "));
+    if (/[a-z]/.test(c) && c.length >= COMPACT_MIN_LEN && compactSearch(text).includes(c)) return true;
   }
   const q = national(digits(raw));
   if (q.length >= 3 && /^[\d\s+()-]+$/.test(raw) && o.phone) return national(digits(o.phone)).includes(q);
