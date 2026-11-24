@@ -95,7 +95,7 @@ test("temizlik reminders ucunun içinde: yetki denetiminden sonra, kendi try/cat
   assert.ok(route.indexOf("runDailyCleanup(prisma)") < route.indexOf("abandonedEmailSent: false"), "hatırlatma hatası temizliği engellemez");
   assert.throws(() => readFileSync(new URL("../app/api/cron/cleanup/route.ts", import.meta.url)), /ENOENT/);
   const cfg = JSON.parse(readFileSync(new URL("../vercel.json", import.meta.url), "utf8"));
-  assert.deepEqual(cfg.crons.map((c) => `${c.path} ${c.schedule}`), ["/api/cron/reminders 0 9 * * *", "/api/cron/sync-shipments 5 15 * * *"]);
+  assert.deepEqual(cfg.crons.map((c) => `${c.path} ${c.schedule}`), ["/api/cron/reminders 0 9 * * *", "/api/cron/sync-shipments 15 15 * * *"]);
 });
 
 test("hareket kayıtları: 3 günden eski silinir (panel açılışında değil, günlük temizlikte)", async () => {
