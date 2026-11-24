@@ -77,8 +77,8 @@ async function PATCHHandler(req: Request) {
         const plan = planRename(body.variationValue, { type: cur.variationType, current: cur.variationValue, others: product.variations.filter((v) => v.id !== cur.id).map((v) => v.variationValue), productEbat: product.ebat });
         if (!plan.ok) throw new PlanRejected(plan.error, 400);
         if (plan.value.warnings.length && body.confirmWarnings !== true) throw new PlanRejected("Yine de kaydetmek için uyarıyı onaylayın.", 409, plan.value.warnings);
-        // Yalnızca ad: barkod, tür, stok, fiyat, fotoğraf ve sıra değişmez
-        await tx.productVariation.update({ where: { id: cur.id }, data: { variationValue: plan.value.value } });
+        // Ad (ve izin listesi dışı renkte "Seçenek" → "Renk" türü, filtreye girmesi için): barkod, stok, fiyat, fotoğraf ve sıra değişmez
+        await tx.productVariation.update({ where: { id: cur.id }, data: { variationValue: plan.value.value, variationType: plan.value.type } });
         return plan.value.value;
       }).catch((e) => {
         if (e instanceof PlanRejected) return e;
@@ -97,7 +97,7 @@ async function PATCHHandler(req: Request) {
         const plan = planBulkColor(rows.map((r) => ({ id: r.id, type: r.variationType, value: r.variationValue })), bc?.from, bc?.to);
         if (!plan.ok) throw new PlanRejected(plan.error, 400);
         if (plan.value.warnings.length && body.confirmWarnings !== true) throw new PlanRejected("Yine de kaydetmek için uyarıyı onaylayın.", 409, plan.value.warnings);
-        for (const c of plan.value.changes) await tx.productVariation.update({ where: { id: c.id }, data: { variationValue: c.to } });
+        for (const c of plan.value.changes) await tx.productVariation.update({ where: { id: c.id }, data: { variationValue: c.to, variationType: c.type } });
         return plan.value.changes.length;
       }).catch((e) => {
         if (e instanceof PlanRejected) return e;

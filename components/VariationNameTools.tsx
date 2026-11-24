@@ -21,6 +21,17 @@ const ghost = `${btn} border border-neutral-300 bg-white hover:border-amber-600 
 /** Filtrenin bir adı nasıl okuyacağı (listing-core'daki variationAttrs sonucundan). */
 export const readingOf = (a: VariationAttrs) => `Renk ${a.c?.n ?? "yok"}, Ebat ${a.s?.n ?? "yok"}`;
 
+function Notes({ notes }: { notes: string[] }) {
+  if (notes.length === 0) return null;
+  return (
+    <ul className="list-disc pl-4 space-y-0.5 text-neutral-600" data-testid="bilgi">
+      {notes.map((n) => (
+        <li key={n}>{n}</li>
+      ))}
+    </ul>
+  );
+}
+
 function Warnings({ warnings, checked, onChange }: { warnings: string[]; checked: boolean; onChange: (v: boolean) => void }) {
   if (warnings.length === 0) return null;
   return (
@@ -32,7 +43,7 @@ function Warnings({ warnings, checked, onChange }: { warnings: string[]; checked
       </ul>
       <label className="flex items-start gap-2 min-h-10 font-semibold cursor-pointer">
         <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="mt-0.5 w-5 h-5 accent-amber-600 shrink-0" />
-        Yine de kaydet; renk filtresinde görünmeyebilir
+        Yine de kaydet; ebat filtresinde görünmeyebilir
       </label>
     </div>
   );
@@ -79,6 +90,7 @@ export function VariationNameEdit({ variation, siblings, productEbat, busy, save
           {plan.error}
         </p>
       )}
+      <Notes notes={plan.ok ? plan.value.notes : []} />
       <Warnings warnings={warnings} checked={confirm} onChange={setConfirm} />
       <div className="flex flex-wrap gap-2">
         <button
@@ -201,6 +213,7 @@ export function BulkColorChange({ productId, variations, busy, save }: { product
               </tbody>
             </table>
           </div>
+          <Notes notes={plan.value.notes} />
           <Warnings warnings={warnings} checked={confirm} onChange={setConfirm} />
           <button
             type="button"

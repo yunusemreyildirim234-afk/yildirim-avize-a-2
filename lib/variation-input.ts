@@ -167,8 +167,12 @@ export interface NamePlan {
   value: string;
   /** Filtrenin bu adı nasıl okuyacağı (listing-core ile aynı kural) */
   attrs: VariationAttrs;
-  /** Boş değilse kaydetmek için açık onay gerekir (renk filtresinde görünmeyebilir) */
+  /** Kaydedilecek varyasyon türü: Trendyol "Seçenek" türünde izin listesi dışı renk yazılırsa "Renk" olur (yönetici girişi olduğu gibi kabul edilir; filtreye otomatik girer) */
+  type: string;
+  /** Boş değilse kaydetmek için açık onay gerekir (ebat filtresinde görünmeyebilir) */
   warnings: string[];
+  /** Onay gerektirmeyen kısa bilgi (örn. yeni renk filtreye otomatik eklenir) */
+  notes: string[];
 }
 
 const foldTr = (s: string) => s.replace(/ı/g, "i").replace(/ş/g, "s").replace(/ğ/g, "g").replace(/ü/g, "u").replace(/ö/g, "o").replace(/ç/g, "c");
@@ -205,9 +209,11 @@ function parseName(raw: unknown): Parsed<{ color: string; ebat: string | null }>
   return { ok: true, value: { color, ebat } };
 }
 
-const colorWarning = (color: string) => (secenekColorName(color) ? [] : [`"${color}" renk izin listesinde yok; renk filtresinde görünmeyebilir.`]);
-const warningsOf = (color: string, ebat: string | null, productEbat: string | null | undefined): string[] => [
-  ...colorWarning(color),
+const isListedColor = (color: string) => secenekColorName(color) !== null;
+const colorNotes = (color: string): string[] => (isListedColor(color) ? [] : ["Bu renk filtreye otomatik eklenir."]);
+/** Ad yönetici girişidir: izin listesi dışı renk "Seçenek" türünde filtreye girmezdi; tür "Renk" yapılınca girer. Diğer türler değişmez. */
+const typeFor = (type: string, color: string) => (type === "Seçenek" && !isListedColor(color) ? "Renk" : type);
+const warningsOf = (ebat: string | null, productEbat: string | null | undefined): string[] => [
   ...(!ebat && !productEbat ? ["Ad ebat içermiyor (ürünün ebadı da boş); ebat filtresinde görünmeyebilir."] : []),
 ];
 
@@ -220,7 +226,8 @@ export function planRename(raw: unknown, ctx: { type: string; current: string; o
   const key = nameKey(value);
   const clash = ctx.others.find((o) => nameKey(o) === key);
   if (clash !== undefined) return { ok: false, error: `Bu üründe "${clash}" adlı bir varyasyon zaten var.` };
-  return { ok: true, value: { value, attrs: variationAttrs(ctx.type, value), warnings: warningsOf(p.value.color, p.value.ebat, ctx.productEbat) } };
+  const type = typeFor(ctx.type, p.value.color);
+  return { ok: true, value: { value, type, attrs: variationAttrs(type, value), warnings: warningsOf(p.value.ebat, ctx.productEbat), notes: colorNotes(p.value.color) } };
 }
 
 export interface BulkVariation {
@@ -232,12 +239,15 @@ export interface BulkChange {
   id: string;
   from: string;
   to: string;
+  /** Yeni varyasyon türü (bkz. NamePlan.type) */
+  type: string;
   attrs: VariationAttrs;
 }
 export interface BulkPlan {
   newColor: string;
   changes: BulkChange[];
   warnings: string[];
+  notes: string[];
 }
 
 const headOf = (value: string) => value.split(SLASH)[0].trim();
@@ -277,7 +287,8 @@ export function planBulkColor(variations: readonly BulkVariation[], oldColor: un
     const to = i < 0 ? color : `${color} / ${v.value.slice(i + 1).trim()}`;
     if (to.length > MAX_COLOR_LEN) return { ok: false, error: `"${to}" adı ${MAX_COLOR_LEN} karakteri aşıyor.` };
     next.set(v.id, to);
-    if (to !== v.value) changes.push({ id: v.id, from: v.value, to, attrs: variationAttrs(v.type, to) });
+    const type = typeFor(v.type, color);
+    if (to !== v.value) changes.push({ id: v.id, from: v.value, to, type, attrs: variationAttrs(type, to) });
   }
   if (changes.length === 0) return { ok: false, error: "Değişecek varyasyon yok." };
   const changed = new Set(changes.map((c) => c.id));
@@ -289,5 +300,5 @@ export function planBulkColor(variations: readonly BulkVariation[], oldColor: un
     if (other && (changed.has(v.id) || changed.has(other.id))) return { ok: false, error: `Çakışma: "${other.name}" ve "${name}" aynı ad olur.` };
     byKey.set(k, { id: v.id, name });
   }
-  return { ok: true, value: { newColor: color, changes, warnings: colorWarning(color) } };
+  return { ok: true, value: { newColor: color, changes, warnings: [], notes: colorNotes(color) } };
 }

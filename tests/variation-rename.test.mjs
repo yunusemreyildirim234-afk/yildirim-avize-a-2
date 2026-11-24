@@ -45,13 +45,22 @@ test("planRename: aynı üründe çakışma (büyük/küçük ve Türkçe harf f
   assert.equal(nameKey("Işık / 45x25"), nameKey("ışık / 45 x 25"));
 });
 
-test("planRename uyarıları: izin listesinde yok / ebat yok", () => {
-  const w1 = ok(planRename("Zümrüt / 45 x 25", ctx())).warnings;
-  assert.equal(w1.length, 1);
-  assert.match(w1[0], /izin listesinde yok/);
-  assert.deepEqual(ok(planRename("Krom / 45 x 25", ctx())).warnings, []);
-  // Renk tipi için de aynı uyarı
-  assert.match(ok(planRename("Zümrüt / 45 x 25", ctx({ type: "Renk" }))).warnings[0], /izin listesinde yok/);
+test("planRename: izin listesi dışı renk uyarı/onay gerektirmez, yalnızca bilgi verir ve filtreye girer", () => {
+  const z = ok(planRename("Zümrüt / 45 x 25", ctx()));
+  assert.deepEqual(z.warnings, []);
+  assert.deepEqual(z.notes, ["Bu renk filtreye otomatik eklenir."]);
+  assert.equal(z.type, "Renk"); // "Seçenek" + liste dışı renk → "Renk": filtre okur
+  assert.equal(z.attrs.c.n, "Zümrüt");
+  const g = ok(planRename("günışığı / 45 x 25", ctx()));
+  assert.equal(g.value, "Günışığı / 45 x 25");
+  assert.equal(g.attrs.c.n, "Günışığı");
+  // Listedeki renk: bilgi yok, tür değişmez
+  const k = ok(planRename("Krom / 45 x 25", ctx()));
+  assert.deepEqual([k.warnings, k.notes, k.type], [[], [], "Seçenek"]);
+  // Renk tipi: tür aynı kalır, yine bilgi
+  const r = ok(planRename("Zümrüt / 45 x 25", ctx({ type: "Renk" })));
+  assert.deepEqual([r.warnings, r.type, r.notes.length], [[], "Renk", 1]);
+  // Ebat uyarısı eskisi gibi; ürün ebadı varsa yok
   // Ebat yok uyarısı; ürün ebadı varsa yok
   assert.match(ok(planRename("Krom", ctx())).warnings[0], /ebat/i);
   assert.deepEqual(ok(planRename("Krom", ctx({ productEbat: "45 x 25" }))).warnings, []);
@@ -104,9 +113,13 @@ test("planBulkColor: çakışma engeli iki adı yazar", () => {
   ok(planBulkColor([V("1", "Bej / 45 x 25"), V("2", "Krom / 50 x 50")], "Bej", "Krom"));
 });
 
-test("planBulkColor: yeni renk tanınmıyorsa uyarı; Renk tipinde de", () => {
-  assert.match(ok(planBulkColor(set, "Bej", "Zümrüt")).warnings[0], /izin listesinde yok/);
-  assert.match(ok(planBulkColor([V("1", "Bej", "Renk")], "Bej", "Zümrüt")).warnings[0], /izin listesinde yok/);
+test("planBulkColor: yeni renk tanınmıyorsa yalnızca bilgi; tür Renk olur, filtre okur", () => {
+  const p = ok(planBulkColor(set, "Bej", "Zümrüt"));
+  assert.deepEqual(p.warnings, []);
+  assert.deepEqual(p.notes, ["Bu renk filtreye otomatik eklenir."]);
+  assert.ok(p.changes.every((c) => c.type === "Renk" && c.attrs.c.n === "Zümrüt"));
+  assert.deepEqual(ok(planBulkColor([V("1", "Bej", "Renk")], "Bej", "Zümrüt")).warnings, []);
+  assert.deepEqual(ok(planBulkColor(set, "Bej", "Gold")).notes, []);
 });
 
 test("planBulkColor: tek transaction mantığı — plan saf, girdiyi değiştirmez, hata varsa hiç değişiklik üretmez", () => {
@@ -115,4 +128,34 @@ test("planBulkColor: tek transaction mantığı — plan saf, girdiyi değiştir
   assert.equal(JSON.stringify(set), snap);
   const good = ok(planBulkColor(set, "Bej", "Gold"));
   assert.equal(new Set(good.changes.map((c) => c.id)).size, good.changes.length);
+});
+
+// ---- Renk filtresi: izin listesi dışı renk, tekilleştirme, pasif ürün ----
+import { applyListing, parseListingParams, variationAttrs } from "../lib/listing-core.ts";
+
+const CATS = [{ key: "kristal", slug: "kristal", title: "Kristal" }];
+const row = (id, type, values, extra = {}) => ({ id, cat: "kristal", price: 100, created: 1, updated: 1, featured: false, active: true, vars: values.map((v) => variationAttrs(type, v)), ...extra });
+const colorsOf = (rows) => applyListing(rows, parseListingParams({}), { cats: CATS }).facets.colors;
+
+test("renk filtresi: izin listesinde olmayan renk (adı düzenlenmiş Seçenek ürünü) filtrede görünür", () => {
+  const plan = ok(planRename("Günışığı / 45 x 25", ctx()));
+  const rows = [row("a", plan.type, [plan.value, "Krom"]), row("b", "Seçenek", ["Bej"])];
+  const names = colorsOf(rows).map((c) => c.name).sort();
+  assert.deepEqual(names, ["Bej", "Günışığı", "Krom"]);
+  // Seçilince ürünü bulur
+  const r = applyListing(rows, parseListingParams({ renk: "gunisigi" }), { cats: CATS });
+  assert.deepEqual(r.ids, ["a"]);
+});
+
+test("renk filtresi: aynı renk farklı yazımla (büyük/küçük, Türkçe harf) iki kez çıkmaz", () => {
+  const rows = [row("a", "Renk", ["Günışığı"]), row("b", "Renk", ["GÜNIŞIĞI / 9 x 14"]), row("c", "Renk", ["günışığı"])];
+  const cs = colorsOf(rows);
+  assert.equal(cs.length, 1);
+  assert.equal(cs[0].count, 3);
+});
+
+test("renk filtresi: pasif ürünün rengi filtreye girmez; aktif ürününki girer", () => {
+  const rows = [row("a", "Renk", ["Günışığı"], { active: false }), row("b", "Renk", ["Bej"]), row("c", "Renk", ["Bej"], { active: false })];
+  const cs = colorsOf(rows);
+  assert.deepEqual(cs.map((c) => [c.name, c.count]), [["Bej", 1]]);
 });

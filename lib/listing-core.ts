@@ -393,6 +393,7 @@ export function applyListing(allRows: readonly ListingRow[], raw: ListingState, 
     const m = new Map<string, { n: Map<string, number>; count: number }>();
     for (const r of rows) {
       if (!okCat(r) || !okPrice(r)) continue;
+      if (attr === "c" && r.active === false) continue; // pasif (tükendi olarak görünen) ürünün renkleri renk filtresine girmez
       const seen = new Set<string>();
       const add = (a: Attr) => {
         const g = m.get(a.k) ?? { n: new Map<string, number>(), count: 0 };

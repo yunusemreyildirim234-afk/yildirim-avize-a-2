@@ -83,12 +83,13 @@ test.describe("Admin: varyasyon adı düzenleme + rengi toplu değiştirme (E2E 
       await expect(save).toBeDisabled();
     }
 
-    // Canlı önizleme + uyarı (renk izin listesinde yok) + açık onay
+    // Canlı önizleme + kısa bilgi (izin listesi dışı renk filtreye otomatik eklenir); onay gerekmez
     await input.fill("zümrüt/58x58");
-    await expect(box.getByTestId("ad-onizleme")).toContainText("Filtre bunu şöyle okuyacak: Renk yok, Ebat 58 x 58");
+    await expect(box.getByTestId("ad-onizleme")).toContainText("Filtre bunu şöyle okuyacak: Renk Zümrüt, Ebat 58 x 58");
     await expect(box.getByTestId("ad-onizleme")).toContainText("Kaydedilecek ad: Zümrüt / 58 x 58");
-    await expect(box.getByTestId("uyari")).toContainText("izin listesinde yok");
-    await expect(save).toBeDisabled();
+    await expect(box.getByTestId("bilgi")).toContainText("Bu renk filtreye otomatik eklenir");
+    await expect(box.getByTestId("uyari")).toHaveCount(0);
+    await expect(save).toBeEnabled();
     if (SHOT) {
       for (const [n, w, h] of [["1280", 1280, 800], ["390", 390, 844]] as const) {
         await page.setViewportSize({ width: w, height: h });
@@ -102,13 +103,11 @@ test.describe("Admin: varyasyon adı düzenleme + rengi toplu değiştirme (E2E 
       await page.setViewportSize({ width: 1280, height: 800 });
     }
     const n0 = dialogs.length;
-    await box.getByRole("checkbox", { name: /Yine de kaydet/ }).check();
-    await expect(save).toBeEnabled();
     await save.click();
     expect(await lastDialog(n0)).toMatch(/Varyasyon adı kaydedildi/);
     expect(await valuesOf(ids[a])).toEqual(["Zümrüt / 58 x 58", "Bej / 50 x 50", "Krom / 45 x 25"]);
-    // Barkod, tür, stok, ek fiyat, sıra dokunulmadı
-    expect(mute(await snapshotOf(ids[a]))).toEqual(mute(beforeA));
+    // Barkod, stok, ek fiyat, sıra dokunulmadı; izin listesi dışı renkte tür "Seçenek" → "Renk" olur (filtreye girmesi için)
+    expect((await snapshotOf(ids[a])).map(({ variationValue: _v, variationType, ...rest }) => [variationType, rest])).toEqual(beforeA.map(({ variationValue: _v, variationType, ...rest }, i) => [i === 0 ? "Renk" : variationType, rest]));
 
     // Geri Al: eski ad
     await page.getByRole("button", { name: /Son İşlemi Geri Al/ }).click();
@@ -149,12 +148,13 @@ test.describe("Admin: varyasyon adı düzenleme + rengi toplu değiştirme (E2E 
     await expect(bulk.getByTestId("toplu-hata")).toContainText("Krom / 45 x 25");
     await expect(bulk.getByRole("button", { name: "Uygula" })).toHaveCount(0);
 
-    // Tanınmayan yeni renk: uyarı + onay; sonra izinli renk (Gold) uygulanır
+    // Tanınmayan yeni renk: yalnızca bilgi (onay yok); sonra izinli renk (Gold) uygulanır
     const bulk3 = bulk;
     await bulk3.getByLabel("Yeni renk (toplu)").fill("zümrüt");
     await bulk3.getByRole("button", { name: "Önizle" }).click();
-    await expect(bulk3.getByTestId("uyari")).toContainText("izin listesinde yok");
-    await expect(bulk3.getByRole("button", { name: "Uygula" })).toBeDisabled();
+    await expect(bulk3.getByTestId("bilgi")).toContainText("Bu renk filtreye otomatik eklenir");
+    await expect(bulk3.getByTestId("uyari")).toHaveCount(0);
+    await expect(bulk3.getByRole("button", { name: "Uygula" })).toBeEnabled();
     await bulk3.getByLabel("Yeni renk (toplu)").fill("gold");
     await expect(bulk3.getByTestId("toplu-onizleme")).toHaveCount(0); // girdi değişince önizleme sıfırlanır
     await bulk3.getByRole("button", { name: "Önizle" }).click();
