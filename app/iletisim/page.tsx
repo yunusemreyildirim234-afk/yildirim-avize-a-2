@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { SOCIAL_LINKS } from "@/lib/site";
 
 export default function IletisimPage() {
   const [name, setName] = useState("");
@@ -150,7 +151,7 @@ export default function IletisimPage() {
                   </strong>
                   <div className="flex flex-col gap-2 pt-1">
                     <a
-                      href="https://www.instagram.com/yildirimavize/"
+                      href={SOCIAL_LINKS.instagram}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-2 p-2.5 rounded-xl bg-surface hover:bg-surface text-ink transition-colors font-medium"
@@ -159,7 +160,25 @@ export default function IletisimPage() {
                       <span>Instagram: @yildirimavize</span>
                     </a>
                     <a
-                      href="https://www.facebook.com/y.ld.r.m.avize/"
+                      href={SOCIAL_LINKS.tiktok}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 p-2.5 rounded-xl bg-surface hover:bg-surface text-ink transition-colors font-medium"
+                    >
+                      <span>🎵</span>
+                      <span>TikTok: @yildirimavizecomtr</span>
+                    </a>
+                    <a
+                      href={SOCIAL_LINKS.youtube}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 p-2.5 rounded-xl bg-surface hover:bg-surface text-ink transition-colors font-medium"
+                    >
+                      <span>▶️</span>
+                      <span>YouTube: Yıldırım Avize</span>
+                    </a>
+                    <a
+                      href={SOCIAL_LINKS.facebook}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-2 p-2.5 rounded-xl bg-surface hover:bg-surface text-ink transition-colors font-medium"
@@ -168,7 +187,7 @@ export default function IletisimPage() {
                       <span>Facebook: Yıldırım Avize</span>
                     </a>
                     <a
-                      href="https://www.trendyol.com/magaza/yildirimavize-m-379320?sst=0"
+                      href={SOCIAL_LINKS.trendyol}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-2 p-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-950 transition-colors font-medium"
@@ -177,7 +196,7 @@ export default function IletisimPage() {
                       <span>Trendyol Resmi Mağazamız</span>
                     </a>
                     <a
-                      href="https://www.hepsiburada.com/magaza/yildirim-avize"
+                      href={SOCIAL_LINKS.hepsiburada}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-2 p-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-950 transition-colors font-medium"

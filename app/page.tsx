@@ -11,7 +11,7 @@ import { getHomeCollections } from "@/lib/home-collections";
 import { composeSection, inStockOnly } from "@/lib/homepage-compose";
 import { getHomepageConfig, getSectionPools } from "@/lib/homepage";
 import MoreProducts from "@/components/MoreProducts";
-import { ADDRESS_LINE, LAT, LNG, PHONE_TEL, SITE_URL } from "@/lib/site";
+import { ADDRESS_LINE, LAT, LNG, PHONE_TEL, SITE_URL, SOCIAL_LINKS } from "@/lib/site";
 import { isBlobImage, smallImage } from "@/lib/img";
 
 export const revalidate = 60; // Genel (kişiselleştirmesiz) sayfa: 60 sn önbellek; yönetici işlemleri revalidateStorefront() ile anında yeniler
@@ -46,8 +46,10 @@ const localBusiness = {
     closes: "18:00",
   },
   sameAs: [
-    "https://www.instagram.com/yildirimavize/",
-    "https://www.facebook.com/y.ld.r.m.avize/",
+    SOCIAL_LINKS.instagram,
+    SOCIAL_LINKS.tiktok,
+    SOCIAL_LINKS.youtube,
+    SOCIAL_LINKS.facebook,
     "https://www.trendyol.com/magaza/yildirimavize-m-379320",
     "https://www.hepsiburada.com/magaza/yildirim-avize",
   ],

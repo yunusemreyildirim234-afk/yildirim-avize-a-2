@@ -2,16 +2,18 @@ import Link from "next/link";
 import CompanyInfo from "@/components/CompanyInfo";
 import FooterMap from "@/components/FooterMap";
 import { AvantajlarAcLink } from "@/components/PromoStripClient";
-import { ADDRESS_LINE, CATEGORIES, MAP_EMBED_SRC, MAP_LINK, PHONE_DISPLAY, PHONE_TEL } from "@/lib/site";
+import { ADDRESS_LINE, CATEGORIES, MAP_EMBED_SRC, MAP_LINK, PHONE_DISPLAY, PHONE_TEL, SOCIAL_LINKS } from "@/lib/site";
 
 const MAP_SRC = MAP_EMBED_SRC;
 const DIRECTIONS = MAP_LINK;
 
 const CHANNELS = [
-  { label: "Instagram (@yildirimavize)", href: "https://www.instagram.com/yildirimavize/", icon: "📸", highlight: false },
-  { label: "Facebook Sayfamız", href: "https://www.facebook.com/y.ld.r.m.avize/", icon: "📘", highlight: false },
-  { label: "Hepsiburada Mağazamız", href: "https://www.hepsiburada.com/magaza/yildirim-avize", icon: "🛒", highlight: true },
-  { label: "Trendyol Mağazamız", href: "https://www.trendyol.com/magaza/yildirimavize-m-379320?sst=0", icon: "🛒", highlight: true },
+  { label: "Instagram (@yildirimavize)", href: SOCIAL_LINKS.instagram, icon: "📸", highlight: false },
+  { label: "TikTok (@yildirimavizecomtr)", href: SOCIAL_LINKS.tiktok, icon: "🎵", highlight: false },
+  { label: "YouTube (Yıldırım Avize)", href: SOCIAL_LINKS.youtube, icon: "▶️", highlight: false },
+  { label: "Facebook Sayfamız", href: SOCIAL_LINKS.facebook, icon: "📘", highlight: false },
+  { label: "Trendyol Mağazamız", href: SOCIAL_LINKS.trendyol, icon: "🛒", highlight: true },
+  { label: "Hepsiburada Mağazamız", href: SOCIAL_LINKS.hepsiburada, icon: "🛒", highlight: true },
 ];
 
 export default function Footer({ extraCategories = [], fixedOverrides = {}, showGallery = true }: { extraCategories?: { href: string; label: string }[]; fixedOverrides?: Record<string, { title?: string; hidden?: boolean }>; showGallery?: boolean }) {

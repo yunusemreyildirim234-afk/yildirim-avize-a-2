@@ -14,6 +14,16 @@ export const LNG = 28.970359;
 
 // Harita: "Yol Tarifi Al" kısa linki ve gömülü harita tek kaynaktan (kısa link -> LAT,LNG)
 export const MAP_LINK = "https://maps.app.goo.gl/sGP19dX98od62Vsq5";
+// Resmi sosyal medya ve mağaza bağlantıları tek kaynaktan (Footer, iletişim sayfası, sameAs)
+export const SOCIAL_LINKS = {
+  instagram: "https://www.instagram.com/yildirimavize/",
+  tiktok: "https://www.tiktok.com/@yildirimavizecomtr",
+  youtube: "https://www.youtube.com/@YILDIRIMAV%C4%B0ZE",
+  facebook: "https://www.facebook.com/y.ld.r.m.avize/",
+  trendyol: "https://www.trendyol.com/magaza/yildirimavize-m-379320?sst=0",
+  hepsiburada: "https://www.hepsiburada.com/magaza/yildirim-avize",
+} as const;
+
 export const MAP_EMBED_SRC = `https://www.google.com/maps?q=${encodeURIComponent(`${LAT},${LNG}`)}&z=17&hl=tr&output=embed`;
 
 export const CATEGORIES = [
