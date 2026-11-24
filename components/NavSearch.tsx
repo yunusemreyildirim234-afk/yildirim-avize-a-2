@@ -297,11 +297,11 @@ export default function NavSearch() {
           )}
         </form>
         {showPanel && (
-          <div className="absolute right-0 top-full mt-2 w-[26rem] bg-raised rounded-2xl border border-line shadow-xl overflow-hidden">
+          <div className="absolute right-0 top-full z-30 mt-2 w-[26rem] bg-raised rounded-2xl border border-line shadow-xl overflow-hidden">
             <Results query={query.trim()} results={results} loading={loading} searched={searched} suggestion={suggestion} corrected={corrected} onSuggest={onChange} onPick={pickResult} />
           </div>
         )}
-        {showRecent && <div className="absolute right-0 top-full mt-2 w-[26rem] bg-raised rounded-2xl border border-line shadow-xl overflow-hidden">{recentList}</div>}
+        {showRecent && <div className="absolute right-0 top-full z-30 mt-2 w-[26rem] bg-raised rounded-2xl border border-line shadow-xl overflow-hidden">{recentList}</div>}
       </div>
 
       {/* Mobil: büyüteç ikonu */}
