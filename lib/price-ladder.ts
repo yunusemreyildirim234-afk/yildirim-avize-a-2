@@ -1,5 +1,7 @@
-import type { BulkRule } from "@/lib/bulk-pricing";
-import { priceCart } from "@/lib/cart-pricing";
+import { unitPriceFor, type BulkRule } from "@/lib/bulk-pricing";
+import { priceCart, type CartPriceLine } from "@/lib/cart-pricing";
+import { shownUnitPrice, type BundleInfo } from "@/lib/cart-bundle";
+import type { ComplementRule } from "@/lib/complement-pricing";
 import { BANK_TRANSFER_DISCOUNT, PICKUP_DISCOUNT, SHIPPING_TYPES, type CouponRule } from "@/lib/pricing";
 import { ladderCouponLabel } from "@/lib/coupon-code";
 
@@ -26,22 +28,43 @@ export interface LadderProduct {
 const pctText = (pct: number) => pct.toLocaleString("tr-TR", { maximumFractionDigits: 2 });
 
 /** Adet=1 için adım adım düşen fiyatlar (priceCart ile; her adım öncekini içerir, kargo hariç). Kupon/havale adımı öncekinden ucuz değilse atlanır; mağaza adımı (indirimi kapalı değilse) her zaman gösterilir. */
-export function priceLadder(p: LadderProduct, ctx: LadderContext, price: number = p.basePrice, qty?: { quantity: number; tiers: BulkRule[] }): LadderStep[] {
+/** Sepet satırındaki birlikte alma (tamamlayıcı) bilgisi: yalnız sunucu teklifinden gelir; kartlar sepet satırının büyük birim fiyatıyla tutarlı olur. */
+export interface LadderComplement {
+  rules: ComplementRule[]; // tamamlayıcının kuralları (sunucu DB)
+  bundles: BundleInfo[]; // priceCart'ın bu satır için verdiği indirimli gruplar
+  lineQuantity: number; // bu satırın (varyasyonun) adedi; kademe adedi (qty.quantity) renklerin toplamı olabilir
+}
+
+export function priceLadder(p: LadderProduct, ctx: LadderContext, price: number = p.basePrice, qty?: { quantity: number; tiers: BulkRule[] }, complement?: LadderComplement | null): LadderStep[] {
   // qty verilirse (sepet satırı) kademe ve adet hesaba katılır; fiyatlar BİRİM başınadır. Verilmezse adet=1, kademesiz (eski davranış).
   const n = qty?.quantity ?? 1;
+  // Sepet satırında TÜM adetler aynı indirimli fiyattaysa (shownUnitPrice indirimliyi gösteriyorsa) kartlar o birim üzerinden, priceCart ile hesaplanır:
+  // ana ürün adedi kadar hakkı olan sıfır fiyatlı ana ürün satırları eklenir (tutara/indirime katkısı yok), böylece haklar satırdaki gruplarla birebir aynı dağılır.
+  const bundleUnit = complement && qty ? complement.bundles.length > 0 && shownUnitPrice({ unitPrice: unitPriceFor(price, qty.quantity, qty.tiers), quantity: complement.lineQuantity, bundles: complement.bundles }) < unitPriceFor(price, qty.quantity, qty.tiers) : false;
+  const withBundle = bundleUnit && complement && qty ? complement : null;
   const line = {
     variationId: "ladder",
     productId: "ladder",
     price,
-    quantity: n,
+    quantity: withBundle ? withBundle.lineQuantity : n,
     tiers: qty?.tiers ?? [],
     couponAllowed: p.couponAllowed ?? true,
     pickupPct: p.pickupDiscountPct ?? null,
     transferPct: p.transferDiscountPct ?? null,
+    ...(withBundle ? { complementOf: withBundle.rules } : {}),
   };
+  const divisor = line.quantity;
+  const lines: CartPriceLine[] = [line];
+  if (withBundle) {
+    const mainQty = new Map<string, number>();
+    for (const g of withBundle.bundles) mainQty.set(g.mainProductId, (mainQty.get(g.mainProductId) ?? 0) + g.qty);
+    const off = { price: 0, tiers: [] as BulkRule[], couponAllowed: false, pickupPct: 0, transferPct: 0 };
+    for (const [mainProductId, quantity] of mainQty) lines.push({ variationId: `ladder-main-${mainProductId}`, productId: mainProductId, quantity, ...off });
+    if (n > line.quantity) lines.push({ variationId: "ladder-pad", productId: line.productId, quantity: n - line.quantity, ...off }); // kademe adedi: aynı ürünün diğer renkleri
+  }
   const net = (shippingType: string, paymentMethod: "CREDIT_CARD" | "BANK_TRANSFER", coupon: CouponRule | null) => {
-    const r = priceCart({ lines: [line], shippingType, paymentMethod, coupon, maxTotalDiscountPct: ctx.maxTotalDiscountPct });
-    return { r, price: (r.total - r.shipping) / n, couponOk: !r.couponError && r.couponDiscount > 0 };
+    const r = priceCart({ lines, shippingType, paymentMethod, coupon, maxTotalDiscountPct: ctx.maxTotalDiscountPct });
+    return { r, price: (r.total - r.shipping) / divisor, couponOk: !r.couponError && r.couponDiscount > 0 };
   };
   const steps: LadderStep[] = [];
   let prev = qty ? net(SHIPPING_TYPES.HOME, "CREDIT_CARD", null).price : price;

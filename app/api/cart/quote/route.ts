@@ -140,7 +140,7 @@ export async function POST(req: Request) {
       rules: { couponAllowed: l.couponAllowed, pickupPct: l.pickupPct, transferPct: l.transferPct, complementOf: l.complementOf ?? [] },
       bundles: l.bundles ?? [],
       ladder: ladderCtx
-        ? priceLadder({ basePrice: l.price, couponAllowed: l.couponAllowed, pickupDiscountPct: l.pickupPct, transferDiscountPct: l.transferPct }, ladderCtx, l.price, { quantity: l.tierQty, tiers: l.tiers })
+        ? priceLadder({ basePrice: l.price, couponAllowed: l.couponAllowed, pickupDiscountPct: l.pickupPct, transferDiscountPct: l.transferPct }, ladderCtx, l.price, { quantity: l.tierQty, tiers: l.tiers }, l.bundles?.length ? { rules: l.complementOf ?? [], bundles: l.bundles, lineQuantity: l.quantity } : null)
         : [],
     })),
     ...missing,
