@@ -13,6 +13,8 @@ import { rateLimit } from "@/lib/rate-limit";
 import { isShortOrderCode } from "@/lib/order-lookup";
 import { trackOrder } from "./actions";
 import TrackForm from "@/components/TrackForm";
+import GuestCancelRequest from "@/components/GuestCancelRequest";
+import { getSessionUserId } from "@/lib/account";
 
 export const metadata: Metadata = {
   title: "Kargo & Sipariş Takibi",
@@ -36,6 +38,7 @@ async function OrderResult({ code, verify }: { code: string; verify?: string }) 
     // Yalnızca sayfanın ve takip çubuğunun kullandığı alanlar (adres, telefon, fatura bilgileri istemciye gitmez)
     select: {
       id: true,
+      userId: true,
       status: true,
       paymentMethod: true,
       shippingType: true,
@@ -72,7 +75,10 @@ async function OrderResult({ code, verify }: { code: string; verify?: string }) 
   }
 
   // Takip kodu/barkod koli etiketinde yazar: sipariş numarası yalnızca onu zaten bilen sorguda gösterilir
-  const { id, paymentMethod, ...order } = found;
+  const { id, paymentMethod, userId, ...order } = found;
+  // Sahiplik sunucuda karşılaştırılır; istemciye yalnızca boolean gider
+  const sessionUid = await getSessionUserId();
+  const isOwner = Boolean(sessionUid) && sessionUid === userId;
   const awaitsBankPayment = paymentMethod === "BANK_TRANSFER" && order.status === "PENDING_NEW";
 
   return (
@@ -145,6 +151,9 @@ async function OrderResult({ code, verify }: { code: string; verify?: string }) 
           })()}
         </div>
       )}
+      <div className="pt-3 border-t border-line">
+        <GuestCancelRequest code={orderCode(id)} status={order.status} isOwner={isOwner} cancelReturnStatus={order.cancelReturnStatus} />
+      </div>
     </div>
   );
 }

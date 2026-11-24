@@ -16,6 +16,7 @@ import { getSessionUserId } from "@/lib/account";
 import { canViewOrderDetails } from "@/lib/order-access";
 import { trackState } from "@/lib/orderStatus";
 import { WHATSAPP_NUMBER } from "@/lib/site";
+import GuestCancelRequest from "@/components/GuestCancelRequest";
 import CopyCodeButton from "@/components/CopyCodeButton";
 import { bankPaymentDeadline, breakdownOf, breakdownRows, formatIstanbul, orderCode } from "@/lib/order-display";
 import { smallImage } from "@/lib/img";
@@ -84,6 +85,7 @@ export default async function OrderConfirmationPage({ params }: { params: Promis
             <Link href="/giris" className="font-semibold text-bronze-ink underline underline-offset-2">giriş yapın</Link> veya{" "}
             <Link href="/iletisim" className="font-semibold text-bronze-ink underline underline-offset-2">bizimle iletişime geçin</Link>.
           </p>}
+          {!closed && <GuestCancelRequest code={orderCode(order.id)} status={order.status} isOwner={false} cancelReturnStatus={order.cancelReturnStatus} />}
         </div>
       </main>
     );
