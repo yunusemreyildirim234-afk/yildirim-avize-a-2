@@ -12,7 +12,7 @@ const tlShort = (n: number) => `${n.toLocaleString("tr-TR", { minimumFractionDig
  * Kontrast oranları tests/price-contrast.test.mjs ile doğrulanır.
  */
 export const PRICE_TONE = {
-  themed: { coupon: "text-red-900", bank: "text-red-700", pickup: "text-red-600", sale: "text-sale" },
+  themed: { coupon: "text-red-900", bank: "text-red-800 dark:text-red-700", pickup: "text-red-700 dark:text-red-600", sale: "text-sale" },
   onDark: { coupon: "text-red-200", bank: "text-red-300", pickup: "text-red-400", sale: "text-red-400" },
 } as const;
 export const priceTone = (dark: boolean) => (dark ? PRICE_TONE.onDark : PRICE_TONE.themed);
@@ -45,7 +45,7 @@ export default function PriceLadder({ steps, size = "md", dark = false, itemsTot
               )}
             </span>
             {/* Açıklama: yalnızca dar kartta gizli; sm ve üstünde, sepette ve ürün sayfasında görünür */}
-            {hints && <span className={`${card ? "hidden sm:block" : "block"} text-[10px] ${dark ? "text-zinc-500" : "text-neutral-500"}`}>{s.hint}</span>}
+            {hints && <span className={`${card ? "hidden sm:block" : "block"} text-[10px] ${dark ? "text-zinc-400" : "text-ink-subtle"}`}>{s.hint}</span>}
           </span>
           <span className={`shrink-0 whitespace-nowrap tabular-nums ${s.key === "pickup" ? "font-bold" : "font-semibold"} ${tone[s.key]} ${card ? "text-[11px] sm:text-sm" : small ? "text-sm" : "text-base"}`}>
             {card ? (
@@ -60,7 +60,7 @@ export default function PriceLadder({ steps, size = "md", dark = false, itemsTot
         </li>
       ))}
       {showNote && (
-        <li className={`text-[10px] leading-tight ${dark ? "text-zinc-500" : "text-neutral-500"}`}>Fiyatlar kargo hariçtir</li>
+        <li className={`text-[10px] leading-tight ${dark ? "text-zinc-400" : "text-ink-subtle"}`}>Fiyatlar kargo hariçtir</li>
       )}
     </ul>
   );

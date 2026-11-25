@@ -21,6 +21,7 @@ const ratio = (fg, bg) => (Math.max(fg, bg) + 0.05) / (Math.min(fg, bg) + 0.05);
 const red = {
   // [açık temada ham ölçek, .dark'ta ters çevrilmiş ölçek]
   900: { light: [39.6, 0.141, 25.723], dark: [93.6, 0.032, 17.717] },
+  800: { light: [44.4, 0.177, 26.899] },
   700: { light: [50.5, 0.213, 27.518], dark: [80.8, 0.114, 19.571] },
   600: { light: [57.7, 0.245, 27.325], dark: [70.4, 0.191, 22.216] },
   200: { raw: [88.5, 0.062, 18.334] },
@@ -29,9 +30,10 @@ const red = {
 };
 const L = (arr) => ok(...arr);
 
-// PRICE_TONE (components/PriceLadder.tsx): themed = 900/700/600 (+ sale jetonu, aşağıda ayrı), onDark = 200/300/400
+// PRICE_TONE (components/PriceLadder.tsx): themed açık = 900/800/700, koyu = 900/700/600 (+ sale jetonu, aşağıda ayrı), onDark = 200/300/400
 const rows = [
-  ["kupon", 900, 200], ["havale", 700, 300], ["mağaza", 600, 400],
+  // [ad, açık tema tonu, onDark tonu, koyu tema tonu]
+  ["kupon", 900, 200, 900], ["havale", 800, 300, 700], ["mağaza", 700, 400, 600],
 ];
 
 test("AÇIK tema: beyaz ve neutral-50 zeminde ≥ 4.5:1", () => {
@@ -41,7 +43,7 @@ test("AÇIK tema: beyaz ve neutral-50 zeminde ≥ 4.5:1", () => {
   }
 });
 test("KOYU tema (ölçek ters): kart (#171717 civarı) ve sayfa zemininde ≥ 4.5:1", () => {
-  for (const bg of [ok(20.5), ok(14.5)]) for (const [name, k] of rows) {
+  for (const bg of [ok(20.5), ok(14.5)]) for (const [name, , , k] of rows) {
     const r = ratio(L(red[k].dark), bg);
     assert.ok(r >= 4.5, `${name} ${r.toFixed(2)}`);
   }
@@ -54,15 +56,15 @@ test("Açık temada koyu zeminli kart (zinc-900/zinc-800): ham 200/300/400 ≥ 4
 });
 test("kupondan mağazaya doğru kırmızı canlanır (açık: koyudan canlıya, koyu: soluktan doyguna)", () => {
   const chroma = (k, m) => red[k][m][1];
-  assert.ok(chroma(900, "light") < chroma(700, "light") && chroma(700, "light") < chroma(600, "light"));
+  assert.ok(chroma(900, "light") < chroma(800, "light") && chroma(800, "light") < chroma(700, "light"));
   assert.ok(chroma(900, "dark") < chroma(700, "dark") && chroma(700, "dark") < chroma(600, "dark"));
 });
-test("tema renkleri eski ölçek: kupon red-900, havale red-700, mağaza red-600; alt açıklama neutral-500", () => {
+test("tema renkleri: kupon red-900, havale red-800 (koyu 700), mağaza red-700 (koyu 600); alt açıklama ink-subtle", () => {
   const src = (f) => import("node:fs").then((fs) => fs.readFileSync(new URL(f, import.meta.url), "utf8"));
   return src("../components/PriceLadder.tsx").then((ladder) => {
-    assert.match(ladder, /themed: \{ coupon: "text-red-900", bank: "text-red-700", pickup: "text-red-600", sale: "text-sale" \}/);
+    assert.match(ladder, /themed: \{ coupon: "text-red-900", bank: "text-red-800 dark:text-red-700", pickup: "text-red-700 dark:text-red-600", sale: "text-sale" \}/);
     assert.match(ladder, /onDark: \{ coupon: "text-red-200", bank: "text-red-300", pickup: "text-red-400", sale: "text-red-400" \}/);
-    assert.match(ladder, /"text-zinc-500" : "text-neutral-500"/);
+    assert.match(ladder, /"text-zinc-400" : "text-ink-subtle"/);
   });
 });
 // indirimli fiyat = --ya-sale jetonu (kart rozetiyle aynı); değerler globals.css'ten okunur
