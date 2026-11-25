@@ -22,6 +22,7 @@ export default function Hero() {
         preload
         fetchPriority="high"
         sizes="100vw"
+        quality={60}
         className="object-cover object-[42%_30%] md:object-[50%_12%]"
       />
       <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-scrim/80 from-0% via-scrim/60 via-55% to-transparent" />
