@@ -8,7 +8,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
  * Kartlar sunucuda üretilip children olarak gelir; 4 karta kadar görünüm eski ızgarayla aynıdır (ok yok).
  */
 export default function CollectionsRow({ count, children }: { count: number; children: React.ReactNode }) {
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLUListElement>(null);
   const scroll = (d: -1 | 1) => {
     const el = ref.current;
     if (el) el.scrollBy({ left: d * el.clientWidth * 0.75, behavior: "smooth" });
@@ -16,9 +16,10 @@ export default function CollectionsRow({ count, children }: { count: number; chi
   const arrow = "hidden lg:flex absolute top-1/3 -translate-y-1/2 z-10 w-10 h-10 items-center justify-center rounded-full bg-raised/95 border border-line-strong text-ink shadow-sm hover:border-bronze-ink hover:text-bronze-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-bronze-ink";
   return (
     <div className="relative">
-      <div ref={ref} role="list" className="flex gap-4 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      {/* role="list": list-style sıfırlanınca Safari/VoiceOver liste anlamını düşürür; kartlar children içinde <li> olarak gelir */}
+      <ul ref={ref} role="list" className="list-none flex gap-4 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {children}
-      </div>
+      </ul>
       {count > 4 && (
         <>
           <button type="button" onClick={() => scroll(-1)} aria-label="Önceki koleksiyonlar" className={`${arrow} left-2`}>

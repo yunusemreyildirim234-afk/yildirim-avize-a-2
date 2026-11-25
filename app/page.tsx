@@ -89,32 +89,32 @@ export default async function Home() {
               {collections.map((c) => {
                 const cover = c.cover;
                 return (
-                  <Link
-                    key={c.slug}
-                    role="listitem"
-                    href={`/kategori/${c.slug}`}
-                    data-testid="koleksiyon-kart"
-                    className="group flex flex-col rounded-2xl overflow-hidden bg-raised border border-line shrink-0 snap-start w-[calc(50%-8px)] lg:w-[calc(25%-12px)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze-ink"
-                  >
-                    {/* Fotoğraf alanı: oran (4/5) ve kırpma (object-cover) eskisiyle aynı; yazı artık fotoğrafın üstünde değil */}
-                    <div className="relative aspect-[4/5] overflow-hidden bg-surface">
-                      {cover && (
-                        <Image
-                          src={smallImage(cover)}
-                          unoptimized={isBlobImage(cover)}
-                          alt={c.title}
-                          fill
-                          sizes="(min-width: 1024px) 25vw, 50vw"
-                          className="object-cover transition-transform duration-500 group-hover:scale-105"
-                        />
-                      )}
-                    </div>
-                    {/* Düz zeminli başlık şeridi: açık temada beyaz/koyu yazı, koyu temada renk ölçeği ters döner. Uzun başlık kesilmez, alt satıra iner. */}
-                    <div className="flex-1 border-t border-line bg-raised px-3 py-3 sm:px-4 sm:py-3.5">
-                      <h3 className="font-serif font-bold text-sm sm:text-lg leading-snug text-ink break-words">{c.title}</h3>
-                      <span className="mt-1 block text-xs font-semibold text-bronze-ink group-hover:underline">Keşfet →</span>
-                    </div>
-                  </Link>
+                  <li key={c.slug} className="flex shrink-0 snap-start w-[calc(50%-8px)] lg:w-[calc(25%-12px)]">
+                    <Link
+                      href={`/kategori/${c.slug}`}
+                      data-testid="koleksiyon-kart"
+                      className="group flex w-full min-w-0 flex-col rounded-2xl overflow-hidden bg-raised border border-line focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze-ink"
+                    >
+                      {/* Fotoğraf alanı: oran (4/5) ve kırpma (object-cover) eskisiyle aynı; yazı artık fotoğrafın üstünde değil */}
+                      <div className="relative aspect-[4/5] overflow-hidden bg-surface">
+                        {cover && (
+                          <Image
+                            src={smallImage(cover)}
+                            unoptimized={isBlobImage(cover)}
+                            alt={c.title}
+                            fill
+                            sizes="(min-width: 1024px) 25vw, 50vw"
+                            className="object-cover transition-transform duration-500 group-hover:scale-105"
+                          />
+                        )}
+                      </div>
+                      {/* Düz zeminli başlık şeridi: açık temada beyaz/koyu yazı, koyu temada renk ölçeği ters döner. Uzun başlık kesilmez, alt satıra iner. */}
+                      <div className="flex-1 border-t border-line bg-raised px-3 py-3 sm:px-4 sm:py-3.5">
+                        <h3 className="font-serif font-bold text-sm sm:text-lg leading-snug text-ink break-words">{c.title}</h3>
+                        <span className="mt-1 block text-xs font-semibold text-bronze-ink group-hover:underline">Keşfet →</span>
+                      </div>
+                    </Link>
+                  </li>
                 );
               })}
             </CollectionsRow>
