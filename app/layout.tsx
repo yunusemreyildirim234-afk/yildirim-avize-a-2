@@ -19,7 +19,9 @@ import { AuthProvider } from "@/context/AuthContext";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 
 // Türkçe karakterler (ğ, ş, ı, İ) latin-ext alt kümesindedir; yoksa sistem yazı tipine düşer
-const inter = Inter({ subsets: ["latin", "latin-ext"] });
+// preload kapalı: iki yazı tipi dosyası (~134 KB) yavaş bağlantıda render engelleyen CSS ve hero (LCP) görseliyle yarışıyordu.
+// İlk boyama ölçüleri eşitlenmiş "Inter Fallback" ile yapılır, Inter gelince yer değiştirir (display: swap).
+const inter = Inter({ subsets: ["latin", "latin-ext"], preload: false });
 
 const DESCRIPTION =
   "Beyoğlu Şişhane'den kristal, modern ve klasik avize modelleri. Üst düzey korumalı koliyle kargo veya mağazadan teslim.";
