@@ -18,7 +18,6 @@ const CSP_REPORT_ONLY = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
-  experimental: { inlineCss: true },
   async headers() {
     return [
       {
