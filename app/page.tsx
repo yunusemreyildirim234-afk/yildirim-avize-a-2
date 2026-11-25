@@ -56,8 +56,8 @@ const localBusiness = {
 };
 
 /** Bölümde ilk `count` ürünün altındaki "Daha fazla göster": kalan ürünler HTML'e gömülmez, tıklanınca getirilir (components/MoreProducts.tsx). */
-function MoreCards({ section, total, cols, href, dark = false }: { section: string; total: number; cols: string; href: string; dark?: boolean }) {
-  return <MoreProducts section={section} total={total} cols={cols} fallbackHref={href} dark={dark} />;
+function MoreCards({ section, total, cols, href }: { section: string; total: number; cols: string; href: string }) {
+  return <MoreProducts section={section} total={total} cols={cols} fallbackHref={href} />;
 }
 
 export default async function Home() {

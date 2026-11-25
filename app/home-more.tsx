@@ -21,7 +21,7 @@ export async function loadMoreProducts(section: string, offset: number): Promise
     const [config, pools] = await Promise.all([getHomepageConfig(), getSectionPools()]);
     const pool = key === "featured" ? pools.featured : key === "discounted" ? inStockOnly(pools.discounted) : pools.bestsellers;
     const { more } = composeSection(pool, config[key], key === "featured" ? pools.featuredManual : false);
-    const items = more.slice(offset, offset + MORE_PAGE_SIZE).map((p) => ({ id: p.id, node: <ProductCard key={p.id} product={p} dark={key === "bestsellers"} /> }));
+    const items = more.slice(offset, offset + MORE_PAGE_SIZE).map((p) => ({ id: p.id, node: <ProductCard key={p.id} product={p} /> }));
     return { ok: true, items, total: more.length };
   } catch (e) {
     console.error("[home-more] ürünler getirilemedi:", (e as Error).message);
